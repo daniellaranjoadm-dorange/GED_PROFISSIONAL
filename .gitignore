@@ -1,0 +1,20 @@
+# Ignore instaladores e executáveis
+*.exe
+*.msi
+
+# Ignore arquivos grandes de mídia
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.wav
+
+# Ignore ambiente virtual
+venv/
+
+# Ignore arquivos temporários
+__pycache__/
+*.pyc
+
+# Ignore arquivos de banco para dev local
+db_old.sqlite3
