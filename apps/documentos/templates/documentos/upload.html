@@ -1,0 +1,112 @@
+{% extends "documentos/base.html" %}
+{% load static %}
+
+{% block title %}Novo Documento{% endblock %}
+
+{% block content %}
+
+<style>
+/* Painel futurista */
+.upload-card {
+    background: rgba(20, 25, 35, 0.65);
+    border: 1px solid rgba(0, 200, 255, 0.25);
+    box-shadow: 0 0 20px rgba(0,255,255,0.25);
+    backdrop-filter: blur(6px);
+    border-radius: 12px;
+    padding: 25px;
+}
+
+/* Botão neon */
+.btn-upload {
+    background: linear-gradient(90deg, #00c6ff, #00f0ff);
+    border: none;
+    padding: 12px 25px;
+    font-size: 18px;
+    font-weight: bold;
+    color: black;
+    border-radius: 8px;
+    box-shadow: 0 0 15px rgba(0,240,255,0.5);
+    transition: 0.3s;
+}
+.btn-upload:hover {
+    transform: scale(1.08);
+    box-shadow: 0 0 35px rgba(0,240,255,0.9);
+}
+
+/* Mensagem de erro */
+.erro-box {
+    background: rgba(255, 60, 60, 0.15);
+    border-left: 4px solid #ff3c3c;
+    padding: 10px;
+    border-radius: 6px;
+    color: #ff8a8a;
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+</style>
+
+
+<h2 class="text-info fw-bold mb-4">
+    <i class="bi bi-file-earmark-plus"></i> Novo Documento
+</h2>
+
+<div class="upload-card">
+
+    {% if erro %}
+    <div class="erro-box">
+        <i class="bi bi-exclamation-triangle-fill"></i> {{ erro }}
+    </div>
+    {% endif %}
+
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="row">
+
+            <!-- Título -->
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Título:</label>
+                <input type="text" name="titulo" class="form-control" required>
+            </div>
+
+            <!-- Código -->
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Código:</label>
+                <input type="text" name="codigo" class="form-control" required>
+            </div>
+
+            <!-- Revisão -->
+            <div class="col-md-2 mb-3">
+                <label class="form-label">Revisão:</label>
+
+                <select name="revisao" class="form-select">
+                    <option value="">(vazia)</option>
+                    <option value="0">0</option>
+
+                    {% for r in REVISOES_VALIDAS %}
+                        <option value="{{ r }}">{{ r }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Arquivo -->
+            <div class="col-md-12 mb-3">
+                <label class="form-label">Arquivo:</label>
+                <input type="file" name="arquivo" class="form-control" required>
+            </div>
+
+        </div>
+
+        <button class="btn-upload mt-3 w-100">
+            🚀 Enviar Documento
+        </button>
+
+    </form>
+
+</div>
+
+<a href="{% url 'documentos:listar_documentos' %}" class="btn btn-secondary mt-4">
+    <i class="bi bi-arrow-left"></i> Voltar
+</a>
+
+{% endblock %}

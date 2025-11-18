@@ -1,0 +1,46 @@
+﻿<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="utf-8">
+    <title>{% block title %}GED Profissional{% endblock %}</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+
+<body>
+
+    <header>
+        <h1>GED Profissional</h1>
+        {% block header %}{% endblock %}
+    </header>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        {% block footer %}&copy; {% now "Y" %} GED{% endblock %}
+    </footer>
+
+    <!-- Scripts globais -->
+    <script src="{% static 'js/app.js' %}"></script>
+
+    <!-- ===========================================
+         ROLAGEM COM SETAS DO TECLADO (↑ ↓)
+         =========================================== -->
+    <script>
+        document.addEventListener("keydown", function (e) {
+            const amount = 60;  // velocidade da rolagem (px)
+
+            if (e.key === "ArrowDown") {
+                window.scrollBy({ top: amount, behavior: "smooth" });
+            }
+
+            if (e.key === "ArrowUp") {
+                window.scrollBy({ top: -amount, behavior: "smooth" });
+            }
+        });
+    </script>
+
+</body>
+</html>

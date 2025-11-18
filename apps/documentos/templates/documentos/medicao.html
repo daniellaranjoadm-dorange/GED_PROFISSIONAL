@@ -1,0 +1,278 @@
+{% extends "documentos/base.html" %}
+{% load static %}
+
+{% block title %}Medição – GED Profissional{% endblock %}
+
+{% block content %}
+
+<style>
+/* ============================
+   NOVO GLASS-NEON PRO
+   ============================ */
+
+.medicao-card {
+    background: rgba(0, 20, 40, 0.55);
+    backdrop-filter: blur(6px);
+    border-radius: 15px;
+    border: 1px solid rgba(0, 200, 255, 0.35);
+    padding: 25px;
+    margin-bottom: 30px;
+    box-shadow: 0 0 18px rgba(0,255,255,0.15);
+}
+
+.medicao-title {
+    font-size: 26px;
+    font-weight: bold;
+    text-shadow: 0 0 8px #00eaff;
+}
+
+/* ============================
+     NOVA TABELA PREMIUM
+============================ */
+.table-finance {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 6px;
+}
+
+.table-finance thead th {
+    background: linear-gradient(90deg, rgba(0,180,255,0.25), rgba(0,80,140,0.25));
+    color: #9fe8ff;
+    padding: 12px;
+    text-align: center;
+    font-weight: bold;
+    font-size: 13px;
+    text-transform: uppercase;
+    border-bottom: 1px solid rgba(0,200,255,0.3);
+    backdrop-filter: blur(6px);
+}
+
+.table-finance tbody tr {
+    background: rgba(255,255,255,0.05);
+    transition: 0.20s ease;
+}
+
+.table-finance tbody tr:hover {
+    background: rgba(0,200,255,0.18);
+    transform: scale(1.008);
+}
+
+.table-finance td {
+    padding: 10px;
+    text-align: center;
+    color: #e8faff;
+    border: none;
+    font-size: 14px;
+}
+
+.valor-usd { color: #00ffcc; font-weight: bold; }
+.valor-brl { color: #00ffaa; font-weight: bold; }
+.valor-nr  { color: #ffae00; font-weight: bold; }
+
+.totais-box {
+    background: rgba(0, 80, 140, 0.3);
+    border: 1px solid rgba(0,200,255,0.4);
+    border-radius: 10px;
+    padding: 18px;
+    box-shadow: 0 0 14px rgba(0,200,255,0.2);
+}
+
+.btn-exportar {
+    background: rgba(0, 255, 140, 0.15);
+    border: 1px solid #00ff99;
+    color: #00ffcc;
+    font-weight: bold;
+    transition: 0.3s;
+    box-shadow: 0 0 12px rgba(0,255,180,0.4);
+}
+
+.btn-exportar:hover {
+    background: #00ff99;
+    color: #003300;
+    transform: scale(1.05);
+    box-shadow: 0 0 20px #00ff99;
+}
+</style>
+
+
+
+<h2 class="mb-4 text-info fw-bold" style="text-shadow: 0 0 8px #00eaff;">
+    <i class="bi bi-cash-coin"></i> Medição – Relatório Financeiro
+</h2>
+
+
+
+<!-- ============================
+     KPIs
+============================ -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="totais-box">
+            <h5 class="text-info fw-bold">Taxa de câmbio fixa</h5>
+            <p class="valor-brl">R$ {{ TAXA_CAMBIO_REAIS }}</p>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="totais-box">
+            <h5 class="text-info fw-bold">Valor por documento</h5>
+            <p class="valor-usd">US$ {{ VALOR_MEDICAO_USD }}</p>
+        </div>
+    </div>
+
+    <div class="col-md-4 text-end">
+        <a href="{% url 'documentos:exportar_medicao_excel' %}" class="btn btn-exportar px-4 py-2">
+            <i class="bi bi-file-earmark-excel"></i> Exportar Excel
+        </a>
+    </div>
+</div>
+
+
+
+
+<!-- ============================
+     TABELA PRINCIPAL
+============================ -->
+<div class="medicao-card">
+
+    <h4 class="medicao-title mb-3">
+        <i class="bi bi-ui-checks-grid"></i> Tabela de Medição por Tipo (Glass-Neon PRO)
+    </h4>
+
+    <div class="table-responsive">
+        <table class="table-finance">
+            <thead>
+                <tr>
+                    <th>Tipo Doc</th>
+                    <th>Total</th>
+                    <th>Emitidos</th>
+                    <th>Não Recebidos</th>
+
+                    <th>Valor Emitidos (USD)</th>
+                    <th>Valor Emitidos (BRL)</th>
+
+                    <th>Valor Não Recebidos (USD)</th>
+                    <th>Valor Não Recebidos (BRL)</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for linha in linhas %}
+                <tr>
+                    <td class="fw-bold text-info">{{ linha.tipo_doc }}</td>
+                    <td>{{ linha.total }}</td>
+                    <td class="text-primary fw-bold">{{ linha.emitidos }}</td>
+                    <td class="text-danger fw-bold">{{ linha.nao_recebidos }}</td>
+
+                    <td class="valor-usd">US$ {{ linha.valor_emitidos_usd }}</td>
+                    <td class="valor-brl">R$ {{ linha.valor_emitidos_brl }}</td>
+
+                    <td class="valor-nr">US$ {{ linha.valor_nr_usd }}</td>
+                    <td class="valor-nr">R$ {{ linha.valor_nr_brl }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+
+            <tfoot>
+                <tr style="background: rgba(0,255,200,0.15); font-weight:bold;">
+                    <td>Total Geral</td>
+                    <td>{{ totais.total_docs }}</td>
+                    <td>{{ totais.total_emitidos }}</td>
+                    <td>{{ totais.total_nao_recebidos }}</td>
+
+                    <td class="valor-usd">US$ {{ totais.total_emitidos_usd }}</td>
+                    <td class="valor-brl">R$ {{ totais.total_emitidos_brl }}</td>
+
+                    <td class="valor-nr">US$ {{ totais.total_nr_usd }}</td>
+                    <td class="valor-nr">R$ {{ totais.total_nr_brl }}</td>
+                </tr>
+            </tfoot>
+
+        </table>
+    </div>
+</div>
+
+
+
+
+<!-- ============================
+     GRÁFICOS
+============================ -->
+<h4 class="medicao-title mt-5 mb-4">
+    <i class="bi bi-bar-chart"></i> Gráficos da Medição
+</h4>
+
+<div class="row g-4 mb-5">
+    <div class="col-md-6">
+        <div class="medicao-card">
+            <canvas id="chartMedicaoBars"></canvas>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="medicao-card">
+            <canvas id="chartMedicaoPie"></canvas>
+        </div>
+    </div>
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    const tipos = {{ tipos_js|safe }};
+    const valoresUSD = {{ usd_js|safe }};
+    const valoresBRL = {{ brl_js|safe }};
+
+    /* GRÁFICO DE BARRAS */
+    new Chart(document.getElementById("chartMedicaoBars"), {
+        type: "bar",
+        data: {
+            labels: tipos,
+            datasets: [{
+                label: "Valor Total (BRL)",
+                data: valoresBRL,
+                backgroundColor: "rgba(0, 200, 255, 0.6)",
+                borderColor: "rgba(0, 200, 255, 1)",
+                borderWidth: 1
+            }]
+        },
+        options: {
+            plugins: {
+                legend: {
+                    labels: { color: "#fff" }
+                }
+            },
+            scales: {
+                x: { ticks: { color: "#fff" } },
+                y: { ticks: { color: "#fff" } }
+            }
+        }
+    });
+
+    /* GRÁFICO DE PIZZA */
+    new Chart(document.getElementById("chartMedicaoPie"), {
+        type: "pie",
+        data: {
+            labels: tipos,
+            datasets: [{
+                data: valoresUSD,
+                backgroundColor: [
+                    "#00eaff", "#00ffaa", "#ffae00", "#ff0099",
+                    "#ffaa00", "#33ccff", "#66ff66", "#ff6666",
+                    "#0099ff", "#ff9900", "#cc33ff", "#33ffcc"
+                ]
+            }]
+        },
+        options: {
+            plugins: {
+                legend: {
+                    labels: { color: "#fff" }
+                }
+            }
+        }
+    });
+</script>
+
+
+{% endblock %}

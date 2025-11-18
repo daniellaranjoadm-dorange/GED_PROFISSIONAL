@@ -1,0 +1,244 @@
+{% extends "documentos/base.html" %}
+{% load static %}
+
+{% block title %}Detalhes do Documento{% endblock %}
+
+{% block content %}
+
+<style>
+    .info-table th {
+        width: 220px;
+        background: rgba(0, 123, 255, 0.15);
+        color: #b8dfff;
+        text-shadow: 0 0 4px #007bff;
+        font-weight: 600;
+    }
+    .info-table td {
+        background: rgba(255,255,255,0.05);
+        color: #e8f7ff;
+    }
+
+    .neon-card {
+        background: rgba(0, 20, 40, 0.5);
+        border: 1px solid rgba(0, 200, 255, 0.2);
+        box-shadow: 0 0 15px rgba(0,200,255,0.2);
+        backdrop-filter: blur(6px);
+        border-radius: 10px;
+        padding: 20px;
+    }
+
+    .btn-delete-neon {
+        background: rgba(255, 0, 60, 0.15);
+        color: #ff4d6d;
+        border: 1px solid #ff345a;
+        box-shadow: 0 0 12px rgba(255,50,80,0.5);
+        font-weight: bold;
+        transition: 0.3s;
+    }
+    .btn-delete-neon:hover {
+        background: #ff345a;
+        color: white;
+        box-shadow: 0 0 25px rgba(255,50,80,0.85);
+        transform: scale(1.05);
+    }
+
+    /* ==== TABELA DE ANEXOS ==== */
+    .anexo-thumb {
+        max-height: 70px;
+        border-radius: 8px;
+        box-shadow: 0 0 8px rgba(0,200,255,0.4);
+    }
+</style>
+
+<div class="container mt-4">
+
+    <!-- CABEÇALHO -->
+    <h2 class="mb-4 text-info fw-bold" style="text-shadow: 0 0 8px #00eaff;">
+        <i class="bi bi-file-earmark-text"></i> Detalhes do Documento
+    </h2>
+
+    <!-- CARD PRINCIPAL -->
+    <div class="neon-card mb-4">
+
+        <table class="table table-bordered info-table">
+            <tr>
+                <th>Código</th>
+                <td>{{ documento.codigo }}</td>
+            </tr>
+            <tr>
+                <th>Título</th>
+                <td>{{ documento.titulo }}</td>
+            </tr>
+            <tr>
+                <th>Revisão</th>
+                <td>{{ documento.revisao }}</td>
+            </tr>
+            <tr>
+                <th>Disciplina</th>
+                <td>{{ documento.disciplina }}</td>
+            </tr>
+            <tr>
+                <th>Projeto</th>
+                <td>{{ documento.projeto }}</td>
+            </tr>
+            <tr>
+                <th>Status LDP</th>
+                <td>{{ documento.status_ldp }}</td>
+            </tr>
+            <tr>
+                <th>Status Emissão</th>
+                <td>{{ documento.status_emissao }}</td>
+            </tr>
+            <tr>
+                <th>Data Emissão TP</th>
+                <td>
+                    {% if documento.data_emissao_tp %}
+                        {{ documento.data_emissao_tp|date:"d/m/Y" }}
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+            </tr>
+        </table>
+
+    </div>
+
+
+
+
+    <!-- ================================================================
+           ⭐ SEÇÃO DE ANEXOS – ARQUIVOS DO DOCUMENTO
+    ================================================================= -->
+    <h3 class="text-info fw-bold mb-3" style="text-shadow: 0 0 8px #00eaff;">
+        <i class="bi bi-paperclip"></i> Anexos do Documento
+    </h3>
+
+    <div class="neon-card mb-5">
+        <div class="d-flex justify-content-between mb-3">
+            <a href="{% url 'documentos:adicionar_arquivos' documento.id %}" 
+               class="btn btn-primary btn-sm">
+                <i class="bi bi-upload"></i> Enviar Arquivos
+            </a>
+        </div>
+
+        {% if documento.arquivos.all %}
+        <table class="table table-dark table-striped table-bordered text-center align-middle">
+
+            <thead class="table-info text-dark">
+                <tr>
+                    <th>Arquivo</th>
+                    <th>Tipo</th>
+                    <th>Preview</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for arq in documento.arquivos.all %}
+                    <tr>
+                        <td>{{ arq.nome_original }}</td>
+                        <td>{{ arq.tipo }}</td>
+
+                        <td>
+                            {% if arq.ext == ".pdf" %}
+                                <a href="{{ arq.arquivo.url }}" class="btn btn-sm btn-outline-info" target="_blank">
+                                    <i class="bi bi-file-earmark-pdf"></i> Abrir PDF
+                                </a>
+
+                            {% elif arq.ext in ".jpg .jpeg .png .gif" %}
+                                <img src="{{ arq.arquivo.url }}" class="anexo-thumb">
+
+                            {% elif arq.ext in ".doc .docx .xls .xlsx" %}
+                                <a href="https://view.officeapps.live.com/op/embed.aspx?src={{ arq.url_absoluta }}"
+
+                                   target="_blank"
+                                   class="btn btn-sm btn-outline-light">
+                                    <i class="bi bi-box-arrow-up-right"></i> Visualizar Online
+                                </a>
+
+                            {% else %}
+                                <a href="{{ arq.arquivo.url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-download"></i> Abrir / Baixar
+                                </a>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            <a href="{% url 'documentos:excluir_arquivo' arq.id %}"
+                               onclick="return confirm('Excluir arquivo?')"
+                               class="btn btn-danger btn-sm">
+                                <i class="bi bi-trash"></i> Excluir
+                            </a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+
+        </table>
+        {% else %}
+            <p class="text-muted">Nenhum arquivo enviado.</p>
+        {% endif %}
+    </div>
+
+
+
+
+    <!-- BOTÕES DE AÇÃO -->
+    <div class="mb-4">
+
+        <a href="{% url 'documentos:listar_documentos' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+
+        <a href="{% url 'documentos:editar_documento' documento.id %}" class="btn btn-warning">
+            <i class="bi bi-pencil"></i> Editar
+        </a>
+
+        <a href="{% url 'documentos:nova_revisao' documento.id %}" class="btn btn-info text-white">
+            <i class="bi bi-journal-plus"></i> Nova Revisão
+        </a>
+
+    </div>
+
+
+
+
+    <!-- =======================
+         WORKFLOW FUTURISTA
+    ======================= -->
+    <h3 class="mt-5 mb-4 text-info fw-bold" style="text-shadow: 0 0 8px #00eaff;">
+        <i class="bi bi-stars"></i> Workflow – Linha do Tempo
+    </h3>
+
+    {% if historico_workflow %}
+        <div class="timeline-container">
+            <div class="timeline-line"></div>
+
+            {% for wf in historico_workflow %}
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+
+                    <h5 class="text-info fw-bold">{{ wf.etapa }}</h5>
+                    <p class="mb-1 text-light"><strong>Status:</strong> {{ wf.status }}</p>
+                    <p class="mb-1 text-light"><strong>Usuário:</strong> {{ wf.usuario }}</p>
+
+                    {% if wf.observacao %}
+                        <p class="text-warning fst-italic">
+                            <strong>Obs:</strong> {{ wf.observacao }}
+                        </p>
+                    {% endif %}
+
+                    <span class="text-secondary small">
+                        <i class="bi bi-clock"></i> {{ wf.data|date:"d/m/Y H:i" }}
+                    </span>
+                </div>
+            {% endfor %}
+        </div>
+
+    {% else %}
+        <p class="text-muted">Nenhum histórico encontrado.</p>
+    {% endif %}
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,107 @@
+{% extends "documentos/base.html" %}
+{% load static %}
+
+{% block title %}Adicionar Anexos{% endblock %}
+
+{% block content %}
+
+<style>
+    .upload-card {
+        background: rgba(0, 20, 40, 0.55);
+        backdrop-filter: blur(6px);
+        border-radius: 12px;
+        border: 1px solid rgba(0, 200, 255, 0.25);
+        box-shadow: 0 0 18px rgba(0, 200, 255, 0.25);
+        padding: 25px;
+    }
+    .neon-title {
+        color: #00eaff;
+        text-shadow: 0 0 10px #00eaff;
+    }
+    .file-preview img {
+        max-height: 90px;
+        border-radius: 8px;
+        margin: 5px;
+        box-shadow: 0 0 8px rgba(0,200,255,0.5);
+    }
+    .file-preview span {
+        font-size: 13px;
+        display: block;
+        margin-top: 4px;
+        color: #d0f4ff;
+    }
+</style>
+
+<div class="container mt-4">
+
+    <h2 class="neon-title fw-bold mb-4">
+        <i class="bi bi-paperclip"></i> Enviar Anexos
+    </h2>
+
+    <div class="upload-card">
+
+        <h5 class="text-info">
+            Documento: <strong>{{ documento.codigo }} — {{ documento.titulo }}</strong>
+        </h5>
+        <hr>
+
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <label class="form-label text-light fw-bold">Selecione os arquivos:</label>
+
+            <input type="file"
+                   name="arquivos"
+                   multiple
+                   class="form-control form-control-lg mb-3"
+                   onchange="previewFiles(this)">
+
+            <!-- Pré-visualização -->
+            <div id="preview-area" class="file-preview d-flex flex-wrap"></div>
+
+            <div class="mt-4 d-flex gap-2">
+                <a href="{% url 'documentos:detalhes_documento' documento.id %}"
+                   class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+
+                <button class="btn btn-primary">
+                    <i class="bi bi-cloud-upload"></i> Enviar Arquivos
+                </button>
+            </div>
+        </form>
+
+    </div>
+
+</div>
+
+<!-- Preview JS -->
+<script>
+function previewFiles(input) {
+    const preview = document.getElementById("preview-area");
+    preview.innerHTML = "";
+
+    for (const file of input.files) {
+        const ext = file.name.split('.').pop().toLowerCase();
+
+        let html = "";
+
+        if (["jpg", "jpeg", "png", "gif"].includes(ext)) {
+            const url = URL.createObjectURL(file);
+            html = `<div class="me-3 text-center">
+                        <img src="${url}" height="80">
+                        <span>${file.name}</span>
+                    </div>`;
+        } else {
+            html = `<div class="me-3 text-center text-light">
+                        <i class="bi bi-file-earmark fs-1"></i>
+                        <span>${file.name}</span>
+                    </div>`;
+        }
+
+        preview.innerHTML += html;
+    }
+}
+</script>
+
+{% endblock %}

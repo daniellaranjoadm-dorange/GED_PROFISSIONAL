@@ -1,0 +1,64 @@
+{% extends "documentos/base.html" %}
+{% load static %}
+
+{% block title %}Nova Revisão{% endblock %}
+
+{% block content %}
+
+<style>
+    .card {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        border-radius: 12px;
+        backdrop-filter: blur(5px);
+    }
+</style>
+
+<div class="container mt-4">
+
+    <!-- TÍTULO + VOLTAR -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-primary fw-bold">
+            🔄 Criar Nova Revisão
+        </h2>
+
+        <a href="{% url 'documentos:listar_documentos' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+    </div>
+
+    <!-- CARD PRINCIPAL -->
+    <div class="card p-4">
+
+        <h5 class="text-primary fw-bold mb-3">
+            📘 Documento Original
+        </h5>
+
+        <table class="table table-striped">
+            <tr><th>Código</th><td>{{ documento.codigo }}</td></tr>
+            <tr><th>Título</th><td>{{ documento.titulo }}</td></tr>
+            <tr><th>Revisão Atual</th><td>{{ documento.revisao }}</td></tr>
+            <tr><th>Nova Revisão</th><td><strong>{{ proxima_revisao }}</strong></td></tr>
+        </table>
+
+        <hr>
+
+        <h5 class="fw-bold">📤 Enviar Arquivo da Nova Revisão</h5>
+
+        <form method="POST" enctype="multipart/form-data" class="mt-3">
+            {% csrf_token %}
+
+            <div class="mb-3">
+                <label class="form-label">Selecione o Novo Arquivo</label>
+                <input type="file" name="arquivo" class="form-control" required>
+            </div>
+
+            <button class="btn btn-success">
+                <i class="bi bi-upload"></i> Salvar Nova Revisão
+            </button>
+        </form>
+
+    </div>
+
+</div>
+
+{% endblock %}

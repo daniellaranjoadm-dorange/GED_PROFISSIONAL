@@ -1,0 +1,92 @@
+{% extends "documentos/base.html" %}
+{% load static %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <!-- CABEÇALHO -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-primary fw-bold">
+            📚 Histórico de Revisões – {{ documento.codigo }}
+        </h2>
+
+        <a href="{% url 'documentos:listar_documentos' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+    </div>
+
+    <!-- INFORMAÇÕES DO DOCUMENTO -->
+    <div class="card shadow-sm p-3 mb-4">
+
+        <h5 class="fw-bold text-primary mb-3">📘 Documento Atual</h5>
+
+        <table class="table table-striped table-hover">
+            <tr>
+                <th style="width:180px;">Código</th>
+                <td>{{ documento.codigo }}</td>
+            </tr>
+            <tr>
+                <th>Título</th>
+                <td>{{ documento.titulo }}</td>
+            </tr>
+            <tr>
+                <th>Revisão Atual</th>
+                <td><strong>{{ documento.revisao }}</strong></td>
+            </tr>
+        </table>
+
+        <a href="{% url 'documentos:nova_revisao' documento.id %}" class="btn btn-success mt-2">
+            <i class="bi bi-plus-circle"></i> Criar Nova Revisão
+        </a>
+
+    </div>
+
+    <!-- HISTÓRICO -->
+    <div class="card shadow-sm p-4">
+
+        <h5 class="fw-bold text-primary mb-3">🕑 Lista de Revisões</h5>
+
+        {% if revisoes %}
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped align-middle">
+                <thead class="table-primary">
+                    <tr>
+                        <th>Revisão</th>
+                        <th>Arquivo</th>
+                        <th>Criado em</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for rev in revisoes %}
+                    <tr>
+                        <td><strong>{{ rev.revisao }}</strong></td>
+
+                        <td>
+                            {% if rev.arquivo %}
+                            <a href="{{ rev.arquivo.url }}" class="btn btn-outline-primary btn-sm" download>
+                                <i class="bi bi-download"></i> Baixar
+                            </a>
+                            {% else %}
+                            <span class="text-muted">Sem arquivo</span>
+                            {% endif %}
+                        </td>
+
+                        <td>{{ rev.criado_em|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+
+            </table>
+        </div>
+
+        {% else %}
+            <p class="text-muted">Nenhuma revisão encontrada para este documento.</p>
+        {% endif %}
+
+    </div>
+
+</div>
+
+{% endblock %}

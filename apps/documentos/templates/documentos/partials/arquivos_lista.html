@@ -1,0 +1,80 @@
+<div class="card mt-4">
+    <div class="card-header bg-dark text-info fw-bold">
+        <i class="bi bi-paperclip"></i> Anexos do Documento
+    </div>
+
+    <div class="card-body">
+
+        <!-- BOTÃO ADICIONAR ANEXOS -->
+        <a href="{% url 'documentos:adicionar_arquivos' documento.id %}" class="btn btn-sm btn-primary mb-3">
+            <i class="bi bi-upload"></i> Enviar Arquivos
+        </a>
+
+        {% if arquivos %}
+            <table class="table table-dark table-striped align-middle text-center">
+                <thead class="table-info text-dark">
+                    <tr>
+                        <th>Arquivo</th>
+                        <th>Tipo</th>
+                        <th>Preview</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for arq in arquivos %}
+                        <tr>
+                            <td>{{ arq.nome_original }}</td>
+                            <td>{{ arq.tipo }}</td>
+
+                            <!-- PREVIEW -->
+                            <td>
+                                {% if arq.ext == ".pdf" %}
+                                    <a href="{{ arq.arquivo.url }}" target="_blank" class="btn btn-sm btn-outline-info">
+                                        <i class="bi bi-file-earmark-pdf"></i> Abrir PDF
+                                    </a>
+
+                                {% elif arq.ext in ".jpg .jpeg .png .gif" %}
+                                    <img src="{{ arq.arquivo.url }}" class="img-thumbnail" style="max-height: 80px;">
+
+                                {% elif arq.ext in ".doc .docx" %}
+                                    <a href="https://view.officeapps.live.com/op/embed.aspx?src={{ request.build_absolute_uri(arq.arquivo.url) }}"
+                                       target="_blank"
+                                       class="btn btn-sm btn-outline-light">
+                                        <i class="bi bi-file-earmark-word"></i> Word Online
+                                    </a>
+
+                                {% elif arq.ext in ".xls .xlsx" %}
+                                    <a href="https://view.officeapps.live.com/op/embed.aspx?src={{ request.build_absolute_uri(arq.arquivo.url) }}"
+                                       target="_blank"
+                                       class="btn btn-sm btn-outline-success">
+                                        <i class="bi bi-file-earmark-excel"></i> Excel Online
+                                    </a>
+
+                                {% else %}
+                                    <!-- Para DWG, DWFX, ZIP, RAR etc -->
+                                    <a href="{{ arq.arquivo.url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                        <i class="bi bi-eye"></i> Abrir / Baixar
+                                    </a>
+                                {% endif %}
+                            </td>
+
+                            <!-- AÇÕES -->
+                            <td>
+                                <a href="{% url 'documentos:excluir_arquivo' arq.id %}"
+                                   class="btn btn-sm btn-danger"
+                                   onclick="return confirm('Excluir arquivo?')">
+                                   <i class="bi bi-trash"></i>
+                                   Excluir
+                                </a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+        {% else %}
+            <p class="text-muted">Nenhum arquivo enviado.</p>
+        {% endif %}
+    </div>
+</div>

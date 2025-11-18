@@ -1,0 +1,150 @@
+{% extends "documentos/base.html" %}
+{% load static %}
+
+{% block title %}Importar LDP{% endblock %}
+
+{% block content %}
+
+<style>
+/* Painel principal futurista */
+.import-box {
+    background: rgba(20, 20, 25, 0.7);
+    border: 1px solid rgba(0, 200, 255, 0.25);
+    box-shadow: 0 0 20px rgba(0,255,255,0.3);
+    backdrop-filter: blur(6px);
+    border-radius: 12px;
+    padding: 25px;
+}
+
+/* Botão futurista */
+.btn-import {
+    background: linear-gradient(90deg, #0097ff, #00d4ff);
+    border: none;
+    padding: 12px 25px;
+    font-size: 18px;
+    font-weight: bold;
+    color: black;
+    border-radius: 8px;
+    box-shadow: 0 0 15px rgba(0,200,255,0.5);
+    transition: 0.3s;
+}
+.btn-import:hover {
+    box-shadow: 0 0 30px rgba(0,240,255,1);
+    transform: scale(1.07);
+}
+
+/* Barra de progresso */
+.progress {
+    background: rgba(255,255,255,0.1);
+    height: 14px;
+    border-radius: 8px;
+    margin-top: 15px;
+}
+.progress-bar {
+    background: linear-gradient(90deg, #ff6a00, #ffb300);
+    box-shadow: 0 0 10px #ffb300;
+    transition: width 0.3s;
+}
+
+/* Painel de logs */
+.log-box {
+    background: rgba(0, 0, 0, 0.4);
+    border-left: 3px solid #00eaff;
+    padding: 15px;
+    margin-top: 20px;
+    font-family: monospace;
+    color: #00eaff;
+    height: 260px;
+    overflow-y: auto;
+    white-space: pre-line;
+}
+
+/* Histórico */
+.history-card {
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(0,200,255,0.2);
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+</style>
+
+<!-- TÍTULO -->
+<h2 class="text-info fw-bold mb-2">
+    <i class="bi bi-cloud-upload"></i> Importador Inteligente de LDP
+</h2>
+<p class="text-light mb-4">
+    Selecione um arquivo Excel (.xlsx). O sistema validará revisões, datas e campos automaticamente.
+</p>
+
+<!-- FORMULÁRIO -->
+<div class="import-box">
+
+    <form method="POST" enctype="multipart/form-data" id="formImport">
+        {% csrf_token %}
+
+        <label class="text-light fw-bold">📄 Selecionar Planilha LDP:</label>
+        <input type="file" name="arquivo" class="form-control mb-3" required>
+
+        <button class="btn-import w-100">
+            🚀 Iniciar Importação
+        </button>
+    </form>
+
+    <!-- Barra de Progresso -->
+    <div class="progress mt-4" style="display:none;" id="progressArea">
+        <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+    </div>
+
+</div>
+
+<!-- RESULTADO -->
+{% if mensagem %}
+    <div class="alert alert-success mt-4 shadow">
+        <h4>✅ {{ mensagem }}</h4>
+        <p><strong>✔ Importados com sucesso:</strong> {{ total_sucesso }}</p>
+        <p><strong>❌ Erros detectados:</strong> {{ total_erros }}</p>
+    </div>
+
+    <h5 class="text-info mt-3"><i class="bi bi-journal-text"></i> Log de Erros</h5>
+    <div class="log-box">{{ log }}</div>
+{% endif %}
+
+<!-- HISTÓRICO -->
+<h4 class="text-info mt-5">
+    <i class="bi bi-clock-history"></i> Histórico de Importações
+</h4>
+
+{% for h in historico %}
+<div class="history-card">
+    <strong>{{ h.arquivo_nome }}</strong><br>
+    ✔ Sucesso: {{ h.total_sucesso }}  
+    ❌ Erros: {{ h.total_erros }}  
+    <br>
+    📅 {{ h.criado_em|date:"d/m/Y H:i" }}
+</div>
+{% empty %}
+    <p class="text-secondary">Ainda não há importações registradas.</p>
+{% endfor %}
+
+<!-- SCRIPT DA BARRA DE PROGRESSO -->
+<script>
+document.getElementById("formImport").addEventListener("submit", function() {
+    document.getElementById("progressArea").style.display = "block";
+
+    let bar = document.getElementById("progressBar");
+    let width = 0;
+
+    let intervalo = setInterval(() => {
+        if (width >= 100) {
+            clearInterval(intervalo);
+        } else {
+            width += 3;
+            bar.style.width = width + "%";
+        }
+    }, 120);
+});
+</script>
+
+{% endblock %}

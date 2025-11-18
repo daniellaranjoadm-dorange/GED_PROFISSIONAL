@@ -1,0 +1,96 @@
+{% extends "documentos/base.html" %}
+{% load static %}
+
+{% block title %}Lixeira{% endblock %}
+
+{% block content %}
+
+<style>
+    .neon-card {
+        background: rgba(0, 15, 30, 0.6);
+        border: 1px solid rgba(255, 0, 80, 0.3);
+        box-shadow: 0 0 15px rgba(255, 0, 80, 0.4);
+        backdrop-filter: blur(6px);
+        border-radius: 10px;
+        padding: 20px;
+    }
+
+    .btn-restore {
+        background: rgba(0,150,255,0.15);
+        border: 1px solid #00aaff;
+        color: #00c8ff;
+        font-weight: bold;
+        transition: 0.3s;
+    }
+    .btn-restore:hover {
+        background: #00aaff;
+        color: white;
+        box-shadow: 0 0 18px #00c8ff;
+    }
+
+    .btn-delete-final {
+        background: rgba(255,0,70,0.15);
+        border: 1px solid #ff2345;
+        color: #ff3355;
+        transition: 0.3s;
+    }
+    .btn-delete-final:hover {
+        background: #ff2345;
+        color: white;
+        box-shadow: 0 0 18px #ff2345;
+    }
+</style>
+
+<h2 class="text-danger fw-bold mb-3" style="text-shadow: 0 0 10px #ff3355;">
+    🗑️ Lixeira – Documentos Excluídos
+</h2>
+
+<div class="neon-card">
+
+    {% if documentos %}
+    <div class="table-responsive">
+        <table class="table table-bordered table-dark table-striped align-middle">
+            <thead class="table-danger">
+                <tr>
+                    <th>Código</th>
+                    <th>Título</th>
+                    <th>Disciplina</th>
+                    <th>Excluído em</th>
+                    <th>Excluído por</th>
+                    <th>Motivo</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for doc in documentos %}
+                <tr>
+                    <td><strong>{{ doc.codigo }}</strong></td>
+                    <td>{{ doc.titulo }}</td>
+                    <td>{{ doc.disciplina }}</td>
+                    <td>{{ doc.deletado_em|date:"d/m/Y H:i" }}</td>
+                    <td>{{ doc.deletado_por }}</td>
+                    <td>{{ doc.motivo_exclusao }}</td>
+
+                    <td>
+
+                        <!-- Restaurar -->
+                        <a href="{% url 'documentos:restaurar_documento' doc.id %}"
+                           class="btn btn-sm btn-restore">
+                           <i class="bi bi-arrow-counterclockwise"></i> Restaurar
+                        </a>
+
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% else %}
+        <p class="text-light">Nenhum documento na lixeira.</p>
+    {% endif %}
+
+</div>
+
+{% endblock %}

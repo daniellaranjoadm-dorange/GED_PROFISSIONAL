@@ -1,0 +1,66 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Sistema GED</title>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle at top, #0a0f1f 0%, #000000 100%);
+            font-family: 'Segoe UI', sans-serif;
+            overflow: hidden;
+        }
+
+        /* Painel Glass */
+        .glass-card {
+            backdrop-filter: blur(15px);
+            background: rgba(255, 255, 255, 0.07);
+            border-radius: 20px;
+            padding: 40px;
+            width: 380px;
+            border: 1px solid rgba(0, 140, 255, 0.4);
+            box-shadow: 0 0 25px rgba(0, 140, 255, 0.4);
+            animation: fadeIn 1s ease;
+        }
+
+        /* Inputs futuristas */
+        .input-group {
+            margin-bottom: 22px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-group label {
+            color: #7ac8ff;
+            margin-bottom: 6px;
+            font-size: 15px;
+            letter-spacing: 1px;
+        }
+
+        .input-group input {
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(0, 140, 255, 0.7);
+            background: rgba(0, 0, 0, 0.4);
+            color: #e5f4ff;
+            font-size: 16px;
+            transition: 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            box-shadow: 0 0 15px rgba(0, 140, 255, 1);
+            border-color: #00aaff;
+        }
+
+        /* Botão neon */
+        .btn-neon {
+            width: 100%;

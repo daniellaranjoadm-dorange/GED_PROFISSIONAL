@@ -1,0 +1,195 @@
+{% extends "documentos/base.html" %}
+{% load static %}
+
+{% block content %}
+
+<style>
+    body::before {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: url('{% static "documentos/logo.png" %}');
+        background-size: 450px;
+        background-repeat: no-repeat;
+        background-position: center;
+        opacity: 0.06;
+        z-index: -1;
+    }
+
+    .card {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        border-radius: 12px;
+    }
+
+    .erro-msg {
+        background: #ffdddd;
+        border-left: 5px solid #ff4d4d;
+        padding: 10px 15px;
+        margin-bottom: 20px;
+        color: #a30000;
+        font-weight: bold;
+        border-radius: 6px;
+    }
+</style>
+
+<div class="container mt-4">
+
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="text-primary fw-bold">
+            ✏️ Editar Documento
+        </h2>
+
+        <a href="{% url 'documentos:detalhes_documento' documento.id %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+    </div>
+
+    <!-- ERRO DE VALIDAÇÃO -->
+    {% if erro %}
+        <div class="erro-msg">
+            <i class="bi bi-exclamation-triangle"></i> {{ erro }}
+        </div>
+    {% endif %}
+
+    <!-- Card -->
+    <div class="card p-4">
+
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <div class="row">
+
+                <!-- PROJETO -->
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Projeto</label>
+                    <input type="text" name="projeto" value="{{ documento.projeto }}" class="form-control">
+                </div>
+
+                <!-- FASE -->
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Fase</label>
+                    <input type="text" name="fase" value="{{ documento.fase }}" class="form-control">
+                </div>
+
+                <!-- Tipo DOC -->
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Tipo Documento</label>
+                    <input type="text" name="tipo_doc" value="{{ documento.tipo_doc }}" class="form-control">
+                </div>
+
+                <!-- Código -->
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Código</label>
+                    <input type="text" name="codigo" value="{{ documento.codigo }}" class="form-control">
+                </div>
+
+                <!-- Revisão (dropdown normalizado) -->
+                <div class="col-md-2 mb-3">
+                    <label class="form-label">Revisão</label>
+
+                    <select name="revisao" class="form-control">
+
+                        <!-- Revisão atual -->
+                        <option value="{{ documento.revisao }}" selected>
+                            {{ documento.revisao }}
+                        </option>
+
+                        <!-- Permitir revisão vazia -->
+                        {% if documento.revisao != "" %}
+                        <option value="">(vazia)</option>
+                        {% endif %}
+
+                        <!-- Permitir revisão zero -->
+                        {% if documento.revisao != "0" %}
+                        <option value="0">0</option>
+                        {% endif %}
+
+                        <!-- Revisões oficiais -->
+                        {% for r in REVISOES_VALIDAS %}
+                            {% if r != documento.revisao %}
+                                <option value="{{ r }}">{{ r }}</option>
+                            {% endif %}
+                        {% endfor %}
+
+                    </select>
+                </div>
+
+                <!-- Disciplina -->
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Disciplina</label>
+                    <input type="text" name="disciplina" value="{{ documento.disciplina }}" class="form-control">
+                </div>
+
+                <!-- Título -->
+                <div class="col-md-12 mb-3">
+                    <label class="form-label">Título</label>
+                    <input type="text" name="titulo" value="{{ documento.titulo }}" class="form-control">
+                </div>
+
+                <!-- Status LDP -->
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Status LDP</label>
+                    <select name="status_ldp" class="form-control">
+                        <option value="{{ documento.status_ldp }}" selected>{{ documento.status_ldp }}</option>
+                        <option value="Em Elaboração">Em Elaboração</option>
+                        <option value="Em Revisão">Em Revisão</option>
+                        <option value="Aprovado">Aprovado</option>
+                        <option value="Emitido">Emitido</option>
+                        <option value="Cancelado">Cancelado</option>
+                    </select>
+                </div>
+
+                <!-- Status Emissão -->
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Status Emissão</label>
+                    <select name="status_emissao" class="form-control">
+                        <option value="{{ documento.status_emissao }}" selected>{{ documento.status_emissao }}</option>
+                        <option value="Em Elaboração">Em Elaboração</option>
+                        <option value="Em Revisão">Em Revisão</option>
+                        <option value="Aprovado">Aprovado</option>
+                        <option value="Emitido">Emitido</option>
+                        <option value="Cancelado">Cancelado</option>
+                    </select>
+                </div>
+
+                <!-- GRDT -->
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Nº GRDT</label>
+                    <input type="text" name="numero_grdt" value="{{ documento.numero_grdt }}" class="form-control">
+                </div>
+
+                <!-- PCF -->
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Nº PCF</label>
+                    <input type="text" name="numero_pcf" value="{{ documento.numero_pcf }}" class="form-control">
+                </div>
+
+                <!-- Data Emissão -->
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Data Emissão TP</label>
+                    <input type="date" name="data_emissao_tp" value="{{ documento.data_emissao_tp|date:'Y-m-d' }}" class="form-control">
+                </div>
+
+                <!-- Arquivo -->
+                <div class="col-md-12 mb-3">
+                    <label class="form-label">Arquivo (opcional)</label>
+                    <input type="file" name="arquivo" class="form-control">
+                </div>
+
+            </div>
+
+            <button class="btn btn-success mt-3">
+                <i class="bi bi-check-circle"></i> Salvar Alterações
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+{% endblock %}
