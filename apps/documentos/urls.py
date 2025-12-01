@@ -31,10 +31,16 @@ urlpatterns = [
     path("historico/<str:codigo>/", views.historico, name="historico"),
 
     # ============================
-    # ANEXOS (NOVO MÓDULO)
+    # NOVA VERSÃO
+    # ============================
+    path("documento/<int:documento_id>/nova-versao/", views.nova_versao, name="nova_versao"),
+
+    # ============================
+    # ANEXOS
     # ============================
     path("documento/<int:documento_id>/arquivos/", views.adicionar_arquivos, name="adicionar_arquivos"),
     path("arquivo/<int:arquivo_id>/excluir/", views.excluir_arquivo, name="excluir_arquivo"),
+
 
     # ============================
     # WORKFLOW
@@ -44,16 +50,27 @@ urlpatterns = [
     path("emitir/<int:documento_id>/", views.emitir_documento, name="emitir_documento"),
     path("cancelar/<int:documento_id>/", views.cancelar_documento, name="cancelar_documento"),
 
+    path("documento/<int:documento_id>/enviar-proxima-etapa/", views.enviar_proxima_etapa, name="enviar_proxima_etapa"),
+    path("retornar-etapa/<int:documento_id>/", views.retornar_etapa, name="retornar_etapa"),
+
+    # ⚠️ ESTA era a rota que estava FORA DO ARRAY — agora corrigida
+    path("gerar-diff/<int:documento_id>/<str:revA>/<str:revB>/", views.gerar_diff, name="gerar_diff"),
+
     # ============================
     # IMPORTAÇÃO LDP
     # ============================
     path("importar-ldp/", views.importar_ldp, name="importar_ldp"),
 
-    # ============================
-    # DASHBOARDS
-    # ============================
-    path("dashboard/", views.dashboard, name="dashboard"),
-    path("dashboard-enterprise/", views.dashboard_enterprise, name="dashboard_enterprise"),
+        # ============================
+  # ============================
+  # DASHBOARDS
+  # ============================
+path("dashboard/", views.dashboard, name="dashboard"),
+path("dashboard-enterprise/", views.dashboard_enterprise, name="dashboard_enterprise"),
+
+# Painel de Workflow
+path("painel-workflow/", views.painel_workflow, name="painel_workflow"),
+path("painel-workflow/exportar/", views.painel_workflow_exportar_excel, name="painel_workflow_exportar"),
 
     # ============================
     # MEDIÇÃO
@@ -69,4 +86,19 @@ urlpatterns = [
 
     path("lixeira/", views.lixeira, name="lixeira"),
     path("restaurar/<int:documento_id>/", views.restaurar_documento, name="restaurar_documento"),
+
+    # ============================
+    # CONFIGURAÇÕES
+    # ============================
+    path("configuracoes/", views.configuracoes, name="configuracoes"),
+
+    # ============================
+    # BUSCA GLOBAL
+    # ============================
+    path("buscar/", views.buscar_global, name="buscar_global"),
+
+    # ============================
+    # AJAX — SUGESTÕES
+    # ============================
+    path("buscar-ajax/", views.buscar_ajax, name="buscar_ajax"),
 ]

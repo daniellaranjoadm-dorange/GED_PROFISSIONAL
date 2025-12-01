@@ -1,46 +1,157 @@
-﻿<!DOCTYPE html>
+﻿{% load static %}
+<!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>{% block title %}GED Profissional{% endblock %}</title>
-    {% load static %}
+
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            font-family: Arial, sans-serif;
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: 240px;
+            background: var(--cor-sidebar, #0056D2);
+            color: var(--cor-texto, white);
+            height: 100vh;
+            position: fixed;
+            padding: 20px 10px;
+        }
+
+        .sidebar h2 {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .sidebar a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            margin: 5px 0;
+            transition: 0.2s;
+            font-size: 15px;
+        }
+
+        .sidebar a:hover,
+        .sidebar a.active {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* CAMPO DE BUSCA */
+        .search-box {
+            margin: 10px 0 20px 0;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 8px 10px;
+            border-radius: 6px;
+            border: none;
+            outline: none;
+        }
+
+        /* CONTEÚDO PRINCIPAL */
+        .content {
+            margin-left: 260px;
+            padding: 25px;
+            width: calc(100% - 260px);
+        }
+
+        footer {
+            margin-top: 50px;
+            opacity: 0.6;
+        }
+    </style>
 </head>
 
-<body>
+<body class="
+    {% if user_config %}
+        tema-{{ user_config.tema }}
+        {% if not user_config.animacoes %} no-animacoes {% endif %}
+    {% endif %}
+">
 
-    <header>
-        <h1>GED Profissional</h1>
-        {% block header %}{% endblock %}
-    </header>
+    <!-- SIDEBAR -->
+    <div class="sidebar">
 
-    <main>
-        {% block content %}{% endblock %}
+        <h2>GED Pro</h2>
+
+        <!-- 🔎 BUSCA GLOBAL -->
+        <form method="GET" action="{% url 'documentos:buscar_global' %}" class="search-box">
+            <input type="text" name="q" placeholder="Buscar..." />
+        </form>
+
+        <a href="{% url 'documentos:home' %}">
+            <i class="fa fa-folder"></i> Documentos
+        </a>
+
+        <a href="{% url 'documentos:importar_ldp' %}">
+            <i class="fa fa-upload"></i> Importar LDP
+        </a>
+
+        <a href="{% url 'documentos:upload_documento' %}">
+            <i class="fa fa-file-circle-plus"></i> Novo Documento
+        </a>
+
+        <a href="{% url 'documentos:historico' codigo='X' %}" style="pointer-events:none; opacity:0.5;">
+            <i class="fa fa-clock"></i> Revisões
+        </a>
+
+        <a href="{% url 'documentos:dashboard' %}">
+            <i class="fa fa-gauge"></i> Dashboard
+        </a>
+        
+        <a href="{% url 'documentos:painel_workflow' %}">
+            <i class="fa fa-diagram-project"></i> Workflow
+        </a>
+        
+        <a href="{% url 'documentos:medicao' %}">
+            <i class="fa fa-ruler"></i> Medição
+        </a>
+      
+
+        <a href="{% url 'documentos:configuracoes' %}"
+           class="{% if request.path == '/configuracoes/' %}active{% endif %}">
+            <i class="fa fa-gear"></i> Configurações
+        </a>
+
+        <a href="{% url 'contas:minhas_configuracoes' %}"
+           class="{% if request.path == '/contas/configuracoes/' %}active{% endif %}">
+            <i class="fa fa-user-gear"></i> Minhas Configurações
+        </a>
+
+        <a href="{% url 'documentos:lixeira' %}">
+            <i class="fa fa-trash"></i> Lixeira
+        </a>
+
+        <a href="{% url 'documentos:logout' %}" style="margin-top:30px; background:#0042A5;">
+            <i class="fa fa-right-from-bracket"></i> Logout
+        </a>
+
+    </div>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="content">
+        {% block content %}
+        {% endblock %}
+
+        <footer>
+            &copy; {% now "Y" %} GED Profissional
+        </footer>
     </main>
-
-    <footer>
-        {% block footer %}&copy; {% now "Y" %} GED{% endblock %}
-    </footer>
-
-    <!-- Scripts globais -->
-    <script src="{% static 'js/app.js' %}"></script>
-
-    <!-- ===========================================
-         ROLAGEM COM SETAS DO TECLADO (↑ ↓)
-         =========================================== -->
-    <script>
-        document.addEventListener("keydown", function (e) {
-            const amount = 60;  // velocidade da rolagem (px)
-
-            if (e.key === "ArrowDown") {
-                window.scrollBy({ top: amount, behavior: "smooth" });
-            }
-
-            if (e.key === "ArrowUp") {
-                window.scrollBy({ top: -amount, behavior: "smooth" });
-            }
-        });
-    </script>
 
 </body>
 </html>

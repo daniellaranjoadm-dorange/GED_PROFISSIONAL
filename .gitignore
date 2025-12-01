@@ -1,20 +1,47 @@
-# Ignore instaladores e executáveis
-*.exe
-*.msi
-
-# Ignore arquivos grandes de mídia
-*.mp4
-*.mov
-*.avi
-*.mkv
-*.wav
-
-# Ignore ambiente virtual
-venv/
-
-# Ignore arquivos temporários
+# ==========================================
+# PYTHON
+# ==========================================
 __pycache__/
-*.pyc
+*.py[cod]
+*.pyo
 
-# Ignore arquivos de banco para dev local
+# ==========================================
+# DJANGO
+# ==========================================
+db.sqlite3
 db_old.sqlite3
+media/
+staticfiles/
+*.log
+
+# ==========================================
+# VIRTUAL ENVIRONMENTS
+# ==========================================
+venv/
+.venv/
+.venv_ged/
+
+# ==========================================
+# IDE / EDITORES
+# ==========================================
+.vscode/
+.idea/
+
+# ==========================================
+# SISTEMA OPERACIONAL
+# ==========================================
+Thumbs.db
+.DS_Store
+
+# ==========================================
+# TOOLS EXTERNAS
+# ==========================================
+tools/
+tools/diff-pdf-0.5.2/
+
+# ==========================================
+# ARQUIVOS DE BACKUP / TEMPORÁRIOS
+# ==========================================
+*.bak
+*.txt
+*.log
