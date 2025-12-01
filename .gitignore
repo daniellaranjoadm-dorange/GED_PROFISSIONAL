@@ -18,3 +18,9 @@ __pycache__/
 
 # Ignore arquivos de banco para dev local
 db_old.sqlite3
+
+.env
+docker-compose.yml
+Dockerfile
+Dockerfile.txt
+*.log
