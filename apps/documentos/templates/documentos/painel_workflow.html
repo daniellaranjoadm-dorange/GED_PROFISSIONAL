@@ -1,0 +1,400 @@
+{% extends "documentos/base.html" %}
+{% load static %}
+
+{% block title %}Painel de Workflow{% endblock %}
+
+{% block content %}
+
+<!-- ===========================
+       ESTILOS – PREMIUM GOLD
+=========================== -->
+<style>
+/* Container geral */
+.wf-container {
+    padding: 1.5rem 1rem 3rem;
+}
+.wf-title {
+    font-weight: 700;
+    font-size: 1.4rem;
+    margin-bottom: 1rem;
+}
+
+/* ===========================
+   Tabela normal (caso necessária)
+=========================== */
+.wf-table th {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    background: #F1F4FB;
+}
+.wf-table td {
+    font-size: 0.85rem;
+    vertical-align: middle;
+}
+.wf-badge-etapa {
+    border-radius: 999px;
+    padding: 0.15rem 0.6rem;
+    font-size: 0.75rem;
+    background: #E4EDFF;
+    color: #0948A8;
+}
+
+/* ===========================
+   KPI PREMIUM GOLD (A)
+=========================== */
+.kpi-card {
+    border-radius: 14px;
+    background: #111;
+    padding: 1.1rem 1.4rem;
+    color: white;
+    transition: all 0.25s ease-in-out;
+    border: 1px solid rgba(255, 199, 95, 0.05);
+    cursor: pointer;
+}
+.kpi-card:hover {
+    transform: translateY(-3px);
+    border-color: #ffce45;
+    box-shadow: 0 0 16px rgba(255, 193, 7, 0.35);
+}
+.kpi-label {
+    font-size: .75rem;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    opacity: .75;
+}
+.kpi-value {
+    font-size: 1.45rem;
+    font-weight: 700;
+    color: #ffce45;
+}
+.kpi-card.active {
+    border: 2px solid #ffce45;
+    box-shadow: 0 0 22px rgba(255, 193, 7, 0.55);
+    background: linear-gradient(180deg, #222 0%, #111 100%);
+    transform: translateY(-3px);
+}
+
+/* ===========================
+   TABELA PREMIUM GOLD
+=========================== */
+.table-premium {
+    border-radius: 12px;
+    overflow: hidden;
+}
+.table-premium th {
+    background: linear-gradient(180deg, #222 0%, #111 100%) !important;
+    color: #ffce45 !important;
+    font-size: .75rem;
+    text-transform: uppercase;
+    padding: 10px;
+    letter-spacing: .03em;
+    border-bottom: 2px solid #ffce45 !important;
+}
+.table-premium th a {
+    color: #ffce45 !important;
+    text-decoration: none;
+}
+.table-premium th a:hover {
+    opacity: .65;
+}
+.table-premium td {
+    background: #ffffff;
+    font-size: .85rem;
+    border-bottom: 1px solid #eee;
+    padding: 10px 8px;
+}
+
+/* Hover VIP */
+.table-premium tbody tr:hover td {
+    background: #fff8dd !important;
+    transition: .2s;
+}
+
+/* Badge etapa */
+.badge-etapa {
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: .72rem;
+    font-weight: 600;
+    display: inline-block;
+    background: #FFF4D0;
+    color: #7A5200;
+    border: 1px solid #FFCE45;
+}
+
+/* Botão detalhes */
+.btn-detalhes {
+    background: #111;
+    color: #ffce45;
+    padding: 3px 12px;
+    border-radius: 999px;
+    font-size: .75rem;
+    border: 1px solid #ffce45;
+    transition: .2s;
+}
+.btn-detalhes:hover {
+    background: #ffce45;
+    color: #111;
+}
+.th-icon {
+    opacity: .65;
+    margin-right: 4px;
+}
+</style>
+
+
+<!-- ===========================
+       CONTEÚDO GERAL
+=========================== -->
+<div class="wf-container">
+
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div class="wf-title">📊 Painel de Workflow</div>
+
+        <a href="{% url 'documentos:listar_documentos' %}" class="btn btn-outline-secondary btn-sm">
+            ← Voltar para Lista
+        </a>
+    </div>
+
+
+    <!-- ===========================
+         FILTROS
+    ============================ -->
+    <form method="get" class="mb-4">
+        <div class="row g-3">
+
+            <div class="col-md-2">
+                <label class="form-label fw-bold small">Etapa</label>
+                <select name="etapa" class="form-select form-select-sm">
+                    <option value="">Todas</option>
+                    {% for e in etapas_workflow %}
+                        <option value="{{ e }}" {% if etapa_filtro == e %}selected{% endif %}>
+                            {{ e }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label fw-bold small">Disciplina</label>
+                <select name="disciplina" class="form-select form-select-sm">
+                    <option value="">Todas</option>
+                    {% for d in disciplinas %}
+                        <option value="{{ d }}" {% if disciplina_filtro == d %}selected{% endif %}>
+                            {{ d }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label fw-bold small">Projeto</label>
+                <select name="projeto" class="form-select form-select-sm">
+                    <option value="">Todos</option>
+                    {% for p in projetos %}
+                        <option value="{{ p }}" {% if projeto_filtro == p %}selected{% endif %}>
+                            {{ p }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label fw-bold small">Status LDP</label>
+                <select name="status_ldp" class="form-select form-select-sm">
+                    <option value="">Todos</option>
+                    {% for s in status_ldp_lista %}
+                        <option value="{{ s }}" {% if status_ldp_filtro == s %}selected{% endif %}>
+                            {{ s }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label fw-bold small">Status Emissão</label>
+                <select name="status_emissao" class="form-select form-select-sm">
+                    <option value="">Todos</option>
+                    {% for s in status_emissao_lista %}
+                        <option value="{{ s }}" {% if status_emissao_filtro == s %}selected{% endif %}>
+                            {{ s }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-2 d-flex align-items-end gap-2">
+                <button class="btn btn-primary btn-sm">Filtrar</button>
+                <a href="{% url 'documentos:painel_workflow' %}" class="btn btn-link btn-sm">Limpar</a>
+            </div>
+
+        </div>
+    </form>
+
+
+    <!-- ===========================
+         KPI PREMIUM GOLD
+    ============================ -->
+    <div class="row mb-4">
+        {% for kpi in etapas_kpi %}
+        <div class="col-md-2 mb-3">
+            <a href="{{ kpi.url }}" style="text-decoration: none;">
+                <div class="kpi-card {% if etapa_filtro == kpi.nome %}active{% endif %}">
+                    <div class="kpi-label">{{ kpi.nome }}</div>
+                    <div class="kpi-value">{{ kpi.qtd }}</div>
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+
+
+    <!-- ===========================
+         EXPORTAÇÃO
+    ============================ -->
+    <div class="d-flex justify-content-end mb-2">
+        <a
+            href="{% url 'documentos:painel_workflow_exportar' %}?etapa={{ etapa_filtro }}&disciplina={{ disciplina_filtro }}&projeto={{ projeto_filtro }}&status_ldp={{ status_ldp_filtro }}&status_emissao={{ status_emissao_filtro }}"
+            class="btn btn-success btn-sm"
+        >
+            ⬇ Exportar Excel
+        </a>
+    </div>
+
+
+    <!-- ===========================
+         TABELA PREMIUM GOLD
+    ============================ -->
+    <div class="card mt-4" style="border:1px solid #d5d5d5; border-radius:14px;">
+
+        <div class="card-header d-flex justify-content-between align-items-center"
+             style="background:#fafafa; border-bottom:1px solid #e8e8e8;">
+            <span class="fw-bold">Documentos no Workflow</span>
+            <span class="text-muted small">Total exibido: {{ total_docs }}</span>
+        </div>
+
+        <div class="card-body p-0">
+            {% if documentos %}
+            <div class="table-responsive">
+                <table class="table table-premium mb-0">
+                    <thead>
+                    <tr>
+
+                        <th>
+                            <i class="bi bi-upc th-icon"></i>
+                            <a href="?order=codigo&direction={% if order == 'codigo' and direction == 'asc' %}desc{% else %}asc{% endif %}&{{ request.GET.urlencode }}">
+                                Código
+                            </a>
+                        </th>
+
+                        <th><i class="bi bi-hash th-icon"></i>Rev.</th>
+
+                        <th>
+                            <i class="bi bi-file-earmark-text th-icon"></i>
+                            <a href="?order=titulo&direction={% if order == 'titulo' and direction == 'asc' %}desc{% else %}asc{% endif %}&{{ request.GET.urlencode }}">
+                                Título
+                            </a>
+                        </th>
+
+                        <th>
+                            <i class="bi bi-diagram-3 th-icon"></i>
+                            <a href="?order=disciplina&direction={% if order == 'disciplina' and direction == 'asc' %}desc{% else %}asc{% endif %}&{{ request.GET.urlencode }}">
+                                Disciplina
+                            </a>
+                        </th>
+
+                        <th>
+                            <i class="bi bi-flag th-icon"></i>
+                            <a href="?order=etapa_atual&direction={% if order == 'etapa_atual' and direction == 'asc' %}desc{% else %}asc{% endif %}&{{ request.GET.urlencode }}">
+                                Etapa Atual
+                            </a>
+                        </th>
+
+                        <th><i class="bi bi-patch-check th-icon"></i>Status LDP</th>
+                        <th><i class="bi bi-send-check th-icon"></i>Status Emissão</th>
+
+                        <th class="text-center"><i class="bi bi-gear th-icon"></i>Ações</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    {% for d in documentos %}
+                    <tr>
+
+                        <td>
+                            <a href="{% url 'documentos:detalhes_documento' d.id %}" class="fw-semibold">
+                                {{ d.codigo }}
+                            </a>
+                        </td>
+
+                        <td>{{ d.revisao }}</td>
+
+                        <td>{{ d.titulo|default:"—" }}</td>
+
+                        <td>{{ d.disciplina|default:"—" }}</td>
+
+                        <td>
+                            <span class="badge-etapa">
+                                {{ d.etapa_atual|default:"Sem etapa" }}
+                            </span>
+                        </td>
+
+                        <td>{{ d.status_ldp|default:"—" }}</td>
+                        <td>{{ d.status_emissao|default:"—" }}</td>
+
+                        <td class="text-center">
+                            <a href="{% url 'documentos:detalhes_documento' d.id %}" class="btn-detalhes">
+                                Detalhes
+                            </a>
+                        </td>
+
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% else %}
+                <p class="text-muted p-3 mb-0">Nenhum documento encontrado.</p>
+            {% endif %}
+        </div>
+
+    </div>
+
+
+    <!-- ===========================
+         ÚLTIMOS MOVIMENTOS
+    ============================ -->
+    <div class="card mt-4">
+        <div class="card-header fw-bold">Últimos movimentos de workflow</div>
+        <div class="card-body">
+            {% if ultimos_movimentos %}
+                <ul class="list-group mb-0">
+                    {% for wf in ultimos_movimentos %}
+                    <li class="list-group-item">
+                        <strong>{{ wf.documento.codigo }}</strong>
+                         — {{ wf.etapa }} ({{ wf.status }})
+                        <br>
+                        <small class="text-muted">
+                            Usuário: {{ wf.usuario }} · {{ wf.data|date:"d/m/Y H:i" }}
+                        </small>
+
+                        {% if wf.observacao %}
+                        <div class="small mt-1 text-muted">
+                            {{ wf.observacao }}
+                        </div>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+
+            {% else %}
+                <p class="text-muted mb-0">Nenhum movimento registrado.</p>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

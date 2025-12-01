@@ -1,341 +1,409 @@
+<!-- Versão atualizada com botão de idiomas será gerada após você enviar o conteúdo COMPLETO atual do seu base.html aqui. -->
 {% load static %}
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="{{ LANGUAGE_CODE }}">
 <head>
-    <meta charset="UTF-8">
-    <title>{% block title %}GED{% endblock %}</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}GED D'OR@NGE{% endblock %}</title>
 
-    <!-- Bootstrap -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<!-- Bootstrap -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
 
-    <!-- Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+<!-- Ícones -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
-    <style>
-        body {
-            margin: 0;
-            background-color: #0a0a0a;
-            overflow-y: auto;
-            overflow-x: hidden;
-            color: white;
-        }
+<!-- Fonte corporativa -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-        /* BOTÃO LOGOUT NEON */
-        .btn-logout-neon {
-            display: block;
-            width: 80%;
-            margin: 22px auto 0;
-            padding: 10px 16px;
-            border-radius: 10px;
-            text-align: center;
-            font-size: 15px;
-            font-weight: bold;
-            color: #00bfff;
-            border: 2px solid #00bfff;
-            text-shadow: 0 0 5px #00bfff;
-            box-shadow: 0 0 10px #00bfff;
-            transition: 0.25s;
-            background: rgba(0, 0, 0, 0.25);
-            backdrop-filter: blur(6px);
-            cursor: pointer;
-        }
-        .btn-logout-neon:hover {
-            color: #fff;
-            background: #00bfff;
-            box-shadow: 0 0 18px #00bfff, 0 0 35px #00bfff;
-            transform: scale(1.05);
-        }
+<!-- ============================= TEMA LUXURY ============================== -->
+<style>
 
-        /* FUNDO */
-        #logoFall {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: -5;
-        }
-        #particles-js {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: -4;
-        }
+/* =============================== TEMA LIGHT (DEFAULT) =============================== */
+body[data-theme="light"],
+body[data-theme="auto"] {
+    --bg: #f5f5f7;
+    --bg-card: #ffffff;
+    --bg-sidebar: #ffffff;
+    --text: #1f2937;
+    --text-soft: #4b5563;
+    --accent-gold: #D4AF37;
+    --accent-gold-soft: rgba(212, 175, 55, 0.16);
+    --accent-blue: #0E3356;
+    --border: #e5e7eb;
+    --shadow: rgba(15, 23, 42, 0.10);
+    --sidebar-width: 240px;
+}
 
-        /* SIDEBAR */
-        .sidebar {
-            width: 240px;
-            height: 100vh;
-            position: fixed;
-            top: 0;
-            left: 0;
-            background-color: rgba(13, 110, 253, 0.95);
-            backdrop-filter: blur(5px);
-            padding-top: 20px;
-            color: white;
-            z-index: 10;
-            text-align: left;
-        }
+/* =============================== MODO AUTO → DARK (FOLLOW SYSTEM) =============================== */
+@media (prefers-color-scheme: dark) {
+    body[data-theme="auto"] {
+        --bg: #050816;
+        --bg-card: #15273F;
+        --bg-sidebar: #0A1A2F;
+        --text: #E5E9F5;
+        --text-soft: #9CA3AF;
+        --accent-gold: #C99700;
+        --accent-gold-soft: rgba(201, 151, 0, 0.25);
+        --accent-blue: #4F8AD9;
+        --border: #1F3850;
+        --shadow: rgba(0, 0, 0, 0.55);
+    }
+}
 
-        .sidebar a {
-            display: block;
-            padding: 12px 20px;
-            color: white;
-            text-decoration: none;
-            font-size: 15px;
-            cursor: pointer;
-        }
-        .sidebar a:hover {
-            background-color: rgba(255,255,255,0.1);
-        }
+/* =============================== TEMA DARK FIXO =============================== */
+body[data-theme="dark"] {
+    --bg: #050816;
+    --bg-card: #15273F;
+    --bg-sidebar: #0A1A2F;
+    --text: #E5E9F5;
+    --text-soft: #9CA3AF;
+    --accent-gold: #C99700;
+    --accent-gold-soft: rgba(201, 151, 0, 0.25);
+    --accent-blue: #4F8AD9;
+    --border: #1F3850;
+    --shadow: rgba(0, 0, 0, 0.55);
+    --sidebar-width: 240px; /* 🔥 ESTA LINHA FALTAVA */
+}
 
-        .sidebar-logo-container {
-            position: absolute;
-            bottom: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 160px;
-            text-align: center;
-        }
+/* =============================== GERAL =============================== */
+* {
+    box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
+}
 
-        .sidebar-logo {
-            width: 150px;
-            filter: drop-shadow(0px 0px 6px rgba(255,140,0,0.7));
-            animation: logoFloat 4s ease-in-out infinite;
-        }
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    transition: background .25s ease, color .25s ease;
+}
 
-        @keyframes logoFloat {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-6px); }
-            100% { transform: translateY(0px); }
-        }
+/* =============================== LAYOUT =============================== */
+.layout {
+    display: flex;
+    width: 100%;
+    min-height: 100vh;
+}
 
-        /* ÁREA DE CONTEÚDO */
-        .content {
-            margin-left: 240px;
-            padding: 30px;
-            min-height: 100vh;
-            position: relative;
-            z-index: 5;
-        }
+/* =============================== SIDEBAR =============================== */
+.sidebar {
+    width: var(--sidebar-width);
+    background: var(--bg-sidebar);
+    color: var(--text);
+    padding: 1.5rem 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    box-shadow: 2px 0 12px var(--shadow);
+    overflow-y: auto;
+}
 
-        /* ALERTAS FUTURISTAS */
-        .ged-alert {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 15px;
-            margin-bottom: 10px;
-            border-radius: 10px;
-            font-weight: bold;
-            color: white;
-            backdrop-filter: blur(8px);
-            animation: slideIn 0.4s ease-out;
-        }
+.sidebar::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    height: 95px;
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.65), rgba(212, 175, 55, 0.0) 55%);
+    pointer-events: none;
+    z-index: 0;
+}
 
-        .ged-success {
-            background: rgba(0, 200, 80, 0.25);
-            border: 1px solid #00ff99;
-            box-shadow: 0 0 12px #00ff99;
-        }
-        .ged-error {
-            background: rgba(255, 0, 70, 0.25);
-            border: 1px solid #ff2b4d;
-            box-shadow: 0 0 12px #ff2b4d;
-        }
-        .ged-warning {
-            background: rgba(255, 180, 0, 0.25);
-            border: 1px solid #ffcc00;
-            box-shadow: 0 0 12px #ffcc00;
-        }
-        .ged-info {
-            background: rgba(0, 140, 255, 0.25);
-            border: 1px solid #00aaff;
-            box-shadow: 0 0 12px #00aaff;
-        }
+.sidebar-inner {
+    position: relative;
+    z-index: 1;
+}
 
-        .ged-alert-icon {
-            font-size: 28px;
-        }
+.sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    margin-bottom: 1.5rem;
+}
 
-        @keyframes slideIn {
-            0% { opacity: 0; transform: translateX(40px); }
-            100% { opacity: 1; transform: translateX(0); }
-        }
-    </style>
+.sidebar-logo {
+    width: 46px;
+    height: auto;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
+}
 
+.sidebar-brand-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--accent-blue);
+}
+
+.sidebar-brand-sub {
+    font-size: .75rem;
+    color: var(--text-soft);
+}
+
+/* =============================== LINKS =============================== */
+.sidebar-section-title {
+    font-size: .75rem;
+    margin-top: 1rem;
+    margin-bottom: .35rem;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--text-soft);
+}
+
+.sidebar-nav {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    padding: .55rem .75rem;
+    margin-bottom: .2rem;
+    color: var(--text);
+    text-decoration: none;
+    border-radius: 999px;
+    transition: background .15s ease, color .15s ease, transform .08s ease;
+    font-size: .92rem;
+}
+
+.sidebar-link i {
+    color: var(--accent-blue);
+}
+
+.sidebar-link:hover {
+    background: rgba(15, 23, 42, 0.04);
+    transform: translateX(1px);
+}
+
+.sidebar-link.active {
+    background: var(--accent-gold-soft);
+    color: var(--accent-blue);
+    font-weight: 600;
+}
+
+.logout-btn {
+    margin-top: .75rem;
+}
+
+/* =============================== CONTEÚDO =============================== */
+
+/* =============================== CONTEÚDO =============================== */
+
+.content {
+    margin-left: var(--sidebar-width);
+    padding: 2rem;
+    width: calc(100% - var(--sidebar-width));
+    overflow-x: hidden;
+    transition: background .25s ease, color .25s ease;
+}
+
+.content-inner {
+    width: 100%;
+    max-width: 100%;
+}
+
+/* Mantém proteção da tabela */
+.table-responsive {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.card {
+    max-width: 100%;
+}
+
+.content {
+    overflow-x: hidden;
+    margin-left: var(--sidebar-width);
+    padding: 2rem;
+    width: calc(100% - var(--sidebar-width));
+    transition: background .25s ease, color .25s ease;
+}
+
+.card {
+    background: var(--bg-card);
+    border-color: var(--border);
+    box-shadow: 0 3px 10px var(--shadow);
+}
+
+/* =============================== ALERTAS =============================== */
+
+/* ======== Bandeiras Premium ======== */
+.flag-icon {
+    width: 26px;
+    height: 20px;
+    border-radius: 4px;
+    object-fit: cover;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.18);
+    transition: transform .15s ease;
+}
+.flag-icon:hover {
+    transform: scale(1.08);
+}
+#alert-container {
+    margin-bottom: 1rem;
+}
+
+/* Correção específica para DataTables */
+.dataTables_wrapper {
+    width: 100% !important;
+    overflow-x: auto !important;
+}
+</style>
+
+{% block extra_head %}{% endblock %}
 </head>
 
-<body>
+<body data-theme="auto" id="tema-site">
 
-<!-- FUNDO -->
-<canvas id="logoFall"></canvas>
-<div id="particles-js"></div>
+<div class="layout">
 
 <!-- SIDEBAR -->
-<div class="sidebar">
+<aside class="sidebar" style="z-index:999 !important;">
+    <div class="sidebar-inner">
 
-    <a href="{% url 'documentos:listar_documentos' %}">
-        <i class="bi bi-table"></i> Documentos
-    </a>
-
-    <a href="{% url 'documentos:importar_ldp' %}">
-        <i class="bi bi-cloud-upload"></i> Importar LDP
-    </a>
-
-    <a href="{% url 'documentos:upload_documento' %}">
-        <i class="bi bi-file-earmark-plus"></i> Novo Documento
-    </a>
-
-    <a href="{% url 'documentos:listar_documentos' %}?status_ldp=Em Revisão">
-        <i class="bi bi-clock-history"></i> Revisões
-    </a>
-
-    <a href="{% url 'documentos:dashboard' %}">
-        <i class="bi bi-speedometer2"></i> Dashboard
-    </a>
-
-    <a href="{% url 'documentos:medicao' %}">
-        <i class="bi bi-cash-coin"></i> Medição
-    </a>
-
-    <a href="#">
-        <i class="bi bi-gear"></i> Configurações
-    </a>
-
-    {% if user.is_superuser %}
-    <a href="{% url 'documentos:lixeira' %}">
-        <i class="bi bi-trash3"></i> Lixeira
-    </a>
-    {% endif %}
-
-    {% if user.is_authenticated %}
-        <a href="{% url 'documentos:logout' %}" class="btn-logout-neon">
-            <i class="bi bi-box-arrow-right"></i> Logout
-        </a>
-    {% endif %}
-
-    <div class="sidebar-logo-container">
-        <img src="{% static 'documentos/logo.png' %}" class="sidebar-logo">
-    </div>
-</div>
-
-<!-- ALERTAS NEON -->
-{% if messages %}
-<div id="alert-container" style="position: fixed; top: 20px; right: 20px; z-index: 5000; width: 330px;">
-    {% for message in messages %}
-        <div class="ged-alert ged-{{ message.tags }}">
-            <div class="ged-alert-icon">
-                {% if message.tags == 'success' %}
-                    <i class="bi bi-check-circle-fill"></i>
-                {% elif message.tags == 'error' %}
-                    <i class="bi bi-x-circle-fill"></i>
-                {% elif message.tags == 'warning' %}
-                    <i class="bi bi-exclamation-triangle-fill"></i>
-                {% else %}
-                    <i class="bi bi-info-circle-fill"></i>
-                {% endif %}
-            </div>
-            <div class="ged-alert-text">
-                {{ message }}
+        <!-- Logo -->
+        <div class="sidebar-brand">
+            <img src="{% static 'documentos/logo_dorange.png' %}" class="sidebar-logo">
+            <div>
+                <div class="sidebar-brand-title">D'OR@NGE</div>
+                <div class="sidebar-brand-sub">Document Management</div>
             </div>
         </div>
-    {% endfor %}
-</div>
-{% endif %}
+
+        <!-- Switch Tema -->
+
+        <!-- Switch Idioma -->
+        <div class="language-switcher mt-2 mb-4">
+            <label class="small fw-semibold mb-1 d-block">Idioma</label>
+            <div class="d-flex gap-2">
+                <a href="/i18n/setlang/" onclick="setLanguage('pt-br'); return false;">
+                    <img src="{% static 'flags/br.svg' %}" class="flag-icon" alt="Português">
+                </a>
+                <a href="/i18n/setlang/" onclick="setLanguage('en'); return false;">
+                    <img src="{% static 'flags/us.svg' %}" class="flag-icon" alt="English">
+                </a>
+            </div>
+        </div>
+
+        <!-- Form oculto para troca de idioma -->
+        <form id="lang-form" action="{% url 'set_language' %}" method="post" style="display:none;">
+            {% csrf_token %}
+            <input type="hidden" name="language" id="lang-input">
+        </form>
+        <script>
+            function setLanguage(lang) {
+                document.getElementById('lang-input').value = lang;
+                document.getElementById('lang-form').submit();
+            }
+        </script>
+        <div class="theme-switcher mt-2 mb-4">
+            <label class="small fw-semibold mb-1 d-block">Tema</label>
+
+            <div class="btn-group w-100">
+                <button class="btn btn-sm btn-outline-secondary theme-btn" data-theme="light">🌞</button>
+                <button class="btn btn-sm btn-outline-secondary theme-btn" data-theme="dark">🌙</button>
+                <button class="btn btn-sm btn-outline-secondary theme-btn" data-theme="auto">🌓</button>
+            </div>
+        </div>
+
+        <!-- Menus Django -->
+        <div class="sidebar-section-title">Documentos</div>
+        <ul class="sidebar-nav">
+            <li><a href="{% url 'documentos:listar_documentos' %}" class="sidebar-link"><i class="bi bi-table"></i> Lista de Documentos</a></li>
+            <li><a href="{% url 'documentos:listar_documentos' %}?status_ldp=Em Revisão" class="sidebar-link"><i class="bi bi-arrow-repeat"></i> Revisões</a></li>
+            <li><a href="{% url 'documentos:upload_documento' %}" class="sidebar-link"><i class="bi bi-file-earmark-plus"></i> Novo Documento</a></li>
+            <li><a href="{% url 'documentos:importar_ldp' %}" class="sidebar-link"><i class="bi bi-cloud-upload"></i> Importar LDP</a></li>
+        </ul>
+
+        <div class="sidebar-section-title">Gerenciamento</div>
+        <ul class="sidebar-nav">
+            <!-- NOVO: Dashboard GED (global) -->
+            <li><a href="/dashboard/" class="sidebar-link"><i class="bi bi-graph-up-arrow"></i> Dashboard GED</a></li>
+
+            <!-- Antigo dashboard de documentos (renomeado) -->
+            
+            <li><a href="{% url 'documentos:painel_workflow' %}" class="sidebar-link"><i class="bi bi-diagram-3"></i> Workflow</a></li>
+            <li><a href="{% url 'documentos:medicao' %}" class="sidebar-link"><i class="bi bi-cash-coin"></i> Medição</a></li>
+            <li><a href="{% url 'documentos:configuracoes' %}" class="sidebar-link"><i class="bi bi-gear"></i> Configurações</a></li>
+            <li><a href="{% url 'contas:minhas_configuracoes' %}" class="sidebar-link"><i class="bi bi-person-gear"></i> Minhas Configurações</a></li>
+        </ul>
+
+        {% if user.is_superuser %}
+        <div class="sidebar-section-title">Administração</div>
+        <ul class="sidebar-nav">
+            <li><a href="{% url 'documentos:lixeira' %}" class="sidebar-link"><i class="bi bi-trash3"></i> Lixeira</a></li>
+        </ul>
+        {% endif %}
+
+        {% if user.is_authenticated %}
+        <form method="post" action="{% url 'documentos:logout' %}">
+            {% csrf_token %}
+            <button class="btn btn-outline-secondary btn-pill logout-btn w-100">
+                <i class="bi bi-box-arrow-right"></i> Logout
+            </button>
+        </form>
+        {% endif %}
+
+        <div class="sidebar-footer">© {{ now|date:"Y" }} — D’OR@NGE</div>
+
+    </div>
+</aside>
 
 <!-- CONTEÚDO -->
-<div class="content">
-    {% block content %}{% endblock %}
+<main class="content">
+    <div class="content-inner">
+
+        {% if messages %}
+        <div id="alert-container">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                {{ message }}
+                <button class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </div>
+</main>
+
 </div>
 
-<!-- SCRIPTS -->
-<script src="https://cdn.jsdelivr.net/npm/particles.js"></script>
-
-<script>
-particlesJS("particles-js", {
-    "particles": {
-        "number": { "value": 40 },
-        "size": { "value": 3 },
-        "move": { "speed": 0.8 },
-        "line_linked": { "enable": false }
-    }
-});
-</script>
-
-<script>
-const canvasL = document.getElementById('logoFall');
-const ctxL = canvasL.getContext('2d');
-
-function resizeCanvas() {
-    canvasL.width = window.innerWidth;
-    canvasL.height = window.innerHeight;
-}
-resizeCanvas();
-window.onresize = resizeCanvas;
-
-const logoImg = new Image();
-logoImg.src = "{% static 'documentos/logo_transparente.png' %}";
-
-const TOTAL_LOGOS = 30;
-let logos = [];
-
-function initLogos() {
-    logos = [];
-    for (let i = 0; i < TOTAL_LOGOS; i++) {
-        logos.push({
-            x: Math.random() * canvasL.width,
-            y: Math.random() * canvasL.height,
-            speed: 1 + Math.random() * 2,
-            size: 80 + Math.random() * 120
-        });
-    }
-}
-
-function drawLogos() {
-    ctxL.clearRect(0, 0, canvasL.width, canvasL.height);
-
-    logos.forEach(l => {
-        ctxL.globalAlpha = 0.20;
-        ctxL.drawImage(logoImg, l.x, l.y, l.size, l.size);
-
-        l.y += l.speed;
-
-        if (l.y > canvasL.height) {
-            l.y = -l.size;
-            l.x = Math.random() * canvasL.width;
-        }
-    });
-
-    requestAnimationFrame(drawLogos);
-}
-
-logoImg.onload = () => { initLogos(); drawLogos(); };
-</script>
-
-<!-- SETAS PARA ROLAR ↑ ↓ -->
-<script>
-document.addEventListener("keydown", function (e) {
-    const amount = 60;
-    if (e.key === "ArrowDown") window.scrollBy({ top: amount, behavior: "smooth" });
-    if (e.key === "ArrowUp") window.scrollBy({ top: -amount, behavior: "smooth" });
-});
-</script>
-
-<!-- AUTO FADE-OUT DOS ALERTAS -->
-<script>
-setTimeout(() => {
-    document.querySelectorAll('.ged-alert').forEach(alert => {
-        alert.style.transition = "0.8s";
-        alert.style.opacity = "0";
-        setTimeout(() => alert.remove(), 800);
-    });
-}, 4000);
-</script>
-
+<!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
+<!-- =============================== JS DO TEMA =============================== -->
+<script>
+const body = document.body;
+
+// trocar tema ao clicar
+document.querySelectorAll('.theme-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const theme = btn.dataset.theme;
+
+        body.setAttribute("data-theme", theme);
+        localStorage.setItem("tema_ged", theme);
+
+        document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    });
+});
+
+// carregar tema salvo
+const savedTheme = localStorage.getItem("tema_ged") || "auto";
+body.setAttribute("data-theme", savedTheme);
+
+// ativar botão correspondente
+const activeBtn = document.querySelector(`.theme-btn[data-theme="${savedTheme}"]`);
+if (activeBtn) activeBtn.classList.add('active');
+</script>
+
+{% block extra_js %}{% endblock %}
 </body>
 </html>

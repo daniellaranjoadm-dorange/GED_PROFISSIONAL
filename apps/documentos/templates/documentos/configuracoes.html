@@ -1,0 +1,90 @@
+{% extends "documentos/base.html" %}
+{% load static %}
+
+{% block title %}Configurações do Sistema | GED{% endblock %}
+
+{% block content %}
+
+<style>
+/* ===========================
+   ESTILO FUTURISTA NEON
+   =========================== */
+
+.section-title {
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-shadow: 0 0 12px rgba(0, 200, 255, 0.85);
+}
+
+.config-card {
+    background: rgba(0, 15, 35, 0.85);
+    border-radius: 16px;
+    border: 1px solid rgba(0, 200, 255, 0.45);
+    box-shadow: 0 0 25px rgba(0, 200, 255, 0.45);
+    padding: 25px;
+    max-width: 560px;
+    transition: 0.25s ease;
+}
+.config-card:hover {
+    box-shadow: 0 0 35px rgba(0, 200, 255, 0.8);
+}
+
+/* Labels */
+.config-card label {
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+/* Botão neon */
+.btn-neo {
+    padding: 10px 20px;
+    background: #00bfff;
+    border: none;
+    color: #000;
+    font-weight: bold;
+    border-radius: 8px;
+    box-shadow: 0 0 18px #00bfff;
+    transition: 0.25s ease;
+}
+.btn-neo:hover {
+    box-shadow: 0 0 35px #00bfff;
+    transform: scale(1.05);
+}
+</style>
+
+<h2 class="mb-4 text-info fw-bold section-title">
+    <i class="bi bi-gear"></i> Configurações do Sistema
+</h2>
+
+<div class="config-card">
+
+    <h4 class="text-info mb-3" style="text-shadow:0 0 8px #00c8ff;">
+        <i class="bi bi-sliders"></i> Preferências do Usuário
+    </h4>
+
+    <form method="POST">
+        {% csrf_token %}
+
+        <div class="mb-3">
+            <label>Tema do Sistema</label>
+            <select class="form-select bg-dark text-light border-info" name="tema"
+                    style="box-shadow:0 0 10px rgba(0,200,255,0.25);">
+                <option value="claro">Claro</option>
+                <option value="escuro">Escuro</option>
+            </select>
+        </div>
+
+        <div class="form-check mb-4">
+            <input class="form-check-input" type="checkbox" checked>
+            <label class="form-check-label">Receber notificações por e-mail</label>
+        </div>
+
+        <button type="submit" class="btn-neo">
+            <i class="bi bi-save"></i> Salvar Configurações
+        </button>
+
+    </form>
+
+</div>
+
+{% endblock %}

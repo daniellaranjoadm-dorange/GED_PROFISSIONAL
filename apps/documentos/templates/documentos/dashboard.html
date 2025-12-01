@@ -325,19 +325,31 @@
      style="border: 1px solid rgba(0,200,255,0.35); box-shadow: 0 0 12px #009dff; border-radius: 16px;">
     <div class="card-body table-responsive">
 
-        <table class="table table-dark table-bordered table-sm align-middle text-center table-medicao">
-            <thead class="table-info text-dark fw-bold">
+        <table class="table table-sm table-dark text-center">
+            <thead>
                 <tr>
                     <th>Tipo Doc</th>
                     <th>Total</th>
                     <th>Emitidos</th>
-                    <th>Revisar</th>
                     <th>Não Recebidos</th>
-                    <th>A Emitir</th>
-                    <th>Valor USD</th>
-                    <th>Valor BRL</th>
+                    <th>Valor Emitidos (USD)</th>
+                    <th>Valor Não Recebidos (USD)</th>
+                    <th>Valor Total (USD)</th>
                 </tr>
             </thead>
+            <tbody>
+                <tr>
+                    <td>Total Geral</td>
+                    <td>{{ total_docs }}</td>
+                    <td>{{ total_emitidos }}</td>
+                    <td>{{ total_nao_recebidos }}</td>
+                    <td>{{ valor_emitidos_usd }}</td>
+                    <td>{{ valor_nao_rec_usd }}</td>
+                    <td>{{ valor_total_usd }}</td>
+                </tr>
+            </tbody>
+        </table>
+        
 
             <tbody>
                 {% for m in medicao_linhas %}

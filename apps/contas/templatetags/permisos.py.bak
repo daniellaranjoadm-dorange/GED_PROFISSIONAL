@@ -1,0 +1,13 @@
+from django import template
+from backend.apps.apps.contas.permissions import usuario_tem_permissao
+
+register = template.Library()
+
+
+@register.filter
+def has_perm(user, codigo):
+    return usuario_tem_permissao(user, codigo)
+
+
+
+

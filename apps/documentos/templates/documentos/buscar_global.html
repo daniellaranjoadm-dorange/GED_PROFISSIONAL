@@ -1,0 +1,179 @@
+{% extends "documentos/base.html" %}
+{% load static %}
+
+{% block title %}Busca Global{% endblock %}
+
+{% block content %}
+
+<h2 class="mb-3">
+    <i class="fa fa-search"></i> Busca Global
+</h2>
+
+<!-- =============================== -->
+<!-- 🔍 BUSCA EM TEMPO REAL (AJAX)   -->
+<!-- =============================== -->
+
+<div style="position: relative; max-width: 420px;" class="mb-4">
+
+    <input type="text" id="campo-busca-ajax"
+           placeholder="Digite para buscar em tempo real..."
+           class="form-control form-control-lg"
+           style="border-radius: 8px;">
+
+    <!-- DROPDOWN -->
+    <div id="resultado-ajax"
+         style="
+            position:absolute;
+            top:50px;
+            width:100%;
+            background:white;
+            color:black;
+            border-radius:8px;
+            box-shadow:0 4px 10px rgba(0,0,0,0.25);
+            display:none;
+            max-height:320px;
+            overflow-y:auto;
+            z-index:1000;
+         ">
+    </div>
+</div>
+
+<hr>
+
+<!-- =============================== -->
+<!-- 🔎 BUSCA NORMAL (ENTER)         -->
+<!-- =============================== -->
+
+<form method="GET" action="{% url 'documentos:buscar_global' %}" 
+      class="card p-3 mb-4 shadow-sm" style="max-width: 700px;">
+
+    <div class="d-flex gap-2">
+        <input type="text" name="q" value="{{ termo }}"
+               placeholder="Digite código, título, revisão ou disciplina..."
+               class="form-control">
+
+        <button class="btn btn-primary">
+            <i class="fa fa-search"></i> Buscar
+        </button>
+    </div>
+</form>
+
+<!-- =============================== -->
+<!-- Mensagem se nada digitado       -->
+<!-- =============================== -->
+
+{% if not termo %}
+<div class="alert alert-info">
+    🔎 Digite algo no campo acima.
+</div>
+{% endif %}
+
+<!-- =============================== -->
+<!-- RESULTADOS (BUSCA NORMAL)       -->
+<!-- =============================== -->
+
+{% if termo %}
+<h5 class="mt-2">
+    Resultados para <strong>"{{ termo }}"</strong>
+</h5>
+<hr>
+
+{% if resultados %}
+<p class="text-success">
+    <strong>{{ resultados|length }}</strong> registro(s) encontrado(s)
+</p>
+
+<div class="list-group">
+
+    {% for item in resultados %}
+
+    <a href="{% url 'documentos:detalhes_documento' item.documento.id %}" 
+       class="list-group-item list-group-item-action shadow-sm"
+       style="margin-bottom: 10px; border-radius: 8px;">
+
+        <div class="d-flex justify-content-between">
+            <strong class="fs-5">{{ item.codigo_hl|safe }}</strong>
+            <span class="badge bg-primary">Rev {{ item.revisao_hl|safe }}</span>
+        </div>
+
+        <div class="mt-1" style="font-size: 15px; opacity: 0.85;">
+            {{ item.titulo_hl|safe }}
+        </div>
+
+        <div class="mt-2 text-muted" style="font-size: 12px;">
+            <i class="fa fa-tag"></i> {{ item.disciplina_hl|safe }}
+            &nbsp; | &nbsp;
+            <i class="fa fa-clock"></i> {{ item.documento.criado_em|date:"d/m/Y H:i" }}
+        </div>
+    </a>
+
+    {% endfor %}
+</div>
+
+{% else %}
+<div class="alert alert-warning mt-3">
+    Nenhum resultado encontrado contendo <strong>"{{ termo }}"</strong>.
+</div>
+{% endif %}
+{% endif %}
+
+<!-- =============================== -->
+<!-- ⚡ SCRIPT AJAX                  -->
+<!-- =============================== -->
+
+<script>
+let campo = document.getElementById("campo-busca-ajax");
+let box = document.getElementById("resultado-ajax");
+
+campo.addEventListener("keyup", function () {
+    let q = campo.value.trim();
+
+    if (q.length < 2) {
+        box.style.display = "none";
+        return;
+    }
+
+    fetch(`/buscar/?q=${encodeURIComponent(q)}&ajax=1`)
+        .then(r => r.json())
+        .then(data => {
+            if (!data.resultados.length) {
+                box.innerHTML = `
+                    <div style="padding:10px; opacity:0.6;">Nenhum resultado</div>
+                `;
+                box.style.display = "block";
+                return;
+            }
+
+            let html = "";
+            data.resultados.forEach(item => {
+                html += `
+                    <a href="${item.link}"
+                       style="
+                            display:block;
+                            padding:10px;
+                            text-decoration:none;
+                            color:#000;
+                            border-bottom:1px solid #eee;
+                       ">
+                        <b>${item.codigo_hl}</b> — Rev ${item.revisao_hl}<br>
+                        <span style="font-size:13px; opacity:0.7;">
+                            ${item.titulo_hl}
+                        </span>
+                    </a>
+                `;
+            });
+
+            box.innerHTML = html;
+            box.style.display = "block";
+        });
+});
+
+// Ocultar dropdown ao clicar fora
+document.addEventListener("click", function(e) {
+    if (!campo.contains(e.target)) {
+        box.style.display = "none";
+    }
+});
+</script>
+
+{% endblock %}

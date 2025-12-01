@@ -4,20 +4,26 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
+    path('admin/', admin.site.urls),
 
-    # ---- ROTA PRINCIPAL ----
-    # Quando acessar "/", será redirecionado para documentos
-    path("", include(("apps.documentos.urls", "documentos"), namespace="documentos")),
+    # Documentos
+    path("", include("apps.documentos.urls")),
 
-    # ---- CONTAS (login, logout) ----
-    path("login/", include(("apps.contas.urls", "contas"), namespace="contas")),
+    # Contas
+    path(
+        "contas/",
+        include(("apps.contas.urls", "contas"), namespace="contas")
+    ),
+
+    # Solicitações
+    path("solicitacoes/", include("apps.solicitacoes.urls")),
+
+    # Dashboard
+    path("dashboard/", include("apps.dashboard.urls")),
+
+    # 🌎 Necessário para {% url 'set_language' %}
+    path("i18n/", include("django.conf.urls.i18n")),
 ]
-    
-# Static e media em modo debug
+
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-
-
-
-
