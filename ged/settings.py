@@ -14,7 +14,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = 'django-insecure-#7tyz9j=!2&1^7-nhal^1=1zv(y0u9@57*#36mcfit@*mpb=ws'
 
-DEBUG = False  # Importante para Railway
+DEBUG = True
 
 ALLOWED_HOSTS = ["*", ".railway.app"]
 
@@ -83,17 +83,31 @@ TEMPLATES = [
 WSGI_APPLICATION = 'ged.wsgi.application'
 
 # ======================
-# BANCO DE DADOS (RAILWAY)
+# BANCO DE DADOS – LOCAL vs RAILWAY
 # ======================
 
-DATABASES = {
-    "default": dj_database_url.config(
-        default=os.environ.get("DATABASE_URL"),
-        conn_max_age=600,
-        ssl_require=False  # Railway não exige SSL
-    )
-}
+import dj_database_url
+import os
 
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+if DATABASE_URL:
+    # Railway (PostgreSQL)
+    DATABASES = {
+        "default": dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=600,
+            ssl_require=False
+        )
+    }
+else:
+    # Local (SQLite) → funciona sempre
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
 
 # ======================
 # VALIDAÇÃO DE SENHAS

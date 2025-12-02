@@ -340,14 +340,15 @@ body {
         </ul>
         {% endif %}
 
-        {% if user.is_authenticated %}
-        <form method="post" action="{% url 'documentos:logout' %}">
-            {% csrf_token %}
-            <button class="btn btn-outline-secondary btn-pill logout-btn w-100">
-                <i class="bi bi-box-arrow-right"></i> Logout
-            </button>
-        </form>
-        {% endif %}
+       {% if user.is_authenticated %}
+<form method="post" action="{% url 'logout' %}">
+    {% csrf_token %}
+    <button class="btn btn-outline-secondary btn-pill logout-btn w-100">
+        <i class="bi bi-box-arrow-right"></i> Logout
+    </button>
+</form>
+{% endif %}
+
 
         <div class="sidebar-footer">© {{ now|date:"Y" }} — D’OR@NGE</div>
 

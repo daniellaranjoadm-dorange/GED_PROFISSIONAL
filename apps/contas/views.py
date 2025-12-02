@@ -2,20 +2,31 @@
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
+import logging
 
 from .models import UserConfig, SolicitacaoAcesso
 from .forms import UserConfigForm, SolicitacaoAcessoForm
 
+logger = logging.getLogger(__name__)
 
 # =====================================================================
-# 🔐 LOGIN
+# 🔐 LOGIN (versão reforçada)
 # =====================================================================
 def login_view(request):
     if request.method == "POST":
-        username = request.POST.get("username")
-        password = request.POST.get("password")
+        username = (request.POST.get("username") or "").strip()
+        password = request.POST.get("password") or ""
 
-        user = authenticate(request, username=username, password=password)
+        try:
+            user = authenticate(request, username=username, password=password)
+        except Exception as exc:
+            logger.exception("Erro no authenticate() dentro do login_view")
+
+            messages.error(
+                request,
+                "Erro interno ao validar suas credenciais. Tente novamente em instantes."
+            )
+            return render(request, "contas/login.html")
 
         if user is not None:
             login(request, user)
@@ -73,7 +84,9 @@ def solicitar_acesso(request):
 # 🔐 PERMISSÃO: somente superuser ou MASTER
 # =====================================================================
 def is_master(user):
-    return user.is_authenticated and (user.is_superuser or getattr(user, "is_master", False))
+    return user.is_authenticated and (
+        user.is_superuser or getattr(user, "is_master", False)
+    )
 
 
 # =====================================================================
