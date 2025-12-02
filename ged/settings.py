@@ -88,11 +88,12 @@ WSGI_APPLICATION = 'ged.wsgi.application'
 
 DATABASES = {
     "default": dj_database_url.config(
-        default=f"postgresql://{os.environ.get('DB_USER', 'geduser')}:{os.environ.get('DB_PASSWORD', 'gedpassword123')}@{os.environ.get('DB_HOST', 'localhost')}/{os.environ.get('DB_NAME', 'ged')}",
+        default=os.environ.get("DATABASE_URL"),
         conn_max_age=600,
-        ssl_require=True
+        ssl_require=False  # Railway não exige SSL
     )
 }
+
 
 # ======================
 # VALIDAÇÃO DE SENHAS
@@ -122,7 +123,8 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [ BASE_DIR / 'static' ]
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
+# Whitenoise correto para produção
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # ======================
 # ARQUIVOS DE MÍDIA
