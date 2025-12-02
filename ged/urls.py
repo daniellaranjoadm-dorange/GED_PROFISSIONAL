@@ -2,9 +2,14 @@
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.shortcuts import redirect
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+
+    # 🔥 Atalhos globais para login/logout
+    path("login/", lambda request: redirect("contas:login")),
+    path("logout/", lambda request: redirect("contas:logout")),
 
     # Documentos
     path("", include("apps.documentos.urls")),
@@ -21,7 +26,6 @@ urlpatterns = [
     # Dashboard
     path("dashboard/", include("apps.dashboard.urls")),
 
-    # 🌎 Necessário para {% url 'set_language' %}
     path("i18n/", include("django.conf.urls.i18n")),
 ]
 
