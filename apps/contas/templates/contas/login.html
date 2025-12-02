@@ -14,58 +14,118 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            background: #f0f0f0 !important;
-            font-family: 'Segoe UI', sans-serif;
-            overflow: hidden;
+
+            /* 🔥 FUNDO CLARO (ADEUS TELA PRETA) */
+            background: #e9eef5 !important;
+
+            font-family: Arial, sans-serif;
         }
 
-       /* Painel Glass corrigido */
-.glass-card {
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px); /* Safari fallback */
-    
-    background: rgba(255, 255, 255, 0.35) !important;  /* AUMENTA A VISIBILIDADE */
-    border-radius: 20px;
-    padding: 40px;
-    width: 380px;
+        /* 🔥 CARD SUPER VISÍVEL (SEM TRANSPARÊNCIA EXAGERADA) */
+        .glass-card {
+            background: #ffffff; /* panel 100% visível */
+            padding: 35px;
+            border-radius: 12px;
+            width: 360px;
 
-    border: 2px solid rgba(0, 140, 255, 0.7);          /* BORDA MAIS FORTE */
-    box-shadow: 0 0 25px rgba(0, 140, 255, 0.6);       /* REALCE */
+            box-shadow: 0px 0px 25px rgba(0,0,0,0.18);
+            border: 1px solid #d0d0d0;
 
-    color: #000 !important;                           /* GARANTE TEXTO VISÍVEL */
-    animation: fadeIn 1s ease;
-}
+            animation: fadeIn 0.8s ease;
+        }
 
-        /* Inputs futuristas */
-        .input-group {
+        h2 {
+            text-align: center;
             margin-bottom: 22px;
-            display: flex;
-            flex-direction: column;
+            color: #003366;
+        }
+
+        .input-group {
+            margin-bottom: 18px;
         }
 
         .input-group label {
-            color: #7ac8ff;
+            display: block;
             margin-bottom: 6px;
-            font-size: 15px;
-            letter-spacing: 1px;
+            font-size: 14px;
+            color: #003366;
         }
 
         .input-group input {
+            width: 100%;
             padding: 12px;
-            border-radius: 10px;
-            border: 1px solid rgba(0, 140, 255, 0.7);
-            background: rgba(0, 0, 0, 0.4);
-            color: #e5f4ff;
-            font-size: 16px;
-            transition: 0.3s;
+            border-radius: 6px;
+            border: 1px solid #7aa3c2;
+            font-size: 15px;
         }
 
         .input-group input:focus {
             outline: none;
-            box-shadow: 0 0 15px rgba(0, 140, 255, 1);
-            border-color: #00aaff;
+            border-color: #005bb5;
+            box-shadow: 0 0 5px #005bb5;
         }
 
-        /* Botão neon */
-        .btn-neon {
+        button {
             width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            background: #005bb5;
+            border: none;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background: #003f80;
+        }
+
+        .erro-msg {
+            text-align: center;
+            color: red;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+
+</head>
+<body>
+
+    <div class="glass-card">
+
+        <h2>Sistema GED</h2>
+
+        {% if messages %}
+            <div class="erro-msg">
+                {% for message in messages %}
+                    {{ message }}
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <form method="POST">
+            {% csrf_token %}
+
+            <div class="input-group">
+                <label>Usuário</label>
+                <input type="text" name="username" required>
+            </div>
+
+            <div class="input-group">
+                <label>Senha</label>
+                <input type="password" name="password" required>
+            </div>
+
+            <button type="submit">Entrar</button>
+
+        </form>
+    </div>
+
+</body>
+</html>
