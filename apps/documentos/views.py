@@ -259,34 +259,6 @@ def restaurar_da_lixeira(documento: Documento, request):
     registrar_workflow(documento, "Restauração", "Restaurado", request)
 
 
-# =================================================================
-# LOGIN / LOGOUT
-# =================================================================
-
-def login_view(request):
-    if request.method == "POST":
-        user = authenticate(
-            request,
-            username=request.POST.get("username"),
-            password=request.POST.get("password"),
-        )
-        if user:
-            login(request, user)
-            return redirect("documentos:listar_documentos")
-
-        return render(
-            request,
-            "contas/login.html",
-            {"erro": "Usuário ou senha incorretos."},
-        )
-
-    return render(request, "contas/login.html")
-
-
-def logout_view(request):
-    logout(request)
-    return redirect("documentos:login")
-
 
 # =================================================================
 # DASHBOARD SIMPLES
