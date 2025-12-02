@@ -6,12 +6,6 @@ app_name = "documentos"
 urlpatterns = [
 
     # ============================
-    # LOGIN / LOGOUT
-    # ============================
-    path("login/", views.login_view, name="login"),
-    path("logout/", views.logout_view, name="logout"),
-
-    # ============================
     # HOME / LISTAGEM
     # ============================
     path("", views.listar_documentos, name="home"),
