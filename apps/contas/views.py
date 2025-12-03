@@ -30,7 +30,9 @@ def login_view(request):
 
         if user is not None:
             login(request, user)
-            return redirect("documentos:listar_documentos")
+            # Suporte ao ?next=/alguma-rota
+            next_url = request.GET.get("next") or "documentos:listar_documentos"
+            return redirect(next_url)
         else:
             messages.error(request, "Usuário ou senha incorretos!")
 
