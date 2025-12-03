@@ -30,11 +30,14 @@ CSRF_TRUSTED_ORIGINS = [
 
 # Segurança avançada – apenas quando DEBUG=False
 if not DEBUG:
+    # Segurança em produção
     SECURE_HSTS_SECONDS = 60 * 60 * 24 * 30   # 30 dias
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
 
-    SECURE_SSL_REDIRECT = True
+    # NÃO forçar redirect HTTP→HTTPS por enquanto para evitar loop em proxies
+    SECURE_SSL_REDIRECT = False
+
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
 
