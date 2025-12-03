@@ -1,1 +1,2 @@
-web: gunicorn ged.wsgi --log-file -
+web: gunicorn ged.wsgi:application --log-file -
+
