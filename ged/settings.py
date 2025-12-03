@@ -1,5 +1,5 @@
 ﻿"""
-Django settings for ged project.
+Django settings for ged project – versão profissional otimizada para Railway.
 """
 
 from pathlib import Path
@@ -8,18 +8,17 @@ from dotenv import load_dotenv
 import dj_database_url
 
 # ======================
-# LOAD .ENV (para DEBUG local e credenciais)
+# BASE
 # ======================
 
 load_dotenv()
-
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ======================
 # SEGURANÇA
 # ======================
 
-SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key")  # coloque uma SECRET_KEY real no Railway
+SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key")
 
 DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
 
@@ -29,8 +28,18 @@ CSRF_TRUSTED_ORIGINS = [
     "https://*.railway.app"
 ]
 
+# Segurança avançada – apenas quando DEBUG=False
+if not DEBUG:
+    SECURE_HSTS_SECONDS = 60 * 60 * 24 * 30   # 30 dias
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
 # ======================
-# APLICATIVOS
+# APPS
 # ======================
 
 INSTALLED_APPS = [
@@ -65,10 +74,15 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
+    # Middleware de RBAC
     'apps.contas.middleware.RBACMiddleware',
 ]
 
 ROOT_URLCONF = 'ged.urls'
+
+# ======================
+# TEMPLATES
+# ======================
 
 TEMPLATES = [
     {
@@ -88,11 +102,10 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'ged.wsgi.application'
 
-# ===========================================
-# BANCO DE DADOS – Local (SQLite) e Railway (PostgreSQL)
-# ===========================================
+# ======================
+# BANCO DE DADOS
+# ======================
 
-# Padrão local (SQLite)
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
@@ -100,7 +113,7 @@ DATABASES = {
     }
 }
 
-# Railway → PostgreSQL automático
+# Railway – PostgreSQL
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
 if DATABASE_URL:
@@ -138,15 +151,21 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# Whitenoise correto para Railway
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+WHITENOISE_USE_FINDERS = True
 
 # ======================
 # ARQUIVOS DE MÍDIA
 # ======================
+# IMPORTANTE: Railway NÃO mantém arquivos persistentes.
+# Use MEDIA somente em modo DEBUG=True (ambiente local)
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+if not DEBUG:
+    # Aviso interno – não usar media em produção
+    print("⚠ MEDIA_ROOT está ativo, mas Railway não armazena arquivos permanentemente.")
 
 # ======================
 # AUTENTICAÇÃO
@@ -159,7 +178,7 @@ LOGOUT_REDIRECT_URL = '/login/'
 AUTH_USER_MODEL = 'contas.Usuario'
 
 # ======================
-# EMAIL (usar variáveis de ambiente)
+# EMAIL
 # ======================
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
