@@ -27,22 +27,24 @@
         .tag-emitido { background: #dbeafe; color: #1e40af; }
         .tag-cancelado { background: #fee2e2; color: #b91c1c; }
     </style>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+
 <div class="topbar">
     <div>
         <h1>Dashboard GED</h1>
         <span>Visão Executiva – Solicitações, Documentos e Auditoria</span>
     </div>
-    <div>
-        <span>Atualizado em {{ agora|date:"d/m/Y H:i" }}</span>
-    </div>
+    <div><span>Atualizado em {{ agora|date:"d/m/Y H:i" }}</span></div>
 </div>
 
 <div class="container">
 
-    <!-- ============================ SEÇÃO 1 — SOLICITAÇÕES ============================ -->
+    <!-- ==========================================================
+        🔹 SEÇÃO 1 — SOLICITAÇÕES
+    =========================================================== -->
     <h2 style="margin-bottom:12px;margin-top:10px;color:#1f3b68">Solicitações de Acesso</h2>
 
     <div class="grid-kpi">
@@ -66,7 +68,7 @@
             <tr>
                 <td>{{ s.data_solicitacao|date:"d/m/Y H:i" }}</td>
                 <td>{{ s.nome }}</td>
-                <td class="subtle">{{ s.email }}</td>
+                <td>{{ s.email }}</td>
                 <td>{{ s.setor|default:"—" }}</td>
                 <td>{{ s.status }}</td>
             </tr>
@@ -76,8 +78,9 @@
     </div>
 
 
-    <!-- ============================ SEÇÃO 2 — DOCUMENTOS ============================ -->
-
+    <!-- ==========================================================
+        🔹 SEÇÃO 2 — DOCUMENTOS
+    =========================================================== -->
     <h2 style="margin-top:40px;margin-bottom:12px;color:#1f3b68">Documentos</h2>
 
     <div class="grid-kpi">
@@ -95,44 +98,61 @@
     <div class="card" style="margin-top:20px;">
         <h2>Últimos Documentos</h2>
         <table>
-            <thead><tr><th>Data</th><th>Código</th><th>Título</th><th>Disciplina</th><th>Status</th></tr></thead>
-            <tbody>
-            {% for d in ultimos_docs %}
-            <tr>
-                <td>{{ d.data_emissao_tp|date:"d/m/Y" }}</td>
-                <td>{{ d.codigo }}</td>
-                <td>{{ d.titulo }}</td>
-                <td>{{ d.disciplina|default:"—" }}</td>
-                <td>
-                    {% if d.status_emissao == "Em Revisão" %}<span class="tag tag-revisao">Em Revisão</span>{% endif %}
-                    {% if d.status_emissao == "Aprovado" %}<span class="tag tag-aprovado">Aprovado</span>{% endif %}
-                    {% if d.status_emissao == "Emitido" %}<span class="tag tag-emitido">Emitido</span>{% endif %}
-                    {% if d.status_emissao == "Cancelado" %}<span class="tag tag-cancelado">Cancelado</span>{% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-            </tbody>
+<thead><tr><th>Data</th><th>Código</th><th>Título</th><th>Disciplina</th><th>Status</th></tr></thead>
+<tbody>
+{% for d in ultimos_docs %}
+<tr>
+<td>{{ d.data_emissao_grdt|date:"d/m/Y" }}</td>
+<td>{{ d.codigo }}</td>
+<td>{{ d.titulo }}</td>
+<td>{{ d.disciplina|default:"—" }}</td>
+<td>
+{% if d.status_emissao == "Em Revisão" %}<span class="tag tag-revisao">Revisão</span>{% endif %}
+{% if d.status_emissao == "Aprovado" %}<span class="tag tag-aprovado">Aprovado</span>{% endif %}
+{% if d.status_emissao == "Emitido" %}<span class="tag tag-emitido">Emitido</span>{% endif %}
+{% if d.status_emissao == "Cancelado" %}<span class="tag tag-cancelado">Cancelado</span>{% endif %}
+</td>
+</tr>
+{% endfor %}
+</tbody>
         </table>
     </div>
 
+
+<!-- ==========================================================
+   🔥 SEÇÃO FINANCEIRA – HANDYMAX ENTERPRISE
+========================================================== -->
+<h2 style="margin-top:55px;margin-bottom:12px;color:#1f3b68">💰 Financeiro TP25 Handymax</h2>
+
+<div class="grid-kpi">
+    <div class="card"><div class="card-kpi-label">Emitido USD</div><div class="card-kpi-value">${{ valor_emitidos_usd|floatformat:2 }}</div><small>BRL {{ valor_emitidos_brl|floatformat:2 }}</small></div>
+    <div class="card"><div class="card-kpi-label">A Receber USD</div><div class="card-kpi-value" style="color:#d97706">${{ valor_nao_rec_usd|floatformat:2 }}</div><small>BRL {{ valor_nao_rec_brl|floatformat:2 }}</small></div>
+    <div class="card"><div class="card-kpi-label">Total USD</div><div class="card-kpi-value" style="color:#059669">${{ valor_total_usd|floatformat:2 }}</div><small>BRL {{ valor_total_brl|floatformat:2 }}</small></div>
 </div>
 
+<div class="card" style="margin-top:20px;">
+    <h2>Distribuição Financeira</h2>
+    <canvas id="chartFinanceiro"></canvas>
+</div>
+
+
+</div> <!-- container -->
+
+
 <script>
-// Dados solicitacoes
-const mesLabels = {{ chart_mes_labels|safe }};
-const mesData = {{ chart_mes_data|safe }};
-new Chart(document.getElementById("chartPorMes"), { type:"line", data:{ labels:mesLabels, datasets:[{ data:mesData }] }});
+new Chart(document.getElementById("chartPorMes"), { type:"line", data:{ labels:{{ chart_mes_labels|safe }}, datasets:[{ data:{{ chart_mes_data|safe }} }] }});
+new Chart(document.getElementById("chartStatus"), { type:"doughnut", data:{ labels:{{ chart_status_labels|safe }}, datasets:[{ data:{{ chart_status_data|safe }} }] }});
+new Chart(document.getElementById("chartDocsDisciplina"), { type:"bar", data:{ labels:{{ chart_docs_disciplina_labels|safe }}, datasets:[{ data:{{ chart_docs_disciplina_data|safe }} }] }});
+new Chart(document.getElementById("chartDocsStatus"), { type:"pie", data:{ labels:{{ chart_docs_status_labels|safe }}, datasets:[{ data:{{ chart_docs_status_data|safe }} }] }});
 
-const statusLabels = {{ chart_status_labels|safe }};
-const statusData = {{ chart_status_data|safe }};
-new Chart(document.getElementById("chartStatus"), { type:"doughnut", data:{ labels:statusLabels, datasets:[{ data:statusData }] }});
-
-// Documentos
-new Chart(document.getElementById("chartDocsDisciplina"), {
-    type: "bar",
-    data: { labels: {{ chart_docs_disciplina_labels|safe }}, datasets: [{ data: {{ chart_docs_disciplina_data|safe }} }] }
+// 🔥 Financeiro
+new Chart(document.getElementById("chartFinanceiro"), {
+type:"doughnut",
+data:{ labels:["Emitidos USD","A Receber USD","Total USD"],
+datasets:[{ data:[{{ valor_emitidos_usd }},{{ valor_nao_rec_usd }},{{ valor_total_usd }}],
+backgroundColor:["#1e40af","#d97706","#059669"] }] }
 });
+</script>
 
-new Chart(document.getElementById("chartDocsStatus"), {
-    type: "pie",
-    data: { labels
+</body>
+</html>

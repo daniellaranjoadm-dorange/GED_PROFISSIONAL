@@ -22,11 +22,23 @@ SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key")
 
 DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
 
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "*").split(",")
+ALLOWED_HOSTS = [
+    "localhost",
+    "127.0.0.1",
+    ".railway.app",
+    "dorange.com.br",
+    "www.dorange.com.br",
+]
+
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://*.railway.app"
+    "https://*.railway.app",
+    "https://dorange.com.br",
+    "https://www.dorange.com.br",
+    "http://dorange.com.br",
+    "http://www.dorange.com.br",
 ]
+
 
 # Segurança avançada – apenas quando DEBUG=False
 # Segurança extra desativada temporariamente para diagnosticar redirects em produção.
@@ -107,25 +119,27 @@ TEMPLATES = [
 WSGI_APPLICATION = 'ged.wsgi.application'
 
 # ======================
-# BANCO DE DADOS
+# BANCO DE DADOS - Local = SQLite / Produção = Railway PostgreSQL
 # ======================
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+if DEBUG:
+    print("💻 MODO DESENVOLVIMENTO → Usando SQLite local")
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
     }
-}
+else:
+    print("🚀 PRODUÇÃO → PostgreSQL Railway")
+    DATABASES = {
+        "default": dj_database_url.parse(
+            os.getenv("DATABASE_URL"),
+            conn_max_age=600,
+            ssl_require=True
+        )
+    }
 
-# Railway – PostgreSQL
-DATABASE_URL = os.environ.get("DATABASE_URL")
-
-if DATABASE_URL:
-    DATABASES["default"] = dj_database_url.config(
-        default=DATABASES["default"],
-        conn_max_age=600,
-        ssl_require=True
-    )
 
 # ======================
 # VALIDAÇÃO DE SENHAS

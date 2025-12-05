@@ -66,6 +66,9 @@ path("dashboard-enterprise/", views.dashboard_enterprise, name="dashboard_enterp
 path("painel-workflow/", views.painel_workflow, name="painel_workflow"),
 path("painel-workflow/exportar/", views.painel_workflow_exportar_excel, name="painel_workflow_exportar"),
 
+# DASHBOARD MASTER SUPREMO 🚀
+path("dashboard-master/", views.dashboard_master, name="dashboard_master"),
+
     # ============================
     # MEDIÇÃO
     # ============================

@@ -3,7 +3,7 @@ from django.core.files.storage import default_storage
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Sum
 from django.utils import timezone
 from django.http import HttpResponse, JsonResponse
 from django.core.paginator import Paginator
@@ -31,8 +31,12 @@ from .models import (
     ResponsavelDisciplina,
     WorkflowEtapa,
     DocumentoWorkflowStatus,
-    DocumentoAprovacao,
+    LogAuditoria,
+    ProjetoFinanceiro,   # 👈 MANTÉM
+    registrar_log,
 )
+
+
 from .utils_email import enviar_email
 
 
@@ -40,17 +44,18 @@ from .utils_email import enviar_email
 # CONFIG GLOBAL
 # =================================================================
 
-VALOR_MEDICAO_USD = 979.00
-TAXA_CAMBIO_REAIS = 5.76
+from decimal import Decimal  # <-- garante precisão nos valores em dólar/reais
 
-REVISOES_VALIDAS = [
-    "0",
-    "A", "B", "C", "D", "E", "F", "G", "H",
-    "J", "K", "L", "M", "N", "P", "Q", "R",
-    "S", "T", "U", "V", "W", "X", "Y", "Z",
-    "AA", "AB", "AC", "AD", "AE", "AF", "AG", "AH",
-    "AJ", "AK",
-]
+VALOR_MEDICAO_USD = Decimal("979.00")  # ainda usado na medição genérica
+TAXA_CAMBIO_REAIS = Decimal("5.7642")  # taxa fixa que você passou
+
+# ============================
+# 🎯 CONTRATO TP25 – BASICO
+# ============================
+VALOR_TP25_BASICO_TOTAL_USD = Decimal("563901.21")
+VALOR_TP25_BASICO_APROVADO_USD = Decimal("451120.97")
+VALOR_TP25_BASICO_ASBUILT_USD = Decimal("112780.24")
+
 
 ETAPAS_WORKFLOW = [
     "Revisão Interna – Disciplina",
@@ -172,23 +177,29 @@ def etapa_anterior(documento: Documento):
 
 def registrar_workflow(documento: Documento, etapa: str, status: str, request, observacao: str = ""):
     """
-    Versão simplificada: hoje só registra metadados em DocumentoAprovacao se
-    existir uma WorkflowEtapa com o mesmo nome. Caso contrário, apenas ignora.
+    Registra movimentação do workflow no log sem depender de DocumentoAprovacao.
+    Mantém histórico enterprise para auditoria e dashboard.
     """
-    etapa_obj = WorkflowEtapa.objects.filter(nome=etapa).order_by("ordem").first()
+
+    etapa_obj = WorkflowEtapa.objects.filter(nome=etapa).first()
     if not etapa_obj:
-        return
+        return  # Segurança — não quebra se etapa não existir
 
     usuario = request.user if request.user.is_authenticated else None
-    comentario = observacao or ""
 
-    DocumentoAprovacao.objects.create(
-        documento=documento,
-        etapa=etapa_obj,
-        usuario=usuario,
-        status="COMENTADO" if status else "PENDENTE",
-        comentario=comentario,
+    descricao = (
+        f"[WORKFLOW] Documento {documento.codigo} → {etapa} | "
+        f"Status: {status} | {observacao or ''}"
     )
+
+    # 🔥 Tudo passa pelo log enterprise centralizado
+    registrar_log(
+        usuario,
+        documento,
+        f"Workflow: {status}",
+        descricao
+    )
+
 
 
 def notificar_evento_documento(documento: Documento, tipo_evento: str):
@@ -258,6 +269,30 @@ def restaurar_da_lixeira(documento: Documento, request):
 
     registrar_workflow(documento, "Restauração", "Restaurado", request)
 
+def montar_descricao_log(usuario, documento, acao_verbosa: str):
+    """
+    Gera uma descrição padrão e detalhada para o LogAuditoria,
+    no formato enterprise que combinamos.
+    """
+    from django.utils import timezone
+
+    user = usuario.username if usuario and usuario.is_authenticated else "Sistema"
+    cod = documento.codigo or "Sem código"
+    rev = (documento.revisao or "").strip() or "-"
+    projeto_nome = (
+        documento.projeto.nome
+        if getattr(documento, "projeto", None)
+        else "Projeto TP25 - NAVIOS HANDY CLASSE 80"
+    )
+    status_doc = documento.status_documento or "Sem status doc"
+    status_emis = documento.status_emissao or "Sem status emissão"
+    agora = timezone.localtime(timezone.now())
+
+    return (
+        f"Usuário {user} {acao_verbosa} o documento {cod} (Rev {rev}) "
+        f"no {projeto_nome} às {agora:%d/%m/%Y %H:%M} – "
+        f"status: {status_doc} / {status_emis}"
+    )
 
 
 # =================================================================
@@ -998,11 +1033,26 @@ def upload_documento(request):
 
         registrar_workflow(doc, "Criação", "Criado", request)
 
+        # =============== 🔥 AUDITORIA ENTERPRISE 🔥 ===============
+        descricao = montar_descricao_log(
+            request.user,
+            doc,
+            "criou"   # ação no texto do log
+        )
+        registrar_log(
+            request.user,
+            doc,
+            "Criação de Documento",
+            descricao
+        )
+        # ==========================================================
+
         messages.success(request, "Documento criado com sucesso!")
         return redirect("documentos:listar_documentos")
 
     projetos = Projeto.objects.filter(ativo=True).order_by("nome")
     return render(request, "documentos/upload.html", {"projetos": projetos})
+
 
 
 # =================================================================
@@ -1603,6 +1653,117 @@ def buscar_global(request):
         {"resultados": resultados, "termo": termo},
     )
 
+# =============================================
+# 📊 DASHBOARD MASTER – FINANCE + STATUS ENGINE
+# =============================================
+from django.db.models import Count, Sum
+from .models import Documento, LogAuditoria, ProjetoFinanceiro
+
+
+def dashboard_master(request):
+    projeto_nome = "TP25 NAVIOS HANDY CLASSE 80"
+    taxa_brl = 5.7642
+
+    # ============================
+    # BASE DE DOCUMENTOS FILTRADOS
+    # ============================
+    docs = Documento.objects.filter(
+        projeto__nome__icontains=projeto_nome,
+        ativo=True
+    )
+
+    total_docs = docs.count()
+
+    total_emitidos     = docs.filter(status_emissao="Emitido").count()
+    total_aprovados    = docs.filter(status_emissao="Aprovado").count()
+    total_em_revisao   = docs.filter(status_documento__icontains="Revisão").count()
+    total_nao_recebidos = docs.filter(status_emissao="Não Recebido").count()
+    total_excluidos    = docs.filter(deletado_em__isnull=False).count()
+    total_restaurados  = docs.filter(motivo_exclusao__icontains="Restaurado").count()
+
+    # ============================
+    # FINANCEIRO POR FASE / STATUS
+    # ============================
+    valores = ProjetoFinanceiro.objects.filter(projeto__nome=projeto_nome)
+
+    valor_basico   = valores.filter(fase="Básico").aggregate(total=Sum("valor_total_usd"))["total"] or 0
+    valor_aprovado = valores.filter(fase="Aprovado").aggregate(total=Sum("valor_total_usd"))["total"] or 0
+    valor_asbuilt  = valores.filter(fase="As Built").aggregate(total=Sum("valor_total_usd"))["total"] or 0
+
+
+    total_basico_docs = docs.filter(fase="Básico").count() or 1
+
+    # USD Unitários (valor / documentos)
+    usd_basico_unit   = valor_basico   / total_basico_docs
+    usd_aprovado_unit = valor_aprovado / total_basico_docs
+    usd_asbuilt_unit  = valor_asbuilt  / total_basico_docs
+
+    # Medição baseada no STATUS EMISSÃO
+    valor_emitidos_usd = total_emitidos     * usd_basico_unit
+    valor_nao_rec_usd  = total_nao_recebidos * usd_basico_unit
+    valor_total_usd    = valor_emitidos_usd + valor_nao_rec_usd
+
+    # Conversão BRL
+    valor_emitidos_brl = valor_emitidos_usd * taxa_brl
+    valor_nao_rec_brl  = valor_nao_rec_usd  * taxa_brl
+    valor_total_brl    = valor_total_usd    * taxa_brl
+
+    # =============
+    # AUDITORIA
+    # =============
+    auditoria_acoes = LogAuditoria.objects.order_by('-data')[:10]
+
+    top_excluidores = LogAuditoria.objects.filter(acao="Excluído") \
+        .values('usuario') \
+        .annotate(qtd=Count('id')) \
+        .order_by('-qtd')[:5]
+
+    # =====================
+    # GRÁFICOS
+    # =====================
+    disc_labels = list(docs.values_list("disciplina", flat=True).distinct())
+    disc_data   = [docs.filter(disciplina=d).count() for d in disc_labels]
+
+    status_labels = ["Emitido", "Aprovado", "Revisão", "Não Recebido"]
+    status_data   = [
+        total_emitidos,
+        total_aprovados,
+        total_em_revisao,
+        total_nao_recebidos
+    ]
+
+    # =====================
+    # RENDERIZA O TEMPLATE
+    # =====================
+    context = {
+        "total_docs": total_docs,
+        "total_emitidos": total_emitidos,
+        "total_aprovados": total_aprovados,
+        "total_em_revisao": total_em_revisao,
+        "total_nao_recebidos": total_nao_recebidos,
+        "total_excluidos": total_excluidos,
+        "total_restaurados": total_restaurados,
+
+        "valor_emitidos_usd": valor_emitidos_usd,
+        "valor_nao_rec_usd": valor_nao_rec_usd,
+        "valor_total_usd": valor_total_usd,
+
+        "valor_emitidos_brl": valor_emitidos_brl,
+        "valor_nao_rec_brl": valor_nao_rec_brl,
+        "valor_total_brl": valor_total_brl,
+
+        # Graphs
+        "disc_labels": disc_labels,
+        "disc_data": disc_data,
+        "status_labels": status_labels,
+        "status_data": status_data,
+
+        # Auditoria
+        "top_excluidores": top_excluidores,
+        "auditoria_acoes": auditoria_acoes,
+    }
+
+    return render(request, "documentos/dashboard_master.html", context)
 
 # =================================================================
 # BUSCA AJAX

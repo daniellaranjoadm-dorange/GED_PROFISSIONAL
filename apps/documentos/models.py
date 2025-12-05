@@ -1,129 +1,63 @@
 ﻿from django.db import models
-
 from django.conf import settings
 from django.contrib.auth.models import Group
 
-
 # ======================================================================
-# 🏗 PROJETO — BASE PARA MULTI-CLIENTE / MULTI-OBRA
+# 🏗 PROJETO — BASE MULTI-CONTRATO
 # ======================================================================
 class Projeto(models.Model):
-    """Projeto / contrato / empreendimento.
-
-    Serve como raiz para parametrizar:
-    - documentos
-    - pastas base na rede
-    - prefixos de GED
-    - cliente associado
-    """
-
     nome = models.CharField(max_length=120, unique=True)
     cliente = models.CharField(max_length=120, blank=True, null=True)
 
     pasta_base = models.CharField(
         max_length=500,
-        help_text="Caminho base na rede onde serão criadas as pastas de saída (GRDT, GED, etc.)",
+        help_text="Caminho base na rede onde serão criadas as pastas de saída (GRDT/GED)",
     )
 
-    prefixo_ged = models.CharField(
-        max_length=50,
-        default="GED",
-        help_text="Prefixo padrão para numeração de GED interna (ex: GED, GD, DC, etc.)",
-    )
-
+    prefixo_ged = models.CharField(max_length=50, default="GED")
     ativo = models.BooleanField(default=True)
-
     criado_em = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         verbose_name = "Projeto"
         verbose_name_plural = "Projetos"
 
-    def __str__(self) -> str:  # type: ignore[override]
+    def __str__(self):
         return self.nome
 
 
 # ======================================================================
-# 📄 MODELO PRINCIPAL — DOCUMENTO
+# 📄 DOCUMENTO CENTRAL DO GED
 # ======================================================================
 class Documento(models.Model):
-    """Documento técnico controlado pelo GED.
+    projeto = models.ForeignKey(Projeto, on_delete=models.CASCADE, related_name="documentos",
+                                null=True, blank=True)
 
-    Reestruturado para uso profissional e multi-projeto.
-    """
-
-    # Vínculo principal
-    projeto = models.ForeignKey(
-        Projeto,
-        on_delete=models.CASCADE,
-        related_name="documentos",
-        null=True,
-        blank=True,
-    )
-
-    # Classificação básica
     fase = models.CharField(max_length=50, blank=True, null=True)
-    tipo_doc = models.CharField(
-    "Tipo de Documento",
-    max_length=100,
-    null=True,
-    blank=True,
-)
 
+    tipo_doc = models.CharField("Tipo de Documento", max_length=100, null=True, blank=True)
 
-    # Identificação
     codigo = models.CharField(max_length=200)
     revisao = models.CharField(max_length=10, default="0")
     titulo = models.CharField(max_length=255)
     disciplina = models.CharField(max_length=50, blank=True, null=True)
 
-    # Status principais
-    status_documento = models.CharField(
-        "Status do Documento",
-        max_length=50,
-        blank=True,
-        null=True,
-        help_text="Substitui o antigo 'Status LDP'",
-    )
+    status_documento = models.CharField(max_length=50, blank=True, null=True)
+    status_emissao = models.CharField(max_length=50, blank=True, null=True)
 
-    status_emissao = models.CharField(
-        "Status de Emissão",
-        max_length=50,
-        blank=True,
-        null=True,
-    )
+    grdt_cliente = models.CharField(max_length=50, blank=True, null=True)
+    resposta_cliente = models.CharField(max_length=255, blank=True, null=True)
 
-    # Relacionamento com o cliente (GRDT / resposta)
-    grdt_cliente = models.CharField(
-        "GRDT Cliente",
-        max_length=50,
-        blank=True,
-        null=True,
-    )
+    data_emissao_grdt = models.DateField("Data Emissão GRDT", blank=True, null=True)
 
-    resposta_cliente = models.CharField(
-        "Resposta Cliente",
-        max_length=255,
-        blank=True,
-        null=True,
-    )
+    # FINANCEIRO por documento (NAVEMÃE READY)
+    valor_brl = models.DecimalField("Valor (R$)", max_digits=15, decimal_places=2,
+                                    null=True, blank=True)
+    valor_usd = models.DecimalField("Valor (USD)", max_digits=15, decimal_places=2,
+                                    null=True, blank=True)
 
-    data_emissao_grdt = models.DateField(
-        "Data Emissão GRDT",
-        blank=True,
-        null=True,
-    )
-
-    # GED interna / controle interno de saída
-    ged_interna = models.CharField(
-        "GED Interna",
-        max_length=50,
-        blank=True,
-        null=True,
-        help_text="Identificação interna da GED gerada para este documento (quando aplicável)",
-    )
-
-    # Metadados de ciclo de vida
+    # GED / Metadados
+    ged_interna = models.CharField(max_length=50, blank=True, null=True)
     criado_em = models.DateTimeField(auto_now_add=True)
     ativo = models.BooleanField(default=True)
 
@@ -131,94 +65,50 @@ class Documento(models.Model):
     deletado_por = models.CharField(max_length=200, blank=True, null=True)
     motivo_exclusao = models.CharField(max_length=255, blank=True, null=True)
 
-    # Ponteiro de etapa textual (complementar ao workflow enterprise)
-    etapa_atual = models.CharField(
-        max_length=100,
-        default="Revisão Interna – Disciplina",
-    )
+    etapa_atual = models.CharField(max_length=100,
+                                  default="Revisão Interna – Disciplina")
 
     class Meta:
         verbose_name = "Documento"
         verbose_name_plural = "Documentos"
         ordering = ["codigo", "revisao"]
 
-    def __str__(self) -> str:  # type: ignore[override]
+    def __str__(self):
         return f"{self.codigo} - Rev {self.revisao}"
 
 
 # ======================================================================
-# 📎 ARQUIVOS DO DOCUMENTO — ANEXOS ATUAIS
+# ANEXOS
 # ======================================================================
 class ArquivoDocumento(models.Model):
-    documento = models.ForeignKey(
-        Documento,
-        on_delete=models.CASCADE,
-        related_name="arquivos",
-    )
-
+    documento = models.ForeignKey(Documento, on_delete=models.CASCADE, related_name="arquivos")
     arquivo = models.FileField(upload_to="documentos/anexos/")
     nome_original = models.CharField(max_length=255, blank=True, null=True)
-
-    tipo = models.CharField(
-        max_length=20,
-        blank=True,
-        null=True,
-        help_text="Classificação opcional do anexo (PDF, DWG, DOCX, etc.)",
-    )
-
+    tipo = models.CharField(max_length=20, blank=True, null=True)
     enviado_em = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        verbose_name = "Arquivo do Documento"
-        verbose_name_plural = "Arquivos do Documento"
         ordering = ["-enviado_em"]
 
-    def __str__(self) -> str:  # type: ignore[override]
+    def __str__(self):
         return f"Anexo {self.nome_original} → {self.documento.codigo}"
 
     @property
-    def extensao(self) -> str:
-        try:
-            return self.arquivo.name.split(".")[-1].lower()
-        except Exception:
-            return ""
+    def extensao(self):
+        return self.arquivo.name.split(".")[-1].lower()
 
 
 # ======================================================================
-# 📚 CONTROLE DE VERSÕES DO DOCUMENTO
+# CONTROLE DE VERSÕES
 # ======================================================================
 class DocumentoVersao(models.Model):
-    documento = models.ForeignKey(
-        Documento,
-        on_delete=models.CASCADE,
-        related_name="versoes",
-    )
-
-    numero_revisao = models.CharField(
-        max_length=10,
-        help_text="Número da revisão (ex: 0, 1, A, B, C)",
-    )
-
-    arquivo = models.FileField(
-        upload_to="documentos/versoes/",
-        null=False,
-        blank=False,
-    )
-
+    documento = models.ForeignKey(Documento, on_delete=models.CASCADE, related_name="versoes")
+    numero_revisao = models.CharField(max_length=10)
+    arquivo = models.FileField(upload_to="documentos/versoes/")
     criado_em = models.DateTimeField(auto_now_add=True)
-
-    criado_por = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-    )
-
-    observacao = models.TextField(
-        blank=True,
-        help_text="Descrição das alterações desta revisão",
-    )
-
+    criado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                   null=True, blank=True)
+    observacao = models.TextField(blank=True)
     status_revisao = models.CharField(
         max_length=20,
         choices=[
@@ -232,15 +122,13 @@ class DocumentoVersao(models.Model):
 
     class Meta:
         ordering = ["-criado_em"]
-        verbose_name = "Versão do Documento"
-        verbose_name_plural = "Versões do Documento"
 
-    def __str__(self) -> str:  # type: ignore[override]
+    def __str__(self):
         return f"{self.documento.codigo} - Rev {self.numero_revisao}"
 
 
 # ======================================================================
-# 👤 RESPONSÁVEIS POR DISCIPLINA
+# RESPONSÁVEL POR DISCIPLINA
 # ======================================================================
 class ResponsavelDisciplina(models.Model):
     disciplina = models.CharField(max_length=50, unique=True)
@@ -248,146 +136,85 @@ class ResponsavelDisciplina(models.Model):
     email = models.CharField(max_length=200, blank=True, null=True)
 
     class Meta:
-        verbose_name = "Responsável por Disciplina"
-        verbose_name_plural = "Responsáveis por Disciplina"
         ordering = ["disciplina"]
 
-    def __str__(self) -> str:  # type: ignore[override]
+    def __str__(self):
         return f"{self.disciplina} - {self.responsavel}"
 
 
 # ======================================================================
-# 🧠 WORKFLOW ENTERPRISE — CONFIGURAÇÃO DAS ETAPAS
+# WORKFLOW
 # ======================================================================
 class WorkflowEtapa(models.Model):
-    """Etapas do fluxo enterprise.
-
-    Exemplo de etapas:
-      1 - Revisão Interna – Disciplina
-      2 - Aprovação Técnica – Coordenador
-      3 - Envio ao Cliente
-      4 - Aprovação do Cliente
-      5 - Emissão Final
-    """
-
     nome = models.CharField(max_length=100)
-    ordem = models.PositiveIntegerField(
-        help_text="Ordem do fluxo (1, 2, 3...)",
-    )
-    prazo_dias = models.PositiveIntegerField(
-        default=0,
-        help_text="Prazo em dias para conclusão desta etapa (0 = sem prazo)",
-    )
-
-    grupos_responsaveis = models.ManyToManyField(
-        Group,
-        blank=True,
-        related_name="etapas_workflow",
-        help_text="Grupos de usuários responsáveis por atuar nesta etapa",
-    )
+    ordem = models.PositiveIntegerField()
+    prazo_dias = models.PositiveIntegerField(default=0)
+    grupos_responsaveis = models.ManyToManyField(Group, blank=True)
 
     ativa = models.BooleanField(default=True)
 
     class Meta:
         ordering = ["ordem"]
-        verbose_name = "Etapa de Workflow"
-        verbose_name_plural = "Etapas de Workflow"
 
-    def __str__(self) -> str:  # type: ignore[override]
+    def __str__(self):
         return f"{self.ordem} - {self.nome}"
 
 
-# ======================================================================
-# 📌 STATUS ATUAL DO DOCUMENTO NO WORKFLOW ENTERPRISE
-# ======================================================================
 class DocumentoWorkflowStatus(models.Model):
-    """Ponteiro da etapa atual do documento no fluxo enterprise."""
-
-    documento = models.OneToOneField(
-        Documento,
-        on_delete=models.CASCADE,
-        related_name="workflow_status",
-    )
-
-    etapa = models.ForeignKey(
-        WorkflowEtapa,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="documentos",
-    )
-
-    iniciado_em = models.DateTimeField(
-        auto_now_add=True,
-        help_text="Início da etapa atual",
-    )
-
-    prazo_final = models.DateTimeField(
-        null=True,
-        blank=True,
-        help_text="Data/hora limite calculada em função do prazo da etapa",
-    )
-
-    class Meta:
-        verbose_name = "Status do Workflow do Documento"
-        verbose_name_plural = "Status do Workflow dos Documentos"
-
-    def __str__(self) -> str:  # type: ignore[override]
-        if self.etapa:
-            return f"{self.documento.codigo} → {self.etapa.nome}"
-        return f"{self.documento.codigo} → (sem etapa)"
+    documento = models.OneToOneField(Documento, on_delete=models.CASCADE, related_name="workflow_status")
+    etapa = models.ForeignKey(WorkflowEtapa, on_delete=models.SET_NULL, null=True, blank=True)
+    iniciado_em = models.DateTimeField(auto_now_add=True)
+    prazo_final = models.DateTimeField(null=True, blank=True)
 
     @property
-    def atrasado(self) -> bool:
+    def atrasado(self):
         from django.utils import timezone
+        return self.prazo_final and timezone.now() > self.prazo_final
 
-        if self.prazo_final:
-            return timezone.now() > self.prazo_final
-        return False
+    def __str__(self):
+        return f"{self.documento.codigo} → {self.etapa.nome if self.etapa else '(sem etapa)'}"
 
 
 # ======================================================================
-# ✅ REGISTRO DE APROVAÇÕES / AÇÕES POR USUÁRIO
+# LOG AUDITORIA
 # ======================================================================
-class DocumentoAprovacao(models.Model):
-    """Registro das ações de aprovação/reprovação/comentário por usuário."""
-
-    documento = models.ForeignKey(
-        Documento,
-        on_delete=models.CASCADE,
-        related_name="aprovacoes",
-    )
-
-    etapa = models.ForeignKey(
-        WorkflowEtapa,
-        on_delete=models.CASCADE,
-        related_name="aprovacoes",
-    )
-
-    usuario = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="aprovacoes_documentos",
-    )
-
-    status = models.CharField(
-        max_length=20,
-        choices=[
-            ("PENDENTE", "Pendente"),
-            ("APROVADO", "Aprovado"),
-            ("REPROVADO", "Reprovado"),
-            ("COMENTADO", "Comentado"),
-        ],
-        default="PENDENTE",
-    )
-
-    comentario = models.TextField(blank=True, null=True)
-    data = models.DateTimeField(auto_now=True)
+class LogAuditoria(models.Model):
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                null=True, blank=True)
+    documento = models.ForeignKey(Documento, on_delete=models.SET_NULL,
+                                  null=True, blank=True, related_name="logs")
+    acao = models.CharField(max_length=50)
+    descricao = models.TextField(blank=True, null=True)
+    data = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ["-data"]
-        verbose_name = "Aprovação de Documento"
-        verbose_name_plural = "Aprovações de Documentos"
 
-    def __str__(self) -> str:  # type: ignore[override]
-        return f"{self.documento.codigo} / {self.etapa.nome} / {self.usuario} → {self.status}"
+    def __str__(self):
+        user = self.usuario.username if self.usuario else "Sistema"
+        doc = self.documento.codigo if self.documento else "Sem doc"
+        return f"{self.acao} - {doc} - {user}"
+
+
+def registrar_log(usuario, documento, acao, descricao=""):
+    LogAuditoria.objects.create(
+        usuario=usuario if usuario and getattr(usuario, "is_authenticated", False) else None,
+        documento=documento,
+        acao=acao,
+        descricao=descricao
+    )
+
+
+# ======================================================================
+# 🏦 FINANCEIRO MULTIPROJETO
+# ======================================================================
+class ProjetoFinanceiro(models.Model):
+    projeto = models.ForeignKey(Projeto, on_delete=models.CASCADE, related_name="financeiro")
+    fase = models.CharField(max_length=50)  # BASICO/APROVADO/ASBUILT
+    valor_total_usd = models.DecimalField(max_digits=12, decimal_places=2)
+
+    descricao = models.CharField(max_length=255, null=True, blank=True)
+    moeda = models.CharField(max_length=10, default="USD")
+
+    def __str__(self):
+        return f"{self.projeto.nome} - {self.fase} - {self.valor_total_usd} USD"
