@@ -28,4 +28,4 @@ Dockerfile.txt
 
 # Ignore uploads e estáticos gerados
 media/
-staticfiles/
++ # staticfiles/
