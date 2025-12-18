@@ -1,0 +1,158 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard GED</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <style>
+        body { font-family: system-ui, sans-serif; background-color: #f5f7fb; margin: 0; padding: 0; color: #1f2933; }
+        .topbar { background: #1f3b68; color: #fff; padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; }
+        .topbar h1 { margin: 0; font-size: 20px; font-weight: 600; }
+        .container { max-width: 1280px; margin: 24px auto 40px; padding: 0 16px; }
+        .grid-kpi { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+        .card { background: #fff; border-radius: 12px; padding: 16px 18px; box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06); }
+        .card h2 { margin: 0 0 12px; font-size: 15px; font-weight: 600; color: #111827; }
+        .card-kpi-label { font-size: 12px; text-transform: uppercase; color: #6b7280; margin-bottom: 6px; }
+        .card-kpi-value { font-size: 24px; font-weight: 700; color: #111827; }
+        .grid-duas-secoes { display: grid; grid-template-columns: 1fr; gap: 40px; margin-top: 32px; }
+        .grid-charts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th, td { padding: 6px 8px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+        th { background: #f3f4f6; font-weight: 600; font-size: 12px; color: #374151; }
+        .tag { display: inline-flex; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+        .tag-revisao { background: #fef3c7; color: #92400e; }
+        .tag-aprovado { background: #d1fae5; color: #065f46; }
+        .tag-emitido { background: #dbeafe; color: #1e40af; }
+        .tag-cancelado { background: #fee2e2; color: #b91c1c; }
+    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<div class="topbar">
+    <div>
+        <h1>Dashboard GED</h1>
+        <span>Visão Executiva – Solicitações, Documentos e Auditoria</span>
+    </div>
+    <div><span>Atualizado em {{ agora|date:"d/m/Y H:i" }}</span></div>
+</div>
+
+<div class="container">
+
+    <!-- ==========================================================
+        🔹 SEÇÃO 1 — SOLICITAÇÕES
+    =========================================================== -->
+    <h2 style="margin-bottom:12px;margin-top:10px;color:#1f3b68">Solicitações de Acesso</h2>
+
+    <div class="grid-kpi">
+        <div class="card"><div class="card-kpi-label">Total</div><div class="card-kpi-value">{{ kpi_total }}</div></div>
+        <div class="card"><div class="card-kpi-label">Pendentes</div><div class="card-kpi-value">{{ kpi_pendentes }}</div></div>
+        <div class="card"><div class="card-kpi-label">Aprovadas</div><div class="card-kpi-value">{{ kpi_aprovadas }}</div></div>
+        <div class="card"><div class="card-kpi-label">Negadas</div><div class="card-kpi-value">{{ kpi_negadas }}</div></div>
+    </div>
+
+    <div class="grid-charts">
+        <div class="card"><h2>Evolução por mês</h2><canvas id="chartPorMes"></canvas></div>
+        <div class="card"><h2>Status</h2><canvas id="chartStatus"></canvas></div>
+    </div>
+
+    <div class="card" style="margin-top:20px;">
+        <h2>Últimas Solicitações</h2>
+        <table>
+            <thead><tr><th>Data</th><th>Nome</th><th>Email</th><th>Setor</th><th>Status</th></tr></thead>
+            <tbody>
+            {% for s in ultimas_solicitacoes %}
+            <tr>
+                <td>{{ s.data_solicitacao|date:"d/m/Y H:i" }}</td>
+                <td>{{ s.nome }}</td>
+                <td>{{ s.email }}</td>
+                <td>{{ s.setor|default:"—" }}</td>
+                <td>{{ s.status }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+
+    <!-- ==========================================================
+        🔹 SEÇÃO 2 — DOCUMENTOS
+    =========================================================== -->
+    <h2 style="margin-top:40px;margin-bottom:12px;color:#1f3b68">Documentos</h2>
+
+    <div class="grid-kpi">
+        <div class="card"><div class="card-kpi-label">Total de Documentos</div><div class="card-kpi-value">{{ doc_total }}</div></div>
+        <div class="card"><div class="card-kpi-label">Revisão</div><div class="card-kpi-value">{{ doc_em_revisao }}</div></div>
+        <div class="card"><div class="card-kpi-label">Aprovados</div><div class="card-kpi-value">{{ doc_aprovados }}</div></div>
+        <div class="card"><div class="card-kpi-label">Emitidos</div><div class="card-kpi-value">{{ doc_emitidos }}</div></div>
+    </div>
+
+    <div class="grid-charts">
+        <div class="card"><h2>Documentos por Disciplina</h2><canvas id="chartDocsDisciplina"></canvas></div>
+        <div class="card"><h2>Documentos por Status</h2><canvas id="chartDocsStatus"></canvas></div>
+    </div>
+
+    <div class="card" style="margin-top:20px;">
+        <h2>Últimos Documentos</h2>
+        <table>
+<thead><tr><th>Data</th><th>Código</th><th>Título</th><th>Disciplina</th><th>Status</th></tr></thead>
+<tbody>
+{% for d in ultimos_docs %}
+<tr>
+<td>{{ d.data_emissao_grdt|date:"d/m/Y" }}</td>
+<td>{{ d.codigo }}</td>
+<td>{{ d.titulo }}</td>
+<td>{{ d.disciplina|default:"—" }}</td>
+<td>
+{% if d.status_emissao == "Em Revisão" %}<span class="tag tag-revisao">Revisão</span>{% endif %}
+{% if d.status_emissao == "Aprovado" %}<span class="tag tag-aprovado">Aprovado</span>{% endif %}
+{% if d.status_emissao == "Emitido" %}<span class="tag tag-emitido">Emitido</span>{% endif %}
+{% if d.status_emissao == "Cancelado" %}<span class="tag tag-cancelado">Cancelado</span>{% endif %}
+</td>
+</tr>
+{% endfor %}
+</tbody>
+        </table>
+    </div>
+
+
+<!-- ==========================================================
+   🔥 SEÇÃO FINANCEIRA – HANDYMAX ENTERPRISE
+========================================================== -->
+<h2 style="margin-top:55px;margin-bottom:12px;color:#1f3b68">💰 Financeiro TP25 Handymax</h2>
+
+<div class="grid-kpi">
+    <div class="card"><div class="card-kpi-label">Emitido USD</div><div class="card-kpi-value">${{ valor_emitidos_usd|floatformat:2 }}</div><small>BRL {{ valor_emitidos_brl|floatformat:2 }}</small></div>
+    <div class="card"><div class="card-kpi-label">A Receber USD</div><div class="card-kpi-value" style="color:#d97706">${{ valor_nao_rec_usd|floatformat:2 }}</div><small>BRL {{ valor_nao_rec_brl|floatformat:2 }}</small></div>
+    <div class="card"><div class="card-kpi-label">Total USD</div><div class="card-kpi-value" style="color:#059669">${{ valor_total_usd|floatformat:2 }}</div><small>BRL {{ valor_total_brl|floatformat:2 }}</small></div>
+</div>
+
+<div class="card" style="margin-top:20px;">
+    <h2>Distribuição Financeira</h2>
+    <canvas id="chartFinanceiro"></canvas>
+</div>
+
+
+</div> <!-- container -->
+
+
+<script>
+new Chart(document.getElementById("chartPorMes"), { type:"line", data:{ labels:{{ chart_mes_labels|safe }}, datasets:[{ data:{{ chart_mes_data|safe }} }] }});
+new Chart(document.getElementById("chartStatus"), { type:"doughnut", data:{ labels:{{ chart_status_labels|safe }}, datasets:[{ data:{{ chart_status_data|safe }} }] }});
+new Chart(document.getElementById("chartDocsDisciplina"), { type:"bar", data:{ labels:{{ chart_docs_disciplina_labels|safe }}, datasets:[{ data:{{ chart_docs_disciplina_data|safe }} }] }});
+new Chart(document.getElementById("chartDocsStatus"), { type:"pie", data:{ labels:{{ chart_docs_status_labels|safe }}, datasets:[{ data:{{ chart_docs_status_data|safe }} }] }});
+
+// 🔥 Financeiro
+new Chart(document.getElementById("chartFinanceiro"), {
+type:"doughnut",
+data:{ labels:["Emitidos USD","A Receber USD","Total USD"],
+datasets:[{ data:[{{ valor_emitidos_usd }},{{ valor_nao_rec_usd }},{{ valor_total_usd }}],
+backgroundColor:["#1e40af","#d97706","#059669"] }] }
+});
+</script>
+
+</body>
+</html>

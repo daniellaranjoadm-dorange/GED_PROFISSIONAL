@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid mt-3">
+
+    <!-- CABEÇALHO DA PÁGINA -->
+    <div class="dor-page-header">
+        <div class="dor-page-title">
+            Lista de Documentos
+            <span>GED D'OR@NGE • Dark Neon</span>
+        </div>
+        <div class="dor-page-pill">
+            Documentos ativos: {{ documentos|length }}
+        </div>
+    </div>
+
+    <!-- LINHA DE KPIs (exemplo simples) -->
+    <div class="dor-kpi-row">
+        <div class="dor-kpi-card">
+            <div class="dor-kpi-label">Total de Documentos</div>
+            <div class="dor-kpi-value">{{ documentos|length }}</div>
+            <div class="dor-kpi-pill">em exibição na tabela</div>
+        </div>
+        <div class="dor-kpi-card">
+            <div class="dor-kpi-label">Em Revisão</div>
+            <div class="dor-kpi-value">
+                {{ documentos|dictsort:"status_documento"|length }}
+            </div>
+            <div class="dor-kpi-pill">status LDP filtrados</div>
+        </div>
+        <div class="dor-kpi-card">
+            <div class="dor-kpi-label">Emitidos</div>
+            <div class="dor-kpi-value">
+                {{ documentos|length }} <!-- depois podemos filtrar -->
+            </div>
+            <div class="dor-kpi-pill">status emissão</div>
+        </div>
+        <div class="dor-kpi-card">
+            <div class="dor-kpi-label">Sem Arquivo</div>
+            <div class="dor-kpi-value">
+                <!-- Exemplo: conta docs sem anexos -->
+                {{ documentos|length }}  <!-- depois faço filtro certinho -->
+            </div>
+            <div class="dor-kpi-pill">para monitorar upload</div>
+        </div>
+    </div>
+
+    <!-- CARD DE FILTROS (envolve seus filtros atuais) -->
+    <div class="dor-filters-card">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <div class="dor-filters-title">
+                Filtros avançados
+            </div>
+            <div>
+                <a href="{% url 'documentos:novo_documento' %}" class="btn btn-sm btn-dor-primary">
+                    + Novo Documento
+                </a>
+            </div>
+        </div>
+
+        <!-- AQUI DENTRO vão exatamente os seus filtros atuais -->
+        <!-- Exemplo simplificado só pra marcar a região -->
+        <!-- SUBSTITUA pelo seu form de filtros que já existe -->
+        {# ... seus selects de Projeto, Disciplina, Status etc ... #}
+
+    </div>
+
+    <!-- SUA TABELA ATUAL -->
+    <div class="table-responsive">
+        <table class="table table-hover table-dor">
+            <!-- aqui vai o thead e tbody que você já tem hoje -->
+        </table>
+    </div>
+
+</div>
+{% endblock %}

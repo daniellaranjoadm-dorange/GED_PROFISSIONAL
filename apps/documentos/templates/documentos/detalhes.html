@@ -376,6 +376,8 @@
     </div>
 
     <!-- ============================================
+
+    <!-- ============================================
          PIPELINE DE WORKFLOW + ETAPA ATUAL
     ============================================= -->
     <div class="card shadow-sm p-3 mb-4 wf-card">
@@ -384,29 +386,40 @@
             <div>
                 <div class="wf-header-label">Etapa atual do workflow</div>
                 <div class="wf-current-name">
-                    {{ documento.etapa_atual|default:"Não definido" }}
+                    {{ documento.etapa.nome|default:"Não definido" }}
+                </div>
+                <div class="small text-muted">
+                    Código: {{ documento.etapa.codigo|default:documento.etapa_atual|default:"—" }}
                 </div>
             </div>
 
             <div class="flex-grow-1">
                 <div class="wf-pipeline" id="wfPipeline">
-                    <div class="wf-step" data-etapa="Revisão Interna – Disciplina">
+                    <div class="wf-step" data-etapa="ELABORACAO">
+                        <div class="wf-step-dot"></div>
+                        <span class="wf-step-label">Elaboração</span>
+                    </div>
+                    <div class="wf-step" data-etapa="REVISAO_INTERNA">
                         <div class="wf-step-dot"></div>
                         <span class="wf-step-label">Revisão Interna</span>
                     </div>
-                    <div class="wf-step" data-etapa="Aprovação Técnica – Coordenador">
+                    <div class="wf-step" data-etapa="APROVACAO_TECNICA">
                         <div class="wf-step-dot"></div>
                         <span class="wf-step-label">Aprovação Técnica</span>
                     </div>
-                    <div class="wf-step" data-etapa="Envio ao Cliente">
+                    <div class="wf-step" data-etapa="DOC_CONTROL">
+                        <div class="wf-step-dot"></div>
+                        <span class="wf-step-label">Doc Control</span>
+                    </div>
+                    <div class="wf-step" data-etapa="ENVIADO_CLIENTE">
                         <div class="wf-step-dot"></div>
                         <span class="wf-step-label">Envio ao Cliente</span>
                     </div>
-                    <div class="wf-step" data-etapa="Aprovação do Cliente">
+                    <div class="wf-step" data-etapa="APROVACAO_CLIENTE">
                         <div class="wf-step-dot"></div>
                         <span class="wf-step-label">Aprovação Cliente</span>
                     </div>
-                    <div class="wf-step" data-etapa="Emissão Final">
+                    <div class="wf-step" data-etapa="EMISSAO_FINAL">
                         <div class="wf-step-dot"></div>
                         <span class="wf-step-label">Emissão Final</span>
                     </div>
@@ -415,57 +428,144 @@
 
             <div class="text-end">
                 {% if pode_avancar_etapa %}
-                    <form method="post"
-                          action="{% url 'documentos:enviar_proxima_etapa' documento.id %}">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-success btn-pill">
-                            ➜ Enviar para próxima etapa
-                            {% if proxima_etapa %}
-                                <div class="small text-white-50 mt-1">
-                                    Próxima: {{ proxima_etapa }}
-                                </div>
-                            {% endif %}
-                        </button>
-                    </form>
+                    <button type="button"
+                            class="btn btn-success btn-pill"
+                            data-bs-toggle="modal"
+                            data-bs-target="#modalAvancarEtapa">
+                        ➜ Enviar para próxima etapa
+                        {% if proxima_etapa %}
+                            <div class="small text-white-50 mt-1">
+                                Próxima: {{ proxima_etapa.nome|default:proxima_etapa }}
+                            </div>
+                        {% endif %}
+                    </button>
                 {% else %}
-                    <button type="button" class="btn btn-outline-secondary btn-pill" disabled
+                    <button type="button"
+                            class="btn btn-outline-secondary btn-pill"
+                            disabled
                             title="Você não tem permissão para avançar esta etapa.">
                         ➜ Enviar para próxima etapa
                     </button>
                 {% endif %}
+
+                <div class="mt-2">
+                    {% if pode_retornar_etapa %}
+                        <button type="button"
+                                class="btn btn-warning btn-pill"
+                                data-bs-toggle="modal"
+                                data-bs-target="#modalRetornarEtapa">
+                            ⬅ Retornar etapa
+                            {% if etapa_anterior %}
+                                <div class="small text-dark mt-1">
+                                    Etapa anterior: {{ etapa_anterior.nome|default:etapa_anterior }}
+                                </div>
+                            {% endif %}
+                        </button>
+                    {% else %}
+                        <button type="button"
+                                class="btn btn-outline-secondary btn-pill"
+                                disabled
+                                title="Você não tem permissão para retornar esta etapa.">
+                            ⬅ Retornar etapa
+                        </button>
+                    {% endif %}
+                </div>
             </div>
-           <!-- BOTÃO RETORNAR ETAPA -->
-<div class="mt-2 text-end">
 
-    {% if pode_retornar_etapa %}
-        <form method="post"
-              action="{% url 'documentos:retornar_etapa' documento.id %}">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-warning btn-pill">
-                ⬅ Retornar etapa
-                {% if etapa_anterior %}
-                    <div class="small text-dark mt-1">
-                        Etapa anterior: {{ etapa_anterior }}
-                    </div>
-                {% endif %}
-            </button>
-        </form>
-
-    {% else %}
-        <button type="button"
-                class="btn btn-outline-secondary btn-pill"
-                disabled
-                title="Você não tem permissão para retornar esta etapa.">
-            ⬅ Retornar etapa
-        </button>
-    {% endif %}
-
-</div>
- 
         </div>
     </div>
 
-    <!-- ============================
+    <!-- ✅ MODAL AVANÇAR ETAPA -->
+    <div class="modal fade" id="modalAvancarEtapa" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+          <form method="post"
+                enctype="multipart/form-data"
+                action="{% url 'documentos:enviar_proxima_etapa' documento.id %}">
+            {% csrf_token %}
+
+            <div class="modal-header bg-success text-white">
+              <h5 class="modal-title fw-bold">➜ Avançar etapa — {{ documento.codigo }}</h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+              <div class="mb-3">
+                <label class="form-label fw-bold">Motivo / Observação</label>
+                <textarea name="observacao"
+                          class="form-control"
+                          rows="3"
+                          required
+                          placeholder="Descreva o motivo do avanço..."></textarea>
+              </div>
+
+              <div class="mb-2">
+                <label class="form-label fw-bold">Anexos (opcional)</label>
+                <input type="file"
+                       name="anexos"
+                       class="form-control"
+                       multiple
+                       accept=".pdf,.png,.jpg,.jpeg,.gif,.xlsx,.doc,.docx,.txt">
+                <div class="small text-muted mt-1">
+                  Você pode anexar fotos, PDFs e outros arquivos (múltiplos).
+                </div>
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary btn-pill" data-bs-dismiss="modal">Cancelar</button>
+              <button type="submit" class="btn btn-success btn-pill fw-bold">Confirmar avanço</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- ✅ MODAL RETORNAR ETAPA -->
+    <div class="modal fade" id="modalRetornarEtapa" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+          <form method="post"
+                enctype="multipart/form-data"
+                action="{% url 'documentos:retornar_etapa' documento.id %}">
+            {% csrf_token %}
+
+            <div class="modal-header bg-warning">
+              <h5 class="modal-title fw-bold">⬅ Retornar etapa — {{ documento.codigo }}</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+              <div class="mb-3">
+                <label class="form-label fw-bold">Motivo / Observação</label>
+                <textarea name="observacao"
+                          class="form-control"
+                          rows="3"
+                          required
+                          placeholder="Explique por que está retornando a etapa..."></textarea>
+              </div>
+
+              <div class="mb-2">
+                <label class="form-label fw-bold">Anexos (opcional)</label>
+                <input type="file"
+                       name="anexos"
+                       class="form-control"
+                       multiple
+                       accept=".pdf,.png,.jpg,.jpeg,.gif,.xlsx,.doc,.docx,.txt">
+                <div class="small text-muted mt-1">
+                  Você pode anexar fotos, PDFs e outros arquivos (múltiplos).
+                </div>
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary btn-pill" data-bs-dismiss="modal">Cancelar</button>
+              <button type="submit" class="btn btn-warning btn-pill fw-bold">Confirmar retorno</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
          INFORMAÇÕES PRINCIPAIS
     ================================ -->
     <div class="card shadow-sm p-4 mb-4">
@@ -1170,4 +1270,29 @@ document.getElementById("btnGerarDiff").addEventListener("click", function () {
 });
 </script>
 
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const pipeline = document.getElementById("wfPipeline");
+    if (!pipeline) return;
+
+    const atual = "{{ documento.etapa.codigo|default:documento.etapa_atual|default:''|escapejs }}".trim();
+    if (!atual) return;
+
+    const steps = Array.from(pipeline.querySelectorAll(".wf-step"));
+    let passed = true;
+
+    steps.forEach((step) => {
+        const codigo = (step.getAttribute("data-etapa") || "").trim();
+        if (!codigo) return;
+
+        if (passed && codigo !== atual) {
+            step.classList.add("done");
+        } else if (codigo === atual) {
+            step.classList.add("current");
+            passed = false;
+        }
+    });
+});
+</script>
 {% endblock %}

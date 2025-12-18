@@ -2,6 +2,8 @@
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.core.mail import send_mail
+from django.conf import settings
 import logging
 
 from .models import UserConfig, SolicitacaoAcesso
@@ -9,9 +11,17 @@ from .forms import UserConfigForm, SolicitacaoAcessoForm
 
 logger = logging.getLogger(__name__)
 
-# =====================================================================
+
+# ==========================================================================
+# 🏁 LANDING PAGE INSTITUCIONAL (página inicial pública)
+# ==========================================================================
+def landing(request):
+    return render(request, "contas/landing.html")
+
+
+# ==========================================================================
 # 🔐 LOGIN (versão reforçada)
-# =====================================================================
+# ==========================================================================
 def login_view(request):
     if request.method == "POST":
         username = (request.POST.get("username") or "").strip()
@@ -28,28 +38,27 @@ def login_view(request):
             )
             return render(request, "contas/login.html")
 
-        if user is not None:
+        if user:
             login(request, user)
-            # Suporte ao ?next=/alguma-rota
             next_url = request.GET.get("next") or "documentos:listar_documentos"
             return redirect(next_url)
-        else:
-            messages.error(request, "Usuário ou senha incorretos!")
+
+        messages.error(request, "Usuário ou senha incorretos!")
 
     return render(request, "contas/login.html")
 
 
-# =====================================================================
+# ==========================================================================
 # 🚪 LOGOUT
-# =====================================================================
+# ==========================================================================
 def logout_view(request):
     logout(request)
     return redirect("contas:login")
 
 
-# =====================================================================
-# ⚙ MINHAS CONFIGURAÇÕES
-# =====================================================================
+# ==========================================================================
+# 🧩 MINHAS CONFIGURAÇÕES
+# ==========================================================================
 @login_required
 def minhas_configuracoes(request):
     config, _ = UserConfig.objects.get_or_create(user=request.user)
@@ -66,46 +75,67 @@ def minhas_configuracoes(request):
     return render(request, "contas/minhas_configuracoes.html", {"form": form})
 
 
-# =====================================================================
-# 📨 FORMULÁRIO PÚBLICO DE SOLICITAÇÃO
-# =====================================================================
+# ==========================================================================
+# 📨 SOLICITAÇÃO DE ACESSO (PÚBLICA) — agora integrado com landing
+# ==========================================================================
 def solicitar_acesso(request):
-    form = SolicitacaoAcessoForm()
-
     if request.method == "POST":
         form = SolicitacaoAcessoForm(request.POST)
         if form.is_valid():
-            form.save()
-            messages.success(request, "Sua solicitação foi enviada com sucesso!")
-            return redirect("contas:login")
+            lead = form.save()
+
+            # envio opcional de e-mail para o administrador
+            try:
+                send_mail(
+                    subject="📥 Nova solicitação de acesso ao GED D'OR@NGE",
+                    message=f"""
+Nova solicitação recebida:
+
+Nome: {lead.nome}
+Empresa/Projeto: {lead.empresa}
+E-mail: {lead.email}
+Telefone/Whats: {lead.telefone}
+Cargo: {lead.cargo}
+
+Mensagem informada:
+{lead.mensagem}
+""",
+                    from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
+                    recipient_list=[getattr(settings, "GED_CONTATO_EMAIL", "seuemail@empresa.com")],
+                    fail_silently=True,
+                )
+            except:
+                pass
+
+            messages.success(request, "Sua solicitação foi enviada com sucesso! Retornaremos em breve.")
+            return redirect("contas:landing")
+
+    else:
+        form = SolicitacaoAcessoForm()
 
     return render(request, "contas/solicitar_acesso.html", {"form": form})
 
 
-# =====================================================================
-# 🔐 PERMISSÃO: somente superuser ou MASTER
-# =====================================================================
+# ==========================================================================
+# 🛡 PERMISSÃO: Master Admin
+# ==========================================================================
 def is_master(user):
-    return user.is_authenticated and (
-        user.is_superuser or getattr(user, "is_master", False)
-    )
+    return user.is_authenticated and (user.is_superuser or getattr(user, "is_master", False))
 
 
-# =====================================================================
-# 📌 PAINEL INTERNO DE SOLICITAÇÕES
-# =====================================================================
+# ==========================================================================
+# 🗂 PAINEL INTERNO DE SOLICITAÇÕES
+# ==========================================================================
 @login_required
 @user_passes_test(is_master)
 def painel_solicitacoes(request):
     solicitacoes = SolicitacaoAcesso.objects.order_by("-data")
-    return render(request, "contas/painel_solicitacoes.html", {
-        "solicitacoes": solicitacoes
-    })
+    return render(request, "contas/painel_solicitacoes.html", {"solicitacoes": solicitacoes})
 
 
-# =====================================================================
+# ==========================================================================
 # ✔ APROVAR SOLICITAÇÃO
-# =====================================================================
+# ==========================================================================
 @login_required
 @user_passes_test(is_master)
 def aprovar_solicitacao(request, id):
@@ -116,9 +146,9 @@ def aprovar_solicitacao(request, id):
     return redirect("contas:painel_solicitacoes")
 
 
-# =====================================================================
+# ==========================================================================
 # ✖ NEGAR SOLICITAÇÃO
-# =====================================================================
+# ==========================================================================
 @login_required
 @user_passes_test(is_master)
 def negar_solicitacao(request, id):

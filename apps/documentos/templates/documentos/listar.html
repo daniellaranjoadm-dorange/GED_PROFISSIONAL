@@ -1,400 +1,192 @@
 {% extends "documentos/base.html" %}
-
-{% block title %}Lista de Documentos · GED D'OR@NGE{% endblock %}
+{% block title %}📁 Lista de Documentos · D’OR@NGE Enterprise{% endblock %}
 
 {% block extra_head %}
-    <!-- DataTables CSS -->
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
-    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css">
-
-    <style>
-        .page-title {
-            display: flex;
-            align-items: center;
-            gap: .6rem;
-            margin-bottom: 1rem;
-        }
-
-        .page-title-icon {
-            width: 32px;
-            height: 32px;
-            border-radius: 999px;
-            background: rgba(0,82,162,0.08);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #0052A2;
-        }
-
-        .page-title-text {
-            font-size: 1.35rem;
-            font-weight: 600;
-            color: #1F2933;
-        }
-
-        .filtros-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: .35rem;
-            border-radius: 999px;
-            padding: .25rem .7rem;
-            font-size: .78rem;
-        }
-
-        .filtros-pill i {
-            font-size: .75rem;
-        }
-
-        .card-filtros {
-            border-radius: .9rem;
-        }
-
-        #tabelaDocumentos_wrapper .dataTables_filter {
-            display: none; /* usamos o campo de busca superior, não o padrão */
-        }
-
-        #tabelaDocumentos thead th {
-            white-space: nowrap;
-        }
-    </style>
+<!-- Datatables -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
+<style>
+.page-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.4rem; }
+.page-header h2 { margin:0; font-weight:700; font-size:1.55rem; color:var(--accent-blue); display:flex; align-items:center; gap:.5rem; }
+.filtro-card { background: var(--bg-card); border:1px solid var(--border); border-radius:14px; padding:1.2rem 1rem; box-shadow:0 4px 14px var(--shadow); }
+.filtro-card label { font-weight:600; font-size:.78rem; color:var(--text-soft); margin-bottom:.25rem; }
+.filtro-card .form-select, .filtro-card .form-control { background:#101a2b!important; border-radius:10px!important; border:1px solid rgba(255,255,255,.10)!important; color:#dce8ff!important; font-size:.85rem; padding:.55rem .75rem; }
+#tabelaDocumentos { font-size:.88rem; }
+#tabelaDocumentos thead { background:rgba(56,189,248,0.10); color:var(--accent-blue); }
+.badge-status { padding:4px 9px; border-radius:8px; font-size:.75rem; }
+.badge-doc { background:#0ea5e9; color:white; }
+.badge-emissao { background:#fbbf24; color:#111; font-weight:600; }
+.btn-premium { border-radius:10px; font-weight:600; }
+</style>
 {% endblock %}
 
 {% block content %}
+<div class="page-header">
+    <h2><i class="bi bi-folder2-open"></i> Lista de Documentos</h2>
 
-    <!-- ===========================
-         BUSCA GLOBAL
-    ============================ -->
-    <div class="card shadow-sm mb-3 p-3">
-        <form method="GET" action="" class="d-flex gap-2">
-            <input type="text"
-                   name="busca"
-                   value="{{ filtros_ativos.busca }}"
-                   class="form-control"
-                   placeholder="Buscar por código, título, parte do texto...">
-            <button class="btn btn-primary btn-pill">
-                <i class="bi bi-search"></i>
-            </button>
-        </form>
-
-        {% if ha_filtros %}
-            <div class="mt-3 d-flex flex-wrap gap-2">
-
-                {% if filtros_ativos.projeto %}
-                    <a href="?{% if filtros_ativos.disciplina %}disciplina={{ filtros_ativos.disciplina }}&{% endif %}
-                             {% if filtros_ativos.status_ldp %}status_ldp={{ filtros_ativos.status_ldp }}&{% endif %}
-                             {% if filtros_ativos.status_emissao %}status_emissao={{ filtros_ativos.status_emissao }}&{% endif %}
-                             {% if filtros_ativos.busca %}busca={{ filtros_ativos.busca }}{% endif %}"
-                       class="badge bg-primary filtres-pill">
-                        Projeto: {{ filtros_ativos.projeto }}
-                        <i class="bi bi-x-lg ms-1"></i>
-                    </a>
-                {% endif %}
-
-                {% if filtros_ativos.disciplina %}
-                    <a href="?{% if filtros_ativos.projeto %}projeto={{ filtros_ativos.projeto }}&{% endif %}
-                             {% if filtros_ativos.status_ldp %}status_ldp={{ filtros_ativos.status_ldp }}&{% endif %}
-                             {% if filtros_ativos.status_emissao %}status_emissao={{ filtros_ativos.status_emissao }}&{% endif %}
-                             {% if filtros_ativos.busca %}busca={{ filtros_ativos.busca }}{% endif %}"
-                       class="badge bg-success filtres-pill">
-                        Disciplina: {{ filtros_ativos.disciplina }}
-                        <i class="bi bi-x-lg ms-1"></i>
-                    </a>
-                {% endif %}
-
-                {% if filtros_ativos.status_ldp %}
-                    <a href="?{% if filtros_ativos.projeto %}projeto={{ filtros_ativos.projeto }}&{% endif %}
-                             {% if filtros_ativos.disciplina %}disciplina={{ filtros_ativos.disciplina }}&{% endif %}
-                             {% if filtros_ativos.status_emissao %}status_emissao={{ filtros_ativos.status_emissao }}&{% endif %}
-                             {% if filtros_ativos.busca %}busca={{ filtros_ativos.busca }}{% endif %}"
-                       class="badge bg-warning text-dark filtres-pill">
-                        LDP: {{ filtros_ativos.status_ldp }}
-                        <i class="bi bi-x-lg ms-1"></i>
-                    </a>
-                {% endif %}
-
-                {% if filtros_ativos.status_emissao %}
-                    <a href="?{% if filtros_ativos.projeto %}projeto={{ filtros_ativos.projeto }}&{% endif %}
-                             {% if filtros_ativos.disciplina %}disciplina={{ filtros_ativos.disciplina }}&{% endif %}
-                             {% if filtros_ativos.status_ldp %}status_ldp={{ filtros_ativos.status_ldp }}&{% endif %}
-                             {% if filtros_ativos.busca %}busca={{ filtros_ativos.busca }}{% endif %}"
-                       class="badge bg-danger filtres-pill">
-                        Emissão: {{ filtros_ativos.status_emissao }}
-                        <i class="bi bi-x-lg ms-1"></i>
-                    </a>
-                {% endif %}
-
-                {% if filtros_ativos.busca %}
-                    <a href="?{% if filtros_ativos.projeto %}projeto={{ filtros_ativos.projeto }}&{% endif %}
-                             {% if filtros_ativos.disciplina %}disciplina={{ filtros_ativos.disciplina }}&{% endif %}
-                             {% if filtros_ativos.status_ldp %}status_ldp={{ filtros_ativos.status_ldp }}&{% endif %}
-                             {% if filtros_ativos.status_emissao %}status_emissao={{ filtros_ativos.status_emissao }}{% endif %}"
-                       class="badge bg-dark filtres-pill">
-                        Busca: “{{ filtros_ativos.busca }}”
-                        <i class="bi bi-x-lg ms-1"></i>
-                    </a>
-                {% endif %}
-
-                <a href="{% url 'documentos:listar_documentos' %}" class="badge bg-secondary filtres-pill">
-                    Limpar tudo <i class="bi bi-trash ms-1"></i>
-                </a>
-            </div>
-        {% endif %}
-    </div>
-
-    <!-- ===========================
-         TÍTULO + FILTROS AVANÇADOS
-    ============================ -->
-    <div class="page-title">
-        <div class="page-title-icon">
-            <i class="bi bi-table"></i>
-        </div>
-        <div class="page-title-text">
-            Lista de Documentos
-        </div>
-    </div>
-
-    <form method="GET" class="card card-filtros p-3 mb-3 shadow-sm">
-        <div class="row g-3">
-
-            <div class="col-md-2">
-                <label class="form-label">Projeto</label>
-                <select name="projeto" class="form-select">
-                    <option value="">Todos</option>
-                    {% for p in projetos %}
-                        <option value="{{ p }}" {% if request.GET.projeto == p %}selected{% endif %}>{{ p }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <div class="col-md-2">
-                <label class="form-label">Disciplina</label>
-                <select name="disciplina" class="form-select">
-                    <option value="">Todas</option>
-                    {% for d in disciplinas %}
-                        <option value="{{ d }}" {% if request.GET.disciplina == d %}selected{% endif %}>{{ d }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <div class="col-md-2">
-                <label class="form-label">Status LDP</label>
-                <select name="status_ldp" class="form-select">
-                    <option value="">Todos</option>
-                    {% for s in status_ldp_list %}
-                        <option value="{{ s }}" {% if request.GET.status_ldp == s %}selected{% endif %}>{{ s }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <div class="col-md-2">
-                <label class="form-label">Status Emissão</label>
-                <select name="status_emissao" class="form-select">
-                    <option value="">Todos</option>
-                    {% for e in status_emissao_list %}
-                        <option value="{{ e }}" {% if request.GET.status_emissao == e %}selected{% endif %}>{{ e }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <div class="col-md-3">
-                <label class="form-label">Busca (Código ou Título)</label>
-                <input type="text" name="busca" class="form-control"
-                       value="{{ request.GET.busca }}" placeholder="Ex: 4880 ou Relatório">
-            </div>
-
-            <div class="col-md-1 d-flex align-items-end">
-                <button class="btn btn-primary w-100 btn-pill">
-                    Filtrar
-                </button>
-            </div>
-
-        </div>
-    </form>
-
-    <!-- BOTÃO NOVO DOCUMENTO -->
-    <div class="d-flex justify-content-between align-items-center mb-2">
-        <a href="{% url 'documentos:upload_documento' %}" class="btn btn-success btn-pill shadow-sm">
-            ➕ Novo Documento
+    <div class="d-flex gap-2">
+        <a href="{% url 'documentos:upload_documento' %}" class="btn btn-success btn-premium">
+            <i class="bi bi-file-earmark-plus"></i> Novo Documento
         </a>
 
         {% if request.user.is_superuser %}
-            <form method="POST" action="{% url 'documentos:excluir_selecionados' %}" id="formExcluir" class="mb-0">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-outline-danger btn-pill">
-                    <i class="bi bi-trash"></i> Excluir Selecionados
-                </button>
-            </form>
+        <button form="formExcluir" class="btn btn-outline-danger btn-premium">
+            <i class="bi bi-trash"></i> Excluir Selecionados
+        </button>
         {% endif %}
     </div>
+</div>
 
-    <!-- ===========================
-         TABELA
-    ============================ -->
-    <div class="card shadow-sm p-3">
-        <div class="table-responsive">
-            <table class="table table-striped table-bordered align-middle" id="tabelaDocumentos" style="width:100%;">
-                <thead class="table-light">
-                    <tr>
-                        {% if request.user.is_superuser %}
-                            <th class="text-center"><input type="checkbox" id="selectAll"></th>
-                        {% endif %}
-                        <th>Projeto</th>
-                        <th>Fase</th>
-                        <th>Tipo Doc</th>
-                        <th>Código</th>
-                        <th>Revisão</th>
-                        <th>Disciplina</th>
-                        <th>Título</th>
-                        <th>Status LDP</th>
-                        <th>Status Emissão</th>
-                        <th>GRDT</th>
-                        <th>PCF</th>
-                        <th>Emissão</th>
-                        <th>Arquivo</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-                    {% for doc in documentos %}
-                        <tr>
-                            {% if request.user.is_superuser %}
-                                <td class="text-center">
-                                    <input type="checkbox" name="ids" value="{{ doc.id }}" class="selectItem">
-                                </td>
-                            {% endif %}
-
-                            <td>{{ doc.projeto }}</td>
-                            <td>{{ doc.fase }}</td>
-                            <td>{{ doc.tipo_doc }}</td>
-                            <td><strong>{{ doc.codigo }}</strong></td>
-                            <td>{{ doc.revisao }}</td>
-                            <td>{{ doc.disciplina }}</td>
-                            <td>{{ doc.titulo }}</td>
-
-                            <td>
-                                {% if doc.status_ldp %}
-                                    <span class="badge bg-info text-dark">{{ doc.status_ldp }}</span>
-                                {% else %}
-                                    <span class="text-muted">—</span>
-                                {% endif %}
-                            </td>
-
-                            <td>
-                                {% if doc.status_emissao %}
-                                    <span class="badge bg-warning text-dark">{{ doc.status_emissao }}</span>
-                                {% else %}
-                                    <span class="text-muted">—</span>
-                                {% endif %}
-                            </td>
-
-                            <td>{{ doc.numero_grdt|default:"—" }}</td>
-                            <td>{{ doc.numero_pcf|default:"—" }}</td>
-
-                            <td>
-                                {% if doc.data_emissao_tp %}
-                                    {{ doc.data_emissao_tp|date:"d/m/Y" }}
-                                {% else %}
-                                    —
-                                {% endif %}
-                            </td>
-
-                            <td>
-                                {% if doc.arquivos.all|length > 0 %}
-                                    <a href="{% url 'documentos:detalhes_documento' doc.id %}"
-                                       class="btn btn-primary btn-sm btn-pill">
-                                        Abrir anexos
-                                    </a>
-                                {% else %}
-                                    <span class="text-muted">Sem arquivo</span>
-                                {% endif %}
-                            </td>
-
-                            <td class="text-center">
-                                <a href="{% url 'documentos:detalhes_documento' doc.id %}"
-                                   class="btn btn-outline-secondary btn-sm btn-pill">
-                                    Detalhes
-                                </a>
-                            </td>
-
-                        </tr>
-                    {% endfor %}
-                </tbody>
-
-            </table>
-        </div>
+<div class="filtro-card mb-3">
+<form method="GET" class="row g-3">
+    <div class="col-md-2">
+        <label>Projeto</label>
+        <select name="projeto" class="form-select">
+            <option value="">Todos</option>
+            {% for p in projetos %}
+            <option value="{{ p }}" {% if request.GET.projeto == p %}selected{% endif %}>{{ p }}</option>
+            {% endfor %}
+        </select>
     </div>
+    <div class="col-md-2">
+        <label>Disciplina</label>
+        <select name="disciplina" class="form-select">
+            <option value="">Todas</option>
+            {% for d in disciplinas %}
+            <option value="{{ d }}" {% if request.GET.disciplina == d %}selected{% endif %}>{{ d }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label>Status Documento</label>
+        <select name="status_documento" class="form-select">
+            <option value="">Todos</option>
+            {% for s in status_documento_list %}
+            <option value="{{ s }}" {% if request.GET.status_documento == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label>Status Emissão</label>
+        <select name="status_emissao" class="form-select">
+            <option value="">Todos</option>
+            {% for e in status_emissao_list %}
+            <option value="{{ e }}" {% if request.GET.status_emissao == e %}selected{% endif %}>{{ e }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label>Busca Global</label>
+        <input type="text" name="busca" value="{{ request.GET.busca }}" class="form-control" placeholder="Código, título...">
+    </div>
+    <div class="col-md-1 d-flex align-items-end">
+        <button class="btn btn-primary w-100 btn-premium"><i class="bi bi-search"></i></button>
+    </div>
+</form>
+</div>
 
+<div class="card p-3 shadow-sm">
+<div class="table-responsive">
+
+{% if request.user.is_superuser %}
+<form id="formExcluir" method="POST" action="{% url 'documentos:excluir_selecionados' %}">
+    {% csrf_token %}
+{% endif %}
+
+<table id="tabelaDocumentos" class="table table-hover table-bordered align-middle">
+<thead>
+<tr>
+{% if request.user.is_superuser %}
+    <th><input type="checkbox" id="selectAll"></th>
+{% endif %}
+<th>Projeto</th>
+<th>Fase</th>
+<th>Tipo</th>
+<th>Código</th>
+<th>Rev</th>
+<th>Disciplina</th>
+<th>Título</th>
+<th>Status Documento</th>
+<th>Status Emissão</th>
+<th>GRDT</th>
+<th>PCF</th>
+<th>Data</th>
+<th>Arquivo</th>
+<th>Ações</th>
+</tr>
+</thead>
+<tbody>
+
+{% for doc in documentos %}
+<tr>
+{% if request.user.is_superuser %}
+<td><input type="checkbox" class="selectItem" name="selecionados" value="{{ doc.id }}"></td>
+{% endif %}
+<td>{{ doc.projeto.nome|default:"—" }}</td>
+<td>{{ doc.fase }}</td>
+<td>{{ doc.tipo_doc }}</td>
+<td><b>{{ doc.codigo }}</b></td>
+<td>{{ doc.revisao }}</td>
+<td>{{ doc.disciplina }}</td>
+<td>{{ doc.titulo }}</td>
+<td>{% if doc.status_documento %}<span class="badge badge-status badge-doc">{{ doc.status_documento }}</span>{% else %}—{% endif %}</td>
+<td>{% if doc.status_emissao %}<span class="badge badge-status badge-emissao">{{ doc.status_emissao }}</span>{% else %}—{% endif %}</td>
+<td>{{ doc.grdt_cliente|default:"—" }}</td>
+<td>{{ doc.resposta_cliente|default:"—" }}</td>
+<td>{% if doc.data_emissao_grdt %}{{ doc.data_emissao_grdt|date:"d/m/Y" }}{% else %}—{% endif %}</td>
+<td>
+{% if doc.arquivos.all|length > 0 %}
+<a href="{% url 'documentos:detalhes_documento' doc.id %}" class="btn btn-sm btn-primary btn-premium">Abrir</a>
+{% else %}
+<span class="text-muted">Sem</span>
+{% endif %}
+</td>
+<td>
+<a href="{% url 'documentos:detalhes_documento' doc.id %}" class="btn btn-sm btn-outline-secondary btn-premium">Detalhes</a>
+</td>
+</tr>
+{% endfor %}
+
+</tbody>
+</table>
+
+{% if request.user.is_superuser %}
+</form>
+{% endif %}
+
+</div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
-    <!-- jQuery + DataTables -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
-    <!-- Botões de exportação -->
-    <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+<script>
+$(document).ready(function(){
+    $('#tabelaDocumentos').DataTable({
+        pageLength: 25,
+        lengthMenu: [10,25,50,100],
+        responsive: true,
+        scrollX: true,
+        dom:'Bfrtip',
+        buttons:[
+            { extend:'excelHtml5', text:'Excel' },
+            { extend:'csvHtml5', text:'CSV' },
+            { extend:'print', text:'Imprimir' }
+        ],
+        language:{ url:"https://cdn.datatables.net/plug-ins/1.13.6/i18n/pt-BR.json" }
+    });
 
-    <script>
-        // Inicialização DataTable
-        $(document).ready(function () {
-            $('#tabelaDocumentos').DataTable({
-                scrollX: true,
-                pageLength: 25,
-                lengthMenu: [10, 25, 50, 100],
-                language: {
-                    url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/pt-BR.json"
-                },
-                dom: 'Bfrtip',
-                buttons: [
-                    { extend: 'excelHtml5', text: 'Exportar Excel' },
-                    { extend: 'csvHtml5',   text: 'CSV' },
-                    { extend: 'print',      text: 'Imprimir' }
-                ]
-            });
-        });
-
-        // Selecionar todos
-        const selectAll = document.getElementById("selectAll");
-        if (selectAll) {
-            selectAll.addEventListener("change", function () {
-                document.querySelectorAll(".selectItem").forEach(chk => {
-                    chk.checked = selectAll.checked;
-                });
-            });
-        }
-
-        // Scroll horizontal com roda do mouse
-        document.addEventListener("wheel", function (e) {
-            const area = e.target.closest(".dataTables_scrollBody");
-            if (!area) return;
-
-            const hasHorizontal = area.scrollWidth > area.clientWidth;
-            const hasVertical = area.scrollHeight > area.clientHeight;
-            const delta = e.deltaY;
-
-            if (hasVertical) {
-                const atTop = area.scrollTop === 0;
-                const atBottom =
-                    Math.ceil(area.scrollTop + area.clientHeight) >= area.scrollHeight;
-
-                const verticalPossible =
-                    (delta < 0 && !atTop) ||
-                    (delta > 0 && !atBottom);
-
-                if (verticalPossible) return;
-            }
-
-            if (!hasHorizontal) return;
-
-            e.preventDefault();
-            area.scrollLeft += delta * 3.0;
-
-        }, { passive: false });
-    </script>
+    document.getElementById("selectAll")?.addEventListener("change", e=>{
+        document.querySelectorAll(".selectItem").forEach(c=>c.checked = e.target.checked);
+    });
+});
+</script>
 {% endblock %}

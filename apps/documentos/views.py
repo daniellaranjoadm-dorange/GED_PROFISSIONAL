@@ -10,6 +10,12 @@ from django.core.paginator import Paginator
 from django.contrib.auth.models import Group
 from datetime import date, datetime
 from io import BytesIO
+from django.db.models import Q
+from django.shortcuts import render
+from apps.documentos.models import Documento
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 import csv
 import json
 import os
@@ -32,13 +38,35 @@ from .models import (
     WorkflowEtapa,
     DocumentoWorkflowStatus,
     LogAuditoria,
-    ProjetoFinanceiro,   # 👈 MANTÉM
+    ProjetoFinanceiro,
+    DocumentoAprovacao,   # ★ AGORA IMPORTADO ★
     registrar_log,
 )
 
-
 from .utils_email import enviar_email
+# ==============================================================
+# DEFINIÇÃO OFICIAL DAS ETAPAS DO WORKFLOW (CODIFICADAS)
+# ==============================================================
 
+ETAPAS_WORKFLOW = [
+    "ELABORACAO",
+    "REVISAO_INTERNA",
+    "APROVACAO_TECNICA",
+    "DOC_CONTROL",
+    "ENVIADO_CLIENTE",
+    "APROVACAO_CLIENTE",
+    "EMISSAO_FINAL",
+]
+
+ETAPAS_LABEL = {
+    "ELABORACAO": "Elaboração",
+    "REVISAO_INTERNA": "Revisão Interna – Disciplina",
+    "APROVACAO_TECNICA": "Aprovação Técnica – Coordenador",
+    "DOC_CONTROL": "Doc Control",
+    "ENVIADO_CLIENTE": "Envio ao Cliente",
+    "APROVACAO_CLIENTE": "Aprovação do Cliente",
+    "EMISSAO_FINAL": "Emissão Final",
+}
 
 # =================================================================
 # CONFIG GLOBAL
@@ -49,25 +77,8 @@ from decimal import Decimal  # <-- garante precisão nos valores em dólar/reais
 VALOR_MEDICAO_USD = Decimal("979.00")  # ainda usado na medição genérica
 TAXA_CAMBIO_REAIS = Decimal("5.7642")  # taxa fixa que você passou
 
-# ============================
-# 🎯 CONTRATO TP25 – BASICO
-# ============================
-VALOR_TP25_BASICO_TOTAL_USD = Decimal("563901.21")
-VALOR_TP25_BASICO_APROVADO_USD = Decimal("451120.97")
-VALOR_TP25_BASICO_ASBUILT_USD = Decimal("112780.24")
-
-
-ETAPAS_WORKFLOW = [
-    "Revisão Interna – Disciplina",
-    "Aprovação Técnica – Coordenador",
-    "Envio ao Cliente",
-    "Aprovação do Cliente",
-    "Emissão Final",
-]
-
-
 # =================================================================
-# FUNÇÕES AUXILIARES
+# FUNÇÕES AUXILIARES – ENTERPRISE S7
 # =================================================================
 
 def normalizar_revisao(rev_bruto):
@@ -109,101 +120,135 @@ def highlight_text(texto, termo):
 
 
 def usuario_em_grupos(user, grupos):
+    """Verifica se usuario pertence a qualquer grupo da lista."""
     if not user.is_authenticated:
         return False
     return user.groups.filter(name__in=grupos).exists()
 
 
+# -------------------------------------------------------------
+# PERMISSÕES – BASEADAS EM WorkflowEtapa (objeto), não strings
+# -------------------------------------------------------------
+
 def pode_avancar_etapa(user, documento: Documento):
-    """Permissão de avanço baseada em grupos + etapa atual."""
+    """Verifica se o usuário pode avançar o documento para a próxima etapa."""
+
     if user.is_superuser:
         return True
 
-    doc_control = usuario_em_grupos(
-        user, ["Doc-Control", "DOC CONTROL", "DOC_CONTROL"]
-    )
-    etapa = documento.etapa_atual or ETAPAS_WORKFLOW[0]
+    # Controle central: grupo Doc-Control sempre pode avançar
+    doc_control = usuario_em_grupos(user, ["DOC_CONTROL", "Doc-Control", "DOC CONTROL"])
 
-    if etapa == "Revisão Interna – Disciplina":
-        return doc_control or user.groups.filter(name__startswith="REVISORES_").exists()
+    if doc_control:
+        return True
 
-    if etapa == "Aprovação Técnica – Coordenador":
-        return doc_control or user.groups.filter(name__startswith="COORD_").exists()
+    # Se não há etapa definida ainda → permitido avançar para a primeira etapa
+    if documento.etapa is None:
+        return True
 
-    if etapa == "Envio ao Cliente":
-        return doc_control
+    # Se a etapa tem grupos responsáveis definidos
+    grupos = documento.etapa.grupos_responsaveis.all()
 
-    if etapa == "Aprovação do Cliente":
-        return doc_control or usuario_em_grupos(user, ["CLIENTE"])
+    if grupos:
+        return user.groups.filter(id__in=grupos).exists()
 
-    if etapa == "Emissão Final":
-        return doc_control or user.groups.filter(name__startswith="COORD_").exists()
+    # Se não há restrição configurada → libera avanço
+    return True
+
+
+def pode_retornar_etapa(user, documento: Documento):
+    """Permissão para retornar etapa."""
+    if user.is_superuser:
+        return True
+
+    # Doc-Control sempre pode retornar
+    if usuario_em_grupos(user, ["DOC_CONTROL", "DOC CONTROL", "Doc-Control"]):
+        return True
+
+    # Coordenadores (COORD_*) também podem
+    if user.groups.filter(name__startswith="COORD_").exists():
+        return True
 
     return False
 
 
-def pode_retornar_etapa(user, documento: Documento):
-    if user.is_superuser:
-        return True
+# -------------------------------------------------------------
+# WORKFLOW ENTERPRISE — PRÓXIMA / ANTERIOR
+# -------------------------------------------------------------
 
-    doc_control = usuario_em_grupos(
-        user, ["Doc-Control", "DOC_CONTROL", "DOC CONTROL"]
+def proxima_etapa(documento):
+    """
+    Retorna a próxima etapa configurada no Workflow Enterprise.
+    """
+
+    # Sem etapa → assume a primeira
+    if documento.etapa is None:
+        return WorkflowEtapa.objects.filter(ativa=True).order_by("ordem").first()
+
+    # Próxima etapa declarada no admin
+    if documento.etapa.proxima_etapa:
+        return documento.etapa.proxima_etapa
+
+    # Fallback: próxima pela ordem
+    return (
+        WorkflowEtapa.objects.filter(
+            ativa=True, ordem__gt=documento.etapa.ordem
+        ).order_by("ordem").first()
     )
-    coord = user.groups.filter(name__startswith="COORD_").exists()
-    return doc_control or coord
-
-
-def proxima_etapa(documento: Documento):
-    etapa = documento.etapa_atual or ETAPAS_WORKFLOW[0]
-    try:
-        idx = ETAPAS_WORKFLOW.index(etapa)
-    except ValueError:
-        return None
-    if idx + 1 < len(ETAPAS_WORKFLOW):
-        return ETAPAS_WORKFLOW[idx + 1]
-    return None
 
 
 def etapa_anterior(documento: Documento):
-    etapa = documento.etapa_atual or ETAPAS_WORKFLOW[0]
-    try:
-        idx = ETAPAS_WORKFLOW.index(etapa)
-    except ValueError:
+    """
+    Retorna a etapa anterior à atual, baseada na ordem.
+    """
+
+    if documento.etapa is None:
         return None
-    if idx > 0:
-        return ETAPAS_WORKFLOW[idx - 1]
-    return None
+
+    return (
+        WorkflowEtapa.objects.filter(
+            ativa=True, ordem__lt=documento.etapa.ordem
+        ).order_by("-ordem").first()
+    )
 
 
-def registrar_workflow(documento: Documento, etapa: str, status: str, request, observacao: str = ""):
+# -------------------------------------------------------------
+# REGISTRO DE WORKFLOW (LOG)
+# -------------------------------------------------------------
+
+def registrar_workflow(documento: Documento, etapa, acao: str, request, observacao: str = ""):
     """
-    Registra movimentação do workflow no log sem depender de DocumentoAprovacao.
-    Mantém histórico enterprise para auditoria e dashboard.
+    Registra movimentação no log enterprise.
+    'etapa' agora é WorkflowEtapa ou string com nome.
     """
 
-    etapa_obj = WorkflowEtapa.objects.filter(nome=etapa).first()
-    if not etapa_obj:
-        return  # Segurança — não quebra se etapa não existir
+    if isinstance(etapa, str):
+        etapa_obj = WorkflowEtapa.objects.filter(nome=etapa).first()
+    else:
+        etapa_obj = etapa
 
     usuario = request.user if request.user.is_authenticated else None
 
     descricao = (
-        f"[WORKFLOW] Documento {documento.codigo} → {etapa} | "
-        f"Status: {status} | {observacao or ''}"
+        f"[WORKFLOW] Documento {documento.codigo} "
+        f"→ {etapa_obj.nome if etapa_obj else etapa} | "
+        f"Ação: {acao} | {observacao or ''}"
     )
 
-    # 🔥 Tudo passa pelo log enterprise centralizado
     registrar_log(
         usuario,
         documento,
-        f"Workflow: {status}",
+        f"Workflow: {acao}",
         descricao
     )
 
 
+# -------------------------------------------------------------
+# NOTIFICAÇÕES
+# -------------------------------------------------------------
 
 def notificar_evento_documento(documento: Documento, tipo_evento: str):
-    """Centraliza notificações por e-mail (simples)."""
+    """Centraliza notificações por e-mail."""
     assunto = ""
     mensagem = ""
 
@@ -240,13 +285,16 @@ def notificar_evento_documento(documento: Documento, tipo_evento: str):
             mensagem=mensagem,
             destinatarios=["seu.email@empresa.com"],
         )
-    except Exception:
-        # Nunca quebrar o fluxo por causa de e-mail
+    except:
         pass
 
 
-def mover_para_lixeira(documento: Documento, request, etapa: str = "Exclusão", motivo: str = ""):
-    """Soft delete."""
+# -------------------------------------------------------------
+# LIXEIRA
+# -------------------------------------------------------------
+
+def mover_para_lixeira(documento: Documento, request, motivo: str = ""):
+    """Soft delete enterprise."""
     if not documento.ativo:
         return False
 
@@ -254,9 +302,9 @@ def mover_para_lixeira(documento: Documento, request, etapa: str = "Exclusão", 
     documento.deletado_em = timezone.now()
     documento.deletado_por = request.user.username
     documento.motivo_exclusao = motivo or ""
-    documento.save(update_fields=["ativo", "deletado_em", "deletado_por", "motivo_exclusao"])
+    documento.save()
 
-    registrar_workflow(documento, etapa, "Excluído", request, motivo)
+    registrar_workflow(documento, documento.etapa, "Excluído", request, motivo)
     return True
 
 
@@ -265,34 +313,9 @@ def restaurar_da_lixeira(documento: Documento, request):
     documento.deletado_em = None
     documento.deletado_por = None
     documento.motivo_exclusao = ""
-    documento.save(update_fields=["ativo", "deletado_em", "deletado_por", "motivo_exclusao"])
+    documento.save()
 
-    registrar_workflow(documento, "Restauração", "Restaurado", request)
-
-def montar_descricao_log(usuario, documento, acao_verbosa: str):
-    """
-    Gera uma descrição padrão e detalhada para o LogAuditoria,
-    no formato enterprise que combinamos.
-    """
-    from django.utils import timezone
-
-    user = usuario.username if usuario and usuario.is_authenticated else "Sistema"
-    cod = documento.codigo or "Sem código"
-    rev = (documento.revisao or "").strip() or "-"
-    projeto_nome = (
-        documento.projeto.nome
-        if getattr(documento, "projeto", None)
-        else "Projeto TP25 - NAVIOS HANDY CLASSE 80"
-    )
-    status_doc = documento.status_documento or "Sem status doc"
-    status_emis = documento.status_emissao or "Sem status emissão"
-    agora = timezone.localtime(timezone.now())
-
-    return (
-        f"Usuário {user} {acao_verbosa} o documento {cod} (Rev {rev}) "
-        f"no {projeto_nome} às {agora:%d/%m/%Y %H:%M} – "
-        f"status: {status_doc} / {status_emis}"
-    )
+    registrar_workflow(documento, documento.etapa, "Restaurado", request)
 
 
 # =================================================================
@@ -519,7 +542,7 @@ def painel_workflow(request):
             field = "-" + field
         docs = docs.order_by(field)
     else:
-        docs = docs.order_by("etapa_atual", "codigo")
+        docs = docs.order_by("etapa", "codigo")
 
     disciplinas = (
         docs_base.exclude(disciplina__isnull=True)
@@ -726,59 +749,97 @@ def painel_workflow_exportar_excel(request):
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
-
-
-# =================================================================
-# LISTAR DOCUMENTOS
-# =================================================================
-
-@login_required
+# no topo do arquivo (se ainda não tiver):
+from django.db.models import Q
+from django.shortcuts import render
+from apps.documentos.models import Documento
+# ... (deixe os outros imports que você já tem)
+# =====================================================================
+# 📁 LISTA DE DOCUMENTOS – com filtros funcionando 100%
+# =====================================================================
 def listar_documentos(request):
-    docs = Documento.objects.filter(ativo=True).select_related("projeto").order_by("-criado_em")
+    # Base: só documentos ativos e não deletados
+    documentos = Documento.objects.filter(ativo=True, deletado_em__isnull=True)
 
-    projeto = request.GET.get("projeto") or ""
-    disciplina = request.GET.get("disciplina") or ""
-    status_ldp = request.GET.get("status_ldp") or ""
-    status_emissao = request.GET.get("status_emissao") or ""
-    busca = request.GET.get("busca") or ""
+    # ---- Filtros vindos da barra superior ----
+    projeto_filtro        = request.GET.get("projeto", "") or ""
+    disciplina_filtro     = request.GET.get("disciplina", "") or ""
+    status_doc_filtro     = request.GET.get("status_documento", "") or ""
+    status_emissao_filtro = request.GET.get("status_emissao", "") or ""
+    busca                 = request.GET.get("busca", "") or ""
 
-    if projeto:
-        docs = docs.filter(projeto__nome__icontains=projeto)
-    if disciplina:
-        docs = docs.filter(disciplina=disciplina)
-    if status_ldp:
-        docs = docs.filter(status_documento=status_ldp)
-    if status_emissao:
-        docs = docs.filter(status_emissao=status_emissao)
+    # Aplica filtros
+    if projeto_filtro:
+        documentos = documentos.filter(projeto__nome__icontains=projeto_filtro)
+
+    if disciplina_filtro:
+        documentos = documentos.filter(disciplina__icontains=disciplina_filtro)
+
+    if status_doc_filtro:
+        documentos = documentos.filter(status_documento__icontains=status_doc_filtro)
+
+    if status_emissao_filtro:
+        documentos = documentos.filter(status_emissao__icontains=status_emissao_filtro)
+
+    # 🔥 CORREÇÃO DEFINITIVA DA BUSCA GLOBAL
     if busca:
-        docs = docs.filter(Q(titulo__icontains=busca) | Q(codigo__icontains=busca))
+        documentos = documentos.filter(
+            Q(codigo__icontains=busca) |
+            Q(titulo__icontains=busca)
+        )
 
-    base_qs = Documento.objects.filter(ativo=True).select_related("projeto")
-
-    filtros_ativos = {
-        "projeto": projeto,
-        "disciplina": disciplina,
-        "status_ldp": status_ldp,
-        "status_emissao": status_emissao,
-        "busca": busca,
-    }
-
-    ha_filtros = any(filtros_ativos.values())
-
-    return render(
-        request,
-        "documentos/listar.html",
-        {
-            "documentos": docs,
-            "projetos": base_qs.values_list("projeto__nome", flat=True).distinct(),
-            "disciplinas": base_qs.values_list("disciplina", flat=True).distinct(),
-            "status_ldp_list": base_qs.values_list("status_documento", flat=True).distinct(),
-            "status_emissao_list": base_qs.values_list("status_emissao", flat=True).distinct(),
-            "filtros_ativos": filtros_ativos,
-            "ha_filtros": ha_filtros,
-        },
+    # ---- Combos dos selects (usados no template listar.html) ----
+    projetos = (
+        Documento.objects
+        .values_list("projeto__nome", flat=True)
+        .exclude(projeto__nome__isnull=True)
+        .exclude(projeto__nome__exact="")
+        .distinct()
+        .order_by("projeto__nome")
     )
 
+    disciplinas = (
+        Documento.objects
+        .values_list("disciplina", flat=True)
+        .exclude(disciplina__isnull=True)
+        .exclude(disciplina__exact="")
+        .distinct()
+        .order_by("disciplina")
+    )
+
+    status_documento_list = (
+        Documento.objects
+        .values_list("status_documento", flat=True)
+        .exclude(status_documento__isnull=True)
+        .exclude(status_documento__exact="")
+        .distinct()
+        .order_by("status_documento")
+    )
+
+    status_emissao_list = (
+        Documento.objects
+        .values_list("status_emissao", flat=True)
+        .exclude(status_emissao__isnull=True)
+        .exclude(status_emissao__exact="")
+        .distinct()
+        .order_by("status_emissao")
+    )
+
+    # ---- Contexto para o template listar.html ----
+    context = {
+        "documentos": documentos,
+        "projetos": projetos,
+        "disciplinas": disciplinas,
+        "status_documento_list": status_documento_list,
+        "status_emissao_list": status_emissao_list,
+    }
+
+    return render(request, "documentos/listar.html", context)
+
+# ==============================
+# Revisões permitidas no sistema
+# ==============================
+REVISOES_VALIDAS = ["0"] + [chr(i) for i in range(ord("A"), ord("Z")+1)]
 
 # =================================================================
 # DETALHE DO DOCUMENTO
@@ -787,7 +848,7 @@ def listar_documentos(request):
 @login_required
 def detalhes_documento(request, documento_id):
     documento = get_object_or_404(
-        Documento.objects.select_related("projeto"), id=documento_id
+        Documento.objects.select_related("projeto", "etapa"), id=documento_id
     )
 
     anexos = list(documento.arquivos.all())
@@ -807,42 +868,32 @@ def detalhes_documento(request, documento_id):
     try:
         idx = REVISOES_VALIDAS.index(rev_atual)
         proxima_revisao = (
-            REVISOES_VALIDAS[idx + 1] if idx + 1 < len(REVISOES_VALIDAS) else rev_atual
+            REVISOES_VALIDAS[idx + 1]
+            if idx + 1 < len(REVISOES_VALIDAS)
+            else rev_atual
         )
     except ValueError:
         proxima_revisao = "A"
 
-    try:
-        workflow_status = documento.workflow_status
-    except DocumentoWorkflowStatus.DoesNotExist:
-        workflow_status = None
+    workflow_status = getattr(documento, "workflow_status", None)
 
-    pode = pode_avancar_etapa(request.user, documento)
-    prox = proxima_etapa(documento)
-    pode_ret = pode_retornar_etapa(request.user, documento)
-    etapa_prev = etapa_anterior(documento)
+    context = {
+        "documento": documento,
+        "anexos": anexos,
+        "versoes": versoes_qs,
+        "versao_atual": versao_atual,
+        "proxima_revisao": proxima_revisao,
+        "workflow_status": workflow_status,
+        "pode_avancar_etapa": pode_avancar_etapa(request.user, documento),
+        "proxima_etapa": proxima_etapa(documento),
+        "pode_retornar_etapa": pode_retornar_etapa(request.user, documento),
+        "etapa_anterior": etapa_anterior(documento),
+        "historico_workflow": documento.historico_workflow.select_related(
+            "etapa", "usuario"
+        ).order_by("-data"),
+    }
 
-    historico = (
-        documento.aprovacoes.select_related("etapa", "usuario").order_by("-data")
-    )
-
-    return render(
-        request,
-        "documentos/detalhes.html",
-        {
-            "documento": documento,
-            "historico_workflow": historico,
-            "anexos": anexos,
-            "versoes": versoes_qs,
-            "versao_atual": versao_atual,
-            "proxima_revisao": proxima_revisao,
-            "workflow_status": workflow_status,
-            "pode_avancar_etapa": pode,
-            "proxima_etapa": prox,
-            "pode_retornar_etapa": pode_ret,
-            "etapa_anterior": etapa_prev,
-        },
-    )
+    return render(request, "documentos/detalhes.html", context)
 
 
 # =================================================================
@@ -865,36 +916,46 @@ def historico(request, codigo):
 
 
 # =================================================================
-# AVANÇAR / RETORNAR ETAPA (workflow textual)
+# AVANÇAR ETAPA — WORKFLOW ENTERPRISE
+# =================================================================
+
+@login_required
+
+# =================================================================
+# AVANÇAR / RETORNAR ETAPA — WORKFLOW ENTERPRISE (COM OBS + ANEXOS)
 # =================================================================
 
 @login_required
 def enviar_proxima_etapa(request, documento_id):
     documento = get_object_or_404(Documento, id=documento_id)
 
+    if request.method != "POST":
+        messages.error(request, "Requisição inválida.")
+        return redirect("documentos:detalhes_documento", documento_id=documento.id)
+
     if not pode_avancar_etapa(request.user, documento):
         messages.error(request, "Você não tem permissão para avançar esta etapa.")
         return redirect("documentos:detalhes_documento", documento_id=documento.id)
 
-    prox = proxima_etapa(documento)
-    if not prox:
-        messages.warning(
-            request, "Este documento já está na última etapa do workflow."
-        )
+    observacao = (request.POST.get("observacao") or "").strip()
+    anexos = request.FILES.getlist("anexos")
+
+    if not observacao:
+        messages.warning(request, "Informe o motivo/observação para avançar a etapa.")
         return redirect("documentos:detalhes_documento", documento_id=documento.id)
 
-    documento.etapa_atual = prox
-    documento.save(update_fields=["etapa_atual"])
-
-    registrar_workflow(
-        documento,
-        prox,
-        "Avançado",
-        request,
-        observacao=f"Documento avançado para: {prox}",
+    nova_etapa = documento.enviar_para_proxima_etapa(
+        usuario=request.user,
+        observacao=observacao,
+        anexos=anexos,
     )
 
-    messages.success(request, f"Documento avançado para a próxima etapa: {prox}")
+    if not nova_etapa:
+        messages.warning(request, "Este documento já está na última etapa do workflow.")
+        return redirect("documentos:detalhes_documento", documento_id=documento.id)
+
+    registrar_workflow(documento, nova_etapa, "Avançou etapa", request, observacao)
+    messages.success(request, f"Documento avançado para: {nova_etapa.nome}")
     return redirect("documentos:detalhes_documento", documento_id=documento.id)
 
 
@@ -902,35 +963,36 @@ def enviar_proxima_etapa(request, documento_id):
 def retornar_etapa(request, documento_id):
     documento = get_object_or_404(Documento, id=documento_id)
 
+    if request.method != "POST":
+        messages.error(request, "Requisição inválida.")
+        return redirect("documentos:detalhes_documento", documento_id=documento.id)
+
     if not pode_retornar_etapa(request.user, documento):
-        messages.error(request, "Você não tem permissão para retornar esta etapa.")
+        messages.error(request, "Sem permissão para retornar etapa.")
         return redirect("documentos:detalhes_documento", documento_id=documento.id)
 
-    etapa_prev = etapa_anterior(documento)
-    if not etapa_prev:
-        messages.warning(request, "Este documento já está na primeira etapa.")
+    observacao = (request.POST.get("observacao") or request.POST.get("motivo") or "").strip()
+    anexos = request.FILES.getlist("anexos")
+
+    if not observacao:
+        messages.warning(request, "Informe o motivo/observação para retornar a etapa.")
         return redirect("documentos:detalhes_documento", documento_id=documento.id)
 
-    documento.etapa_atual = etapa_prev
-    documento.save(update_fields=["etapa_atual"])
+    destino = etapa_anterior(documento)
+    if not destino:
+        messages.warning(request, "Documento já está na primeira etapa.")
+        return redirect("documentos:detalhes_documento", documento_id=documento.id)
 
-    registrar_workflow(
-        documento,
-        etapa_prev,
-        "Retornado",
-        request,
-        observacao=f"Etapa retornada para: {etapa_prev}",
+    documento.retornar_etapa(
+        etapa_destino=destino,
+        usuario=request.user,
+        motivo=observacao,
+        anexos=anexos,
     )
 
-    messages.success(request, f"Etapa retornada para: {etapa_prev}")
+    registrar_workflow(documento, destino, "Retornou etapa", request, observacao)
+    messages.success(request, f"Documento retornado para: {destino.nome}")
     return redirect("documentos:detalhes_documento", documento_id=documento.id)
-
-
-# =================================================================
-# NOVA VERSÃO (upload simples de arquivo)
-# =================================================================
-
-@login_required
 def nova_versao(request, documento_id):
     documento = get_object_or_404(Documento, id=documento_id)
 
@@ -1568,7 +1630,7 @@ def excluir_selecionados(request):
     if request.method != "POST":
         return redirect("documentos:listar_documentos")
 
-    ids = request.POST.getlist("ids") or []
+    ids = request.POST.getlist("selecionados") or []
     count = 0
     for _id in ids:
         try:
@@ -1617,6 +1679,41 @@ def configuracoes(request):
         },
     )
 
+# =================================================================
+# CONFIGURAÇÕES UNIFICADAS (Usuário + Administração)
+# =================================================================
+
+@login_required
+def configuracoes(request):
+    from apps.contas.models import UserConfig  # Importa aqui para evitar ciclos
+
+    # Carrega ou cria configuração do usuário
+    config, _ = UserConfig.objects.get_or_create(user=request.user)
+
+    # Salvar preferências pessoais
+    if request.method == "POST" and "salvar_prefs" in request.POST:
+        config.tema = request.POST.get("tema", config.tema)
+        config.animacoes = request.POST.get("animacoes", "True") == "True"
+        config.notificacoes_email = request.POST.get("notificacoes_email", "True") == "True"
+        config.dashboard_expandido = request.POST.get("dashboard_expandido", "True") == "True"
+        config.save()
+        messages.success(request, "Preferências atualizadas com sucesso!")
+
+    # Dados para parte administrativa (apenas admins/master)
+    projetos = Projeto.objects.all().order_by("nome")
+    resp_disc = ResponsavelDisciplina.objects.all().order_by("disciplina")
+    etapas = WorkflowEtapa.objects.all().order_by("ordem")
+
+    return render(
+        request,
+        "documentos/configuracoes.html",
+        {
+            "projetos": projetos,
+            "responsaveis": resp_disc,
+            "etapas": etapas,
+            "config": config,
+        },
+    )
 
 # =================================================================
 # BUSCA GLOBAL

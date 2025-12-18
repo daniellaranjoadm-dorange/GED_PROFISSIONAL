@@ -1,0 +1,1049 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>D'OR@NGE • GED Enterprise Naval</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+/* =================================================================== */
+/*  RESET & GLOBAL                                                     */
+/* =================================================================== */
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:"Inter","Segoe UI",system-ui,sans-serif;
+}
+
+/* BACKGROUND PREMIUM */
+body{
+    min-height:100vh;
+    color:#e2e8f0;
+    background:
+        radial-gradient(circle at 10% 10%,rgba(255,140,0,.25),transparent 55%),
+        radial-gradient(circle at 85% 85%,rgba(0,200,255,.20),transparent 55%),
+        #020617;
+    overflow-x:hidden;
+    display:flex;
+    flex-direction:column;
+}
+
+/* blueprint naval */
+body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    background:url("{% static 'img/blueprint-grid.png' %}");
+    opacity:.08;
+    pointer-events:none;
+    z-index:-2;
+}
+
+/* Luz ambiente */
+body::after{
+    content:"";
+    position:fixed;
+    inset:-40%;
+    background:
+        radial-gradient(circle at 20% 20%,rgba(255,140,0,.18),transparent 55%),
+        radial-gradient(circle at 80% 80%,rgba(56,189,248,.18),transparent 55%);
+    filter:blur(60px);
+    opacity:.8;
+    animation:glowPulse 10s ease-in-out infinite alternate;
+    pointer-events:none;
+    z-index:-3;
+}
+
+@keyframes glowPulse{
+    0%{opacity:.55;}
+    100%{opacity:.85;}
+}
+
+/* =================================================================== */
+/*  LAYOUT PRINCIPAL                                                   */
+/* =================================================================== */
+
+.main-wrapper{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:72px 18px 40px;
+    gap:40px;
+}
+/* =================================================================== */
+/* 💠 BLOCO C — Benefícios principais */
+/* =================================================================== */
+
+.beneficios-section{
+    width:100%;
+    padding:110px 20px 80px;
+    display:flex;
+    justify-content:center;
+}
+
+.beneficios-container{
+    width:100%;
+    max-width:1100px;
+    text-align:center;
+}
+
+.beneficios-title{
+    font-size:2.3rem;
+    font-weight:700;
+    margin-bottom:8px;
+    background:linear-gradient(90deg,#fbbf24,#f97316);
+    -webkit-background-clip:text;
+    color:transparent;
+    text-shadow:0 0 25px rgba(249,115,22,.55);
+}
+
+.beneficios-sub{
+    color:#94a3b8;
+    font-size:1.05rem;
+    max-width:700px;
+    margin:0 auto 45px;
+}
+
+.beneficios-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+    gap:26px;
+}
+
+/* Cards */
+.beneficio-card{
+    background:rgba(10,17,30,.80);
+    border:1px solid rgba(255,255,255,.06);
+    padding:32px 24px;
+    border-radius:18px;
+    transition:.35s;
+    backdrop-filter:blur(10px);
+}
+.beneficio-card:hover{
+    transform:translateY(-6px) scale(1.03);
+    box-shadow:0 10px 25px rgba(249,115,22,.35);
+    border-color:#f97316aa;
+}
+
+/* Ícones */
+.beneficio-icon{
+    font-size:2.5rem;
+    margin-bottom:12px;
+    color:#fbbf24;
+    filter:drop-shadow(0 0 12px rgba(249,115,22,.7));
+    transition:.35s;
+}
+.beneficio-card:hover .beneficio-icon{
+    transform:scale(1.15);
+    filter:drop-shadow(0 0 18px rgba(249,115,22,1));
+}
+
+.beneficio-card h3{
+    font-size:1.15rem;
+    margin-bottom:6px;
+    color:#fff;
+    font-weight:600;
+}
+
+.beneficio-card p{
+    font-size:.92rem;
+    color:#cbd5e1;
+    line-height:1.45;
+}
+
+/* =================================================================== */
+/*  HERO PRINCIPAL (DOBRA 1)                                           */
+/* =================================================================== */
+
+.hero{
+    width:100%;
+    max-width:1200px;
+    display:grid;
+    grid-template-columns:minmax(0,1.5fr) minmax(0,1.1fr);
+    gap:40px;
+    align-items:center;
+    margin-bottom:40px;
+}
+
+@media (max-width:992px){
+    .hero{
+        grid-template-columns:1fr;
+        text-align:center;
+    }
+}
+
+.hero-left{
+    animation:fadeInUp .8s ease-out forwards;
+    opacity:0;
+}
+
+.logo{
+    height:90px;
+    margin-bottom:18px;
+    filter:drop-shadow(0 0 18px rgba(249,115,22,.75));
+}
+
+.hero-kicker{
+    font-size:.84rem;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    color:#fbbf24;
+    margin-bottom:10px;
+}
+
+.hero h1{
+    font-size:clamp(2.2rem,2.8vw + 1rem,3.8rem);
+    line-height:1.05;
+    margin-bottom:10px;
+    background:linear-gradient(90deg,#f97316,#fed7aa);
+    -webkit-background-clip:text;
+    color:transparent;
+    text-shadow:0 0 24px rgba(249,115,22,.45);
+}
+.hero-highlight{
+    color:#38bdf8;
+    font-weight:600;
+}
+
+.hero-sub{
+    font-size:1.02rem;
+    max-width:520px;
+    margin-top:6px;
+    margin-bottom:22px;
+    color:#cbd5e1;
+    line-height:1.6;
+}
+
+.hero-badges{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-bottom:20px;
+}
+.badge{
+    font-size:.78rem;
+    padding:5px 10px;
+    border-radius:999px;
+    border:1px solid rgba(148,163,184,.45);
+    color:#9ca3af;
+    background:rgba(15,23,42,.75);
+}
+
+.hero-cta{
+    display:flex;
+    flex-wrap:wrap;
+    gap:12px;
+}
+.hero-note{
+    font-size:.78rem;
+    color:#94a3b8;
+    margin-top:6px;
+}
+
+@media(max-width:992px){
+    .hero-sub,
+    .hero-cta,
+    .hero-badges{
+        text-align:center;
+        justify-content:center;
+    }
+    .hero-sub{margin-left:auto;margin-right:auto;}
+}
+
+/* BOTÕES */
+.btn{
+    padding:12px 28px;
+    border-radius:999px;
+    font-weight:600;
+    transition:.25s;
+    cursor:pointer;
+    border:none;
+    font-size:.95rem;
+}
+.btn-primary{
+    background:linear-gradient(90deg,#f97316,#fbbf24);
+    color:#111827;
+    box-shadow:0 12px 30px rgba(249,115,22,.45);
+}
+.btn-primary:hover{
+    transform:translateY(-2px) scale(1.02);
+    filter:brightness(1.08);
+}
+.btn-secondary{
+    background:rgba(15,23,42,.85);
+    color:#e5e7eb;
+    border:1px solid rgba(248,250,252,.15);
+}
+.btn-secondary:hover{
+    background:#111827;
+    transform:translateY(-2px);
+    box-shadow:0 0 18px rgba(148,163,184,.45);
+}
+.btn-ghost{
+    background:none;
+    border:1px dashed rgba(248,250,252,.35);
+    color:#fbbf24;
+}
+.btn-ghost:hover{
+    background:rgba(15,23,42,.9);
+    box-shadow:0 0 18px rgba(249,115,22,.55);
+    transform:scale(1.02);
+}
+
+/* =================================================================== */
+/*  CARD DO VÍDEO                                                      */
+/* =================================================================== */
+
+.hero-right{
+    display:flex;
+    justify-content:center;
+    animation:fadeInUp .95s ease-out .1s forwards;
+    opacity:0;
+}
+
+.video-card{
+    max-width:420px;
+    border-radius:22px;
+    padding:22px;
+    background:#0f172a;
+    border:1px solid rgba(148,163,184,.35);
+    box-shadow:0 25px 60px rgba(15,23,42,.95);
+}
+
+.video-label{
+    font-size:.78rem;
+    color:#38bdf8;
+    margin-bottom:8px;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+}
+.video-title{
+    font-size:1rem;
+    font-weight:600;
+    margin-bottom:10px;
+}
+.video-text{
+    font-size:.85rem;
+    color:#9ca3af;
+    margin-bottom:16px;
+}
+
+.video-thumb{
+    height:190px;
+    border-radius:14px;
+    background:radial-gradient(circle,#1e293b,#020617);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+}
+.video-play-btn{
+    width:70px;
+    height:70px;
+    border-radius:50%;
+    border:2px solid #fff3;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(15,23,42,.6);
+}
+.video-play-btn span{
+    border-style:solid;
+    border-width:9px 0 9px 17px;
+    border-color:transparent transparent transparent #fbbf24;
+    margin-left:4px;
+}
+
+.video-foot{
+    display:flex;
+    justify-content:space-between;
+    margin-top:12px;
+    font-size:.8rem;
+    color:#94a3b8;
+}
+.video-tag{
+    background:#0f172a;
+    border:1px solid #93a3b4;
+    padding:4px 10px;
+    border-radius:999px;
+}
+
+/* =================================================================== */
+/*  SESSÃO MÓDULOS — DOBRA 2                                           */
+/* =================================================================== */
+
+.modulos-section{
+    width:100%;
+    max-width:1200px;
+    text-align:center;
+    padding:90px 20px 70px;
+    margin-bottom:40px;
+    background:linear-gradient(to bottom,
+        rgba(15,23,42,.95) 0%,
+        rgba(5,20,40,1) 40%,
+        #020617 100%);
+    border-radius:32px;
+    box-shadow:0 40px 80px rgba(15,23,42,.9);
+    animation:fadeInUp 1s ease-out .1s both;
+}
+
+.mod-title{
+    font-size:clamp(2rem,2.4vw + 1rem,3rem);
+    background:linear-gradient(90deg,#fbbf24,#f97316);
+    -webkit-background-clip:text;
+    color:transparent;
+    text-shadow:0 0 26px rgba(249,115,22,.55);
+    margin-bottom:10px;
+}
+
+.mod-sub{
+    color:#94a3b8;
+    font-size:1.05rem;
+    margin-bottom:55px;
+}
+
+.mod-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+    gap:32px;
+    margin-top:25px;
+}
+
+.mod-card{
+    background:rgba(10,17,30,.9);
+    border:1px solid rgba(255,255,255,.05);
+    padding:40px 28px;
+    border-radius:20px;
+    transition:.35s ease;
+    backdrop-filter:blur(10px);
+    position:relative;
+    overflow:hidden;
+}
+
+/* Glow suave atrás */
+.mod-card::before{
+    content:"";
+    position:absolute;
+    inset:-30%;
+    background:radial-gradient(circle,#fbbf2433,transparent 60%);
+    opacity:0;
+    transition:.4s;
+    filter:blur(40px);
+    z-index:-1;
+}
+
+.mod-card:hover{
+    transform:translateY(-6px) scale(1.03);
+    border-color:#fbbf24aa;
+    box-shadow:0 0 22px rgba(249,115,22,.35);
+}
+.mod-card:hover::before{
+    opacity:.7;
+}
+
+/* Ícone */
+.mod-icon{
+    font-size:2.9rem;
+    margin-bottom:14px;
+    color:#fbbf24;
+    filter:drop-shadow(0 0 12px rgba(249,115,22,.6));
+    transition:.35s;
+}
+.mod-card:hover .mod-icon{
+    transform:scale(1.15) rotate(-3deg);
+    filter:drop-shadow(0 0 20px rgba(249,115,22,.85));
+}
+
+.mod-card h3{
+    font-size:1.18rem;
+    color:#fff;
+    margin-bottom:8px;
+    font-weight:600;
+}
+.mod-card p{
+    font-size:.92rem;
+    color:#cbd5e1;
+}
+
+/* =================================================================== */
+/*  DOBRA 3 — BENEFÍCIOS / WORKFLOW / CTA                              */
+/* =================================================================== */
+
+.benefits-section{
+    width:100%;
+    max-width:1200px;
+    margin-top:10px;
+    margin-bottom:40px;
+    padding:70px 22px 60px;
+    border-radius:32px;
+    background:radial-gradient(circle at 0 0,rgba(249,115,22,.25),transparent 55%),
+               radial-gradient(circle at 100% 100%,rgba(56,189,248,.25),transparent 55%),
+               #020617;
+    border:1px solid rgba(148,163,184,.25);
+    box-shadow:0 30px 70px rgba(15,23,42,.9);
+    display:grid;
+    grid-template-columns:minmax(0,1.4fr) minmax(0,1.1fr);
+    gap:40px;
+    animation:fadeInUp 1s ease-out .15s both;
+}
+
+@media(max-width:992px){
+    .benefits-section{
+        grid-template-columns:1fr;
+    }
+}
+
+.benefit-kicker{
+    font-size:.78rem;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    color:#38bdf8;
+    margin-bottom:8px;
+}
+
+.benefit-title{
+    font-size:clamp(1.8rem,2vw + 1rem,2.4rem);
+    font-weight:700;
+    margin-bottom:10px;
+}
+
+.benefit-title span{
+    color:#f97316;
+}
+
+.benefit-sub{
+    font-size:.98rem;
+    color:#cbd5e1;
+    margin-bottom:22px;
+}
+
+.benefit-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:14px;
+}
+
+.benefit-card{
+    background:rgba(15,23,42,.9);
+    border-radius:18px;
+    padding:16px 16px 14px;
+    border:1px solid rgba(148,163,184,.35);
+    display:flex;
+    gap:10px;
+    align-items:flex-start;
+}
+
+.benefit-icon{
+    width:30px;
+    height:30px;
+    border-radius:999px;
+    background:radial-gradient(circle,#f97316,#fbbf24);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:1.1rem;
+    color:#111827;
+    box-shadow:0 0 18px rgba(249,115,22,.7);
+    flex-shrink:0;
+}
+
+.benefit-card h4{
+    font-size:.95rem;
+    margin-bottom:2px;
+}
+.benefit-card p{
+    font-size:.8rem;
+    color:#9ca3af;
+}
+
+/* WORKFLOW / LINHA DO TEMPO */
+
+.workflow-box{
+    background:rgba(15,23,42,.96);
+    border-radius:22px;
+    padding:22px 20px 18px;
+    border:1px solid rgba(148,163,184,.45);
+}
+
+.workflow-title{
+    font-size:.9rem;
+    text-transform:uppercase;
+    letter-spacing:.16em;
+    color:#fbbf24;
+    margin-bottom:6px;
+}
+
+.workflow-sub{
+    font-size:.88rem;
+    color:#cbd5e1;
+    margin-bottom:18px;
+}
+
+.timeline{
+    position:relative;
+    padding-left:18px;
+    margin-bottom:14px;
+}
+
+.timeline::before{
+    content:"";
+    position:absolute;
+    left:4px;
+    top:0;
+    bottom:0;
+    width:2px;
+    background:linear-gradient(to bottom,#38bdf8,#f97316);
+    opacity:.7;
+}
+
+.timeline-step{
+    position:relative;
+    padding-left:18px;
+    margin-bottom:14px;
+}
+
+.timeline-step:last-child{
+    margin-bottom:6px;
+}
+
+.timeline-dot{
+    position:absolute;
+    left:-1px;
+    top:3px;
+    width:10px;
+    height:10px;
+    border-radius:999px;
+    background:#0f172a;
+    border:2px solid #f97316;
+    box-shadow:0 0 10px rgba(249,115,22,.7);
+}
+
+.timeline-step h5{
+    font-size:.9rem;
+    margin-bottom:2px;
+}
+.timeline-step p{
+    font-size:.8rem;
+    color:#9ca3af;
+}
+
+/* CTA FINAL */
+
+.benefit-cta{
+    margin-top:18px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    align-items:center;
+}
+
+.benefit-cta small{
+    font-size:.78rem;
+    color:#94a3b8;
+}
+
+.benefit-cta .btn-secondary{
+    padding:10px 20px;
+    font-size:.88rem;
+}
+
+/* =================================================================== */
+/*  MODAL VÍDEO                                                        */
+/* =================================================================== */
+
+#modalVideo{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.7);
+    backdrop-filter:blur(10px);
+    align-items:center;
+    justify-content:center;
+    z-index:9999;
+}
+
+#modalVideo video{
+    max-width:900px;
+    width:92%;
+    border-radius:14px;
+    box-shadow:0 0 40px rgba(0,0,0,.8);
+}
+
+.fechar{
+    position:absolute;
+    top:40px;
+    right:40px;
+    font-size:34px;
+    cursor:pointer;
+    color:#e5e7eb;
+    font-weight:bold;
+    text-shadow:0 0 10px #000;
+}
+.fechar:hover{
+    color:#fbbf24;
+}
+
+/* FOOTER */
+footer{
+    text-align:center;
+    padding:18px;
+    font-size:.82rem;
+    color:#64748b;
+}
+footer span{
+    color:#f97316;
+}
+
+/* ANIMAÇÕES */
+@keyframes fadeInUp{
+    from{opacity:0;transform:translateY(16px);}
+    to{opacity:1;transform:translateY(0);}
+}
+
+/* BREAKPOINTS COMPLEMENTARES */
+
+@media(min-width:1500px){
+    .hero{
+        max-width:1300px;
+        gap:60px;
+    }
+    .modulos-section,
+    .benefits-section{
+        max-width:1300px;
+    }
+}
+
+@media(max-width:768px){
+    .mod-card{padding:28px;}
+    .mod-icon{font-size:2.3rem;}
+    .modulos-section{
+        padding:70px 16px 50px;
+        border-radius:24px;
+    }
+    .benefits-section{
+        padding:50px 16px 45px;
+        border-radius:24px;
+    }
+}
+/* =================================================================== */
+</style>
+</head>
+
+<body>
+
+<div class="main-wrapper">
+
+    <!-- HERO / DOBRA 1 -->
+    <section class="hero">
+        <div class="hero-left">
+            <img src="{% static 'img/logo.png' %}" class="logo" alt="Logo D'OR@NGE">
+            <div class="hero-kicker">PLATAFORMA PROFISSIONAL DE GESTÃO DOCUMENTAL</div>
+
+            <h1>
+                GED Enterprise Naval<br>
+                <span class="hero-highlight">Rastreabilidade, auditoria e workflow técnico em um só lugar.</span>
+            </h1>
+
+            <p class="hero-sub">
+                Solução D’OR@NGE Enterprise para controle de documentos em projetos
+                navais e industriais. Revisões, pendências e medições integradas ao
+                fluxo de engenharia.
+            </p>
+
+            <div class="hero-badges">
+                <span class="badge">Rastreabilidade completa</span>
+                <span class="badge">Workflow técnico avançado</span>
+                <span class="badge">Auditoria & Compliance</span>
+                <span class="badge">Pronto para grandes contratos</span>
+            </div>
+
+            <div class="hero-cta">
+                <a href="{% url 'contas:login' %}" class="btn btn-primary">Acessar Sistema</a>
+                <a href="{% url 'contas:solicitar_acesso' %}" class="btn btn-secondary">Solicitar Acesso</a>
+                <button class="btn btn-ghost" type="button" onclick="abrirVideo()">🎥 Ver Apresentação</button>
+            </div>
+
+            <div class="hero-note">Ideal para estaleiros, EPCs e operações de grande porte.</div>
+        </div>
+
+        <div class="hero-right">
+            <div class="video-card">
+                <div class="video-label">DEMO VISUAL</div>
+                <div class="video-title">GED Enterprise Naval em ação</div>
+                <div class="video-text">
+                    Rastreio de revisões, fluxos técnicos e visual moderno.
+                </div>
+
+                <div class="video-thumb" onclick="abrirVideo()">
+                    <div class="video-play-btn"><span></span></div>
+                </div>
+
+                <div class="video-foot">
+                    <span>Versão institucional • beta</span>
+                    <span class="video-tag">D’OR@NGE</span>
+                </div>
+            </div>
+        </div>
+    </section>
+<!-- ======================================================================== -->
+<!-- 💠 SEÇÃO C — VALOR IMEDIATO DO GED ENTERPRISE -->
+<!-- ======================================================================== -->
+<section class="beneficios-section">
+    <div class="beneficios-container">
+        
+        <h2 class="beneficios-title">Por que Empresas Escolhem o GED Enterprise?</h2>
+        <p class="beneficios-sub">Automação, rastreabilidade e controle total da documentação naval e industrial.</p>
+
+        <div class="beneficios-grid">
+
+            <div class="beneficio-card">
+                <div class="beneficio-icon">⚡</div>
+                <h3>Agilidade Operacional</h3>
+                <p>Elimine retrabalho, planilhas manuais e demora nas aprovações. Fluxo inteligente e organizado.</p>
+            </div>
+
+            <div class="beneficio-card">
+                <div class="beneficio-icon">🔍</div>
+                <h3>Rastreabilidade Completa</h3>
+                <p>Histórico revisional, trilhas auditáveis e controle total do ciclo documental.</p>
+            </div>
+
+            <div class="beneficio-card">
+                <div class="beneficio-icon">📊</div>
+                <h3>Gestão em Tempo Real</h3>
+                <p>KPIs, indicadores e dashboards automáticos para tomada de decisão rápida.</p>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- DOBRA 2 — MÓDULOS -->
+<section class="modulos-section" data-aos="fade-up">
+    <h2 class="mod-title">Principais Módulos do GED Enterprise</h2>
+    <p class="mod-sub">Visão integrada para gestão documental naval/industrial.</p>
+
+    <div class="mod-grid">
+
+        <!-- Documentos -->
+        <div class="mod-card" data-aos="zoom-in" data-aos-delay="50">
+            <div class="mod-icon">
+                <svg width="38" height="38" viewBox="0 0 24 24" fill="none">
+                    <path d="M4 3h10l6 6v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" 
+                        stroke="#fbbf24" stroke-width="2"/>
+                    <path d="M14 3v5h5" stroke="#fbbf24" stroke-width="2"/>
+                </svg>
+            </div>
+            <h3>Documentos</h3>
+            <p>Controle e versionamento técnico.</p>
+        </div>
+
+        <!-- Workflow -->
+        <div class="mod-card" data-aos="zoom-in" data-aos-delay="120">
+            <div class="mod-icon">
+                <svg width="38" height="38" viewBox="0 0 24 24" fill="none">
+                    <circle cx="6" cy="6" r="2.5" stroke="#fbbf24" stroke-width="2"/>
+                    <circle cx="18" cy="12" r="2.5" stroke="#fbbf24" stroke-width="2"/>
+                    <circle cx="6" cy="18" r="2.5" stroke="#fbbf24" stroke-width="2"/>
+                    <path stroke="#fbbf24" stroke-width="2" d="M8 6h4l2 6h4"/>
+                </svg>
+            </div>
+            <h3>Workflow</h3>
+            <p>Trâmite de aprovação completo com trilha.</p>
+        </div>
+
+        <!-- Dashboard -->
+        <div class="mod-card" data-aos="zoom-in" data-aos-delay="190">
+            <div class="mod-icon">
+                <svg width="38" height="38" viewBox="0 0 24 24" fill="none">
+                    <rect x="3" y="3" width="6" height="18" stroke="#fbbf24" stroke-width="2"/>
+                    <rect x="11" y="9" width="6" height="12" stroke="#fbbf24" stroke-width="2"/>
+                    <rect x="19" y="14" width="6" height="7" stroke="#fbbf24" stroke-width="2"/>
+                </svg>
+            </div>
+            <h3>Dashboard</h3>
+            <p>Status, KPIs e progresso em tempo real.</p>
+        </div>
+
+        <!-- Medições -->
+        <div class="mod-card" data-aos="zoom-in" data-aos-delay="260">
+            <div class="mod-icon">
+                <svg width="38" height="38" viewBox="0 0 24 24" fill="none">
+                    <path d="M3 21V3h18" stroke="#fbbf24" stroke-width="2"/>
+                    <path d="M7 15l4-4 3 3 6-6" stroke="#fbbf24" stroke-width="2"/>
+                </svg>
+            </div>
+            <h3>Medições</h3>
+            <p>Entregas vinculadas e contratos.</p>
+        </div>
+
+        <!-- Revisões -->
+        <div class="mod-card" data-aos="zoom-in" data-aos-delay="330">
+            <div class="mod-icon">
+                <svg width="38" height="38" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="8.5" stroke="#fbbf24" stroke-width="2"/>
+                    <path d="M12 7v5l4 2" stroke="#fbbf24" stroke-width="2"/>
+                </svg>
+            </div>
+            <h3>Revisões</h3>
+            <p>Controle revisional com rastreio total.</p>
+        </div>
+
+        <!-- Permissões -->
+        <div class="mod-card" data-aos="zoom-in" data-aos-delay="400">
+            <div class="mod-icon">
+                <svg width="38" height="38" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="7" r="4" stroke="#fbbf24" stroke-width="2"/>
+                    <path d="M5 21v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2" stroke="#fbbf24" stroke-width="2"/>
+                </svg>
+            </div>
+            <h3>Permissões</h3>
+            <p>Perfis, disciplinas e hierarquia.</p>
+        </div>
+    </div>
+</section>
+
+
+    <!-- DOBRA 3 — BENEFÍCIOS HÍBRIDOS + WORKFLOW + CTA -->
+    <section class="benefits-section">
+        <!-- LADO ESQUERDO: BENEFÍCIOS -->
+        <div>
+            <div class="benefit-kicker">POR QUE O GED ENTERPRISE NAVAL?</div>
+            <h3 class="benefit-title">
+                Menos planilhas, <span>mais engenharia</span> e decisões em tempo real.
+            </h3>
+            <p class="benefit-sub">
+                O GED Enterprise Naval foi desenhado para ambientes de alta complexidade:
+                contratos EPC, múltiplos estaleiros, fiscalização, consórcios e grandes
+                times de engenharia trabalhando em paralelo.
+            </p>
+
+            <div class="benefit-grid">
+                <div class="benefit-card">
+                    <div class="benefit-icon">⚡</div>
+                    <div>
+                        <h4>Automação de rotinas críticas</h4>
+                        <p>Redução de retrabalho em revisões, distribuição e controle de pendências.</p>
+                    </div>
+                </div>
+
+                <div class="benefit-card">
+                    <div class="benefit-icon">🔐</div>
+                    <div>
+                        <h4>Rastreabilidade total</h4>
+                        <p>Trilha de aprovação, histórico de revisões e registros auditáveis por etapa.</p>
+                    </div>
+                </div>
+
+                <div class="benefit-card">
+                    <div class="benefit-icon">🚢</div>
+                    <div>
+                        <h4>Foco em projetos navais</h4>
+                        <p>Modelado para obras seriadas, blocos, subsistemas e interfaces multidisciplinares.</p>
+                    </div>
+                </div>
+
+                <div class="benefit-card">
+                    <div class="benefit-icon">📈</div>
+                    <div>
+                        <h4>Visão gerencial em segundos</h4>
+                        <p>Indicadores de avanço físico, medição e status documental em um único painel.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="benefit-cta">
+                <a href="{% url 'contas:solicitar_acesso' %}" class="btn btn-primary">
+                    Solicitar demonstração
+                </a>
+                <a href="{% url 'contas:login' %}" class="btn btn-secondary">
+                    Ver casos de uso internos
+                </a>
+                <small>*Versão beta focada em operação real de grandes contratos.</small>
+            </div>
+        </div>
+
+        <!-- LADO DIREITO: WORKFLOW / TIMELINE -->
+        <div class="workflow-box">
+            <div class="workflow-title">WORKFLOW TÉCNICO PADRONIZADO</div>
+            <div class="workflow-sub">
+                Da emissão à medição financeira, cada documento segue uma trilha clara
+                e configurável.
+            </div>
+
+            <div class="timeline">
+                <div class="timeline-step">
+                    <div class="timeline-dot"></div>
+                    <h5>1. Emissão & cadastro</h5>
+                    <p>Documentos criados pela engenharia ou recebidos de terceiros entram com metadados completos.</p>
+                </div>
+
+                <div class="timeline-step">
+                    <div class="timeline-dot"></div>
+                    <h5>2. Revisão & aprovação</h5>
+                    <p>Fluxos de revisão por disciplina, registro de comentários, retornos e aceite formal.</p>
+                </div>
+
+                <div class="timeline-step">
+                    <div class="timeline-dot"></div>
+                    <h5>3. Publicação & distribuição</h5>
+                    <p>Versões válidas são liberadas para obra, suprimentos, fiscalização e partes interessadas.</p>
+                </div>
+
+                <div class="timeline-step">
+                    <div class="timeline-dot"></div>
+                    <h5>4. Integração com medição</h5>
+                    <p>Entregas documentais alimentam medições, marcos contratuais e relatórios gerenciais.</p>
+                </div>
+            </div>
+
+            <div class="benefit-cta">
+                <a href="{% url 'contas:login' %}" class="btn btn-secondary">
+                    Acessar ambiente de testes
+                </a>
+            </div>
+        </div>
+    </section>
+
+</div>
+
+<!-- MODAL DO VÍDEO -->
+<div id="modalVideo">
+    <span class="fechar" onclick="fecharVideo()">✖</span>
+    <video id="videoApresentacao" controls autoplay muted>
+        <source src="{% static 'videos/apresentacao.mp4' %}" type="video/mp4">
+        Seu navegador não suporta vídeos.
+    </video>
+</div>
+
+<footer>
+    © {% now "Y" %} <span>D'OR@NGE Enterprise</span> — Gestão Documental Naval
+</footer>
+
+<script>
+function abrirVideo(){
+    const modal = document.getElementById('modalVideo');
+    const video = document.getElementById('videoApresentacao');
+    if(modal){ modal.style.display = 'flex'; }
+    if(video){ video.play(); }
+}
+function fecharVideo(){
+    const modal = document.getElementById('modalVideo');
+    const video = document.getElementById('videoApresentacao');
+    if(modal){ modal.style.display = 'none'; }
+    if(video){ video.pause(); }
+}
+</script>
+<script>
+document.addEventListener('mousemove', e => {
+    document.body.style.setProperty('--cursor-x', e.clientX + 'px');
+    document.body.style.setProperty('--cursor-y', e.clientY + 'px');
+});
+</script>
+
+</body>
+</html>

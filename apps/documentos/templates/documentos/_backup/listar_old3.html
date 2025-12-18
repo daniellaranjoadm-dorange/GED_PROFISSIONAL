@@ -1,0 +1,324 @@
+{% extends "documentos/base.html" %}
+{% block title %}📁 Lista de Documentos · D’OR@NGE Enterprise{% endblock %}
+
+{% block extra_head %}
+
+<!-- Datatables -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
+
+<style>
+
+/* ============================================================
+   CABEÇALHO PREMIUM
+============================================================ */
+.page-header {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:1.4rem;
+}
+.page-header h2 {
+    margin:0;
+    font-weight:700;
+    font-size:1.55rem;
+    color:var(--accent-blue);
+    display:flex;
+    align-items:center;
+    gap:.5rem;
+}
+
+/* ============================================================
+   FILTROS ENTERPRISE
+============================================================ */
+.filtro-card {
+    background: var(--bg-card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:1.2rem 1rem;
+    box-shadow:0 4px 14px var(--shadow);
+}
+
+.filtro-card label {
+    font-weight:600;
+    font-size:.78rem;
+    color:var(--text-soft);
+    margin-bottom:.25rem;
+}
+
+.filtro-card .form-select,
+.filtro-card .form-control {
+    background:#101a2b !important;
+    border-radius:10px !important;
+    border:1px solid rgba(255,255,255,.10) !important;
+    color:#dce8ff !important;
+    font-size:.85rem;
+    padding:.55rem .75rem;
+}
+
+.filtro-card button {
+    height:42px;
+    border-radius:10px;
+}
+
+/* ============================================================
+   TABELA PREMIUM
+============================================================ */
+#tabelaDocumentos {
+    font-size:.88rem;
+}
+#tabelaDocumentos thead {
+    background:rgba(56,189,248,0.10);
+    color:var(--accent-blue);
+}
+#tabelaDocumentos th {
+    font-weight:600;
+}
+.badge-status {
+    padding:4px 9px;
+    border-radius:8px;
+    font-size:.75rem;
+}
+.badge-doc { background:#0ea5e9; color:white; }
+.badge-emissao { background:#fbbf24; color:#111; font-weight:600; }
+
+/* Botões datatables */
+.dataTables_wrapper .dt-buttons button {
+    border-radius:10px !important;
+}
+
+/* Botões principais */
+.btn-premium {
+    border-radius:10px;
+    font-weight:600;
+}
+
+</style>
+
+{% endblock %}
+
+
+
+
+{% block content %}
+
+<!-- ============================================================
+     CABEÇALHO SUPERIOR
+============================================================ -->
+<div class="page-header">
+    <h2><i class="bi bi-folder2-open"></i> Lista de Documentos</h2>
+
+    <div class="d-flex gap-2">
+
+        <a href="{% url 'documentos:upload_documento' %}" class="btn btn-success btn-premium">
+            <i class="bi bi-file-earmark-plus"></i> Novo Documento
+        </a>
+
+        {% if request.user.is_superuser %}
+        <form method="POST" action="{% url 'documentos:excluir_selecionados' %}">
+            {% csrf_token %}
+            <button class="btn btn-outline-danger btn-premium">
+                <i class="bi bi-trash"></i> Excluir Selecionados
+            </button>
+        </form>
+        {% endif %}
+
+    </div>
+</div>
+
+<!-- ============================================================
+     CARTÃO DE FILTROS ENTERPRISE
+============================================================ -->
+<div class="filtro-card mb-3">
+<form method="GET" class="row g-3">
+
+    <div class="col-md-2">
+        <label>Projeto</label>
+        <select name="projeto" class="form-select">
+            <option value="">Todos</option>
+            {% for p in projetos %}
+            <option value="{{ p }}" {% if request.GET.projeto == p %}selected{% endif %}>{{ p }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="col-md-2">
+        <label>Disciplina</label>
+        <select name="disciplina" class="form-select">
+            <option value="">Todas</option>
+            {% for d in disciplinas %}
+            <option value="{{ d }}" {% if request.GET.disciplina == d %}selected{% endif %}>{{ d }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="col-md-2">
+        <label>Status Documento</label>
+        <select name="status_documento" class="form-select">
+            <option value="">Todos</option>
+            {% for s in status_documento_list %}
+            <option value="{{ s }}" {% if request.GET.status_documento == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="col-md-2">
+        <label>Status Emissão</label>
+        <select name="status_emissao" class="form-select">
+            <option value="">Todos</option>
+            {% for e in status_emissao_list %}
+            <option value="{{ e }}" {% if request.GET.status_emissao == e %}selected{% endif %}>{{ e }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="col-md-3">
+        <label>Busca Global</label>
+        <input type="text" name="busca" value="{{ request.GET.busca }}" placeholder="Código, título, texto..." class="form-control">
+    </div>
+
+    <div class="col-md-1 d-flex align-items-end">
+        <button class="btn btn-primary w-100 btn-premium">
+            <i class="bi bi-search"></i>
+        </button>
+    </div>
+
+</form>
+</div>
+
+
+
+
+
+<!-- ============================================================
+     TABELA DE DOCUMENTOS
+============================================================ -->
+<div class="card p-3 shadow-sm">
+<div class="table-responsive">
+
+<table id="tabelaDocumentos" class="table table-hover table-bordered align-middle">
+<thead>
+<tr>
+{% if request.user.is_superuser %}
+    <th><input type="checkbox" id="selectAll"></th>
+{% endif %}
+<th>Projeto</th>
+<th>Fase</th>
+<th>Tipo</th>
+<th>Código</th>
+<th>Rev</th>
+<th>Disciplina</th>
+<th>Título</th>
+<th>Status Documento</th>
+<th>Status Emissão</th>
+<th>GRDT</th>
+<th>PCF</th>
+<th>Data</th>
+<th>Arquivo</th>
+<th>Ações</th>
+</tr>
+</thead>
+
+<tbody>
+{% for doc in documentos %}
+<tr>
+
+{% if request.user.is_superuser %}
+<td><input type="checkbox" class="selectItem" name="ids" value="{{ doc.id }}"></td>
+{% endif %}
+
+<td>{{ doc.projeto.nome|default:"—" }}</td>
+<td>{{ doc.fase }}</td>
+<td>{{ doc.tipo_doc }}</td>
+<td><b>{{ doc.codigo }}</b></td>
+<td>{{ doc.revisao }}</td>
+<td>{{ doc.disciplina }}</td>
+<td>{{ doc.titulo }}</td>
+
+<td>
+{% if doc.status_documento %}
+<span class="badge badge-status badge-doc">{{ doc.status_documento }}</span>
+{% else %}—{% endif %}
+</td>
+
+<td>
+{% if doc.status_emissao %}
+<span class="badge badge-status badge-emissao">{{ doc.status_emissao }}</span>
+{% else %}—{% endif %}
+</td>
+
+<td>{{ doc.grdt_cliente|default:"—" }}</td>
+<td>{{ doc.resposta_cliente|default:"—" }}</td>
+
+<td>
+{% if doc.data_emissao_grdt %}
+{{ doc.data_emissao_grdt|date:"d/m/Y" }}
+{% else %}—{% endif %}
+</td>
+
+<td>
+{% if doc.arquivos.all|length > 0 %}
+<a href="{% url 'documentos:detalhes_documento' doc.id %}" class="btn btn-sm btn-primary btn-premium">Abrir</a>
+{% else %}
+<span class="text-muted">Sem</span>
+{% endif %}
+</td>
+
+<td>
+<a href="{% url 'documentos:detalhes_documento' doc.id %}" class="btn btn-sm btn-outline-secondary btn-premium">
+    Detalhes
+</a>
+</td>
+
+</tr>
+{% endfor %}
+</tbody>
+
+</table>
+
+</div>
+</div>
+
+{% endblock %}
+
+
+
+
+{% block extra_js %}
+
+<!-- Scripts Datatable -->
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<script>
+$(document).ready(function(){
+
+    $('#tabelaDocumentos').DataTable({
+        pageLength: 25,
+        lengthMenu: [10,25,50,100],
+        responsive: true,
+        scrollX: true,
+        dom:'Bfrtip',
+        buttons:[
+            { extend:'excelHtml5', text:'Excel' },
+            { extend:'csvHtml5', text:'CSV' },
+            { extend:'print', text:'Imprimir' }
+        ],
+        language:{ url:"https://cdn.datatables.net/plug-ins/1.13.6/i18n/pt-BR.json" }
+    });
+
+    // Marcar / desmarcar todos
+    document.getElementById("selectAll")?.addEventListener("change", e=>{
+        document.querySelectorAll(".selectItem").forEach(c=>c.checked = e.target.checked);
+    });
+
+});
+</script>
+
+{% endblock %}

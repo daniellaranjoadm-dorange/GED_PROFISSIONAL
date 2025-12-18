@@ -1,0 +1,927 @@
+{% extends "documentos/base.html" %}
+{% load static %}
+
+{% block title %}Dashboard Master – GED Naval{% endblock %}
+
+{% block content %}
+
+<style>
+/* ===============================
+   DASHBOARD MASTER – LAYOUT E
+   =============================== */
+
+.dashboard-master {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 0.75rem;
+}
+
+/* SIDEBAR */
+.dm-sidebar {
+    width: 260px;
+    max-width: 100%;
+    background: radial-gradient(circle at top left,
+                rgba(15,23,42,0.96),
+                #020617);
+    border-radius: 18px;
+    border: 1px solid rgba(148,163,184,0.35);
+    box-shadow: 0 20px 40px rgba(15,23,42,0.9);
+    padding: 1.1rem 1rem 1.3rem;
+    color: #e5e7eb;
+    position: relative;
+    overflow: hidden;
+}
+
+.dm-sidebar::before {
+    content: "";
+    position: absolute;
+    inset: -40%;
+    background: radial-gradient(circle at top left,
+                rgba(249,115,22,0.35),
+                transparent 55%);
+    opacity: 0.85;
+    pointer-events: none;
+}
+
+.dm-sidebar-header {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    margin-bottom: 1rem;
+}
+
+.dm-sidebar-logo {
+    width: 46px;
+    height: 46px;
+    border-radius: 999px;
+    background: radial-gradient(circle at 30% 0%,
+                #fbbf24,
+                #f97316,
+                #7c2d12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow:
+        0 0 15px rgba(249,115,22,0.7),
+        0 0 35px rgba(249,115,22,0.35);
+}
+
+.dm-sidebar-logo img {
+    width: 30px;
+}
+
+.dm-sidebar-title {
+    font-size: .98rem;
+    font-weight: 600;
+    line-height: 1.1;
+}
+
+.dm-sidebar-badge {
+    font-size: .72rem;
+    color: #9ca3af;
+}
+
+/* MENU */
+.dm-menu {
+    position: relative;
+    margin-top: .5rem;
+    margin-bottom: 1.2rem;
+}
+
+.dm-menu-section-title {
+    font-size: .74rem;
+    text-transform: uppercase;
+    letter-spacing: .09em;
+    color: #9ca3af;
+    margin-bottom: .35rem;
+}
+
+.dm-menu-list {
+    list-style: none;
+    padding-left: 0;
+    margin-bottom: 0.4rem;
+}
+
+.dm-menu-item {
+    margin-bottom: .25rem;
+}
+
+.dm-menu-link {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    padding: .45rem .55rem;
+    border-radius: 999px;
+    font-size: .86rem;
+    color: #e5e7eb;
+    text-decoration: none;
+    border: 1px solid transparent;
+    transition: 0.18s ease;
+}
+
+.dm-menu-link span.dm-icon {
+    width: 20px;
+    text-align: center;
+    font-size: .9rem;
+}
+
+.dm-menu-link.active,
+.dm-menu-link:hover {
+    background: radial-gradient(circle at right,
+               rgba(249,115,22,0.20),
+               rgba(15,23,42,0.96));
+    border-color: rgba(249,115,22,0.6);
+    box-shadow: 0 0 16px rgba(249,115,22,0.55);
+    transform: translateX(1px);
+}
+
+/* RESUMO LATERAL */
+.dm-sidebar-kpi {
+    position: relative;
+    margin-top: .9rem;
+    padding-top: .7rem;
+    border-top: 1px solid rgba(55,65,81,0.7);
+}
+
+.dm-sidebar-kpi-title {
+    font-size: .78rem;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    color: #9ca3af;
+    margin-bottom: .5rem;
+}
+
+.dm-sidebar-kpi-value {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #f97316;
+    text-shadow: 0 0 12px rgba(249,115,22,0.8);
+}
+
+.dm-sidebar-kpi-sub {
+    font-size: .78rem;
+    color: #9ca3af;
+}
+
+/* MAIN AREA */
+.dm-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* HEADER DO DASHBOARD */
+.dm-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+}
+
+.dm-header-title {
+    font-size: 1.25rem;
+    font-weight: 650;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: #e5e7eb;
+}
+
+.dm-header-sub {
+    font-size: .86rem;
+    color: #9ca3af;
+}
+
+.dm-header-right {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+}
+
+/* "chip" de ambiente */
+.dm-env-chip {
+    font-size: .75rem;
+    padding: .3rem .7rem;
+    border-radius: 999px;
+    background: rgba(16,185,129,0.12);
+    color: #6ee7b7;
+    border: 1px solid rgba(45,212,191,0.65);
+}
+
+/* avatar */
+.dm-user {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+}
+
+.dm-user-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    border: 1px solid rgba(148,163,184,0.6);
+    background: radial-gradient(circle at 30% 0%,
+                #1f2937,
+                #020617);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .92rem;
+    color: #e5e7eb;
+}
+
+.dm-user-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.dm-user-name {
+    font-size: .8rem;
+    font-weight: 600;
+}
+
+.dm-user-role {
+    font-size: .72rem;
+    color: #9ca3af;
+}
+
+/* KPI GRID */
+.dm-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: .75rem;
+}
+
+.dm-kpi-card {
+    position: relative;
+    border-radius: 16px;
+    padding: .75rem .85rem .8rem;
+    background: radial-gradient(circle at top left,
+                rgba(15,118,110,0.4),
+                rgba(8,47,73,0.95));
+    border: 1px solid rgba(45,212,191,0.6);
+    box-shadow: 0 10px 26px rgba(8,47,73,0.9);
+    overflow: hidden;
+    transform: translateY(6px);
+    opacity: 0;
+    transition: .35s ease;
+}
+
+.dm-kpi-card[data-anim="kpi-loaded"] {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.dm-kpi-label {
+    font-size: .78rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: #a5f3fc;
+    margin-bottom: .15rem;
+}
+
+.dm-kpi-value {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #ecfeff;
+}
+
+.dm-kpi-sub {
+    font-size: .74rem;
+    color: #bae6fd;
+}
+
+/* VARIAÇÃO POR COR */
+.dm-kpi-orange {
+    background: radial-gradient(circle at top left,
+                rgba(248,113,113,0.4),
+                rgba(30,64,175,0.96));
+    border-color: rgba(248,113,113,0.7);
+}
+
+.dm-kpi-gold {
+    background: radial-gradient(circle at top left,
+                rgba(251,191,36,0.3),
+                rgba(24,24,27,0.96));
+    border-color: rgba(251,191,36,0.75);
+}
+
+.dm-kpi-purple {
+    background: radial-gradient(circle at top left,
+                rgba(147,51,234,0.45),
+                rgba(15,23,42,0.96));
+    border-color: rgba(167,139,250,0.8);
+}
+
+/* LINHA DE CHARTS */
+.dm-row {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1.5fr);
+    gap: 1rem;
+    margin-top: .4rem;
+}
+
+.dm-card {
+    border-radius: 18px;
+    padding: .9rem .9rem .75rem;
+    background: radial-gradient(circle at top left,
+                rgba(15,23,42,0.98),
+                #020617);
+    border: 1px solid rgba(55,65,81,0.8);
+    box-shadow: 0 14px 30px rgba(15,23,42,0.9);
+}
+
+.dm-card-title {
+    font-size: .85rem;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    color: #9ca3af;
+    margin-bottom: .6rem;
+}
+
+/* FINANCEIRO */
+.dm-fin-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: .75rem;
+    margin-top: .4rem;
+}
+
+/* layout dos gráficos financeiros (bar + donut) */
+.dm-fin-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    gap: 1rem;
+    margin-top: .4rem;
+    margin-bottom: .75rem;
+}
+
+.dm-fin-card {
+    border-radius: 12px;
+    padding: .55rem .7rem .6rem;
+    background: radial-gradient(circle at top right,
+                rgba(249,115,22,0.14),
+                rgba(15,23,42,0.96));
+    border: 1px solid rgba(248,187,109,0.75);
+}
+
+.dm-fin-label {
+    font-size: .78rem;
+    color: #fde68a;
+}
+
+.dm-fin-value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #facc15;
+}
+
+/* AUDITORIA / LOGS */
+.dm-log-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 2fr);
+    gap: 1rem;
+    margin-top: .4rem;
+}
+
+.dm-table {
+    width: 100%;
+    font-size: .78rem;
+}
+
+.dm-table th,
+.dm-table td {
+    padding: .3rem .35rem;
+    border-bottom: 1px solid rgba(31,41,55,0.8);
+    white-space: nowrap;
+}
+
+.dm-table th {
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    font-size: .7rem;
+    color: #9ca3af;
+}
+
+.dm-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: .15rem .5rem;
+    border-radius: 999px;
+    font-size: .7rem;
+}
+
+.dm-pill-danger {
+    background: rgba(239,68,68,0.15);
+    color: #fecaca;
+}
+
+.dm-pill-ok {
+    background: rgba(34,197,94,0.15);
+    color: #bbf7d0;
+}
+
+.dm-pill-neutral {
+    background: rgba(59,130,246,0.15);
+    color: #bfdbfe;
+}
+
+/* RESPONSIVO */
+@media (max-width: 992px) {
+    .dashboard-master {
+        flex-direction: column;
+    }
+    .dm-sidebar {
+        width: 100%;
+    }
+    .dm-row,
+    .dm-log-row {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .dm-fin-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+</style>
+
+<div class="dashboard-master">
+
+    <!-- ============ SIDEBAR ============ -->
+    <aside class="dm-sidebar">
+        <div class="dm-sidebar-header">
+            <div class="dm-sidebar-logo">
+                <img src="{% static 'img/logo.png' %}" alt="D'OR@NGE">
+            </div>
+            <div>
+                <div class="dm-sidebar-title">
+                    GED Naval • D'OR@NGE
+                </div>
+                <div class="dm-sidebar-badge">
+                    Projeto TP25 – Handy Classe 80
+                </div>
+            </div>
+        </div>
+
+        <div class="dm-menu">
+            <div class="dm-menu-section-title">Navegação</div>
+            <ul class="dm-menu-list">
+                <li class="dm-menu-item">
+                    <a href="{% url 'documentos:dashboard_master' %}" class="dm-menu-link active">
+                        <span class="dm-icon">📊</span>
+                        <span>Dashboard Master</span>
+                    </a>
+                </li>
+
+                <li class="dm-menu-item">
+                    <a href="{% url 'documentos:listar_documentos' %}" class="dm-menu-link">
+                        <span class="dm-icon">📚</span>
+                        <span>Gestão de Documentos</span>
+                    </a>
+                </li>
+
+                <li class="dm-menu-item">
+                    <a href="{% url 'documentos:lixeira' %}" class="dm-menu-link">
+                        <span class="dm-icon">🗑️</span>
+                        <span>Lixeira Inteligente</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="dm-sidebar-kpi">
+            <div class="dm-sidebar-kpi-title">Visão Geral TP25</div>
+            <div class="dm-sidebar-kpi-value">
+                {{ total_docs|default:"0" }}
+            </div>
+            <div class="dm-sidebar-kpi-sub">
+                documentos ativos monitorados<br>
+                <span style="color:#fbbf24;">
+                    {{ total_emitidos|default:"0" }} emitidos •
+                    {{ total_nao_recebidos|default:"0" }} pendentes
+                </span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ============ MAIN ============ -->
+    <section class="dm-main">
+
+        <!-- HEADER SUPERIOR -->
+        <header class="dm-header">
+            <div>
+                <div class="dm-header-title">
+                    Dashboard Master • GED Naval
+                </div>
+                <div class="dm-header-sub">
+                    Monitoramento em tempo real de documentos, emissão, riscos e trilha de auditoria.
+                </div>
+            </div>
+
+            <div class="dm-header-right">
+                <div class="dm-env-chip">
+                    ● Ambiente: Desenvolvimento Local
+                </div>
+                <div class="dm-user">
+                    <div class="dm-user-avatar">
+                        {{ request.user.first_name|default:request.user.username|slice:":2"|upper }}
+                    </div>
+                    <div class="dm-user-info">
+                        <span class="dm-user-name">
+                            {{ request.user.get_full_name|default:request.user.username }}
+                        </span>
+                        <span class="dm-user-role">
+                            Document Control • TP25
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- KPIs PRINCIPAIS -->
+        <div class="dm-kpi-grid">
+            <div class="dm-kpi-card dm-kpi-orange" data-anim="kpi">
+                <div class="dm-kpi-label">Documentos Ativos</div>
+                <div class="dm-kpi-value" data-kpi-target="{{ total_docs|default:0 }}">0</div>
+                <div class="dm-kpi-sub">
+                    Base Handymax em acompanhamento.
+                </div>
+            </div>
+
+            <div class="dm-kpi-card" data-anim="kpi">
+                <div class="dm-kpi-label">Aprovados</div>
+                <div class="dm-kpi-value" data-kpi-target="{{ total_aprovados|default:0 }}">0</div>
+                <div class="dm-kpi-sub">
+                    Prontos para emissão / uso oficial.
+                </div>
+            </div>
+
+            <div class="dm-kpi-card dm-kpi-gold" data-anim="kpi">
+                <div class="dm-kpi-label">Em Revisão</div>
+                <div class="dm-kpi-value" data-kpi-target="{{ total_em_revisao|default:0 }}">0</div>
+                <div class="dm-kpi-sub">
+                    Fluxo ativo nas disciplinas.
+                </div>
+            </div>
+
+            <div class="dm-kpi-card dm-kpi-purple" data-anim="kpi">
+                <div class="dm-kpi-label">Emitidos</div>
+                <div class="dm-kpi-value" data-kpi-target="{{ total_emitidos|default:0 }}">0</div>
+                <div class="dm-kpi-sub">
+                    Contabilizados para medição.
+                </div>
+            </div>
+
+            <div class="dm-kpi-card" data-anim="kpi">
+                <div class="dm-kpi-label">Não Recebidos</div>
+                <div class="dm-kpi-value" data-kpi-target="{{ total_nao_recebidos|default:0 }}">0</div>
+                <div class="dm-kpi-sub">
+                    Potencial de risco na medição.
+                </div>
+            </div>
+
+            <div class="dm-kpi-card dm-kpi-gold" data-anim="kpi">
+                <div class="dm-kpi-label">Excluídos</div>
+                <div class="dm-kpi-value" data-kpi-target="{{ total_excluidos|default:0 }}">0</div>
+                <div class="dm-kpi-sub">
+                    Itens enviados para lixeira lógica.
+                </div>
+            </div>
+
+            <div class="dm-kpi-card dm-kpi-purple" data-anim="kpi">
+                <div class="dm-kpi-label">Restaurados</div>
+                <div class="dm-kpi-value" data-kpi-target="{{ total_restaurados|default:0 }}">0</div>
+                <div class="dm-kpi-sub">
+                    Recuperados via trilha de auditoria.
+                </div>
+            </div>
+        </div>
+
+        <!-- LINHA CHARTS -->
+        <div class="dm-row">
+
+            <!-- Gráfico Disciplinas -->
+            <div class="dm-card">
+                <div class="dm-card-title">Distribuição por Disciplina</div>
+                <canvas id="chartDisc"></canvas>
+            </div>
+
+            <!-- Gráfico Status -->
+            <div class="dm-card">
+                <div class="dm-card-title">Status Geral dos Documentos</div>
+                <canvas id="chartStatus"></canvas>
+            </div>
+        </div>
+
+        <!-- FINANCEIRO COMPLETO F3.2 -->
+        <div class="dm-card" style="margin-top:.9rem;">
+            <div class="dm-card-title">Painel Financeiro – Medição & Projetos</div>
+
+            <!-- Gráficos Financeiros (Barra + Donut) -->
+            <div class="dm-fin-layout">
+                <div>
+                    <canvas id="chartFinanceiroBar"></canvas>
+                </div>
+                <div>
+                    <canvas id="chartFinanceiroDonut"></canvas>
+                </div>
+            </div>
+
+            <!-- Cards Resumo Financeiro -->
+            <div class="dm-fin-grid">
+                <div class="dm-fin-card">
+                    <div class="dm-fin-label">Emitidos (USD)</div>
+                    <div class="dm-fin-value">
+                        US$ {{ valor_emitidos_usd|default:0|floatformat:2 }}
+                    </div>
+                </div>
+                <div class="dm-fin-card">
+                    <div class="dm-fin-label">Não Recebidos (USD)</div>
+                    <div class="dm-fin-value">
+                        US$ {{ valor_nao_rec_usd|default:0|floatformat:2 }}
+                    </div>
+                </div>
+                <div class="dm-fin-card">
+                    <div class="dm-fin-label">Total Medição Docs (USD)</div>
+                    <div class="dm-fin-value">
+                        US$ {{ valor_total_usd_docs|default:0|floatformat:2 }}
+                    </div>
+                </div>
+
+                <div class="dm-fin-card">
+                    <div class="dm-fin-label">Emitidos (BRL)</div>
+                    <div class="dm-fin-value">
+                        R$ {{ valor_emitidos_brl|default:0|floatformat:2 }}
+                    </div>
+                </div>
+                <div class="dm-fin-card">
+                    <div class="dm-fin-label">Não Recebidos (BRL)</div>
+                    <div class="dm-fin-value">
+                        R$ {{ valor_nao_rec_brl|default:0|floatformat:2 }}
+                    </div>
+                </div>
+                <div class="dm-fin-card">
+                    <div class="dm-fin-label">Total Medição Docs (BRL)</div>
+                    <div class="dm-fin-value">
+                        R$ {{ valor_total_brl_docs|default:0|floatformat:2 }}
+                    </div>
+                </div>
+
+                <div class="dm-fin-card">
+                    <div class="dm-fin-label">Total Financeiro Projetos (USD)</div>
+                    <div class="dm-fin-value">
+                        US$ {{ financeiro_total_usd|default:0|floatformat:2 }}
+                    </div>
+                </div>
+                <div class="dm-fin-card">
+                    <div class="dm-fin-label">Total Financeiro Projetos (BRL)</div>
+                    <div class="dm-fin-value">
+                        R$ {{ financeiro_total_brl|default:0|floatformat:2 }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AUDITORIA -->
+        <div class="dm-log-row">
+            <!-- Top Excluidores -->
+            <div class="dm-card">
+                <div class="dm-card-title">Top 5 Exclusões (Auditoria)</div>
+                <table class="dm-table">
+                    <thead>
+                        <tr>
+                            <th>Usuário</th>
+                            <th class="text-end">Exclusões</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if top_excluidores %}
+                            {% for item in top_excluidores %}
+                                <tr>
+                                    <td>{{ item.usuario }}</td>
+                                    <td class="text-end">{{ item.qtd }}</td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr><td colspan="2">Nenhuma exclusão registrada.</td></tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Últimas ações -->
+            <div class="dm-card">
+                <div class="dm-card-title">Últimos Movimentos da Trilha de Auditoria</div>
+                <table class="dm-table">
+                    <thead>
+                        <tr>
+                            <th>Data/Hora</th>
+                            <th>Usuário</th>
+                            <th>Documento</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if auditoria_acoes %}
+                            {% for log in auditoria_acoes %}
+                                <tr>
+                                    <td>{{ log.data|date:"d/m H:i" }}</td>
+                                    <td>{{ log.usuario }}</td>
+                                    <td>
+                                        {% if log.documento %}
+                                            {{ log.documento.codigo }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if log.acao == "Excluído" %}
+                                            <span class="dm-pill dm-pill-danger">{{ log.acao }}</span>
+                                        {% elif log.acao == "Restaurado" %}
+                                            <span class="dm-pill dm-pill-ok">{{ log.acao }}</span>
+                                        {% else %}
+                                            <span class="dm-pill dm-pill-neutral">{{ log.acao }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr><td colspan="4">Nenhuma ação registrada na auditoria.</td></tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </section>
+</div>
+
+<!-- ========== SCRIPTS ========== -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    // Animação dos KPIs
+    const kpis = document.querySelectorAll(".dm-kpi-card");
+    setTimeout(() => {
+        kpis.forEach((card, idx) => {
+            card.setAttribute("data-anim", "kpi-loaded");
+            const valueEl = card.querySelector("[data-kpi-target]");
+            if (!valueEl) return;
+            const target = parseFloat(valueEl.dataset.kpiTarget || "0");
+            let current = 0;
+            const steps = 40;
+            const inc = target / steps;
+            const update = () => {
+                current += inc;
+                if (current >= target) {
+                    valueEl.textContent = Math.round(target).toLocaleString("pt-BR");
+                } else {
+                    valueEl.textContent = Math.round(current).toLocaleString("pt-BR");
+                    requestAnimationFrame(update);
+                }
+            };
+            update();
+        });
+    }, 80);
+
+    // Gráficos principais
+    const discLabels = {{ disc_labels|safe }};
+    const discData   = {{ disc_data|safe }};
+    const statusLabels = {{ status_labels|safe }};
+    const statusData   = {{ status_data|safe }};
+
+    const ctxDisc = document.getElementById("chartDisc");
+    if (ctxDisc) {
+        new Chart(ctxDisc, {
+            type: "bar",
+            data: {
+                labels: discLabels,
+                datasets: [{
+                    label: "Docs por disciplina",
+                    data: discData,
+                    backgroundColor: "rgba(56,189,248,0.7)"
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: {
+                        ticks: { color: "#9ca3af", font: { size: 11 } },
+                        grid: { display: false }
+                    },
+                    y: {
+                        ticks: { color: "#9ca3af", font: { size: 11 } },
+                        grid: { color: "rgba(55,65,81,0.7)" }
+                    }
+                }
+            }
+        });
+    }
+
+    const ctxStatus = document.getElementById("chartStatus");
+    if (ctxStatus) {
+        new Chart(ctxStatus, {
+            type: "doughnut",
+            data: {
+                labels: statusLabels,
+                datasets: [{
+                    data: statusData,
+                    backgroundColor: [
+                        "#22c55e","#0ea5e9","#eab308",
+                        "#f97316","#ef4444","#a855f7"
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: "bottom",
+                        labels: { color: "#9ca3af", font: { size: 11 } }
+                    }
+                },
+                cutout: "60%"
+            }
+        });
+    }
+
+    // ================================
+    // GRÁFICOS FINANCEIROS (BAR + DONUT)
+    // ================================
+    const finLabels = {{ fin_labels|safe }};
+    const finData   = {{ fin_data|safe }};
+
+    const ctxFinBar = document.getElementById("chartFinanceiroBar");
+    if (ctxFinBar) {
+        new Chart(ctxFinBar, {
+            type: "bar",
+            data: {
+                labels: finLabels,
+                datasets: [{
+                    label: "US$ por Projeto",
+                    data: finData,
+                    backgroundColor: "rgba(0,165,255,0.6)",
+                    borderColor: "#00A5FF",
+                    borderWidth: 1,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => "US$ " + ctx.raw.toLocaleString("en-US")
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: "#9ca3af", font: { size: 11 } },
+                        grid: { display: false }
+                    },
+                    y: {
+                        ticks: { color: "#9ca3af", font: { size: 11 } },
+                        grid: { color: "rgba(55,65,81,0.7)" }
+                    }
+                }
+            }
+        });
+    }
+
+    const ctxFinDonut = document.getElementById("chartFinanceiroDonut");
+    if (ctxFinDonut) {
+        new Chart(ctxFinDonut, {
+            type: "doughnut",
+            data: {
+                labels: finLabels,
+                datasets: [{
+                    data: finData,
+                    backgroundColor: [
+                        "#22c55e","#0ea5e9","#eab308",
+                        "#f97316","#ef4444","#a855f7"
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: "bottom",
+                        labels: { color: "#9ca3af", font: { size: 10 } }
+                    }
+                },
+                cutout: "60%"
+            }
+        });
+    }
+});
+</script>
+
+{% endblock %}

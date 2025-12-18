@@ -1,0 +1,76 @@
+Vamos lá:
+
+Vou escrever aqui como o sistema GED deve se comportar:
+
+## Criação de Documentos ##
+
+Para este Projeto ## TP25 - NAVIOS HANDY CLASSE 80 ##
+
+Opções de criar Documentos:
+
+Manualmente na opção Novo Documento , ##Não está funcionando##.
+
+Ou por Importar LDP , Tenho que mudar este nome para Importar Lista ou Importar LD.
+
+Mas que nenhuma das opções acima fique travada dependendo uma da outra.
+
+Tanto da importação por LD quando Manual , os campos obrigatórios para ADM são:
+
+Projeto
+Fase
+Tipo
+Formato
+Código Petrobras
+Código Interno - Opcional 
+Revisão 
+Disciplina
+Titulo.
+
+##Fluxo para Workflow ## 
+
+Documento em Elaboração 
+Revisão Interna 
+Aprovação Técnica
+Doc Control
+Enviado ao Cliente
+Aprovação Cliente
+Emissão Final 
+
+Descrição para Cada fluxo:
+
+Documento em Elaboração: Onde o elaborador ( Documento em Elaboração ) irá verificar todos os requisitos abaixo se estão de acordo:
+Projeto
+Fase
+Tipo
+Formato
+Código Petrobras
+Código Interno - Opcional 
+Revisão 
+Disciplina
+Titulo.
+
+Se sim , deverá anexar o documento e salvar.
+
+Clicar na opção enviar para próxima etapa no detalhes do documento , onde sistema irá notificar o revisor do documento por e-mail ou outro tipo de notificação,
+
+O revisor ( Revisão Interna )  irá analisar se estiver ok Clicar na opção enviar para próxima etapa no detalhes do documento onde sistema irá notificar o aprovador técnico do documento por e-mail ou outro tipo de notificação. se NÃO estiver OK clicar no Retornar etapa para o elaborador , onde deverá ter um campo de Observação porque está retornando o documento e sistema irá notificar o elaborador do documento por e-mail ou outro tipo de notificação.
+
+O aprovador técnico do documento (Aprovação Técnica ) irá verificar se todos os requisitos atendem , se sim Clicar na opção enviar para próxima etapa no detalhes do documento onde o sistema irá notificar o Doc Control por e-mail ou outro tipo de notificação, se NÃO estiver OK clicar no Retornar etapa para Aprovação Técnica , com Observação por que está retornando.
+
+Se estiver OK o Doc control irá EMITIR o documento Para Cliente , no Botão emitir dos detalhes do Documento , aqui entra um processo paralelo , onde ao clicar em Emitir o sistema irá buscar uma Template GRDT dentro do Sistema , preencher a planilha automaticamente com os campos ja definidos que vou dizer quais são.
+
+Talvez nesta etapa o sistema abra uma nova configuração com os Campos obrigatorios conforme template.
+
+Apos gerar A GRDT com um Sequencial , Exportar para uma pasta , ou zipar todos documentos selecionados com a GRDT e os Documentos em si para Download,  e prencher automaticamente a coluna GRDT na Sidebar Lista de Documentos com o Numero da GDRT criada mudar o Status Emissão para Emitido, e colocar a Data da Emissão na Coluna Data ( que Deverá ser Data da Emissão ).
+
+Na Sidebar temos a Coluna PCF , que seria a resposta do Cliente Aprovando ou comentando os Documentos.
+
+EStou pensando em criar uma Sidebar ou uma outra Tela de Cadatro para estas PCFs, que sera registrada e vinculada ao documento que gerou essa PCF, apos cadastrada e vinculada ao Documento , deve registrar na Coluna PCF o numero desta PCF na tabela lista de documentos, e tambem tenho que inserir na tabela da Lista de Documentos a Data cadastro dessa PCF ao lado da Coluna PCF.
+
+Tambem vamos ter a resposta desta PCF que estou pensando em manter no mesmo modulo da PCF , e incluir como Resposta com Numeros iguais , porem com Data diferente , nesta etapa aqui tambem tera a opção de Emitir para Cliente a resposta da PCF , criando GDRT igual ao fluxo de documentos.
+
+Vamos reescrever os workflows e parametrizando envio de notificações e testando para que eu não precise voltar e escrever tudo novamente.
+
+Voce sera meu comandante nesta , me dando as melhores opções sempre baseado em sua inteligencia e conhecimento de outros softwares deste tiipo okay ?
+
+

@@ -1,15 +1,16 @@
-﻿from django.contrib.auth.models import AbstractUser
-from django.db import models
-from django.contrib.auth import get_user_model
+﻿from django.db import models
+from django.contrib.auth.models import AbstractUser
+from django.conf import settings
 
 
 # ======================================================================
-# 👤 USUÁRIO PERSONALIZADO (AUTH_USER_MODEL)
+# 👤 USUÁRIO PRINCIPAL DO SISTEMA (AUTH_USER_MODEL)
 # ======================================================================
 class Usuario(AbstractUser):
     """
-    Usuário personalizado do GED com papéis por função.
-    MASTER = is_superuser OU is_master.
+    Modelo base do usuário do GED:
+    - Pode ser usado como RBAC puro sem depender do Django Groups
+    - Flags extras ajudam a diferenciar perfis
     """
 
     is_master = models.BooleanField("Administrador Master", default=False)
@@ -17,35 +18,43 @@ class Usuario(AbstractUser):
     is_revisor = models.BooleanField("Revisor", default=False)
     is_aprovador = models.BooleanField("Aprovador", default=False)
 
+    class Meta:
+        verbose_name = "Usuário"
+        verbose_name_plural = "Usuários"
+
     def __str__(self):
         return self.username
 
 
 # ======================================================================
-# ⚙ CONFIGURAÇÕES POR USUÁRIO
+# ⚙ CONFIGURAÇÕES INDIVIDUAIS DO USUÁRIO
 # ======================================================================
 class UserConfig(models.Model):
-    user = models.OneToOneField(Usuario, on_delete=models.CASCADE)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
-    tema = models.CharField(max_length=20, default="neon")
+    tema = models.CharField(max_length=20, default="neon")     # neon / light / dark...
     animacoes = models.BooleanField(default=True)
     notificacoes_email = models.BooleanField(default=True)
     dashboard_expandido = models.BooleanField(default=True)
 
+    class Meta:
+        verbose_name = "Configuração do Usuário"
+        verbose_name_plural = "Configurações dos Usuários"
+
     def __str__(self):
-        return f"Configurações de {self.user.username}"
+        return f"Configurações → {self.user.username}"
 
 
 # ======================================================================
-# 🔐 RBAC – PAPÉIS E VÍNCULOS
+# 🔐 RBAC — PAPÉIS E PERMISSÕES AVANÇADAS
 # ======================================================================
-
-from django.conf import settings  # <-- TROQUEI get_user_model POR ISTO
-
-
 class Role(models.Model):
     nome = models.CharField(max_length=50, unique=True)
     descricao = models.TextField(blank=True)
+
+    class Meta:
+        verbose_name = "Papel"
+        verbose_name_plural = "Papéis"
 
     def __str__(self):
         return self.nome
@@ -57,28 +66,29 @@ class UserRole(models.Model):
 
     class Meta:
         unique_together = ("user", "role")
+        verbose_name = "Vínculo Usuário → Papel"
+        verbose_name_plural = "Vínculos Usuários → Papéis"
 
     def __str__(self):
-        return f"{self.user.username} -> {self.role.nome}"
+        return f"{self.user.username} → {self.role.nome}"
 
 
-# ======================================================================
-# PERMISSÕES POR PAPEL (RBAC)
-# ======================================================================
 class RolePermission(models.Model):
     role = models.ForeignKey(Role, on_delete=models.CASCADE, related_name="permissoes")
-    codigo = models.CharField(max_length=100)  # Ex: documentos.criar, documentos.aprovar
+    codigo = models.CharField(max_length=100)  # Ex: documentos.criar, workflow.aprovar
     descricao = models.CharField(max_length=200, blank=True)
 
     class Meta:
         unique_together = ("role", "codigo")
+        verbose_name = "Permissão de Papel"
+        verbose_name_plural = "Permissões de Papéis"
 
     def __str__(self):
         return f"{self.role.nome} → {self.codigo}"
 
 
 # ======================================================================
-# 📨 SOLICITAÇÃO DE ACESSO AO SISTEMA (NOVO)
+# 📨 SOLICITAÇÕES DE ACESSO AO SISTEMA
 # ======================================================================
 class SolicitacaoAcesso(models.Model):
     nome = models.CharField(max_length=150)
@@ -94,6 +104,10 @@ class SolicitacaoAcesso(models.Model):
     ]
 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pendente")
+
+    class Meta:
+        verbose_name = "Solicitação de Acesso"
+        verbose_name_plural = "Solicitações de Acesso"
 
     def __str__(self):
         return f"{self.nome} ({self.email})"

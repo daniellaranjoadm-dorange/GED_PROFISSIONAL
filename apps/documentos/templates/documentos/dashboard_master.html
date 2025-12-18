@@ -349,6 +349,15 @@
     margin-top: .4rem;
 }
 
+/* layout dos gráficos financeiros (bar + donut) */
+.dm-fin-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    gap: 1rem;
+    margin-top: .4rem;
+    margin-bottom: .75rem;
+}
+
 .dm-fin-card {
     border-radius: 12px;
     padding: .55rem .7rem .6rem;
@@ -420,6 +429,68 @@
     color: #bfdbfe;
 }
 
+/* ================================
+   FILTROS RETRÁTEIS – OPÇÃO C
+   ================================ */
+.dm-filters-wrapper {
+    margin-top: .7rem;
+}
+
+.dm-filter-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    padding: .25rem .7rem;
+    border-radius: 999px;
+    border: 1px solid rgba(148,163,184,0.7);
+    background: radial-gradient(circle at left,
+                rgba(148,163,184,0.2),
+                rgba(15,23,42,0.98));
+    color: #e5e7eb;
+    font-size: .8rem;
+    cursor: pointer;
+    transition: .18s ease;
+}
+
+.dm-filter-toggle:hover {
+    border-color: rgba(248,187,109,0.9);
+    box-shadow: 0 0 12px rgba(248,187,109,0.55);
+}
+
+.dm-filter-toggle .arrow {
+    font-size: .9rem;
+}
+
+.dm-filter-toggle .label {
+    text-transform: uppercase;
+    letter-spacing: .14em;
+    font-weight: 500;
+}
+
+.dm-filters-body {
+    margin-top: .45rem;
+    border-radius: 14px;
+    padding: .75rem .9rem .6rem;
+    background: radial-gradient(circle at top left,
+                rgba(15,23,42,0.98),
+                #020617);
+    border: 1px solid rgba(55,65,81,0.9);
+    box-shadow: 0 10px 22px rgba(15,23,42,0.85);
+}
+
+.dm-filters-body .form-label {
+    font-size: .75rem;
+    color: #9ca3af;
+    margin-bottom: .15rem;
+}
+
+.dm-filters-body .form-select,
+.dm-filters-body .form-control {
+    font-size: .78rem;
+    padding-top: .22rem;
+    padding-bottom: .22rem;
+}
+
 /* RESPONSIVO */
 @media (max-width: 992px) {
     .dashboard-master {
@@ -430,6 +501,9 @@
     }
     .dm-row,
     .dm-log-row {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .dm-fin-layout {
         grid-template-columns: minmax(0, 1fr);
     }
 }
@@ -462,24 +536,14 @@
                         <span>Dashboard Master</span>
                     </a>
                 </li>
-                <li class="dm-menu-item">
-                    <a href="{% url 'documentos:dashboard' %}" class="dm-menu-link">
-                        <span class="dm-icon">📈</span>
-                        <span>Dashboard Simples</span>
-                    </a>
-                </li>
-                <li class="dm-menu-item">
-                    <a href="{% url 'documentos:dashboard_enterprise' %}" class="dm-menu-link">
-                        <span class="dm-icon">🚀</span>
-                        <span>Dashboard Enterprise</span>
-                    </a>
-                </li>
+
                 <li class="dm-menu-item">
                     <a href="{% url 'documentos:listar_documentos' %}" class="dm-menu-link">
                         <span class="dm-icon">📚</span>
                         <span>Gestão de Documentos</span>
                     </a>
                 </li>
+
                 <li class="dm-menu-item">
                     <a href="{% url 'documentos:lixeira' %}" class="dm-menu-link">
                         <span class="dm-icon">🗑️</span>
@@ -537,6 +601,97 @@
                 </div>
             </div>
         </header>
+
+        <!-- FILTROS RETRÁTEIS (OPÇÃO C) -->
+        <div class="dm-filters-wrapper">
+            <button id="dmToggleFilters" type="button" class="dm-filter-toggle">
+                <span id="dmFiltersArrow" class="arrow">▸</span>
+                <span class="label">Filtros Avançados</span>
+                {% if ha_filtros %}
+                    <span style="font-size:.7rem;color:#fbbf24;margin-left:.3rem;">
+                        • filtros ativos
+                    </span>
+                {% endif %}
+            </button>
+
+            <div id="dmFiltersBody" class="dm-filters-body" style="display:none;">
+                <form method="get" class="row g-2 align-items-end">
+                    <div class="col-md-3 col-lg-2">
+                        <label class="form-label">Projeto</label>
+                        <select name="projeto" class="form-select form-select-sm">
+                            <option value="">TP25 – Handy Classe 80 (padrão)</option>
+                            {% for p in projetos %}
+                                <option value="{{ p }}" {% if filtros.projeto == p %}selected{% endif %}>
+                                    {{ p }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-3 col-lg-2">
+                        <label class="form-label">Disciplina</label>
+                        <select name="disciplina" class="form-select form-select-sm">
+                            <option value="">Todas</option>
+                            {% for d in disciplinas %}
+                                <option value="{{ d }}" {% if filtros.disciplina == d %}selected{% endif %}>
+                                    {{ d }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-3 col-lg-2">
+                        <label class="form-label">Status do Documento</label>
+                        <select name="status_ldp" class="form-select form-select-sm">
+                            <option value="">Todos</option>
+                            {% for s in status_ldp_list %}
+                                <option value="{{ s }}" {% if filtros.status_ldp == s %}selected{% endif %}>
+                                    {{ s }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-3 col-lg-2">
+                        <label class="form-label">Status Emissão</label>
+                        <select name="status_emissao" class="form-select form-select-sm">
+                            <option value="">Todos</option>
+                            {% for e in status_emissao_list %}
+                                <option value="{{ e }}" {% if filtros.status_emissao == e %}selected{% endif %}>
+                                    {{ e }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-3 col-lg-2">
+                        <label class="form-label">Data Emissão (de)</label>
+                        <input type="date"
+                               name="dt_ini"
+                               class="form-control form-control-sm"
+                               value="{{ filtros.dt_ini }}">
+                    </div>
+
+                    <div class="col-md-3 col-lg-2">
+                        <label class="form-label">Data Emissão (até)</label>
+                        <input type="date"
+                               name="dt_fim"
+                               class="form-control form-control-sm"
+                               value="{{ filtros.dt_fim }}">
+                    </div>
+
+                    <div class="col-12 col-md-3 col-lg-2 mt-2 mt-md-0 d-flex gap-2">
+                        <button type="submit" class="btn btn-sm btn-primary flex-fill">
+                            Aplicar
+                        </button>
+                        <a href="{% url 'documentos:dashboard_master' %}"
+                           class="btn btn-sm btn-outline-light">
+                            Limpar
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
 
         <!-- KPIs PRINCIPAIS -->
         <div class="dm-kpi-grid">
@@ -599,7 +754,6 @@
 
         <!-- LINHA CHARTS -->
         <div class="dm-row">
-
             <!-- Gráfico Disciplinas -->
             <div class="dm-card">
                 <div class="dm-card-title">Distribuição por Disciplina</div>
@@ -613,50 +767,75 @@
             </div>
         </div>
 
-        <!-- FINANCEIRO -->
-        <div class="dm-card" style="margin-top:.9rem;">
-            <div class="dm-card-title">Visão Financeira Estimada</div>
+<!-- FINANCEIRO COMPLETO -->
+<div class="dm-card" style="margin-top:.9rem;">
+    <div class="dm-card-title">Painel Financeiro – Medição & Projetos</div>
 
-            <div class="dm-fin-grid">
-                <div class="dm-fin-card">
-                    <div class="dm-fin-label">Valor Emitidos (USD)</div>
-                    <div class="dm-fin-value">
-                        US$ {{ valor_emitidos_usd|default:0|floatformat:2 }}
-                    </div>
-                </div>
-                <div class="dm-fin-card">
-                    <div class="dm-fin-label">Não Recebidos (USD)</div>
-                    <div class="dm-fin-value">
-                        US$ {{ valor_nao_rec_usd|default:0|floatformat:2 }}
-                    </div>
-                </div>
-                <div class="dm-fin-card">
-                    <div class="dm-fin-label">Total Medição (USD)</div>
-                    <div class="dm-fin-value">
-                        US$ {{ valor_total_usd|default:0|floatformat:2 }}
-                    </div>
-                </div>
+    <!-- Gráficos Financeiros (Barra + Donut) -->
+    <div class="dm-fin-layout">
+        <div>
+            <canvas id="chartFinanceiroBar"></canvas>
+        </div>
+        <div>
+            <canvas id="chartFinanceiroDonut"></canvas>
+        </div>
+    </div>
 
-                <div class="dm-fin-card">
-                    <div class="dm-fin-label">Valor Emitidos (BRL)</div>
-                    <div class="dm-fin-value">
-                        R$ {{ valor_emitidos_brl|default:0|floatformat:2 }}
-                    </div>
-                </div>
-                <div class="dm-fin-card">
-                    <div class="dm-fin-label">Não Recebidos (BRL)</div>
-                    <div class="dm-fin-value">
-                        R$ {{ valor_nao_rec_brl|default:0|floatformat:2 }}
-                    </div>
-                </div>
-                <div class="dm-fin-card">
-                    <div class="dm-fin-label">Total Medição (BRL)</div>
-                    <div class="dm-fin-value">
-                        R$ {{ valor_total_brl|default:0|floatformat:2 }}
-                    </div>
-                </div>
+    <!-- Cards Resumo Financeiro -->
+    <div class="dm-fin-grid">
+        <div class="dm-fin-card">
+            <div class="dm-fin-label">Emitidos (USD)</div>
+            <div class="dm-fin-value">
+                US$ {{ v_emitidos_usd }}
             </div>
         </div>
+        <div class="dm-fin-card">
+            <div class="dm-fin-label">Não Recebidos (USD)</div>
+            <div class="dm-fin-value">
+                US$ {{ v_nao_rec_usd }}
+            </div>
+        </div>
+        <div class="dm-fin-card">
+            <div class="dm-fin-label">Total Medição Docs (USD)</div>
+            <div class="dm-fin-value">
+                US$ {{ v_total_usd }}
+            </div>
+        </div>
+
+        <div class="dm-fin-card">
+            <div class="dm-fin-label">Emitidos (BRL)</div>
+            <div class="dm-fin-value">
+                R$ {{ v_emitidos_brl }}
+            </div>
+        </div>
+        <div class="dm-fin-card">
+            <div class="dm-fin-label">Não Recebidos (BRL)</div>
+            <div class="dm-fin-value">
+                R$ {{ v_nao_rec_brl }}
+            </div>
+        </div>
+        <div class="dm-fin-card">
+            <div class="dm-fin-label">Total Medição Docs (BRL)</div>
+            <div class="dm-fin-value">
+                R$ {{ v_total_brl }}
+            </div>
+        </div>
+
+        <div class="dm-fin-card">
+            <div class="dm-fin-label">Total Financeiro Projetos (USD)</div>
+            <div class="dm-fin-value">
+                US$ {{ total_fin_usd }}
+            </div>
+        </div>
+        <div class="dm-fin-card">
+            <div class="dm-fin-label">Total Financeiro Projetos (BRL)</div>
+            <div class="dm-fin-value">
+                R$ {{ total_fin_brl }}
+            </div>
+        </div>
+    </div>
+</div>
+
 
         <!-- AUDITORIA -->
         <div class="dm-log-row">
@@ -739,7 +918,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Animação dos KPIs
     const kpis = document.querySelectorAll(".dm-kpi-card");
     setTimeout(() => {
-        kpis.forEach((card, idx) => {
+        kpis.forEach((card) => {
             card.setAttribute("data-anim", "kpi-loaded");
             const valueEl = card.querySelector("[data-kpi-target]");
             if (!valueEl) return;
@@ -760,7 +939,27 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }, 80);
 
-    // Gráficos
+    // Filtros retráteis – opção C
+    const btnToggle = document.getElementById("dmToggleFilters");
+    const filtersBody = document.getElementById("dmFiltersBody");
+    const arrow = document.getElementById("dmFiltersArrow");
+    const filtrosAtivos = {{ ha_filtros|yesno:"true,false" }};
+
+    if (btnToggle && filtersBody && arrow) {
+        // Se tiver filtro ativo, já abre
+        if (filtrosAtivos) {
+            filtersBody.style.display = "block";
+            arrow.textContent = "▾";
+        }
+
+        btnToggle.addEventListener("click", () => {
+            const visible = filtersBody.style.display === "block";
+            filtersBody.style.display = visible ? "none" : "block";
+            arrow.textContent = visible ? "▸" : "▾";
+        });
+    }
+
+    // Gráficos principais
     const discLabels = {{ disc_labels|safe }};
     const discData   = {{ disc_data|safe }};
     const statusLabels = {{ status_labels|safe }};
@@ -816,6 +1015,77 @@ document.addEventListener("DOMContentLoaded", function () {
                     legend: {
                         position: "bottom",
                         labels: { color: "#9ca3af", font: { size: 11 } }
+                    }
+                },
+                cutout: "60%"
+            }
+        });
+    }
+
+    // GRÁFICOS FINANCEIROS (BAR + DONUT)
+    const finLabels = {{ fin_labels|safe }};
+    const finData   = {{ fin_data|safe }};
+
+    const ctxFinBar = document.getElementById("chartFinanceiroBar");
+    if (ctxFinBar) {
+        new Chart(ctxFinBar, {
+            type: "bar",
+            data: {
+                labels: finLabels,
+                datasets: [{
+                    label: "US$ por Fase",
+                    data: finData,
+                    backgroundColor: "rgba(0,165,255,0.6)",
+                    borderColor: "#00A5FF",
+                    borderWidth: 1,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => "US$ " + ctx.raw.toLocaleString("en-US")
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: "#9ca3af", font: { size: 11 } },
+                        grid: { display: false }
+                    },
+                    y: {
+                        ticks: { color: "#9ca3af", font: { size: 11 } },
+                        grid: { color: "rgba(55,65,81,0.7)" }
+                    }
+                }
+            }
+        });
+    }
+
+    const ctxFinDonut = document.getElementById("chartFinanceiroDonut");
+    if (ctxFinDonut) {
+        new Chart(ctxFinDonut, {
+            type: "doughnut",
+            data: {
+                labels: finLabels,
+                datasets: [{
+                    data: finData,
+                    backgroundColor: [
+                        "#22c55e","#0ea5e9","#eab308",
+                        "#f97316","#ef4444","#a855f7"
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: "bottom",
+                        labels: { color: "#9ca3af", font: { size: 10 } }
                     }
                 },
                 cutout: "60%"

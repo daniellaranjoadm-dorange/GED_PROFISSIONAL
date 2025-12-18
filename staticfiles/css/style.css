@@ -1,34 +1,17 @@
-/* ===========================
-   TEMAS PERSONALIZADOS
-=========================== */
+/* STYLE.CSS — PACK S6 CLEAN */
 
-/* TEMA CLARO ------------------------ */
-.tema-Claro {
-    --cor-fundo: #ffffff;
-    --cor-texto: #000000;
-    --cor-sidebar: #0056d2;
+* {
+    box-sizing: border-box;
 }
 
-/* TEMA ESCURO ----------------------- */
-.tema-Escuro {
-    --cor-fundo: #0a0a0a;
-    --cor-texto: #ffffff;
-    --cor-sidebar: #111111;
+a {
+    text-decoration: none !important;
 }
 
-/* TEMA NEON ------------------------- */
-.tema-Neon {
-    --cor-fundo: #000013;
-    --cor-texto: #00eaff;
-    --cor-sidebar: #0033aa;
+table th {
+    font-weight: 600;
 }
 
-/* Aplicação global */
-body {
-    background: var(--cor-fundo, #0a0a0a);
-    color: var(--cor-texto, white);
-}
-
-.sidebar {
-    background: var(--cor-sidebar, #0056d2);
+.alert {
+    margin-bottom: 1rem;
 }

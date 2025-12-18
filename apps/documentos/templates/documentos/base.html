@@ -1,410 +1,231 @@
-<!-- Versão atualizada com botão de idiomas será gerada após você enviar o conteúdo COMPLETO atual do seu base.html aqui. -->
 {% load static %}
 <!DOCTYPE html>
 <html lang="{{ LANGUAGE_CODE }}">
+
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}GED D'OR@NGE{% endblock %}</title>
 
-<!-- Bootstrap -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
-
-<!-- Ícones -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
-<!-- Fonte corporativa -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-<!-- ============================= TEMA LUXURY ============================== -->
-<style>
-
-/* =============================== TEMA LIGHT (DEFAULT) =============================== */
-body[data-theme="light"],
-body[data-theme="auto"] {
-    --bg: #f5f5f7;
-    --bg-card: #ffffff;
-    --bg-sidebar: #ffffff;
-    --text: #1f2937;
-    --text-soft: #4b5563;
-    --accent-gold: #D4AF37;
-    --accent-gold-soft: rgba(212, 175, 55, 0.16);
-    --accent-blue: #0E3356;
-    --border: #e5e7eb;
-    --shadow: rgba(15, 23, 42, 0.10);
-    --sidebar-width: 240px;
-}
-
-/* =============================== MODO AUTO → DARK (FOLLOW SYSTEM) =============================== */
-@media (prefers-color-scheme: dark) {
-    body[data-theme="auto"] {
-        --bg: #050816;
-        --bg-card: #15273F;
-        --bg-sidebar: #0A1A2F;
-        --text: #E5E9F5;
-        --text-soft: #9CA3AF;
-        --accent-gold: #C99700;
-        --accent-gold-soft: rgba(201, 151, 0, 0.25);
-        --accent-blue: #4F8AD9;
-        --border: #1F3850;
-        --shadow: rgba(0, 0, 0, 0.55);
-    }
-}
-
-/* =============================== TEMA DARK FIXO =============================== */
-body[data-theme="dark"] {
-    --bg: #050816;
-    --bg-card: #15273F;
-    --bg-sidebar: #0A1A2F;
-    --text: #E5E9F5;
-    --text-soft: #9CA3AF;
-    --accent-gold: #C99700;
-    --accent-gold-soft: rgba(201, 151, 0, 0.25);
-    --accent-blue: #4F8AD9;
-    --border: #1F3850;
-    --shadow: rgba(0, 0, 0, 0.55);
-    --sidebar-width: 240px; /* 🔥 ESTA LINHA FALTAVA */
-}
-
-/* =============================== GERAL =============================== */
-* {
-    box-sizing: border-box;
-    font-family: 'Inter', sans-serif;
-}
-
-body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--text);
-    transition: background .25s ease, color .25s ease;
-}
-
-/* =============================== LAYOUT =============================== */
-.layout {
-    display: flex;
-    width: 100%;
-    min-height: 100vh;
-}
-
-/* =============================== SIDEBAR =============================== */
-.sidebar {
-    width: var(--sidebar-width);
-    background: var(--bg-sidebar);
-    color: var(--text);
-    padding: 1.5rem 1rem 1.25rem;
-    display: flex;
-    flex-direction: column;
-    position: fixed;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    box-shadow: 2px 0 12px var(--shadow);
-    overflow-y: auto;
-}
-
-.sidebar::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    height: 95px;
-    background: linear-gradient(135deg, rgba(212, 175, 55, 0.65), rgba(212, 175, 55, 0.0) 55%);
-    pointer-events: none;
-    z-index: 0;
-}
-
-.sidebar-inner {
-    position: relative;
-    z-index: 1;
-}
-
-.sidebar-brand {
-    display: flex;
-    align-items: center;
-    gap: .75rem;
-    margin-bottom: 1.5rem;
-}
-
-.sidebar-logo {
-    width: 46px;
-    height: auto;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
-}
-
-.sidebar-brand-title {
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--accent-blue);
-}
-
-.sidebar-brand-sub {
-    font-size: .75rem;
-    color: var(--text-soft);
-}
-
-/* =============================== LINKS =============================== */
-.sidebar-section-title {
-    font-size: .75rem;
-    margin-top: 1rem;
-    margin-bottom: .35rem;
-    text-transform: uppercase;
-    letter-spacing: .08em;
-    color: var(--text-soft);
-}
-
-.sidebar-nav {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.sidebar-link {
-    display: flex;
-    align-items: center;
-    gap: .55rem;
-    padding: .55rem .75rem;
-    margin-bottom: .2rem;
-    color: var(--text);
-    text-decoration: none;
-    border-radius: 999px;
-    transition: background .15s ease, color .15s ease, transform .08s ease;
-    font-size: .92rem;
-}
-
-.sidebar-link i {
-    color: var(--accent-blue);
-}
-
-.sidebar-link:hover {
-    background: rgba(15, 23, 42, 0.04);
-    transform: translateX(1px);
-}
-
-.sidebar-link.active {
-    background: var(--accent-gold-soft);
-    color: var(--accent-blue);
-    font-weight: 600;
-}
-
-.logout-btn {
-    margin-top: .75rem;
-}
-
-/* =============================== CONTEÚDO =============================== */
-
-/* =============================== CONTEÚDO =============================== */
-
-.content {
-    margin-left: var(--sidebar-width);
-    padding: 2rem;
-    width: calc(100% - var(--sidebar-width));
-    overflow-x: hidden;
-    transition: background .25s ease, color .25s ease;
-}
-
-.content-inner {
-    width: 100%;
-    max-width: 100%;
-}
-
-/* Mantém proteção da tabela */
-.table-responsive {
-    max-width: 100%;
-    overflow-x: auto;
-}
-
-.card {
-    max-width: 100%;
-}
-
-.content {
-    overflow-x: hidden;
-    margin-left: var(--sidebar-width);
-    padding: 2rem;
-    width: calc(100% - var(--sidebar-width));
-    transition: background .25s ease, color .25s ease;
-}
-
-.card {
-    background: var(--bg-card);
-    border-color: var(--border);
-    box-shadow: 0 3px 10px var(--shadow);
-}
-
-/* =============================== ALERTAS =============================== */
-
-/* ======== Bandeiras Premium ======== */
-.flag-icon {
-    width: 26px;
-    height: 20px;
-    border-radius: 4px;
-    object-fit: cover;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.18);
-    transition: transform .15s ease;
-}
-.flag-icon:hover {
-    transform: scale(1.08);
-}
-#alert-container {
-    margin-bottom: 1rem;
-}
-
-/* Correção específica para DataTables */
-.dataTables_wrapper {
-    width: 100% !important;
-    overflow-x: auto !important;
-}
-</style>
+<link rel="stylesheet" href="{% static 'css/style.css' %}">
+<link rel="stylesheet" href="{% static 'css/enterprise.css' %}">
 
 {% block extra_head %}{% endblock %}
 </head>
 
-<body data-theme="auto" id="tema-site">
-
+<body data-theme="auto">
 <div class="layout">
 
-<!-- SIDEBAR -->
-<aside class="sidebar" style="z-index:999 !important;">
-    <div class="sidebar-inner">
 
-        <!-- Logo -->
-        <div class="sidebar-brand">
-            <img src="{% static 'documentos/logo_dorange.png' %}" class="sidebar-logo">
-            <div>
-                <div class="sidebar-brand-title">D'OR@NGE</div>
-                <div class="sidebar-brand-sub">Document Management</div>
+    <!-- SIDEBAR -->
+    <aside class="sidebar" style="z-index:999 !important;">
+        <div class="sidebar-inner">
+
+            <!-- LOGO -->
+            <div class="sidebar-brand">
+                <img src="{% static 'documentos/logo_dorange.png' %}" class="sidebar-logo" alt="">
+                <div>
+                    <div class="sidebar-brand-title">D'OR@NGE</div>
+                    <div class="sidebar-brand-sub">Document Management</div>
+                </div>
             </div>
-        </div>
 
-        <!-- Switch Tema -->
-
-        <!-- Switch Idioma -->
-        <div class="language-switcher mt-2 mb-4">
-            <label class="small fw-semibold mb-1 d-block">Idioma</label>
-            <div class="d-flex gap-2">
-                <a href="/i18n/setlang/" onclick="setLanguage('pt-br'); return false;">
-                    <img src="{% static 'flags/br.svg' %}" class="flag-icon" alt="Português">
-                </a>
-                <a href="/i18n/setlang/" onclick="setLanguage('en'); return false;">
-                    <img src="{% static 'flags/us.svg' %}" class="flag-icon" alt="English">
-                </a>
+            <!-- IDIOMA -->
+            <div class="language-switcher mt-2 mb-3">
+                <label class="small fw-semibold mb-1 d-block">Idioma</label>
+                <div class="d-flex gap-2">
+                    <a href="/i18n/setlang/" onclick="setLanguage('pt-br'); return false;">
+                        <img src="{% static 'flags/br.svg' %}" class="flag-icon">
+                    </a>
+                    <a href="/i18n/setlang/" onclick="setLanguage('en'); return false;">
+                        <img src="{% static 'flags/us.svg' %}" class="flag-icon">
+                    </a>
+                </div>
             </div>
-        </div>
 
-        <!-- Form oculto para troca de idioma -->
-        <form id="lang-form" action="{% url 'set_language' %}" method="post" style="display:none;">
-            {% csrf_token %}
-            <input type="hidden" name="language" id="lang-input">
+            <form id="lang-form" action="{% url 'set_language' %}" method="post" style="display:none;">
+                {% csrf_token %}
+                <input type="hidden" id="lang-input" name="language">
+            </form>
+
+            <!-- TEMA -->
+            <div class="theme-switcher mt-1 mb-4">
+                <label class="small fw-semibold mb-1 d-block">Tema</label>
+                <div class="btn-group w-100">
+                    <button type="button" class="btn btn-sm btn-outline-secondary theme-btn" data-theme="light">🌞</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary theme-btn" data-theme="dark">🌙</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary theme-btn" data-theme="auto">🌓</button>
+                </div>
+            </div>
+
+            <!-- MENUS -->
+            <div class="sidebar-section-title">Documentos</div>
+            <ul class="sidebar-nav">
+                <li><a class="sidebar-link" href="{% url 'documentos:listar_documentos' %}"><i class="bi bi-table"></i> Lista de Documentos</a></li>
+                <li><a class="sidebar-link" href="{% url 'documentos:listar_documentos' %}?status_ldp=Em Revisão"><i class="bi bi-arrow-repeat"></i> Revisões</a></li>
+                <li><a class="sidebar-link" href="{% url 'documentos:upload_documento' %}"><i class="bi bi-file-earmark-plus"></i> Novo Documento</a></li>
+                <li><a class="sidebar-link" href="{% url 'documentos:importar_ldp' %}"><i class="bi bi-cloud-upload"></i> Importar LDP</a></li>
+            </ul>
+
+            <div class="sidebar-section-title">Operações</div>
+            <ul class="sidebar-nav">
+                <li><a class="sidebar-link" href="/dashboard/"><i class="bi bi-graph-up-arrow"></i> Dashboard GED</a></li>
+                <li><a class="sidebar-link" href="{% url 'documentos:painel_workflow' %}"><i class="bi bi-diagram-3"></i> Workflow</a></li>
+                <li><a class="sidebar-link" href="{% url 'documentos:medicao' %}"><i class="bi bi-cash-coin"></i> Medição</a></li>
+                <li><a class="sidebar-link" href="/dashboard/solicitacoes/"><i class="bi bi-people"></i> Solicitações de Acesso</a></li>
+            </ul>
+
+            {% if user.is_superuser %}
+            <div class="sidebar-section-title">Administração</div>
+            <ul class="sidebar-nav">
+                <li><a class="sidebar-link" href="{% url 'documentos:configuracoes' %}"><i class="bi bi-gear"></i> Usuários & Permissões</a></li>
+                <li><a class="sidebar-link" href="{% url 'contas:minhas_configuracoes' %}"><i class="bi bi-person-gear"></i> Minhas Configurações</a></li>
+                <li><a class="sidebar-link" href="{% url 'documentos:lixeira' %}"><i class="bi bi-trash3"></i> Lixeira</a></li>
+            </ul>
+            {% endif %}
+
+            {% if user.is_authenticated %}
+            <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button class="btn btn-outline-secondary btn-pill logout-btn w-100">
+                    <i class="bi bi-box-arrow-right"></i> Logout
+                </button>
+            </form>
+            {% endif %}
+
+            <div class="sidebar-footer">© {% now "Y" %} — D’OR@NGE Enterprise</div>
+
+        </div>
+    </aside>
+
+
+    <!-- CONTEÚDO -->
+    <main class="content">
+        <div class="content-inner">
+
+ <!-- ========================= TOPBAR GLOBAL – S4 NAVY ORANGE ========================= -->
+<div class="topbar-enterprise">
+    
+    <div class="topbar-left">
+        <div class="topbar-title">D’ORANGE PLATFORM · GED ENTERPRISE</div>
+        <div class="topbar-sub">Controle documental • Workflow • Medição financeira</div>
+    </div>
+
+    <div class="topbar-center">
+        <form method="get" action="{% url 'documentos:listar_documentos' %}" class="topbar-search">
+            <i class="bi bi-search search-icon"></i>
+            <input type="text" name="busca" placeholder="Buscar por código, título ou parte..."
+                   value="{{ request.GET.busca|default:'' }}">
+            <button class="btn-search">Buscar</button>
         </form>
-        <script>
-            function setLanguage(lang) {
-                document.getElementById('lang-input').value = lang;
-                document.getElementById('lang-form').submit();
-            }
-        </script>
-        <div class="theme-switcher mt-2 mb-4">
-            <label class="small fw-semibold mb-1 d-block">Tema</label>
+    </div>
 
-            <div class="btn-group w-100">
-                <button class="btn btn-sm btn-outline-secondary theme-btn" data-theme="light">🌞</button>
-                <button class="btn btn-sm btn-outline-secondary theme-btn" data-theme="dark">🌙</button>
-                <button class="btn btn-sm btn-outline-secondary theme-btn" data-theme="auto">🌓</button>
+    <div class="topbar-right">
+        {% if user.is_authenticated %}
+        <div class="topbar-user">
+            <div class="avatar-circle">
+                {% with user.username|default:'U' as uname %}{{ uname|first|upper }}{% endwith %}
+            </div>
+            <div>
+                <div class="topbar-user-name">{{ user.get_full_name|default:user.username }}</div>
+                <div class="topbar-user-role">
+                    {% if user.is_superuser %}Master Admin{% else %}Usuário GED{% endif %}
+                </div>
             </div>
         </div>
-
-        <!-- Menus Django -->
-        <div class="sidebar-section-title">Documentos</div>
-        <ul class="sidebar-nav">
-            <li><a href="{% url 'documentos:listar_documentos' %}" class="sidebar-link"><i class="bi bi-table"></i> Lista de Documentos</a></li>
-            <li><a href="{% url 'documentos:listar_documentos' %}?status_ldp=Em Revisão" class="sidebar-link"><i class="bi bi-arrow-repeat"></i> Revisões</a></li>
-            <li><a href="{% url 'documentos:upload_documento' %}" class="sidebar-link"><i class="bi bi-file-earmark-plus"></i> Novo Documento</a></li>
-            <li><a href="{% url 'documentos:importar_ldp' %}" class="sidebar-link"><i class="bi bi-cloud-upload"></i> Importar LDP</a></li>
-        </ul>
-
-        <div class="sidebar-section-title">Gerenciamento</div>
-        <ul class="sidebar-nav">
-            <!-- NOVO: Dashboard GED (global) -->
-            <li><a href="/dashboard/" class="sidebar-link"><i class="bi bi-graph-up-arrow"></i> Dashboard GED</a></li>
-
-            <!-- Antigo dashboard de documentos (renomeado) -->
-            
-            <li><a href="{% url 'documentos:painel_workflow' %}" class="sidebar-link"><i class="bi bi-diagram-3"></i> Workflow</a></li>
-            <li><a href="{% url 'documentos:medicao' %}" class="sidebar-link"><i class="bi bi-cash-coin"></i> Medição</a></li>
-            <li><a href="{% url 'documentos:configuracoes' %}" class="sidebar-link"><i class="bi bi-gear"></i> Configurações</a></li>
-            <li><a href="{% url 'contas:minhas_configuracoes' %}" class="sidebar-link"><i class="bi bi-person-gear"></i> Minhas Configurações</a></li>
-        </ul>
-
-        {% if user.is_superuser %}
-        <div class="sidebar-section-title">Administração</div>
-        <ul class="sidebar-nav">
-            <li><a href="{% url 'documentos:lixeira' %}" class="sidebar-link"><i class="bi bi-trash3"></i> Lixeira</a></li>
-        </ul>
         {% endif %}
-
-       {% if user.is_authenticated %}
-<form method="post" action="{% url 'logout' %}">
-    {% csrf_token %}
-    <button class="btn btn-outline-secondary btn-pill logout-btn w-100">
-        <i class="bi bi-box-arrow-right"></i> Logout
-    </button>
-</form>
-{% endif %}
-
-
-        <div class="sidebar-footer">© {{ now|date:"Y" }} — D’OR@NGE</div>
-
     </div>
-</aside>
-
-<!-- CONTEÚDO -->
-<main class="content">
-    <div class="content-inner">
-
-        {% if messages %}
-        <div id="alert-container">
-            {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
-                {{ message }}
-                <button class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            {% endfor %}
-        </div>
-        {% endif %}
-
-        {% block content %}{% endblock %}
-    </div>
-</main>
 
 </div>
 
-<!-- Bootstrap JS -->
+            <!-- ALERTAS -->
+            {% if messages %}
+            <div id="alert-container">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                    {{ message }}
+                    <button class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- PAGE CONTENT -->
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+</div>
+
+<!-- SCRIPTS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-<!-- =============================== JS DO TEMA =============================== -->
 <script>
+/* Troca idioma */
+function setLanguage(lang) {
+    document.getElementById('lang-input').value = lang;
+    document.getElementById('lang-form').submit();
+}
+
+/* Temas */
 const body = document.body;
-
-// trocar tema ao clicar
 document.querySelectorAll('.theme-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        const theme = btn.dataset.theme;
-
-        body.setAttribute("data-theme", theme);
-        localStorage.setItem("tema_ged", theme);
-
+    btn.onclick = () => {
+        let t = btn.dataset.theme;
+        body.setAttribute('data-theme', t);
+        localStorage.setItem('tema_ged', t);
         document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-    });
+    };
 });
+let saved = localStorage.getItem('tema_ged') || 'auto';
+body.setAttribute('data-theme', saved);
+document.querySelector('.theme-btn[data-theme="'+saved+'"]')?.classList.add('active');
 
-// carregar tema salvo
-const savedTheme = localStorage.getItem("tema_ged") || "auto";
-body.setAttribute("data-theme", savedTheme);
-
-// ativar botão correspondente
-const activeBtn = document.querySelector(`.theme-btn[data-theme="${savedTheme}"]`);
-if (activeBtn) activeBtn.classList.add('active');
+/* Marca o item ativo da sidebar */
+(function () {
+    const current = window.location.pathname;
+    document.querySelectorAll('.sidebar-link').forEach(link => {
+        const path = new URL(link.href).pathname;
+        if (current === path) link.classList.add('active');
+    });
+})();
 </script>
 
 {% block extra_js %}{% endblock %}
+<script>
+(function () {
+    // Mapeamento simples da rota atual → URL correta de busca
+    const path = window.location.pathname;
+
+    let rotaBusca = "{% url 'documentos:listar_documentos' %}";  // fallback
+
+    if (path.includes("/documentos/documentos")) {
+        rotaBusca = "{% url 'documentos:listar_documentos' %}";
+    }
+    else if (path.includes("/documentos/medicao")) {
+        rotaBusca = "{% url 'documentos:medicao' %}";
+    }
+    else if (path.includes("/documentos/painel-workflow") ||
+             path.includes("/workflow")) {
+        rotaBusca = "{% url 'documentos:painel_workflow' %}";
+    }
+    else if (path.includes("/dashboard/solicitacoes")) {
+        rotaBusca = "/dashboard/solicitacoes/";
+    }
+    else if (path.includes("/dashboard")) {
+        rotaBusca = "/dashboard/";
+    }
+
+    // Aplica dinamicamente a rota ao formulário da topbar
+    const form = document.querySelector(".topbar-search");
+    if (form) form.setAttribute("action", rotaBusca);
+
+})();
+</script>
+
 </body>
 </html>
+

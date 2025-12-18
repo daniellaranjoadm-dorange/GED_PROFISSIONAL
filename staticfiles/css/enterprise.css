@@ -1,0 +1,232 @@
+/* =================================================================================
+   D’OR@NGE ENTERPRISE UI — THEME S6 NAVY + ORANGE (BUILD FINAL)
+================================================================================= */
+
+/* ------------------------------
+   VARIÁVEIS DE TEMA
+------------------------------ */
+
+body[data-theme="light"] {
+    --bg: #f4f6fa;
+    --bg-card: #ffffff;
+    --bg-sidebar: #0C1220;
+
+    --text: #ffffff;
+    --text-soft: #b9c3d6;
+
+    --accent-blue: #38BDF8;
+    --accent-blue-soft: rgba(56,189,248,.12);
+
+    --accent-orange: #FF8A00;
+    --accent-orange-soft: rgba(255,138,0,0.18);
+
+    --border: #d0d7e4;
+    --shadow: rgba(0,0,0,.15);
+}
+
+body[data-theme="dark"],
+body[data-theme="auto"] {
+    --bg: #020617;
+    --bg-card: #0b1220;
+    --bg-sidebar: #0C1220;
+
+    --text: #ffffff;
+    --text-soft: #94a3b8;
+
+    --accent-blue: #38BDF8;
+    --accent-blue-soft: rgba(56,189,248,.12);
+
+    --accent-orange: #FF8A00;
+    --accent-orange-soft: rgba(255,138,0,0.22);
+
+    --border: #1e2636;
+    --shadow: rgba(0,0,0,.45);
+}
+
+/* GLOBAL */
+
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Inter", sans-serif;
+    transition: .25s ease;
+}
+
+.layout {
+    display: flex;
+    width: 100%;
+    min-height: 100vh;
+}
+
+/* ============================================================
+   SIDEBAR — FINALIZADO
+============================================================ */
+
+.sidebar {
+    width: 240px;
+    background: var(--bg-sidebar);
+    padding: 1.4rem 1rem 1rem;
+    color: var(--text);
+    position: fixed;
+    top: 0; bottom: 0; left: 0;
+    overflow-y: auto;
+    border-right: 1px solid rgba(255,138,0,.35);
+    box-shadow: 6px 0 20px rgba(0,0,0,0.45);
+}
+
+/* LOGO PREMIUM */
+.sidebar-logo {
+    width: 50px;
+    filter:
+        drop-shadow(0 0 8px rgba(255,138,0,.55))
+        brightness(1.28)
+        contrast(1.35);
+}
+
+.sidebar-brand-title {
+    color: var(--accent-blue);
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.sidebar-brand-sub {
+    font-size: .75rem;
+    color: var(--text-soft);
+}
+
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    padding: .60rem .85rem;
+    border-radius: 10px;
+    color: #fff !important;
+    font-size: .92rem;
+    font-weight: 500;
+    transition: .22s;
+}
+
+.sidebar-link i {
+    color: var(--accent-blue) !important;
+}
+
+/* Hover */
+.sidebar-link:hover {
+    background: rgba(255,138,0,.22) !important;
+    color: #fff !important;
+}
+.sidebar-link:hover i {
+    color: #fff !important;
+}
+
+/* Active */
+.sidebar-link.active {
+    background: linear-gradient(90deg,#FF8A00,#FFC470);
+    color: #fff !important;
+    font-weight: 600;
+    box-shadow: 0 0 14px rgba(255,138,0,.45);
+}
+.sidebar-link.active i {
+    color: #fff !important;
+}
+
+/* Footer */
+.sidebar-footer {
+    color: var(--text-soft);
+    text-align: center;
+    font-size: .75rem;
+}
+
+/* ============================================================
+   CONTENT AREA
+============================================================ */
+
+.content {
+    margin-left: 240px;
+    padding: 1.5rem 2rem;
+    width: calc(100% - 240px);
+}
+
+/* ============================================================
+   TOPBAR — FINAL S6
+============================================================ */
+
+.topbar-enterprise {
+    width: 100%;
+    background: linear-gradient(90deg,#0B1220,#111A2E);
+    padding: 12px 26px;
+    border-radius: 14px;
+    margin-bottom: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: #E5E7EB;
+    box-shadow: 0 8px 26px rgba(0,0,0,.45);
+}
+
+.topbar-enterprise::after {
+    content:"";
+    position:absolute;
+    bottom:-3px;
+    left:0;
+    width:100%;
+    height:3px;
+    background:linear-gradient(90deg,#38BDF8 0%, #FF8A00 100%);
+}
+
+/* Buscar */
+.topbar-search {
+    display:flex;
+    align-items:center;
+    gap:6px;
+    padding:6px 14px;
+    background:rgba(255,255,255,0.07);
+    border-radius:999px;
+    min-width:380px;
+    border:1px solid rgba(56,189,248,0.28);
+    backdrop-filter:blur(6px);
+}
+
+.topbar-search input {
+    background:transparent;
+    border:none;
+    color:#E2E8F0;
+    flex:1;
+}
+
+/* Botão Buscar */
+.btn-search {
+    background:linear-gradient(90deg,#FF8A00,#FFBA55);
+    border:none;
+    padding:6px 16px;
+    border-radius:999px;
+    font-weight:600;
+}
+
+/* Avatar */
+.avatar-circle {
+    width:34px;
+    height:34px;
+    border-radius:50%;
+    background:linear-gradient(135deg,#FFD27A,#FF8A00);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:700;
+    color:#111;
+}
+
+/* ============================================================
+   FORMULÁRIOS / TABELAS
+============================================================ */
+
+input, select, textarea {
+    background-color: #101a2b !important;
+    color: #dce8ff !important;
+    border: 1px solid rgba(255,255,255,0.14) !important;
+}
+
+/* Remover azul fantasma */
+.card, .btn, table tbody tr {
+    background-image: none !important;
+}
