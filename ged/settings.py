@@ -30,7 +30,6 @@ ALLOWED_HOSTS = [
     "www.dorange.com.br",
 ]
 
-
 CSRF_TRUSTED_ORIGINS = [
     "https://*.railway.app",
     "https://dorange.com.br",
@@ -39,10 +38,11 @@ CSRF_TRUSTED_ORIGINS = [
     "http://www.dorange.com.br",
 ]
 
+# Em produção, Railway geralmente fica atrás de proxy/edge
+# (isso ajuda Django a entender HTTPS via proxy quando você ativar coisas de segurança depois)
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
-# Segurança avançada – apenas quando DEBUG=False
-# Segurança extra desativada temporariamente para diagnosticar redirects em produção.
-# Depois que o sistema estiver estável, reativamos com calma.
+# Segurança avançada – mantida “suave” para não quebrar enquanto estabiliza
 if not DEBUG:
     SECURE_HSTS_SECONDS = 0
     SECURE_HSTS_INCLUDE_SUBDOMAINS = False
@@ -53,30 +53,30 @@ if not DEBUG:
     SESSION_COOKIE_SECURE = False
     CSRF_COOKIE_SECURE = False
 
-
 # ======================
 # APPS
 # ======================
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-
-    # Terceiros (storage/media)
-    'storages',
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
 
     # (Opcional, recomendado) evita conflito do runserver com static quando usa WhiteNoise
-    'whitenoise.runserver_nostatic',
+    "whitenoise.runserver_nostatic",
+
+    "django.contrib.staticfiles",
+
+    # Terceiros (storage/media)
+    "storages",
 
     # Apps locais
-    'apps.documentos',
-    'apps.contas',
-    'apps.solicitacoes',
-    'apps.dashboard',
+    "apps.documentos",
+    "apps.contas",
+    "apps.solicitacoes",
+    "apps.dashboard",
 ]
 
 # ======================
@@ -84,23 +84,23 @@ INSTALLED_APPS = [
 # ======================
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
+    "django.middleware.security.SecurityMiddleware",
 
-    # Whitenoise para Railway
-    'whitenoise.middleware.WhiteNoiseMiddleware',
+    # WhiteNoise (static)
+    "whitenoise.middleware.WhiteNoiseMiddleware",
 
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 
     # Middleware de RBAC
-    'apps.contas.middleware.RBACMiddleware',
+    "apps.contas.middleware.RBACMiddleware",
 ]
 
-ROOT_URLCONF = 'ged.urls'
+ROOT_URLCONF = "ged.urls"
 
 # ======================
 # TEMPLATES
@@ -108,30 +108,31 @@ ROOT_URLCONF = 'ged.urls'
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
-                'apps.contas.context_processors.user_config',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [BASE_DIR / "templates"],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+                "apps.contas.context_processors.user_config",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'ged.wsgi.application'
+WSGI_APPLICATION = "ged.wsgi.application"
 
 # ======================
-# BANCO DE DADOS - Local = SQLite / Produção = Railway PostgreSQL
+# BANCO DE DADOS
+# Local = SQLite / Produção = Railway PostgreSQL
 # ======================
 
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 
 if DEBUG or not DATABASE_URL:
-    print("MODO DESENVOLVIMENTO -> Usando SQLite local")
+    print("MODO DESENVOLVIMENTO -> SQLite local")
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
@@ -144,7 +145,7 @@ else:
         "default": dj_database_url.parse(
             DATABASE_URL,
             conn_max_age=600,
-            ssl_require=True
+            ssl_require=True,
         )
     }
 
@@ -153,54 +154,100 @@ else:
 # ======================
 
 AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
 # ======================
 # LOCALIZAÇÃO
 # ======================
 
-LANGUAGE_CODE = 'pt-br'
-TIME_ZONE = 'America/Sao_Paulo'
+LANGUAGE_CODE = "pt-br"
+TIME_ZONE = "America/Sao_Paulo"
 USE_I18N = True
 USE_TZ = True
 
 # ======================
-# ARQUIVOS ESTÁTICOS
+# ARQUIVOS ESTÁTICOS (WhiteNoise)
 # ======================
 
-STATIC_URL = '/static/'
-STATICFILES_DIRS = [BASE_DIR / 'static']
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATIC_URL = "/static/"
+STATICFILES_DIRS = [BASE_DIR / "static"]
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+# MUITO IMPORTANTE:
+# evita 500 se faltar entrada no manifest (ex: admin/css/base.css)
+WHITENOISE_MANIFEST_STRICT = False
+
+# Em geral pode ficar True (ajuda durante dev),
+# mas o WhiteNoise usa mais o collectstatic em produção.
 WHITENOISE_USE_FINDERS = True
 
 # ======================
-# ARQUIVOS DE MÍDIA
+# ARQUIVOS DE MÍDIA (local dev / produção via R2)
 # ======================
-# IMPORTANTE: Railway NÃO mantém arquivos persistentes.
-# Use MEDIA somente em modo DEBUG=True (ambiente local)
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
+# ======================
+# STORAGE (Django 5.2+)
+# - staticfiles -> WhiteNoise
+# - default (MEDIA) -> local em DEBUG / R2 em produção (se envs existirem)
+# ======================
+
+# Sempre define staticfiles de forma consistente
+STORAGES = {
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+    # default será definido abaixo
+}
+
+# Credenciais R2 (produção)
+R2_BUCKET_NAME = os.environ.get("R2_BUCKET_NAME")
+R2_ENDPOINT_URL = os.environ.get("R2_ENDPOINT_URL")
+R2_ACCESS_KEY_ID = os.environ.get("R2_ACCESS_KEY_ID")
+R2_SECRET_ACCESS_KEY = os.environ.get("R2_SECRET_ACCESS_KEY")
 
 if not DEBUG:
-    # Aviso interno – não usar media em produção
-    print("AVISO: MEDIA_ROOT ativo, mas Railway nao armazena arquivos permanentemente.")
+    print("AVISO: Producao ativa. MEDIA local nao e persistente no Railway.")
+
+    # Se faltar qualquer env, não derruba o deploy: cai para storage local
+    if all([R2_BUCKET_NAME, R2_ENDPOINT_URL, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY]):
+        STORAGES["default"] = {
+            "BACKEND": "storages.backends.s3.S3Storage",
+            "OPTIONS": {
+                "bucket_name": R2_BUCKET_NAME,
+                "endpoint_url": R2_ENDPOINT_URL,
+                "access_key": R2_ACCESS_KEY_ID,
+                "secret_key": R2_SECRET_ACCESS_KEY,
+                "region_name": "auto",
+                "addressing_style": "path",
+                "signature_version": "s3v4",
+                # bucket privado + URL assinada
+                "querystring_auth": True,
+            },
+        }
+        print("MEDIA -> Cloudflare R2 (S3 compat)")
+    else:
+        STORAGES["default"] = {"BACKEND": "django.core.files.storage.FileSystemStorage"}
+        print("AVISO: R2 envs incompletas. MEDIA ficou local (nao persistente).")
+else:
+    # DEBUG = storage local
+    STORAGES["default"] = {"BACKEND": "django.core.files.storage.FileSystemStorage"}
 
 # ======================
 # AUTENTICAÇÃO
 # ======================
 
-LOGIN_URL = '/login/'
-LOGIN_REDIRECT_URL = '/'
-LOGOUT_REDIRECT_URL = '/login/'
+LOGIN_URL = "/login/"
+LOGIN_REDIRECT_URL = "/"
+LOGOUT_REDIRECT_URL = "/login/"
 
-AUTH_USER_MODEL = 'contas.Usuario'
+AUTH_USER_MODEL = "contas.Usuario"
 
 # ======================
 # EMAIL
@@ -213,37 +260,10 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.environ.get("EMAIL_USER")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_PASSWORD")
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-# ======================
-# STORAGE (R2) - MEDIA em produção
-# ======================
 
-R2_BUCKET_NAME = os.environ.get("R2_BUCKET_NAME")
-R2_ENDPOINT_URL = os.environ.get("R2_ENDPOINT_URL")
-R2_ACCESS_KEY_ID = os.environ.get("R2_ACCESS_KEY_ID")
-R2_SECRET_ACCESS_KEY = os.environ.get("R2_SECRET_ACCESS_KEY")
-
-if not DEBUG:
-    # MEDIA -> Cloudflare R2 (S3 compatível)
-    STORAGES = {
-        "default": {
-            "BACKEND": "storages.backends.s3.S3Storage",
-            "OPTIONS": {
-                "bucket_name": R2_BUCKET_NAME,
-                "endpoint_url": R2_ENDPOINT_URL,
-                "access_key": R2_ACCESS_KEY_ID,
-                "secret_key": R2_SECRET_ACCESS_KEY,
-                "region_name": "auto",
-                "addressing_style": "path",
-                "signature_version": "s3v4",
-                # mantém bucket privado e gera URL assinada no .url
-                "querystring_auth": True,
-            },
-        },
-        "staticfiles": {
-            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-        },
-    }
-import os
+# ======================
+# LOGGING (ajuda a ver traceback no Railway)
+# ======================
 
 LOGGING = {
     "version": 1,
@@ -256,13 +276,11 @@ LOGGING = {
         "level": os.getenv("LOG_LEVEL", "INFO"),
     },
     "loggers": {
-        # logs gerais do Django
         "django": {
             "handlers": ["console"],
             "level": os.getenv("DJANGO_LOG_LEVEL", "INFO"),
             "propagate": False,
         },
-        # aqui é onde aparece o traceback dos 500
         "django.request": {
             "handlers": ["console"],
             "level": "ERROR",
@@ -275,4 +293,4 @@ LOGGING = {
 # PADRÕES
 # ======================
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
