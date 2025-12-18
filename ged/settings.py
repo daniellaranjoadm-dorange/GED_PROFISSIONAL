@@ -122,8 +122,10 @@ WSGI_APPLICATION = 'ged.wsgi.application'
 # BANCO DE DADOS - Local = SQLite / Produção = Railway PostgreSQL
 # ======================
 
-if DEBUG:
-    print("💻 MODO DESENVOLVIMENTO → Usando SQLite local")
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+
+if DEBUG or not DATABASE_URL:
+    print("MODO DESENVOLVIMENTO -> Usando SQLite local")
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
@@ -131,10 +133,10 @@ if DEBUG:
         }
     }
 else:
-    print("🚀 PRODUÇÃO → PostgreSQL Railway")
+    print("PRODUCAO -> PostgreSQL Railway")
     DATABASES = {
         "default": dj_database_url.parse(
-            os.getenv("DATABASE_URL"),
+            DATABASE_URL,
             conn_max_age=600,
             ssl_require=True
         )
@@ -182,7 +184,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 if not DEBUG:
     # Aviso interno – não usar media em produção
-    print("⚠ MEDIA_ROOT está ativo, mas Railway não armazena arquivos permanentemente.")
+    print("AVISO: MEDIA_ROOT ativo, mas Railway nao armazena arquivos permanentemente.")
 
 # ======================
 # AUTENTICAÇÃO
