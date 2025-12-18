@@ -66,6 +66,12 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    # Terceiros (storage/media)
+    'storages',
+
+    # (Opcional, recomendado) evita conflito do runserver com static quando usa WhiteNoise
+    'whitenoise.runserver_nostatic',
+
     # Apps locais
     'apps.documentos',
     'apps.contas',
@@ -207,6 +213,36 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.environ.get("EMAIL_USER")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_PASSWORD")
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+# ======================
+# STORAGE (R2) - MEDIA em produção
+# ======================
+
+R2_BUCKET_NAME = os.environ.get("R2_BUCKET_NAME")
+R2_ENDPOINT_URL = os.environ.get("R2_ENDPOINT_URL")
+R2_ACCESS_KEY_ID = os.environ.get("R2_ACCESS_KEY_ID")
+R2_SECRET_ACCESS_KEY = os.environ.get("R2_SECRET_ACCESS_KEY")
+
+if not DEBUG:
+    # MEDIA -> Cloudflare R2 (S3 compatível)
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3.S3Storage",
+            "OPTIONS": {
+                "bucket_name": R2_BUCKET_NAME,
+                "endpoint_url": R2_ENDPOINT_URL,
+                "access_key": R2_ACCESS_KEY_ID,
+                "secret_key": R2_SECRET_ACCESS_KEY,
+                "region_name": "auto",
+                "addressing_style": "path",
+                "signature_version": "s3v4",
+                # mantém bucket privado e gera URL assinada no .url
+                "querystring_auth": True,
+            },
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
 
 # ======================
 # PADRÕES
