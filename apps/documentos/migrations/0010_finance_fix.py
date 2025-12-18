@@ -1,39 +1,27 @@
-from django.db import migrations, models
+from django.db import migrations
 
 
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('documentos', '0009_alter_arquivodocumento_options_and_more'),
+        ("documentos", "0009_alter_arquivodocumento_options_and_more"),
     ]
 
     operations = [
-        # --- Campos Financeiros no Documento ---
-        migrations.AddField(
-            model_name='documento',
-            name='valor_brl',
-            field=models.DecimalField(
-                null=True, blank=True, max_digits=15, decimal_places=2, verbose_name='Valor (BRL)'
-            ),
-        ),
-        migrations.AddField(
-            model_name='documento',
-            name='valor_usd',
-            field=models.DecimalField(
-                null=True, blank=True, max_digits=15, decimal_places=2, verbose_name='Valor (USD)'
-            ),
-        ),
+        migrations.RunSQL(
+            sql="""
+            ALTER TABLE documentos_documento
+            ADD COLUMN IF NOT EXISTS valor_brl NUMERIC(15,2);
 
-        # --- Criação do Modelo Financeiro ---
-        migrations.CreateModel(
-            name='ProjetoFinanceiro',
-            fields=[
-                ('id', models.AutoField(primary_key=True, serialize=False)),
-                ('fase', models.CharField(max_length=50)),
-                ('valor_total_usd', models.DecimalField(max_digits=15, decimal_places=2)),
-                ('descricao', models.CharField(max_length=255, null=True, blank=True)),
-                ('moeda', models.CharField(max_length=10, default='USD')),
-                ('projeto', models.ForeignKey(on_delete=models.CASCADE, related_name='financeiro', to='documentos.projeto')),
-            ],
+            ALTER TABLE documentos_documento
+            ADD COLUMN IF NOT EXISTS valor_usd NUMERIC(15,2);
+            """,
+            reverse_sql="""
+            ALTER TABLE documentos_documento
+            DROP COLUMN IF EXISTS valor_brl;
+
+            ALTER TABLE documentos_documento
+            DROP COLUMN IF EXISTS valor_usd;
+            """,
         ),
     ]
