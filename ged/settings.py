@@ -4,6 +4,7 @@ Django settings for ged project – versão profissional otimizada para Railway.
 
 from pathlib import Path
 import os
+
 from dotenv import load_dotenv
 import dj_database_url
 
@@ -19,7 +20,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # ======================
 
 SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key")
-
 DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
 
 ALLOWED_HOSTS = [
@@ -38,18 +38,16 @@ CSRF_TRUSTED_ORIGINS = [
     "http://www.dorange.com.br",
 ]
 
-# Em produção, Railway geralmente fica atrás de proxy/edge
-# (isso ajuda Django a entender HTTPS via proxy quando você ativar coisas de segurança depois)
+# Railway fica atrás de proxy/edge
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_X_FORWARDED_HOST = True
 
-# Segurança avançada – mantida “suave” para não quebrar enquanto estabiliza
+# Segurança “suave” enquanto estabiliza
 if not DEBUG:
     SECURE_HSTS_SECONDS = 0
     SECURE_HSTS_INCLUDE_SUBDOMAINS = False
     SECURE_HSTS_PRELOAD = False
-
     SECURE_SSL_REDIRECT = False
-
     SESSION_COOKIE_SECURE = False
     CSRF_COOKIE_SECURE = False
 
@@ -58,18 +56,16 @@ if not DEBUG:
 # ======================
 
 INSTALLED_APPS = [
+    "whitenoise.runserver_nostatic",  # antes de staticfiles
+
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
-
-    # (Opcional, recomendado) evita conflito do runserver com static quando usa WhiteNoise
-    "whitenoise.runserver_nostatic",
-
     "django.contrib.staticfiles",
 
-    # Terceiros (storage/media)
+    # Terceiros
     "storages",
 
     # Apps locais
@@ -85,8 +81,6 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-
-    # WhiteNoise (static)
     "whitenoise.middleware.WhiteNoiseMiddleware",
 
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -96,11 +90,11 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 
-    # Middleware de RBAC
     "apps.contas.middleware.RBACMiddleware",
 ]
 
 ROOT_URLCONF = "ged.urls"
+WSGI_APPLICATION = "ged.wsgi.application"
 
 # ======================
 # TEMPLATES
@@ -122,11 +116,8 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "ged.wsgi.application"
-
 # ======================
 # BANCO DE DADOS
-# Local = SQLite / Produção = Railway PostgreSQL
 # ======================
 
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
@@ -150,7 +141,7 @@ else:
     }
 
 # ======================
-# VALIDAÇÃO DE SENHAS
+# SENHAS
 # ======================
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -170,74 +161,75 @@ USE_I18N = True
 USE_TZ = True
 
 # ======================
-# ARQUIVOS ESTÁTICOS (WhiteNoise)
+# STATIC (WhiteNoise)
 # ======================
 
 STATIC_URL = "/static/"
-STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# MUITO IMPORTANTE:
-# evita 500 se faltar entrada no manifest (ex: admin/css/base.css)
+# só adiciona STATICFILES_DIRS se existir a pasta "static"
+STATIC_DIR = BASE_DIR / "static"
+if STATIC_DIR.exists():
+    STATICFILES_DIRS = [STATIC_DIR]
+else:
+    STATICFILES_DIRS = []
+
+# evita 500/manifest faltando
 WHITENOISE_MANIFEST_STRICT = False
 
-# Em geral pode ficar True (ajuda durante dev),
-# mas o WhiteNoise usa mais o collectstatic em produção.
-WHITENOISE_USE_FINDERS = True
+# em produção, WhiteNoise serve do STATIC_ROOT (via collectstatic lembrando)
+WHITENOISE_USE_FINDERS = DEBUG
 
 # ======================
-# ARQUIVOS DE MÍDIA (local dev / produção via R2)
+# MEDIA + STORAGE (Django 5.x)
 # ======================
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
-# ======================
-# STORAGE (Django 5.2+)
-# - staticfiles -> WhiteNoise
-# - default (MEDIA) -> local em DEBUG / R2 em produção (se envs existirem)
-# ======================
-
-# Sempre define staticfiles de forma consistente
-STORAGES = {
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-    },
-    # default será definido abaixo
-}
-
-# Credenciais R2 (produção)
-R2_BUCKET_NAME = os.environ.get("R2_BUCKET_NAME")
-R2_ENDPOINT_URL = os.environ.get("R2_ENDPOINT_URL")
-R2_ACCESS_KEY_ID = os.environ.get("R2_ACCESS_KEY_ID")
-R2_SECRET_ACCESS_KEY = os.environ.get("R2_SECRET_ACCESS_KEY")
+# Variáveis no Railway (você já tem AWS_* lá)
+AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID") or os.environ.get("R2_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY") or os.environ.get("R2_SECRET_ACCESS_KEY")
+AWS_STORAGE_BUCKET_NAME = os.environ.get("AWS_STORAGE_BUCKET_NAME") or os.environ.get("R2_BUCKET_NAME")
+AWS_S3_ENDPOINT_URL = os.environ.get("AWS_S3_ENDPOINT_URL") or os.environ.get("R2_ENDPOINT_URL")
+AWS_S3_REGION_NAME = os.environ.get("AWS_S3_REGION_NAME", "auto")
 
 if not DEBUG:
-    print("AVISO: Producao ativa. MEDIA local nao e persistente no Railway.")
+    # STATIC sem manifest (mais robusto)
+    STORAGES = {
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+        },
+        "default": {
+            # fallback seguro: se faltar env, não derruba o deploy
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+    }
 
-    # Se faltar qualquer env, não derruba o deploy: cai para storage local
-    if all([R2_BUCKET_NAME, R2_ENDPOINT_URL, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY]):
+    # Se tiver tudo do R2/AWS configurado, MEDIA vai pro R2
+    if all([AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME, AWS_S3_ENDPOINT_URL]):
         STORAGES["default"] = {
             "BACKEND": "storages.backends.s3.S3Storage",
             "OPTIONS": {
-                "bucket_name": R2_BUCKET_NAME,
-                "endpoint_url": R2_ENDPOINT_URL,
-                "access_key": R2_ACCESS_KEY_ID,
-                "secret_key": R2_SECRET_ACCESS_KEY,
-                "region_name": "auto",
+                "bucket_name": AWS_STORAGE_BUCKET_NAME,
+                "endpoint_url": AWS_S3_ENDPOINT_URL,
+                "access_key": AWS_ACCESS_KEY_ID,
+                "secret_key": AWS_SECRET_ACCESS_KEY,
+                "region_name": AWS_S3_REGION_NAME,
                 "addressing_style": "path",
                 "signature_version": "s3v4",
-                # bucket privado + URL assinada
-                "querystring_auth": True,
+                "querystring_auth": True,  # bucket privado (URL assinada)
             },
         }
         print("MEDIA -> Cloudflare R2 (S3 compat)")
     else:
-        STORAGES["default"] = {"BACKEND": "django.core.files.storage.FileSystemStorage"}
-        print("AVISO: R2 envs incompletas. MEDIA ficou local (nao persistente).")
+        print("AVISO: R2/AWS envs incompletas. MEDIA ficou local (nao persistente).")
 else:
-    # DEBUG = storage local
-    STORAGES["default"] = {"BACKEND": "django.core.files.storage.FileSystemStorage"}
+    # DEBUG: tudo local
+    STORAGES = {
+        "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    }
 
 # ======================
 # AUTENTICAÇÃO
@@ -246,7 +238,6 @@ else:
 LOGIN_URL = "/login/"
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/login/"
-
 AUTH_USER_MODEL = "contas.Usuario"
 
 # ======================
@@ -262,19 +253,14 @@ EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_PASSWORD")
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 # ======================
-# LOGGING (ajuda a ver traceback no Railway)
+# LOGGING
 # ======================
 
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
-    "handlers": {
-        "console": {"class": "logging.StreamHandler"},
-    },
-    "root": {
-        "handlers": ["console"],
-        "level": os.getenv("LOG_LEVEL", "INFO"),
-    },
+    "handlers": {"console": {"class": "logging.StreamHandler"}},
+    "root": {"handlers": ["console"], "level": os.getenv("LOG_LEVEL", "INFO")},
     "loggers": {
         "django": {
             "handlers": ["console"],
