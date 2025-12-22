@@ -150,6 +150,9 @@ WSGI_APPLICATION = "ged.wsgi.application"
 # BANCO DE DADOS
 # ======================
 
+# DEBUG bem robusto (default = False)
+DEBUG = os.getenv("DEBUG", "0").lower() in ("1", "true", "yes", "on")
+
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 
 if DATABASE_URL:
@@ -158,7 +161,7 @@ if DATABASE_URL:
         "default": dj_database_url.parse(
             DATABASE_URL,
             conn_max_age=600,
-            ssl_require=False,
+            ssl_require=False,  # dentro do railway.internal normalmente ok
         )
     }
 else:
