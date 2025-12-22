@@ -4,8 +4,13 @@ Django settings for ged project – versão profissional otimizada para Railway.
 
 from pathlib import Path
 import os
+
 from dotenv import load_dotenv
 import dj_database_url
+
+# ======================
+# BASE / ENV
+# ======================
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -18,9 +23,10 @@ if env_file.exists():
 # SEGURANÇA
 # ======================
 
-SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key")
-DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
+# DEBUG robusto (aceita 1/true/yes/on). Qualquer outra coisa => False
+DEBUG = os.getenv("DEBUG", "0").strip().lower() in ("1", "true", "yes", "on")
 
+SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key")
 
 # ======================
 # HOSTS / CSRF (robusto no Railway)
@@ -41,7 +47,6 @@ if _allowed_hosts_env:
 else:
     ALLOWED_HOSTS = sorted(DEFAULT_ALLOWED_HOSTS)
 
-
 DEFAULT_CSRF_TRUSTED_ORIGINS = {
     "https://*.railway.app",
     "https://dorange.com.br",
@@ -57,11 +62,9 @@ if _csrf_env:
 else:
     CSRF_TRUSTED_ORIGINS = sorted(DEFAULT_CSRF_TRUSTED_ORIGINS)
 
-
 # Railway fica atrás de proxy/edge
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 USE_X_FORWARDED_HOST = True
-
 
 # Segurança “suave” enquanto estabiliza
 if not DEBUG:
@@ -71,7 +74,6 @@ if not DEBUG:
     SECURE_SSL_REDIRECT = False
     SESSION_COOKIE_SECURE = False
     CSRF_COOKIE_SECURE = False
-
 
 # ======================
 # APPS
@@ -97,7 +99,6 @@ INSTALLED_APPS = [
     "apps.dashboard",
 ]
 
-
 # ======================
 # MIDDLEWARE
 # ======================
@@ -116,9 +117,7 @@ MIDDLEWARE = [
     "apps.contas.middleware.RBACMiddleware",
 ]
 
-
 ROOT_URLCONF = "ged.urls"
-
 
 # ======================
 # TEMPLATES
@@ -142,13 +141,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "ged.wsgi.application"
 
-
 # ======================
 # BANCO DE DADOS
 # ======================
-
-# DEBUG bem robusto (default = False)
-DEBUG = os.getenv("DEBUG", "0").lower() in ("1", "true", "yes", "on")
 
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 
@@ -158,7 +153,7 @@ if DATABASE_URL:
         "default": dj_database_url.parse(
             DATABASE_URL,
             conn_max_age=600,
-            ssl_require=False,  # dentro do railway.internal normalmente ok
+            ssl_require=False,  # railway.internal normalmente ok sem SSL
         )
     }
 else:
@@ -181,7 +176,6 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-
 # ======================
 # LOCALIZAÇÃO
 # ======================
@@ -190,7 +184,6 @@ LANGUAGE_CODE = "pt-br"
 TIME_ZONE = "America/Sao_Paulo"
 USE_I18N = True
 USE_TZ = True
-
 
 # ======================
 # STATIC (WhiteNoise)
@@ -204,14 +197,12 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 WHITENOISE_MANIFEST_STRICT = False
 WHITENOISE_USE_FINDERS = DEBUG
 
-
 # ======================
 # MEDIA
 # ======================
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
-
 
 # ======================
 # STORAGES (Django 5.2+)
@@ -255,7 +246,6 @@ if not DEBUG:
     else:
         print("AVISO: R2 envs incompletas. MEDIA ficou local (nao persistente).")
 
-
 # ======================
 # AUTENTICAÇÃO
 # ======================
@@ -264,7 +254,6 @@ LOGIN_URL = "/login/"
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/login/"
 AUTH_USER_MODEL = "contas.Usuario"
-
 
 # ======================
 # EMAIL
@@ -277,7 +266,6 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.environ.get("EMAIL_USER")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_PASSWORD")
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-
 
 # ======================
 # LOGGING
