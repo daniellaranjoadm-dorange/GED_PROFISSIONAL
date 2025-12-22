@@ -31,16 +31,29 @@ body{
     flex-direction:column;
 }
 
+/* trava scroll quando modal abrir */
+body.modal-open{
+    overflow:hidden;
+}
+
 /* blueprint naval */
 body::before{
     content:"";
     position:fixed;
     inset:0;
-    background:url("{% static 'img/blueprint-grid.png' %}");
+    /* grid blueprint em CSS (sem arquivo) */
+    background-image:
+        linear-gradient(rgba(56,189,248,.10) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(56,189,248,.10) 1px, transparent 1px),
+        linear-gradient(rgba(249,115,22,.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(249,115,22,.06) 1px, transparent 1px);
+    background-size: 48px 48px, 48px 48px, 240px 240px, 240px 240px;
+    background-position: 0 0, 0 0, 0 0, 0 0;
     opacity:.08;
     pointer-events:none;
     z-index:-2;
 }
+
 
 /* Luz ambiente */
 body::after{
@@ -332,15 +345,28 @@ body::after{
     margin-bottom:16px;
 }
 
+/* ✅ THUMB agora usa o poster do vídeo (mais bonito) */
 .video-thumb{
     height:190px;
     border-radius:14px;
-    background:radial-gradient(circle,#1e293b,#020617);
+    background:
+        url("{% static 'img/poster.jpg' %}") center/cover no-repeat,
+        radial-gradient(circle,#1e293b,#020617);
     display:flex;
     align-items:center;
     justify-content:center;
     cursor:pointer;
+    position:relative;
+    overflow:hidden;
 }
+
+.video-thumb::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:radial-gradient(circle, rgba(15,23,42,.15), rgba(2,6,23,.55));
+}
+
 .video-play-btn{
     width:70px;
     height:70px;
@@ -350,6 +376,8 @@ body::after{
     align-items:center;
     justify-content:center;
     background:rgba(15,23,42,.6);
+    position:relative;
+    z-index:1;
 }
 .video-play-btn span{
     border-style:solid;
@@ -682,6 +710,7 @@ body::after{
     color:#e5e7eb;
     font-weight:bold;
     text-shadow:0 0 10px #000;
+    user-select:none;
 }
 .fechar:hover{
     color:#fbbf24;
@@ -778,7 +807,7 @@ footer span{
                     Rastreio de revisões, fluxos técnicos e visual moderno.
                 </div>
 
-                <div class="video-thumb" onclick="abrirVideo()">
+                <div class="video-thumb" onclick="abrirVideo()" aria-label="Abrir vídeo de apresentação">
                     <div class="video-play-btn"><span></span></div>
                 </div>
 
@@ -789,17 +818,16 @@ footer span{
             </div>
         </div>
     </section>
+
 <!-- ======================================================================== -->
 <!-- 💠 SEÇÃO C — VALOR IMEDIATO DO GED ENTERPRISE -->
 <!-- ======================================================================== -->
 <section class="beneficios-section">
     <div class="beneficios-container">
-        
         <h2 class="beneficios-title">Por que Empresas Escolhem o GED Enterprise?</h2>
         <p class="beneficios-sub">Automação, rastreabilidade e controle total da documentação naval e industrial.</p>
 
         <div class="beneficios-grid">
-
             <div class="beneficio-card">
                 <div class="beneficio-icon">⚡</div>
                 <h3>Agilidade Operacional</h3>
@@ -817,7 +845,6 @@ footer span{
                 <h3>Gestão em Tempo Real</h3>
                 <p>KPIs, indicadores e dashboards automáticos para tomada de decisão rápida.</p>
             </div>
-
         </div>
     </div>
 </section>
@@ -828,12 +855,11 @@ footer span{
     <p class="mod-sub">Visão integrada para gestão documental naval/industrial.</p>
 
     <div class="mod-grid">
-
         <!-- Documentos -->
         <div class="mod-card" data-aos="zoom-in" data-aos-delay="50">
             <div class="mod-icon">
                 <svg width="38" height="38" viewBox="0 0 24 24" fill="none">
-                    <path d="M4 3h10l6 6v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" 
+                    <path d="M4 3h10l6 6v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"
                         stroke="#fbbf24" stroke-width="2"/>
                     <path d="M14 3v5h5" stroke="#fbbf24" stroke-width="2"/>
                 </svg>
@@ -906,7 +932,6 @@ footer span{
         </div>
     </div>
 </section>
-
 
     <!-- DOBRA 3 — BENEFÍCIOS HÍBRIDOS + WORKFLOW + CTA -->
     <section class="benefits-section">
@@ -1012,16 +1037,17 @@ footer span{
 </div>
 
 <!-- MODAL DO VÍDEO -->
-<div id="modalVideo">
+<div id="modalVideo" aria-hidden="true">
     <span class="fechar" onclick="fecharVideo()">✖</span>
-<video id="videoApresentacao"
-       controls
-       playsinline
-       preload="metadata"
-       poster="{% static 'img/poster.jpg' %}">
-    <source src="{% static 'videos/apresentacao_final.mp4' %}" type="video/mp4">
-    Seu navegador não suporta vídeos.
-</video>
+
+    <video id="videoApresentacao"
+           controls
+           playsinline
+           preload="metadata"
+           poster="{% static 'img/poster.jpg' %}">
+        <source src="{% static 'videos/apresentacao_final.mp4' %}" type="video/mp4">
+        Seu navegador não suporta vídeos.
+    </video>
 </div>
 
 <footer>
@@ -1033,8 +1059,14 @@ function abrirVideo(){
     const modal = document.getElementById('modalVideo');
     const video = document.getElementById('videoApresentacao');
 
-    if(modal){ modal.style.display = 'flex'; }
+    if(modal){
+        modal.style.display = 'flex';
+        modal.setAttribute('aria-hidden','false');
+        document.body.classList.add('modal-open');
+    }
+
     if(video){
+        // garante que sempre abre do começo
         video.currentTime = 0;
         video.play().catch(()=>{});
     }
@@ -1048,10 +1080,15 @@ function fecharVideo(){
         video.pause();
         video.currentTime = 0;
     }
-    if(modal){ modal.style.display = 'none'; }
+
+    if(modal){
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden','true');
+        document.body.classList.remove('modal-open');
+    }
 }
 
-// (opcional) ESC fecha
+// ESC fecha
 document.addEventListener('keydown', (e) => {
   const modal = document.getElementById('modalVideo');
   if(modal && modal.style.display === 'flex' && e.key === 'Escape'){
@@ -1059,9 +1096,9 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// (opcional) clicar fora do vídeo fecha
+// clicar fora do vídeo fecha
 document.getElementById('modalVideo')?.addEventListener('click', (e) => {
-  if(e.target.id === 'modalVideo') fecharVideo();
+  if(e.target && e.target.id === 'modalVideo') fecharVideo();
 });
 </script>
 
