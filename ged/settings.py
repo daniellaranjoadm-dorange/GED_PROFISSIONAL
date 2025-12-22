@@ -152,7 +152,16 @@ WSGI_APPLICATION = "ged.wsgi.application"
 
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 
-if DEBUG or not DATABASE_URL:
+if DATABASE_URL:
+    print("PRODUCAO -> PostgreSQL Railway")
+    DATABASES = {
+        "default": dj_database_url.parse(
+            DATABASE_URL,
+            conn_max_age=600,
+            ssl_require=False,
+        )
+    }
+else:
     print("MODO DESENVOLVIMENTO -> SQLite local")
     DATABASES = {
         "default": {
@@ -160,16 +169,6 @@ if DEBUG or not DATABASE_URL:
             "NAME": BASE_DIR / "db.sqlite3",
         }
     }
-else:
-    print("PRODUCAO -> PostgreSQL Railway")
-    DATABASES = {
-        "default": dj_database_url.parse(
-            DATABASE_URL,
-            conn_max_age=600,
-            ssl_require=True,
-        )
-    }
-
 
 # ======================
 # VALIDAÇÃO DE SENHAS
