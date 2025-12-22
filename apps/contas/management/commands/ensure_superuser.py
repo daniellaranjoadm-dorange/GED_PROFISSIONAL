@@ -2,54 +2,42 @@ import os
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 
-
 class Command(BaseCommand):
     help = "Garante que exista um superusuário a partir das variáveis de ambiente."
 
     def handle(self, *args, **options):
-        username = os.environ.get("DJANGO_SUPERUSER_USERNAME")
-        email = os.environ.get("DJANGO_SUPERUSER_EMAIL", "")
-        password = os.environ.get("DJANGO_SUPERUSER_PASSWORD")
+        User = get_user_model()
+
+        username_env = os.environ.get("DJANGO_SUPERUSER_USERNAME", "").strip()
+        email = os.environ.get("DJANGO_SUPERUSER_EMAIL", "").strip()
+        password = os.environ.get("DJANGO_SUPERUSER_PASSWORD", "")
         reset_pw = os.environ.get("DJANGO_SUPERUSER_RESET_PASSWORD", "false").lower() == "true"
 
-        if not username or not password:
-            self.stdout.write(self.style.WARNING(
-                "ensure_superuser: variáveis DJANGO_SUPERUSER_USERNAME e/ou DJANGO_SUPERUSER_PASSWORD não definidas. Ignorando."
-            ))
+        # Identificador usado no login do Django (USERNAME_FIELD)
+        identifier = username_env or email
+        if not identifier or not password:
+            self.stdout.write(self.style.WARNING("Variáveis de superuser ausentes. Pulando."))
             return
 
-        User = get_user_model()
-        user, created = User.objects.get_or_create(
-            username=username,
-            defaults={
-                "email": email,
-                "is_staff": True,
-                "is_superuser": True,
-            },
-        )
+        lookup = {User.USERNAME_FIELD: identifier}
+        defaults = {}
+        if hasattr(User, "email") and email:
+            defaults["email"] = email
 
-        changed = False
+        user, created = User.objects.get_or_create(**lookup, defaults=defaults)
 
-        if not user.is_staff:
-            user.is_staff = True
-            changed = True
-        if not user.is_superuser:
-            user.is_superuser = True
-            changed = True
+        # garante permissões de admin
+        user.is_staff = True
+        user.is_superuser = True
+        user.is_active = True
 
-        if email and user.email != email:
+        # atualiza email se existir
+        if hasattr(user, "email") and email and user.email != email:
             user.email = email
-            changed = True
 
-        # Segurança: só reseta senha se você pedir explicitamente
         if created or reset_pw:
             user.set_password(password)
-            changed = True
 
-        if changed:
-            user.save()
+        user.save()
 
-        if created:
-            self.stdout.write(self.style.SUCCESS(f"Superusuário criado: {username}"))
-        else:
-            self.stdout.write(self.style.SUCCESS(f"Superusuário verificado/ajustado: {username}"))
+        self.stdout.write(self.style.SUCCESS(f"Superuser OK: {User.USERNAME_FIELD}={identifier}"))

@@ -4,7 +4,6 @@ Django settings for ged project – versão profissional otimizada para Railway.
 
 from pathlib import Path
 import os
-
 from dotenv import load_dotenv
 import dj_database_url
 
@@ -22,25 +21,33 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key")
 DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
 
-ALLOWED_HOSTS = [
-    "localhost",
-    "127.0.0.1",
-    ".railway.app",
-    "dorange.com.br",
-    "www.dorange.com.br",
-]
+# Permite configurar via env (Railway), mas mantém defaults
+_allowed_hosts_env = os.environ.get("ALLOWED_HOSTS", "").strip()
+if _allowed_hosts_env:
+    ALLOWED_HOSTS = [h.strip() for h in _allowed_hosts_env.split(",") if h.strip()]
+else:
+    ALLOWED_HOSTS = [
+        "localhost",
+        "127.0.0.1",
+        ".railway.app",
+        "dorange.com.br",
+        "www.dorange.com.br",
+    ]
 
-CSRF_TRUSTED_ORIGINS = [
-    "https://*.railway.app",
-    "https://dorange.com.br",
-    "https://www.dorange.com.br",
-    "http://dorange.com.br",
-    "http://www.dorange.com.br",
-]
+_csrf_env = os.environ.get("CSRF_TRUSTED_ORIGINS", "").strip()
+if _csrf_env:
+    CSRF_TRUSTED_ORIGINS = [o.strip() for o in _csrf_env.split(",") if o.strip()]
+else:
+    CSRF_TRUSTED_ORIGINS = [
+        "https://*.railway.app",
+        "https://dorange.com.br",
+        "https://www.dorange.com.br",
+        "http://dorange.com.br",
+        "http://www.dorange.com.br",
+    ]
 
 # Railway fica atrás de proxy/edge
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-USE_X_FORWARDED_HOST = True
 
 # Segurança “suave” enquanto estabiliza
 if not DEBUG:
@@ -94,7 +101,6 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = "ged.urls"
-WSGI_APPLICATION = "ged.wsgi.application"
 
 # ======================
 # TEMPLATES
@@ -115,6 +121,8 @@ TEMPLATES = [
         },
     },
 ]
+
+WSGI_APPLICATION = "ged.wsgi.application"
 
 # ======================
 # BANCO DE DADOS
@@ -141,7 +149,7 @@ else:
     }
 
 # ======================
-# SENHAS
+# VALIDAÇÃO DE SENHAS
 # ======================
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -165,71 +173,60 @@ USE_TZ = True
 # ======================
 
 STATIC_URL = "/static/"
+STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# só adiciona STATICFILES_DIRS se existir a pasta "static"
-STATIC_DIR = BASE_DIR / "static"
-if STATIC_DIR.exists():
-    STATICFILES_DIRS = [STATIC_DIR]
-else:
-    STATICFILES_DIRS = []
-
-# evita 500/manifest faltando
+# evita 500 se faltar entrada no manifest
 WHITENOISE_MANIFEST_STRICT = False
-
-# em produção, WhiteNoise serve do STATIC_ROOT (via collectstatic lembrando)
-WHITENOISE_USE_FINDERS = DEBUG
+WHITENOISE_USE_FINDERS = True
 
 # ======================
-# MEDIA + STORAGE (Django 5.x)
+# MEDIA
 # ======================
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
-# Variáveis no Railway (você já tem AWS_* lá)
-AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID") or os.environ.get("R2_ACCESS_KEY_ID")
-AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY") or os.environ.get("R2_SECRET_ACCESS_KEY")
-AWS_STORAGE_BUCKET_NAME = os.environ.get("AWS_STORAGE_BUCKET_NAME") or os.environ.get("R2_BUCKET_NAME")
-AWS_S3_ENDPOINT_URL = os.environ.get("AWS_S3_ENDPOINT_URL") or os.environ.get("R2_ENDPOINT_URL")
-AWS_S3_REGION_NAME = os.environ.get("AWS_S3_REGION_NAME", "auto")
+# ======================
+# STORAGES (Django 5.2+)
+# ======================
+
+STORAGES = {
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+}
+
+# Aceita envs R2_* OU AWS_* (como no seu Railway)
+R2_BUCKET_NAME = os.environ.get("R2_BUCKET_NAME") or os.environ.get("AWS_STORAGE_BUCKET_NAME")
+R2_ENDPOINT_URL = os.environ.get("R2_ENDPOINT_URL") or os.environ.get("AWS_S3_ENDPOINT_URL")
+R2_ACCESS_KEY_ID = os.environ.get("R2_ACCESS_KEY_ID") or os.environ.get("AWS_ACCESS_KEY_ID")
+R2_SECRET_ACCESS_KEY = os.environ.get("R2_SECRET_ACCESS_KEY") or os.environ.get("AWS_SECRET_ACCESS_KEY")
+R2_REGION = os.environ.get("AWS_S3_REGION_NAME", "auto")
 
 if not DEBUG:
-    # STATIC sem manifest (mais robusto)
-    STORAGES = {
-        "staticfiles": {
-            "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
-        },
-        "default": {
-            # fallback seguro: se faltar env, não derruba o deploy
-            "BACKEND": "django.core.files.storage.FileSystemStorage",
-        },
-    }
+    print("AVISO: Producao ativa. MEDIA local nao e persistente no Railway.")
 
-    # Se tiver tudo do R2/AWS configurado, MEDIA vai pro R2
-    if all([AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME, AWS_S3_ENDPOINT_URL]):
+    if all([R2_BUCKET_NAME, R2_ENDPOINT_URL, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY]):
         STORAGES["default"] = {
             "BACKEND": "storages.backends.s3.S3Storage",
             "OPTIONS": {
-                "bucket_name": AWS_STORAGE_BUCKET_NAME,
-                "endpoint_url": AWS_S3_ENDPOINT_URL,
-                "access_key": AWS_ACCESS_KEY_ID,
-                "secret_key": AWS_SECRET_ACCESS_KEY,
-                "region_name": AWS_S3_REGION_NAME,
+                "bucket_name": R2_BUCKET_NAME,
+                "endpoint_url": R2_ENDPOINT_URL,
+                "access_key": R2_ACCESS_KEY_ID,
+                "secret_key": R2_SECRET_ACCESS_KEY,
+                "region_name": R2_REGION,
                 "addressing_style": "path",
                 "signature_version": "s3v4",
-                "querystring_auth": True,  # bucket privado (URL assinada)
+                "querystring_auth": True,
             },
         }
         print("MEDIA -> Cloudflare R2 (S3 compat)")
     else:
-        print("AVISO: R2/AWS envs incompletas. MEDIA ficou local (nao persistente).")
-else:
-    # DEBUG: tudo local
-    STORAGES = {
-        "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
-        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
-    }
+        print("AVISO: R2 envs incompletas. MEDIA ficou local (nao persistente).")
 
 # ======================
 # AUTENTICAÇÃO
@@ -274,9 +271,5 @@ LOGGING = {
         },
     },
 }
-
-# ======================
-# PADRÕES
-# ======================
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
