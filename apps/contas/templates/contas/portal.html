@@ -41,19 +41,14 @@ body::before{
     content:"";
     position:fixed;
     inset:0;
-    /* grid blueprint em CSS (sem arquivo) */
     background-image:
         linear-gradient(rgba(56,189,248,.10) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(56,189,248,.10) 1px, transparent 1px),
-        linear-gradient(rgba(249,115,22,.06) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(249,115,22,.06) 1px, transparent 1px);
-    background-size: 48px 48px, 48px 48px, 240px 240px, 240px 240px;
-    background-position: 0 0, 0 0, 0 0, 0 0;
+        linear-gradient(90deg, rgba(56,189,248,.10) 1px, transparent 1px);
+    background-size: 52px 52px, 52px 52px;
     opacity:.08;
     pointer-events:none;
     z-index:-2;
 }
-
 
 /* Luz ambiente */
 body::after{
@@ -349,9 +344,7 @@ body::after{
 .video-thumb{
     height:190px;
     border-radius:14px;
-    background:
-        url("{% static 'img/poster.jpg' %}") center/cover no-repeat,
-        radial-gradient(circle,#1e293b,#020617);
+    background:radial-gradient(circle,#1e293b,#020617);
     display:flex;
     align-items:center;
     justify-content:center;
@@ -1040,14 +1033,14 @@ footer span{
 <div id="modalVideo" aria-hidden="true">
     <span class="fechar" onclick="fecharVideo()">✖</span>
 
-    <video id="videoApresentacao"
-           controls
-           playsinline
-           preload="metadata"
-           poster="{% static 'img/poster.jpg' %}">
-        <source src="{% static 'videos/apresentacao_final.mp4' %}" type="video/mp4">
-        Seu navegador não suporta vídeos.
-    </video>
+<video id="videoApresentacao"
+       controls
+       playsinline
+       preload="metadata">
+    <source src="{% static 'videos/apresentacao_final.mp4' %}" type="video/mp4">
+    Seu navegador não suporta vídeos.
+</video>
+
 </div>
 
 <footer>
