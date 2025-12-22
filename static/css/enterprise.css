@@ -230,3 +230,62 @@ input, select, textarea {
 .card, .btn, table tbody tr {
     background-image: none !important;
 }
+
+/* ===============================
+   RESPONSIVO (MOBILE) — FIX BASE
+   (gerado automaticamente)
+================================= */
+
+/* evita scroll horizontal */
+html, body, .layout { max-width: 100%; overflow-x: hidden; }
+
+.content, .content-inner { min-width: 0; } /* essencial com flex */
+
+/* MOBILE / TABLET */
+@media (max-width: 991.98px) {
+
+  /* conteúdo ocupa a tela toda */
+  .content{
+    margin-left: 0 !important;
+    width: 100% !important;
+    padding: 1rem !important;
+  }
+
+  /* topbar quebra linhas e busca não estoura */
+  .topbar-enterprise{
+    padding: 12px 14px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .topbar-center{ width: 100%; }
+
+  .topbar-search{
+    width: 100%;
+    min-width: 0;              /* remove o min-width:380px no mobile */
+  }
+
+  .topbar-search input{
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* SIDEBAR offcanvas (esconde por padrão) */
+  .sidebar{
+    transform: translateX(-105%);
+    transition: transform .2s ease;
+  }
+
+  body.sidebar-open .sidebar{
+    transform: translateX(0);
+  }
+
+  /* overlay */
+  body.sidebar-open::before{
+    content:"";
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.35);
+    z-index: 998; /* abaixo da sidebar (sidebar está com z-index 999 inline) */
+  }
+}

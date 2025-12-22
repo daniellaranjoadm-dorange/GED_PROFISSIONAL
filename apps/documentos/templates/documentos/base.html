@@ -108,6 +108,9 @@
 
  <!-- ========================= TOPBAR GLOBAL – S4 NAVY ORANGE ========================= -->
 <div class="topbar-enterprise">
+    <button type="button" class="btn btn-sm btn-outline-secondary sidebar-toggle me-2" aria-label="Menu">
+      <i class="bi bi-list"></i>
+    </button>
     
     <div class="topbar-left">
         <div class="topbar-title">D’ORANGE PLATFORM · GED ENTERPRISE</div>
@@ -222,6 +225,22 @@ document.querySelector('.theme-btn[data-theme="'+saved+'"]')?.classList.add('act
     // Aplica dinamicamente a rota ao formulário da topbar
     const form = document.querySelector(".topbar-search");
     if (form) form.setAttribute("action", rotaBusca);
+
+    // Sidebar toggle (mobile)
+    const btn = document.querySelector(".sidebar-toggle");
+    const sidebar = document.querySelector(".sidebar");
+    if (btn && sidebar) {
+        btn.addEventListener("click", () => {
+            document.body.classList.toggle("sidebar-open");
+        });
+
+        document.addEventListener("click", (e) => {
+            if (!document.body.classList.contains("sidebar-open")) return;
+            if (sidebar.contains(e.target) || btn.contains(e.target)) return;
+            document.body.classList.remove("sidebar-open");
+        });
+    }
+
 
 })();
 </script>
