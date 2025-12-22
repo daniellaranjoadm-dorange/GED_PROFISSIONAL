@@ -220,7 +220,8 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 STORAGES = {
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        # ✅ não usa manifest -> evita 500 no template por “arquivo não encontrado no manifest”
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
     },
     "default": {
         "BACKEND": "django.core.files.storage.FileSystemStorage",

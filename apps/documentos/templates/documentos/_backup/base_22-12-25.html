@@ -1,0 +1,231 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE }}">
+
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}GED D'OR@NGE{% endblock %}</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+<link rel="stylesheet" href="{% static 'css/style.css' %}">
+<link rel="stylesheet" href="{% static 'css/enterprise.css' %}">
+
+{% block extra_head %}{% endblock %}
+</head>
+
+<body data-theme="auto">
+<div class="layout">
+
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" style="z-index:999 !important;">
+        <div class="sidebar-inner">
+
+            <!-- LOGO -->
+            <div class="sidebar-brand">
+                <img src="{% static 'documentos/logo_dorange.png' %}" class="sidebar-logo" alt="">
+                <div>
+                    <div class="sidebar-brand-title">D'OR@NGE</div>
+                    <div class="sidebar-brand-sub">Document Management</div>
+                </div>
+            </div>
+
+            <!-- IDIOMA -->
+            <div class="language-switcher mt-2 mb-3">
+                <label class="small fw-semibold mb-1 d-block">Idioma</label>
+                <div class="d-flex gap-2">
+                    <a href="/i18n/setlang/" onclick="setLanguage('pt-br'); return false;">
+                        <img src="{% static 'flags/br.svg' %}" class="flag-icon">
+                    </a>
+                    <a href="/i18n/setlang/" onclick="setLanguage('en'); return false;">
+                        <img src="{% static 'flags/us.svg' %}" class="flag-icon">
+                    </a>
+                </div>
+            </div>
+
+            <form id="lang-form" action="{% url 'set_language' %}" method="post" style="display:none;">
+                {% csrf_token %}
+                <input type="hidden" id="lang-input" name="language">
+            </form>
+
+            <!-- TEMA -->
+            <div class="theme-switcher mt-1 mb-4">
+                <label class="small fw-semibold mb-1 d-block">Tema</label>
+                <div class="btn-group w-100">
+                    <button type="button" class="btn btn-sm btn-outline-secondary theme-btn" data-theme="light">🌞</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary theme-btn" data-theme="dark">🌙</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary theme-btn" data-theme="auto">🌓</button>
+                </div>
+            </div>
+
+            <!-- MENUS -->
+            <div class="sidebar-section-title">Documentos</div>
+            <ul class="sidebar-nav">
+                <li><a class="sidebar-link" href="{% url 'documentos:listar_documentos' %}"><i class="bi bi-table"></i> Lista de Documentos</a></li>
+                <li><a class="sidebar-link" href="{% url 'documentos:listar_documentos' %}?status_ldp=Em Revisão"><i class="bi bi-arrow-repeat"></i> Revisões</a></li>
+                <li><a class="sidebar-link" href="{% url 'documentos:upload_documento' %}"><i class="bi bi-file-earmark-plus"></i> Novo Documento</a></li>
+                <li><a class="sidebar-link" href="{% url 'documentos:importar_ldp' %}"><i class="bi bi-cloud-upload"></i> Importar LDP</a></li>
+            </ul>
+
+            <div class="sidebar-section-title">Operações</div>
+            <ul class="sidebar-nav">
+                <li><a class="sidebar-link" href="/dashboard/"><i class="bi bi-graph-up-arrow"></i> Dashboard GED</a></li>
+                <li><a class="sidebar-link" href="{% url 'documentos:painel_workflow' %}"><i class="bi bi-diagram-3"></i> Workflow</a></li>
+                <li><a class="sidebar-link" href="{% url 'documentos:medicao' %}"><i class="bi bi-cash-coin"></i> Medição</a></li>
+                <li><a class="sidebar-link" href="/dashboard/solicitacoes/"><i class="bi bi-people"></i> Solicitações de Acesso</a></li>
+            </ul>
+
+            {% if user.is_superuser %}
+            <div class="sidebar-section-title">Administração</div>
+            <ul class="sidebar-nav">
+                <li><a class="sidebar-link" href="{% url 'documentos:configuracoes' %}"><i class="bi bi-gear"></i> Usuários & Permissões</a></li>
+                <li><a class="sidebar-link" href="{% url 'contas:minhas_configuracoes' %}"><i class="bi bi-person-gear"></i> Minhas Configurações</a></li>
+                <li><a class="sidebar-link" href="{% url 'documentos:lixeira' %}"><i class="bi bi-trash3"></i> Lixeira</a></li>
+            </ul>
+            {% endif %}
+
+            {% if user.is_authenticated %}
+            <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button class="btn btn-outline-secondary btn-pill logout-btn w-100">
+                    <i class="bi bi-box-arrow-right"></i> Logout
+                </button>
+            </form>
+            {% endif %}
+
+            <div class="sidebar-footer">© {% now "Y" %} — D’OR@NGE Enterprise</div>
+
+        </div>
+    </aside>
+
+
+    <!-- CONTEÚDO -->
+    <main class="content">
+        <div class="content-inner">
+
+ <!-- ========================= TOPBAR GLOBAL – S4 NAVY ORANGE ========================= -->
+<div class="topbar-enterprise">
+    
+    <div class="topbar-left">
+        <div class="topbar-title">D’ORANGE PLATFORM · GED ENTERPRISE</div>
+        <div class="topbar-sub">Controle documental • Workflow • Medição financeira</div>
+    </div>
+
+    <div class="topbar-center">
+        <form method="get" action="{% url 'documentos:listar_documentos' %}" class="topbar-search">
+            <i class="bi bi-search search-icon"></i>
+            <input type="text" name="busca" placeholder="Buscar por código, título ou parte..."
+                   value="{{ request.GET.busca|default:'' }}">
+            <button class="btn-search">Buscar</button>
+        </form>
+    </div>
+
+    <div class="topbar-right">
+        {% if user.is_authenticated %}
+        <div class="topbar-user">
+            <div class="avatar-circle">
+                {% with user.username|default:'U' as uname %}{{ uname|first|upper }}{% endwith %}
+            </div>
+            <div>
+                <div class="topbar-user-name">{{ user.get_full_name|default:user.username }}</div>
+                <div class="topbar-user-role">
+                    {% if user.is_superuser %}Master Admin{% else %}Usuário GED{% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+            <!-- ALERTAS -->
+            {% if messages %}
+            <div id="alert-container">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                    {{ message }}
+                    <button class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- PAGE CONTENT -->
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+</div>
+
+<!-- SCRIPTS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+/* Troca idioma */
+function setLanguage(lang) {
+    document.getElementById('lang-input').value = lang;
+    document.getElementById('lang-form').submit();
+}
+
+/* Temas */
+const body = document.body;
+document.querySelectorAll('.theme-btn').forEach(btn => {
+    btn.onclick = () => {
+        let t = btn.dataset.theme;
+        body.setAttribute('data-theme', t);
+        localStorage.setItem('tema_ged', t);
+        document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    };
+});
+let saved = localStorage.getItem('tema_ged') || 'auto';
+body.setAttribute('data-theme', saved);
+document.querySelector('.theme-btn[data-theme="'+saved+'"]')?.classList.add('active');
+
+/* Marca o item ativo da sidebar */
+(function () {
+    const current = window.location.pathname;
+    document.querySelectorAll('.sidebar-link').forEach(link => {
+        const path = new URL(link.href).pathname;
+        if (current === path) link.classList.add('active');
+    });
+})();
+</script>
+
+{% block extra_js %}{% endblock %}
+<script>
+(function () {
+    // Mapeamento simples da rota atual → URL correta de busca
+    const path = window.location.pathname;
+
+    let rotaBusca = "{% url 'documentos:listar_documentos' %}";  // fallback
+
+    if (path.includes("/documentos/documentos")) {
+        rotaBusca = "{% url 'documentos:listar_documentos' %}";
+    }
+    else if (path.includes("/documentos/medicao")) {
+        rotaBusca = "{% url 'documentos:medicao' %}";
+    }
+    else if (path.includes("/documentos/painel-workflow") ||
+             path.includes("/workflow")) {
+        rotaBusca = "{% url 'documentos:painel_workflow' %}";
+    }
+    else if (path.includes("/dashboard/solicitacoes")) {
+        rotaBusca = "/dashboard/solicitacoes/";
+    }
+    else if (path.includes("/dashboard")) {
+        rotaBusca = "/dashboard/";
+    }
+
+    // Aplica dinamicamente a rota ao formulário da topbar
+    const form = document.querySelector(".topbar-search");
+    if (form) form.setAttribute("action", rotaBusca);
+
+})();
+</script>
+
+</body>
+</html>
+
