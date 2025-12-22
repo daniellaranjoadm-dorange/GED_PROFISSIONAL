@@ -1014,10 +1014,14 @@ footer span{
 <!-- MODAL DO VÍDEO -->
 <div id="modalVideo">
     <span class="fechar" onclick="fecharVideo()">✖</span>
-    <video id="videoApresentacao" controls autoplay muted>
-        <source src="{% static 'videos/apresentacao.mp4' %}" type="video/mp4">
-        Seu navegador não suporta vídeos.
-    </video>
+<video id="videoApresentacao"
+       controls
+       playsinline
+       preload="metadata"
+       poster="{% static 'img/poster.jpg' %}">
+    <source src="{% static 'videos/apresentacao_final.mp4' %}" type="video/mp4">
+    Seu navegador não suporta vídeos.
+</video>
 </div>
 
 <footer>
@@ -1028,20 +1032,36 @@ footer span{
 function abrirVideo(){
     const modal = document.getElementById('modalVideo');
     const video = document.getElementById('videoApresentacao');
+
     if(modal){ modal.style.display = 'flex'; }
-    if(video){ video.play(); }
+    if(video){
+        video.currentTime = 0;
+        video.play().catch(()=>{});
+    }
 }
+
 function fecharVideo(){
     const modal = document.getElementById('modalVideo');
     const video = document.getElementById('videoApresentacao');
+
+    if(video){
+        video.pause();
+        video.currentTime = 0;
+    }
     if(modal){ modal.style.display = 'none'; }
-    if(video){ video.pause(); }
 }
-</script>
-<script>
-document.addEventListener('mousemove', e => {
-    document.body.style.setProperty('--cursor-x', e.clientX + 'px');
-    document.body.style.setProperty('--cursor-y', e.clientY + 'px');
+
+// (opcional) ESC fecha
+document.addEventListener('keydown', (e) => {
+  const modal = document.getElementById('modalVideo');
+  if(modal && modal.style.display === 'flex' && e.key === 'Escape'){
+    fecharVideo();
+  }
+});
+
+// (opcional) clicar fora do vídeo fecha
+document.getElementById('modalVideo')?.addEventListener('click', (e) => {
+  if(e.target.id === 'modalVideo') fecharVideo();
 });
 </script>
 
