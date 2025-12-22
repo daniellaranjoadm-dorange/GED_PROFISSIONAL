@@ -4,8 +4,10 @@ Django settings for ged project – versão profissional otimizada para Railway.
 
 from pathlib import Path
 import os
+
 from dotenv import load_dotenv
 import dj_database_url
+
 
 # ======================
 # BASE
@@ -14,6 +16,7 @@ import dj_database_url
 load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+
 # ======================
 # SEGURANÇA
 # ======================
@@ -21,33 +24,47 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key")
 DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
 
-# Permite configurar via env (Railway), mas mantém defaults
+
+# ======================
+# HOSTS / CSRF (robusto no Railway)
+# ======================
+
+DEFAULT_ALLOWED_HOSTS = {
+    "localhost",
+    "127.0.0.1",
+    ".railway.app",
+    "dorange.com.br",
+    "www.dorange.com.br",
+}
+
 _allowed_hosts_env = os.environ.get("ALLOWED_HOSTS", "").strip()
 if _allowed_hosts_env:
-    ALLOWED_HOSTS = [h.strip() for h in _allowed_hosts_env.split(",") if h.strip()]
+    env_hosts = {h.strip() for h in _allowed_hosts_env.split(",") if h.strip()}
+    ALLOWED_HOSTS = sorted(DEFAULT_ALLOWED_HOSTS | env_hosts)
 else:
-    ALLOWED_HOSTS = [
-        "localhost",
-        "127.0.0.1",
-        ".railway.app",
-        "dorange.com.br",
-        "www.dorange.com.br",
-    ]
+    ALLOWED_HOSTS = sorted(DEFAULT_ALLOWED_HOSTS)
+
+
+DEFAULT_CSRF_TRUSTED_ORIGINS = {
+    "https://*.railway.app",
+    "https://dorange.com.br",
+    "https://www.dorange.com.br",
+    "http://dorange.com.br",
+    "http://www.dorange.com.br",
+}
 
 _csrf_env = os.environ.get("CSRF_TRUSTED_ORIGINS", "").strip()
 if _csrf_env:
-    CSRF_TRUSTED_ORIGINS = [o.strip() for o in _csrf_env.split(",") if o.strip()]
+    env_origins = {o.strip() for o in _csrf_env.split(",") if o.strip()}
+    CSRF_TRUSTED_ORIGINS = sorted(DEFAULT_CSRF_TRUSTED_ORIGINS | env_origins)
 else:
-    CSRF_TRUSTED_ORIGINS = [
-        "https://*.railway.app",
-        "https://dorange.com.br",
-        "https://www.dorange.com.br",
-        "http://dorange.com.br",
-        "http://www.dorange.com.br",
-    ]
+    CSRF_TRUSTED_ORIGINS = sorted(DEFAULT_CSRF_TRUSTED_ORIGINS)
+
 
 # Railway fica atrás de proxy/edge
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_X_FORWARDED_HOST = True
+
 
 # Segurança “suave” enquanto estabiliza
 if not DEBUG:
@@ -57,6 +74,7 @@ if not DEBUG:
     SECURE_SSL_REDIRECT = False
     SESSION_COOKIE_SECURE = False
     CSRF_COOKIE_SECURE = False
+
 
 # ======================
 # APPS
@@ -82,6 +100,7 @@ INSTALLED_APPS = [
     "apps.dashboard",
 ]
 
+
 # ======================
 # MIDDLEWARE
 # ======================
@@ -100,7 +119,9 @@ MIDDLEWARE = [
     "apps.contas.middleware.RBACMiddleware",
 ]
 
+
 ROOT_URLCONF = "ged.urls"
+
 
 # ======================
 # TEMPLATES
@@ -123,6 +144,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "ged.wsgi.application"
+
 
 # ======================
 # BANCO DE DADOS
@@ -148,6 +170,7 @@ else:
         )
     }
 
+
 # ======================
 # VALIDAÇÃO DE SENHAS
 # ======================
@@ -159,6 +182,7 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
+
 # ======================
 # LOCALIZAÇÃO
 # ======================
@@ -167,6 +191,7 @@ LANGUAGE_CODE = "pt-br"
 TIME_ZONE = "America/Sao_Paulo"
 USE_I18N = True
 USE_TZ = True
+
 
 # ======================
 # STATIC (WhiteNoise)
@@ -178,7 +203,8 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # evita 500 se faltar entrada no manifest
 WHITENOISE_MANIFEST_STRICT = False
-WHITENOISE_USE_FINDERS = True
+WHITENOISE_USE_FINDERS = DEBUG
+
 
 # ======================
 # MEDIA
@@ -186,6 +212,7 @@ WHITENOISE_USE_FINDERS = True
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
 
 # ======================
 # STORAGES (Django 5.2+)
@@ -228,6 +255,7 @@ if not DEBUG:
     else:
         print("AVISO: R2 envs incompletas. MEDIA ficou local (nao persistente).")
 
+
 # ======================
 # AUTENTICAÇÃO
 # ======================
@@ -236,6 +264,7 @@ LOGIN_URL = "/login/"
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/login/"
 AUTH_USER_MODEL = "contas.Usuario"
+
 
 # ======================
 # EMAIL
@@ -248,6 +277,7 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.environ.get("EMAIL_USER")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_PASSWORD")
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
 
 # ======================
 # LOGGING
