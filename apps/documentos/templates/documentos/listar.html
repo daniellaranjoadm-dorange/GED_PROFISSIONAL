@@ -6,7 +6,7 @@
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
 <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
 
-<!-- ✅ DataTables Responsive (necessário porque você usa responsive:true) -->
+<!-- ✅ DataTables Responsive -->
 <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css">
 
 <style>
@@ -14,13 +14,40 @@
   --gap: clamp(10px, 1.1vw, 16px);
 }
 
-.page-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.4rem; gap: var(--gap); flex-wrap:wrap; }
-.page-header h2 { margin:0; font-weight:700; font-size:clamp(1.15rem, 1.1vw + .7rem, 1.55rem); color:var(--accent-blue); display:flex; align-items:center; gap:.5rem; }
+.page-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:1.4rem;
+  gap:var(--gap);
+  flex-wrap:wrap;
+}
+.page-header h2{
+  margin:0;
+  font-weight:700;
+  font-size:clamp(1.15rem, 1.1vw + .7rem, 1.55rem);
+  color:var(--accent-blue);
+  display:flex;
+  align-items:center;
+  gap:.5rem;
+}
 
-.filtro-card { background: var(--bg-card); border:1px solid var(--border); border-radius:14px; padding:1.2rem 1rem; box-shadow:0 4px 14px var(--shadow); }
-.filtro-card label { font-weight:600; font-size:.78rem; color:var(--text-soft); margin-bottom:.25rem; display:block; }
-
-.filtro-card .form-select, .filtro-card .form-control {
+.filtro-card{
+  background: var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:1.2rem 1rem;
+  box-shadow:0 4px 14px var(--shadow);
+}
+.filtro-card label{
+  font-weight:600;
+  font-size:.78rem;
+  color:var(--text-soft);
+  margin-bottom:.25rem;
+  display:block;
+}
+.filtro-card .form-select,
+.filtro-card .form-control{
   background:#101a2b!important;
   border-radius:10px!important;
   border:1px solid rgba(255,255,255,.10)!important;
@@ -31,16 +58,12 @@
   max-width:100%;
 }
 
-#tabelaDocumentos { font-size:.88rem; width:100% !important; }
-#tabelaDocumentos thead { background:rgba(56,189,248,0.10); color:var(--accent-blue); }
-.badge-status { padding:4px 9px; border-radius:8px; font-size:.75rem; }
-.badge-doc { background:#0ea5e9; color:white; }
-.badge-emissao { background:#fbbf24; color:#111; font-weight:600; }
-.btn-premium { border-radius:10px; font-weight:600; }
+.badge-status{ padding:4px 9px; border-radius:8px; font-size:.75rem; }
+.badge-doc{ background:#0ea5e9; color:white; }
+.badge-emissao{ background:#fbbf24; color:#111; font-weight:600; }
+.btn-premium{ border-radius:10px; font-weight:600; }
 
-/* =========================================================
-   ✅ GRID RESPONSIVO (BLINDADO CONTRA BOOTSTRAP/BASE)
-   ========================================================= */
+/* ✅ GRID RESPONSIVO (blindado) */
 .filtro-card form.filters-grid{
   display:grid !important;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
@@ -49,7 +72,7 @@
   margin: 0 !important; /* neutraliza .row */
 }
 
-.filtro-card form.filters-grid .filter-item{ min-width: 0; }
+.filtro-card form.filters-grid .filter-item{ min-width:0; }
 
 .filtro-card form.filters-grid [class^="col-"],
 .filtro-card form.filters-grid [class*=" col-"]{
@@ -60,192 +83,169 @@
 }
 
 .filtro-card form.filters-grid .filter-wide{ grid-column: span 2; }
-
-.filtro-card form.filters-grid .filter-actions{
-  display:flex;
-  align-items:end;
-}
+.filtro-card form.filters-grid .filter-actions{ display:flex; align-items:end; }
 
 @media (max-width: 740px){
   .filtro-card form.filters-grid .filter-wide{ grid-column: auto; }
 }
 
-/* Mantém tabela usável em telas menores */
-.table-responsive{
-  width:100%;
-  max-width:100%;
-  overflow-x:auto;
-}
+/* ✅ Tabela ocupar o máximo possível sem quebrar layout do base */
+.card{ max-width:100%; }
+.table-responsive{ width:100%; overflow-x:auto; }
 
-/* =========================================================
-   ✅ FULL WIDTH só nesta página (faz a tabela ir até a direita)
-   Provável causa: base usa .container com max-width fixo.
-   ========================================================= */
-.container,
-.container-sm,
-.container-md,
-.container-lg,
-.container-xl,
-.container-xxl{
-  max-width: 100% !important;
-  width: 100% !important;
-}
+/* DataTables: força wrapper e tabela em 100% */
+.dataTables_wrapper{ width:100% !important; }
+table.dataTable{ width:100% !important; }
 
-/* Garante que o conteúdo não fique “capado” */
-.card,
-.dataTables_wrapper{
-  width: 100% !important;
-  max-width: 100% !important;
-}
+/* Visual */
+#tabelaDocumentos{ font-size:.88rem; }
+#tabelaDocumentos thead{ background:rgba(56,189,248,0.10); color:var(--accent-blue); }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="page-docs-list">
+<div class="page-header">
+  <h2><i class="bi bi-folder2-open"></i> Lista de Documentos</h2>
 
-  <div class="page-header">
-      <h2><i class="bi bi-folder2-open"></i> Lista de Documentos</h2>
+  <div class="d-flex gap-2 flex-wrap">
+    <a href="{% url 'documentos:upload_documento' %}" class="btn btn-success btn-premium">
+      <i class="bi bi-file-earmark-plus"></i> Novo Documento
+    </a>
 
-      <div class="d-flex gap-2 flex-wrap">
-          <a href="{% url 'documentos:upload_documento' %}" class="btn btn-success btn-premium">
-              <i class="bi bi-file-earmark-plus"></i> Novo Documento
-          </a>
-
-          {% if request.user.is_superuser %}
-          <button form="formExcluir" class="btn btn-outline-danger btn-premium">
-              <i class="bi bi-trash"></i> Excluir Selecionados
-          </button>
-          {% endif %}
-      </div>
+    {% if request.user.is_superuser %}
+    <button form="formExcluir" class="btn btn-outline-danger btn-premium">
+      <i class="bi bi-trash"></i> Excluir Selecionados
+    </button>
+    {% endif %}
   </div>
+</div>
 
-  <div class="filtro-card mb-3">
-    <form method="GET" class="row g-3 filters-grid">
-        <div class="col-md-2 filter-item">
-            <label>Projeto</label>
-            <select name="projeto" class="form-select">
-                <option value="">Todos</option>
-                {% for p in projetos %}
-                <option value="{{ p }}" {% if request.GET.projeto == p %}selected{% endif %}>{{ p }}</option>
-                {% endfor %}
-            </select>
-        </div>
+<div class="filtro-card mb-3">
+  <form method="GET" class="row g-3 filters-grid">
 
-        <div class="col-md-2 filter-item">
-            <label>Disciplina</label>
-            <select name="disciplina" class="form-select">
-                <option value="">Todas</option>
-                {% for d in disciplinas %}
-                <option value="{{ d }}" {% if request.GET.disciplina == d %}selected{% endif %}>{{ d }}</option>
-                {% endfor %}
-            </select>
-        </div>
-
-        <div class="col-md-2 filter-item">
-            <label>Status Documento</label>
-            <select name="status_documento" class="form-select">
-                <option value="">Todos</option>
-                {% for s in status_documento_list %}
-                <option value="{{ s }}" {% if request.GET.status_documento == s %}selected{% endif %}>{{ s }}</option>
-                {% endfor %}
-            </select>
-        </div>
-
-        <div class="col-md-2 filter-item">
-            <label>Status Emissão</label>
-            <select name="status_emissao" class="form-select">
-                <option value="">Todos</option>
-                {% for e in status_emissao_list %}
-                <option value="{{ e }}" {% if request.GET.status_emissao == e %}selected{% endif %}>{{ e }}</option>
-                {% endfor %}
-            </select>
-        </div>
-
-        <div class="col-md-3 filter-item filter-wide">
-            <label>Busca Global</label>
-            <input type="text" name="busca" value="{{ request.GET.busca }}" class="form-control" placeholder="Código, título...">
-        </div>
-
-        <div class="col-md-1 d-flex align-items-end filter-item filter-actions">
-            <button type="submit" class="btn btn-primary w-100 btn-premium" aria-label="Buscar">
-              <i class="bi bi-search"></i>
-            </button>
-        </div>
-    </form>
-  </div>
-
-  <div class="card p-3 shadow-sm">
-    <div class="table-responsive">
-
-      {% if request.user.is_superuser %}
-      <form id="formExcluir" method="POST" action="{% url 'documentos:excluir_selecionados' %}">
-          {% csrf_token %}
-      {% endif %}
-
-      <table id="tabelaDocumentos" class="table table-hover table-bordered align-middle">
-      <thead>
-      <tr>
-      {% if request.user.is_superuser %}
-          <th><input type="checkbox" id="selectAll"></th>
-      {% endif %}
-      <th>Projeto</th>
-      <th>Fase</th>
-      <th>Tipo</th>
-      <th>Código</th>
-      <th>Rev</th>
-      <th>Disciplina</th>
-      <th>Título</th>
-      <th>Status Documento</th>
-      <th>Status Emissão</th>
-      <th>GRDT</th>
-      <th>PCF</th>
-      <th>Data</th>
-      <th>Arquivo</th>
-      <th>Ações</th>
-      </tr>
-      </thead>
-      <tbody>
-
-      {% for doc in documentos %}
-      <tr>
-      {% if request.user.is_superuser %}
-      <td><input type="checkbox" class="selectItem" name="selecionados" value="{{ doc.id }}"></td>
-      {% endif %}
-      <td>{{ doc.projeto.nome|default:"—" }}</td>
-      <td>{{ doc.fase }}</td>
-      <td>{{ doc.tipo_doc }}</td>
-      <td><b>{{ doc.codigo }}</b></td>
-      <td>{{ doc.revisao }}</td>
-      <td>{{ doc.disciplina }}</td>
-      <td>{{ doc.titulo }}</td>
-      <td>{% if doc.status_documento %}<span class="badge badge-status badge-doc">{{ doc.status_documento }}</span>{% else %}—{% endif %}</td>
-      <td>{% if doc.status_emissao %}<span class="badge badge-status badge-emissao">{{ doc.status_emissao }}</span>{% else %}—{% endif %}</td>
-      <td>{{ doc.grdt_cliente|default:"—" }}</td>
-      <td>{{ doc.resposta_cliente|default:"—" }}</td>
-      <td>{% if doc.data_emissao_grdt %}{{ doc.data_emissao_grdt|date:"d/m/Y" }}{% else %}—{% endif %}</td>
-      <td>
-      {% if doc.arquivos.all|length > 0 %}
-      <a href="{% url 'documentos:detalhes_documento' doc.id %}" class="btn btn-sm btn-primary btn-premium">Abrir</a>
-      {% else %}
-      <span class="text-muted">Sem</span>
-      {% endif %}
-      </td>
-      <td>
-      <a href="{% url 'documentos:detalhes_documento' doc.id %}" class="btn btn-sm btn-outline-secondary btn-premium">Detalhes</a>
-      </td>
-      </tr>
-      {% endfor %}
-
-      </tbody>
-      </table>
-
-      {% if request.user.is_superuser %}
-      </form>
-      {% endif %}
-
+    <div class="col-md-2 filter-item">
+      <label>Projeto</label>
+      <select name="projeto" class="form-select">
+        <option value="">Todos</option>
+        {% for p in projetos %}
+        <option value="{{ p }}" {% if request.GET.projeto == p %}selected{% endif %}>{{ p }}</option>
+        {% endfor %}
+      </select>
     </div>
-  </div>
 
+    <div class="col-md-2 filter-item">
+      <label>Disciplina</label>
+      <select name="disciplina" class="form-select">
+        <option value="">Todas</option>
+        {% for d in disciplinas %}
+        <option value="{{ d }}" {% if request.GET.disciplina == d %}selected{% endif %}>{{ d }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-2 filter-item">
+      <label>Status Documento</label>
+      <select name="status_documento" class="form-select">
+        <option value="">Todos</option>
+        {% for s in status_documento_list %}
+        <option value="{{ s }}" {% if request.GET.status_documento == s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-2 filter-item">
+      <label>Status Emissão</label>
+      <select name="status_emissao" class="form-select">
+        <option value="">Todos</option>
+        {% for e in status_emissao_list %}
+        <option value="{{ e }}" {% if request.GET.status_emissao == e %}selected{% endif %}>{{ e }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-3 filter-item filter-wide">
+      <label>Busca Global</label>
+      <input type="text" name="busca" value="{{ request.GET.busca }}" class="form-control" placeholder="Código, título...">
+    </div>
+
+    <div class="col-md-1 d-flex align-items-end filter-item filter-actions">
+      <button type="submit" class="btn btn-primary w-100 btn-premium" aria-label="Buscar">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+
+  </form>
+</div>
+
+<div class="card p-3 shadow-sm">
+  <div class="table-responsive">
+
+    {% if request.user.is_superuser %}
+    <form id="formExcluir" method="POST" action="{% url 'documentos:excluir_selecionados' %}">
+      {% csrf_token %}
+    {% endif %}
+
+    <table id="tabelaDocumentos" class="table table-hover table-bordered align-middle w-100">
+      <thead>
+        <tr>
+          {% if request.user.is_superuser %}
+          <th><input type="checkbox" id="selectAll"></th>
+          {% endif %}
+          <th>Projeto</th>
+          <th>Fase</th>
+          <th>Tipo</th>
+          <th>Código</th>
+          <th>Rev</th>
+          <th>Disciplina</th>
+          <th>Título</th>
+          <th>Status Documento</th>
+          <th>Status Emissão</th>
+          <th>GRDT</th>
+          <th>PCF</th>
+          <th>Data</th>
+          <th>Arquivo</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for doc in documentos %}
+        <tr>
+          {% if request.user.is_superuser %}
+          <td><input type="checkbox" class="selectItem" name="selecionados" value="{{ doc.id }}"></td>
+          {% endif %}
+          <td>{{ doc.projeto.nome|default:"—" }}</td>
+          <td>{{ doc.fase }}</td>
+          <td>{{ doc.tipo_doc }}</td>
+          <td><b>{{ doc.codigo }}</b></td>
+          <td>{{ doc.revisao }}</td>
+          <td>{{ doc.disciplina }}</td>
+          <td>{{ doc.titulo }}</td>
+          <td>{% if doc.status_documento %}<span class="badge badge-status badge-doc">{{ doc.status_documento }}</span>{% else %}—{% endif %}</td>
+          <td>{% if doc.status_emissao %}<span class="badge badge-status badge-emissao">{{ doc.status_emissao }}</span>{% else %}—{% endif %}</td>
+          <td>{{ doc.grdt_cliente|default:"—" }}</td>
+          <td>{{ doc.resposta_cliente|default:"—" }}</td>
+          <td>{% if doc.data_emissao_grdt %}{{ doc.data_emissao_grdt|date:"d/m/Y" }}{% else %}—{% endif %}</td>
+          <td>
+            {% if doc.arquivos.all|length > 0 %}
+              <a href="{% url 'documentos:detalhes_documento' doc.id %}" class="btn btn-sm btn-primary btn-premium">Abrir</a>
+            {% else %}
+              <span class="text-muted">Sem</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="{% url 'documentos:detalhes_documento' doc.id %}" class="btn btn-sm btn-outline-secondary btn-premium">Detalhes</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% if request.user.is_superuser %}
+    </form>
+    {% endif %}
+
+  </div>
 </div>
 {% endblock %}
 
@@ -266,29 +266,33 @@
 
 <script>
 $(document).ready(function(){
-    const dt = $('#tabelaDocumentos').DataTable({
-        pageLength: 25,
-        lengthMenu: [10,25,50,100],
-        responsive: true,
-        scrollX: true,
-        autoWidth: false,
-        dom:'Bfrtip',
-        buttons:[
-            { extend:'excelHtml5', text:'Excel' },
-            { extend:'csvHtml5', text:'CSV' },
-            { extend:'print', text:'Imprimir' }
-        ],
-        language:{ url:"https://cdn.datatables.net/plug-ins/1.13.6/i18n/pt-BR.json" }
-    });
+  const dt = $('#tabelaDocumentos').DataTable({
+    pageLength: 25,
+    lengthMenu: [10,25,50,100],
+    responsive: true,
 
-    // ✅ recalcula larguras/responsivo em resize (ajuda muito com sidebar)
-    $(window).on('resize', function(){
-      dt.columns.adjust().responsive.recalc();
-    });
+    // ✅ isso ajuda a "esticar" melhor e não travar largura
+    autoWidth: false,
+    scrollX: false,
 
-    document.getElementById("selectAll")?.addEventListener("change", e=>{
-        document.querySelectorAll(".selectItem").forEach(c=>c.checked = e.target.checked);
-    });
+    dom:'Bfrtip',
+    buttons:[
+      { extend:'excelHtml5', text:'Excel' },
+      { extend:'csvHtml5', text:'CSV' },
+      { extend:'print', text:'Imprimir' }
+    ],
+    language:{ url:"https://cdn.datatables.net/plug-ins/1.13.6/i18n/pt-BR.json" }
+  });
+
+  // ✅ recalcula larguras (sidebar/layouts às vezes precisam)
+  dt.columns.adjust().responsive.recalc();
+  $(window).on('resize', function(){
+    dt.columns.adjust().responsive.recalc();
+  });
+
+  document.getElementById("selectAll")?.addEventListener("change", e=>{
+    document.querySelectorAll(".selectItem").forEach(c=>c.checked = e.target.checked);
+  });
 });
 </script>
 {% endblock %}
