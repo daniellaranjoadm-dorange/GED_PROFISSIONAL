@@ -2,12 +2,16 @@
 *.exe
 *.msi
 
-# Ignore arquivos grandes de mídia
+# Ignore arquivos grandes de mídia (por padrão)
 *.mp4
 *.mov
 *.avi
 *.mkv
 *.wav
+
+# ✅ EXCEÇÃO: permitir vídeos do site (somente aqui)
+!static/videos/
+!static/videos/*.mp4
 
 # Ignore ambiente virtual
 venv/
@@ -28,4 +32,4 @@ Dockerfile.txt
 
 # Ignore uploads e estáticos gerados
 media/
-+ # staticfiles/
+staticfiles/
