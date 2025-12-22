@@ -19,7 +19,7 @@
   align-items:center;
   justify-content:space-between;
   margin-bottom:1.4rem;
-  gap:var(--gap);
+  gap: var(--gap);
   flex-wrap:wrap;
 }
 .page-header h2{
@@ -46,6 +46,7 @@
   margin-bottom:.25rem;
   display:block;
 }
+
 .filtro-card .form-select,
 .filtro-card .form-control{
   background:#101a2b!important;
@@ -58,48 +59,107 @@
   max-width:100%;
 }
 
+#tabelaDocumentos{ font-size:.88rem; width:100% !important; }
+#tabelaDocumentos thead{ background:rgba(56,189,248,0.10); color:var(--accent-blue); }
 .badge-status{ padding:4px 9px; border-radius:8px; font-size:.75rem; }
 .badge-doc{ background:#0ea5e9; color:white; }
 .badge-emissao{ background:#fbbf24; color:#111; font-weight:600; }
 .btn-premium{ border-radius:10px; font-weight:600; }
 
-/* ✅ GRID RESPONSIVO (blindado) */
+/* =========================================================
+   ✅ GRID RESPONSIVO COM BREAKPOINTS (layout previsível)
+   ========================================================= */
 .filtro-card form.filters-grid{
   display:grid !important;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
   gap: var(--gap) !important;
   align-items:end !important;
-  margin: 0 !important; /* neutraliza .row */
+  margin:0 !important; /* neutraliza .row */
+}
+
+/* 6 colunas em telas grandes */
+.filtro-card form.filters-grid{
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+}
+
+/* 4 colunas */
+@media (max-width: 1400px){
+  .filtro-card form.filters-grid{
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+/* 3 colunas */
+@media (max-width: 1100px){
+  .filtro-card form.filters-grid{
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+/* 2 colunas */
+@media (max-width: 820px){
+  .filtro-card form.filters-grid{
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+/* 1 coluna */
+@media (max-width: 520px){
+  .filtro-card form.filters-grid{
+    grid-template-columns: 1fr !important;
+  }
 }
 
 .filtro-card form.filters-grid .filter-item{ min-width:0; }
 
+/* Se ainda tiver col-md-* no HTML, neutraliza dentro do grid */
 .filtro-card form.filters-grid [class^="col-"],
 .filtro-card form.filters-grid [class*=" col-"]{
-  padding: 0 !important;
+  padding:0 !important;
   flex: initial !important;
-  width: auto !important;
-  max-width: 100% !important;
+  width:auto !important;
+  max-width:100% !important;
 }
 
-.filtro-card form.filters-grid .filter-wide{ grid-column: span 2; }
-.filtro-card form.filters-grid .filter-actions{ display:flex; align-items:end; }
-
-@media (max-width: 740px){
-  .filtro-card form.filters-grid .filter-wide{ grid-column: auto; }
+/* Busca maior em telas que comportam */
+.filtro-card form.filters-grid .filter-wide{
+  grid-column: span 2;
 }
 
-/* ✅ Tabela ocupar o máximo possível sem quebrar layout do base */
-.card{ max-width:100%; }
-.table-responsive{ width:100%; overflow-x:auto; }
+/* Botão: não ficar “tijolo” */
+.filtro-card form.filters-grid .filter-actions{
+  display:flex;
+  justify-content:flex-end;
+  align-items:end;
+}
+.filtro-card form.filters-grid .btn-search{
+  width: 140px;
+  height: 42px; /* alinhado com os inputs */
+}
 
-/* DataTables: força wrapper e tabela em 100% */
+/* Em tablet: busca ocupa a linha toda e botão fica à direita (bonito) */
+@media (max-width: 820px){
+  .filtro-card form.filters-grid .filter-wide{
+    grid-column: 1 / -1; /* ocupa toda a largura */
+  }
+  .filtro-card form.filters-grid .filter-actions{
+    grid-column: 1 / -1;
+  }
+}
+
+/* Em celular: botão 100% */
+@media (max-width: 520px){
+  .filtro-card form.filters-grid .btn-search{
+    width: 100%;
+  }
+}
+
+/* Tabela */
+.table-responsive{
+  width:100%;
+  overflow-x:auto;
+}
 .dataTables_wrapper{ width:100% !important; }
 table.dataTable{ width:100% !important; }
-
-/* Visual */
-#tabelaDocumentos{ font-size:.88rem; }
-#tabelaDocumentos thead{ background:rgba(56,189,248,0.10); color:var(--accent-blue); }
 </style>
 {% endblock %}
 
@@ -168,8 +228,8 @@ table.dataTable{ width:100% !important; }
       <input type="text" name="busca" value="{{ request.GET.busca }}" class="form-control" placeholder="Código, título...">
     </div>
 
-    <div class="col-md-1 d-flex align-items-end filter-item filter-actions">
-      <button type="submit" class="btn btn-primary w-100 btn-premium" aria-label="Buscar">
+    <div class="col-md-1 filter-item filter-actions">
+      <button type="submit" class="btn btn-primary btn-premium btn-search" aria-label="Buscar">
         <i class="bi bi-search"></i>
       </button>
     </div>
@@ -270,11 +330,8 @@ $(document).ready(function(){
     pageLength: 25,
     lengthMenu: [10,25,50,100],
     responsive: true,
-
-    // ✅ isso ajuda a "esticar" melhor e não travar largura
     autoWidth: false,
     scrollX: false,
-
     dom:'Bfrtip',
     buttons:[
       { extend:'excelHtml5', text:'Excel' },
@@ -284,7 +341,6 @@ $(document).ready(function(){
     language:{ url:"https://cdn.datatables.net/plug-ins/1.13.6/i18n/pt-BR.json" }
   });
 
-  // ✅ recalcula larguras (sidebar/layouts às vezes precisam)
   dt.columns.adjust().responsive.recalc();
   $(window).on('resize', function(){
     dt.columns.adjust().responsive.recalc();
