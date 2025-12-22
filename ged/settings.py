@@ -4,9 +4,13 @@ Django settings for ged project – versão profissional otimizada para Railway.
 
 from pathlib import Path
 import os
-
 from dotenv import load_dotenv
-import dj_database_url
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+env_file = BASE_DIR / ".env"
+if env_file.exists():
+    load_dotenv(env_file, override=False)
 
 
 # ======================
