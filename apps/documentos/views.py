@@ -1052,17 +1052,33 @@ def nova_versao(request, documento_id):
 # UPLOAD DOCUMENTO (CRIAR)
 # =================================================================
 
+import logging
+from django.contrib import messages
+from django.shortcuts import redirect, render
+from django.contrib.auth.decorators import login_required
+
+logger = logging.getLogger(__name__)
+
+def montar_descricao_log(usuario, doc, verbo: str) -> str:
+    """
+    Versão simples e segura (pra não dar NameError).
+    """
+    nome = getattr(usuario, "username", "usuario")
+    return f"{nome} {verbo} o documento {doc.codigo} (Rev {doc.revisao}) - {doc.titulo}"
+
+
 @login_required
 @has_perm("documento.criar")
 def upload_documento(request):
     if request.method == "POST":
-        # revisao
+        # revisão
         revisao = normalizar_revisao(request.POST.get("revisao"))
         if revisao is None:
             messages.error(request, "Revisão inválida!")
             return redirect("documentos:upload_documento")
+        revisao = revisao or "0"
 
-        # valida campos essenciais
+        # campos essenciais
         titulo = (request.POST.get("titulo") or "").strip()
         codigo = (request.POST.get("codigo") or "").strip()
         if not titulo or not codigo:
@@ -1070,6 +1086,7 @@ def upload_documento(request):
             return redirect("documentos:upload_documento")
 
         # projeto (opcional)
+        projeto = None
         projeto_id = (request.POST.get("projeto") or "").strip()
         if projeto_id:
             try:
@@ -1084,56 +1101,72 @@ def upload_documento(request):
             messages.error(request, "Cadastre ao menos 1 Projeto antes de criar documentos.")
             return redirect("documentos:upload_documento")
 
-        # cria documento (sem depender do upload)
+        # cria o documento primeiro (independente do upload)
         doc = Documento.objects.create(
             projeto=projeto,
             titulo=titulo,
             codigo=codigo,
-            revisao=revisao or "0",
-            disciplina=(request.POST.get("disciplina") or "").strip() or None,
-            tipo_doc=(request.POST.get("tipo_doc") or "").strip() or None,
-            fase=(request.POST.get("fase") or "").strip() or "",
+            revisao=revisao,
+            disciplina=((request.POST.get("disciplina") or "").strip() or None),
+            tipo_doc=((request.POST.get("tipo_doc") or "").strip() or None),
+            fase=(request.POST.get("fase") or "").strip(),
             ativo=True,
             deletado_em=None,
         )
 
-        # arquivos: aceita tanto "arquivos" (multiple) quanto "arquivo" (single)
+        # arquivos: "arquivos" (multiple) OU "arquivo" (single)
         arquivos = request.FILES.getlist("arquivos") or []
         if not arquivos:
             unico = request.FILES.get("arquivo")
             if unico:
                 arquivos = [unico]
 
-        if not arquivos:
-            messages.warning(request, "Documento criado, mas sem arquivo anexado.")
-            registrar_workflow(doc, "Criação", "Criado", request)
-            descricao = montar_descricao_log(request.user, doc, "criou")
-            registrar_log(request.user, doc, "Criação de Documento", descricao)
-            return redirect("documentos:listar_documentos")
-
         anexados = 0
+        falhou_upload = False
+
         for arq in arquivos:
             try:
                 ArquivoDocumento.objects.create(
                     documento=doc,
-                    arquivo=arq,  # aqui é onde o S3/R2 tenta fazer PutObject
+                    arquivo=arq,  # aqui é onde o storage (R2/S3) tenta PutObject
                     nome_original=getattr(arq, "name", None),
                     tipo=(arq.name.split(".")[-1].lower() if getattr(arq, "name", "") else None),
                 )
                 anexados += 1
             except Exception:
-                # Evita 500 quando o R2/S3 estiver com Unauthorized (ou outro erro)
-                import logging
-                logging.getLogger(__name__).exception("Falha ao salvar anexo no storage (R2/S3)")
+                falhou_upload = True
+                logger.exception("Falha ao salvar anexo no storage (R2/S3)")
+                # não derruba a request — segue o fluxo e deixa o doc criado
 
-                messages.error(
-                    request,
-                    "Documento criado, mas falhou o upload do arquivo (storage/R2). "
-                    "Verifique as credenciais/permissões do Cloudflare R2 no Railway."
-                )
-                break
+        # workflow + auditoria (sem derrubar a página)
+        try:
+            registrar_workflow(doc, "Criação", "Criado", request)
+        except Exception:
+            logger.exception("Falha ao registrar workflow na criação do documento")
 
-        registrar_workflow(doc, "Criação", "Criado", request)
+        try:
+            descricao = montar_descricao_log(request.user, doc, "criou")
+            registrar_log(request.user, doc, "Criação de Documento", descricao)
+        except Exception:
+            logger.exception("Falha ao registrar log de auditoria na criação do documento")
+
+        # mensagens finais
+        if not arquivos:
+            messages.warning(request, "Documento criado, mas sem arquivo anexado.")
+        elif falhou_upload:
+            messages.error(
+                request,
+                "Documento criado, mas falhou o upload do arquivo (R2/S3 Unauthorized). "
+                "Corrija as credenciais/permissões do R2 no Railway."
+            )
+        else:
+            messages.success(request, f"Documento criado com sucesso! ({anexados} arquivo(s) anexado(s))")
+
+        return redirect("documentos:listar_documentos")
+
+    projetos = Projeto.objects.filter(ativo=True).order_by("nome")
+    return render(request, "documentos/upload.html", {"projetos": projetos})
+
 
         # =============== 🔥 AUDITORIA ENTERPRISE 🔥 ===============
         descricao = montar_descricao_log(request.user, doc, "criou")
