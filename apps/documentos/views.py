@@ -1053,6 +1053,8 @@ def nova_versao(request, documento_id):
 # UPLOAD DOCUMENTO (CRIAR)
 # =================================================================
 
+from django.db import transaction  # <- garanta este import no topo
+
 @login_required
 @has_perm("documento.criar")
 def upload_documento(request):
@@ -1062,60 +1064,77 @@ def upload_documento(request):
             messages.error(request, "Revisão inválida!")
             return redirect("documentos:upload_documento")
 
-        projeto_id = request.POST.get("projeto")
+        # Se vier vazio, usa "0" (evita salvar revisao="")
+        revisao = revisao or "0"
+
+        # Projeto agora é OPCIONAL (se vier, valida)
         projeto = None
+        projeto_id = (request.POST.get("projeto") or "").strip()
         if projeto_id:
             try:
                 projeto = Projeto.objects.get(id=projeto_id)
             except Projeto.DoesNotExist:
                 messages.error(request, "Projeto inválido.")
                 return redirect("documentos:upload_documento")
-        else:
-            messages.error(request, "Selecione um projeto.")
+
+        titulo = (request.POST.get("titulo") or "").strip()
+        codigo = (request.POST.get("codigo") or "").strip()
+
+        if not titulo or not codigo:
+            messages.error(request, "Preencha Título e Código.")
             return redirect("documentos:upload_documento")
 
-        doc = Documento.objects.create(
-            projeto=projeto,
-            titulo=request.POST.get("titulo"),
-            codigo=request.POST.get("codigo"),
-            revisao=revisao,
-            disciplina=request.POST.get("disciplina"),
-            tipo_doc=request.POST.get("tipo_doc"),
-            fase=request.POST.get("fase") or "",
-        )
-
+        # Compatível com o template antigo (arquivo) e o novo (arquivos)
         arquivos = request.FILES.getlist("arquivos")
-        for arq in arquivos:
-            ArquivoDocumento.objects.create(
-                documento=doc,
-                arquivo=arq,
-                nome_original=arq.name,
-                tipo=arq.name.split(".")[-1].lower(),
+        if not arquivos:
+            arq = request.FILES.get("arquivo")
+            if arq:
+                arquivos = [arq]
+
+        if not arquivos:
+            messages.error(request, "Selecione um arquivo.")
+            return redirect("documentos:upload_documento")
+
+        disciplina = (request.POST.get("disciplina") or "").strip() or None
+        tipo_doc = (request.POST.get("tipo_doc") or "").strip() or None
+        fase = (request.POST.get("fase") or "").strip() or ""
+
+        with transaction.atomic():
+            doc = Documento.objects.create(
+                projeto=projeto,
+                titulo=titulo,
+                codigo=codigo,
+                revisao=revisao,
+                disciplina=disciplina,
+                tipo_doc=tipo_doc,
+                fase=fase,
             )
 
-        registrar_workflow(doc, "Criação", "Criado", request)
+            for arq in arquivos:
+                ArquivoDocumento.objects.create(
+                    documento=doc,
+                    arquivo=arq,
+                    nome_original=getattr(arq, "name", ""),
+                    tipo=(getattr(arq, "name", "").split(".")[-1].lower() if getattr(arq, "name", "") else ""),
+                )
 
-        # =============== 🔥 AUDITORIA ENTERPRISE 🔥 ===============
-        descricao = montar_descricao_log(
-            request.user,
-            doc,
-            "criou"   # ação no texto do log
-        )
-        registrar_log(
-            request.user,
-            doc,
-            "Criação de Documento",
-            descricao
-        )
-        # ==========================================================
+            registrar_workflow(doc, "Criação", "Criado", request)
+
+            descricao = montar_descricao_log(request.user, doc, "criou")
+            registrar_log(request.user, doc, "Criação de Documento", descricao)
 
         messages.success(request, "Documento criado com sucesso!")
-        return redirect("documentos:listar_documentos")
+        return redirect("documentos:detalhes_documento", documento_id=doc.id)
 
     projetos = Projeto.objects.filter(ativo=True).order_by("nome")
-    return render(request, "documentos/upload.html", {"projetos": projetos})
-
-
+    return render(
+        request,
+        "documentos/upload.html",
+        {
+            "projetos": projetos,
+            "REVISOES_VALIDAS": REVISOES_VALIDAS,
+        },
+    )
 
 # =================================================================
 # EDITAR DOCUMENTO
