@@ -1048,93 +1048,113 @@ def nova_versao(request, documento_id):
 
     return redirect("documentos:detalhes_documento", documento_id=documento.id)
 
-
 # =================================================================
 # UPLOAD DOCUMENTO (CRIAR)
 # =================================================================
-
-from django.db import transaction  # <- garanta este import no topo
 
 @login_required
 @has_perm("documento.criar")
 def upload_documento(request):
     if request.method == "POST":
+        # revisao
         revisao = normalizar_revisao(request.POST.get("revisao"))
         if revisao is None:
             messages.error(request, "Revisão inválida!")
             return redirect("documentos:upload_documento")
 
-        # Se vier vazio, usa "0" (evita salvar revisao="")
-        revisao = revisao or "0"
-
-        # Projeto agora é OPCIONAL (se vier, valida)
-        projeto = None
-        projeto_id = (request.POST.get("projeto") or "").strip()
-        if projeto_id:
-            try:
-                projeto = Projeto.objects.get(id=projeto_id)
-            except Projeto.DoesNotExist:
-                messages.error(request, "Projeto inválido.")
-                return redirect("documentos:upload_documento")
-
+        # valida campos essenciais
         titulo = (request.POST.get("titulo") or "").strip()
         codigo = (request.POST.get("codigo") or "").strip()
-
         if not titulo or not codigo:
             messages.error(request, "Preencha Título e Código.")
             return redirect("documentos:upload_documento")
 
-        # Compatível com o template antigo (arquivo) e o novo (arquivos)
-        arquivos = request.FILES.getlist("arquivos")
-        if not arquivos:
-            arq = request.FILES.get("arquivo")
-            if arq:
-                arquivos = [arq]
+        # projeto (opcional)
+        projeto_id = (request.POST.get("projeto") or "").strip()
+        if projeto_id:
+            try:
+                projeto = Projeto.objects.get(id=projeto_id, ativo=True)
+            except Projeto.DoesNotExist:
+                messages.error(request, "Projeto inválido.")
+                return redirect("documentos:upload_documento")
+        else:
+            projeto = Projeto.objects.filter(ativo=True).order_by("id").first()
 
-        if not arquivos:
-            messages.error(request, "Selecione um arquivo.")
+        if not projeto:
+            messages.error(request, "Cadastre ao menos 1 Projeto antes de criar documentos.")
             return redirect("documentos:upload_documento")
 
-        disciplina = (request.POST.get("disciplina") or "").strip() or None
-        tipo_doc = (request.POST.get("tipo_doc") or "").strip() or None
-        fase = (request.POST.get("fase") or "").strip() or ""
+        # cria documento (sem depender do upload)
+        doc = Documento.objects.create(
+            projeto=projeto,
+            titulo=titulo,
+            codigo=codigo,
+            revisao=revisao or "0",
+            disciplina=(request.POST.get("disciplina") or "").strip() or None,
+            tipo_doc=(request.POST.get("tipo_doc") or "").strip() or None,
+            fase=(request.POST.get("fase") or "").strip() or "",
+            ativo=True,
+            deletado_em=None,
+        )
 
-        with transaction.atomic():
-            doc = Documento.objects.create(
-                projeto=projeto,
-                titulo=titulo,
-                codigo=codigo,
-                revisao=revisao,
-                disciplina=disciplina,
-                tipo_doc=tipo_doc,
-                fase=fase,
-            )
+        # arquivos: aceita tanto "arquivos" (multiple) quanto "arquivo" (single)
+        arquivos = request.FILES.getlist("arquivos") or []
+        if not arquivos:
+            unico = request.FILES.get("arquivo")
+            if unico:
+                arquivos = [unico]
 
-            for arq in arquivos:
-                ArquivoDocumento.objects.create(
-                    documento=doc,
-                    arquivo=arq,
-                    nome_original=getattr(arq, "name", ""),
-                    tipo=(getattr(arq, "name", "").split(".")[-1].lower() if getattr(arq, "name", "") else ""),
-                )
-
+        if not arquivos:
+            messages.warning(request, "Documento criado, mas sem arquivo anexado.")
             registrar_workflow(doc, "Criação", "Criado", request)
-
             descricao = montar_descricao_log(request.user, doc, "criou")
             registrar_log(request.user, doc, "Criação de Documento", descricao)
+            return redirect("documentos:listar_documentos")
 
-        messages.success(request, "Documento criado com sucesso!")
-        return redirect("documentos:detalhes_documento", documento_id=doc.id)
+        anexados = 0
+        for arq in arquivos:
+            try:
+                ArquivoDocumento.objects.create(
+                    documento=doc,
+                    arquivo=arq,  # aqui é onde o S3/R2 tenta fazer PutObject
+                    nome_original=getattr(arq, "name", None),
+                    tipo=(arq.name.split(".")[-1].lower() if getattr(arq, "name", "") else None),
+                )
+                anexados += 1
+            except Exception:
+                # Evita 500 quando o R2/S3 estiver com Unauthorized (ou outro erro)
+                import logging
+                logging.getLogger(__name__).exception("Falha ao salvar anexo no storage (R2/S3)")
+
+                messages.error(
+                    request,
+                    "Documento criado, mas falhou o upload do arquivo (storage/R2). "
+                    "Verifique as credenciais/permissões do Cloudflare R2 no Railway."
+                )
+                break
+
+        registrar_workflow(doc, "Criação", "Criado", request)
+
+        # =============== 🔥 AUDITORIA ENTERPRISE 🔥 ===============
+        descricao = montar_descricao_log(request.user, doc, "criou")
+        registrar_log(request.user, doc, "Criação de Documento", descricao)
+        # ==========================================================
+
+        if anexados > 0:
+            messages.success(request, f"Documento criado com sucesso! ({anexados} arquivo(s))")
+        else:
+            messages.warning(request, "Documento criado, porém sem anexos (falha no storage).")
+
+        return redirect("documentos:listar_documentos")
 
     projetos = Projeto.objects.filter(ativo=True).order_by("nome")
     return render(
         request,
         "documentos/upload.html",
-        {
-            "projetos": projetos,
-            "REVISOES_VALIDAS": REVISOES_VALIDAS,
-        },
+        {"projetos": projetos, "REVISOES_VALIDAS": REVISOES_VALIDAS},
     )
+
+
 
 # =================================================================
 # EDITAR DOCUMENTO
