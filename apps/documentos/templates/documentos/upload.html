@@ -45,7 +45,6 @@
 }
 </style>
 
-
 <h2 class="text-info fw-bold mb-4">
     <i class="bi bi-file-earmark-plus"></i> Novo Documento
 </h2>
@@ -57,72 +56,106 @@
         <i class="bi bi-exclamation-triangle-fill"></i> {{ erro }}
     </div>
     {% endif %}
-<form method="POST" enctype="multipart/form-data">
-    {% csrf_token %}
 
-    <div class="row">
+    <form method="POST" enctype="multipart/form-data" action="{% url 'documentos:upload_documento' %}">
+        {% csrf_token %}
 
-        <!-- Projeto (opcional) -->
-        <div class="col-md-4 mb-3">
-            <label class="form-label">Projeto:</label>
-            <select name="projeto" class="form-select">
-                <option value="">(sem projeto)</option>
-                {% for p in projetos %}
-                    <option value="{{ p.id }}">{{ p.nome }}</option>
-                {% endfor %}
-            </select>
+        <div class="row">
+
+            <!-- Projeto (opcional no form, mas recomendado) -->
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Projeto:</label>
+                <select name="projeto" class="form-select">
+                    <option value="">(sem projeto)</option>
+                    {% for p in projetos %}
+                        <option value="{{ p.id }}"
+                            {% if request.POST.projeto == p.id|stringformat:"s" %}selected{% endif %}>
+                            {{ p.nome }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <small class="text-muted">Se não selecionar, o sistema pode usar um projeto padrão (se configurado na view).</small>
+            </div>
+
+            <!-- Disciplina (opcional) -->
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Disciplina:</label>
+                <input type="text"
+                       name="disciplina"
+                       class="form-control"
+                       placeholder="Ex: CIVIL, ELETRICA..."
+                       value="{{ request.POST.disciplina|default:'' }}">
+            </div>
+
+            <!-- Tipo Doc (opcional) -->
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Tipo Documento:</label>
+                <input type="text"
+                       name="tipo_doc"
+                       class="form-control"
+                       placeholder="Ex: DESENHO, MEMORIAL..."
+                       value="{{ request.POST.tipo_doc|default:'' }}">
+            </div>
+
+            <!-- Fase (opcional) -->
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Fase:</label>
+                <input type="text"
+                       name="fase"
+                       class="form-control"
+                       placeholder="Ex: IFC, As Built..."
+                       value="{{ request.POST.fase|default:'' }}">
+            </div>
+
+            <!-- Título -->
+            <div class="col-md-5 mb-3">
+                <label class="form-label">Título:</label>
+                <input type="text"
+                       name="titulo"
+                       class="form-control"
+                       required
+                       value="{{ request.POST.titulo|default:'' }}">
+            </div>
+
+            <!-- Código -->
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Código:</label>
+                <input type="text"
+                       name="codigo"
+                       class="form-control"
+                       required
+                       value="{{ request.POST.codigo|default:'' }}">
+            </div>
+
+            <!-- Revisão -->
+            <div class="col-md-2 mb-3">
+                <label class="form-label">Revisão:</label>
+                <select name="revisao" class="form-select">
+                    <option value="">(vazia)</option>
+                    <option value="0" {% if request.POST.revisao == "0" %}selected{% endif %}>0</option>
+                    {% for r in REVISOES_VALIDAS %}
+                        <option value="{{ r }}" {% if request.POST.revisao == r|stringformat:"s" %}selected{% endif %}>
+                            {{ r }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Arquivos -->
+            <div class="col-md-12 mb-3">
+                <label class="form-label">Arquivo(s):</label>
+                <input type="file" name="arquivos" class="form-control" required multiple>
+                <small class="text-muted">
+                    Você pode selecionar mais de um arquivo (Ctrl/Shift). Se sua view aceitar só 1, remova o <code>multiple</code>.
+                </small>
+            </div>
+
         </div>
 
-        <!-- Disciplina (opcional) -->
-        <div class="col-md-4 mb-3">
-            <label class="form-label">Disciplina:</label>
-            <input type="text" name="disciplina" class="form-control" placeholder="Ex: CIVIL, ELETRICA...">
-        </div>
-
-        <!-- Tipo Doc (opcional) -->
-        <div class="col-md-4 mb-3">
-            <label class="form-label">Tipo Documento:</label>
-            <input type="text" name="tipo_doc" class="form-control" placeholder="Ex: DESENHO, MEMORIAL...">
-        </div>
-
-        <!-- Título -->
-        <div class="col-md-6 mb-3">
-            <label class="form-label">Título:</label>
-            <input type="text" name="titulo" class="form-control" required>
-        </div>
-
-        <!-- Código -->
-        <div class="col-md-4 mb-3">
-            <label class="form-label">Código:</label>
-            <input type="text" name="codigo" class="form-control" required>
-        </div>
-
-        <!-- Revisão -->
-        <div class="col-md-2 mb-3">
-            <label class="form-label">Revisão:</label>
-            <select name="revisao" class="form-select">
-                <option value="">(vazia)</option>
-                <option value="0">0</option>
-                {% for r in REVISOES_VALIDAS %}
-                    <option value="{{ r }}">{{ r }}</option>
-                {% endfor %}
-            </select>
-        </div>
-
-        <!-- Arquivo -->
-        <div class="col-md-12 mb-3">
-            <label class="form-label">Arquivo:</label>
-            <!-- nome alinhado com a view -->
-            <input type="file" name="arquivos" class="form-control" required>
-        </div>
-
-    </div>
-
-    <button class="btn-upload mt-3 w-100">
-        🚀 Enviar Documento
-    </button>
-</form>
-
+        <button type="submit" class="btn-upload mt-3 w-100">
+            🚀 Enviar Documento
+        </button>
+    </form>
 
 </div>
 

@@ -12,7 +12,6 @@ from datetime import date, datetime
 from io import BytesIO
 from django.db.models import Q
 from django.shortcuts import render
-from apps.documentos.models import Documento
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -216,11 +215,18 @@ def etapa_anterior(documento: Documento):
 # REGISTRO DE WORKFLOW (LOG)
 # -------------------------------------------------------------
 
-def registrar_workflow(documento: Documento, etapa, acao: str, request, observacao: str = ""):
+def registrar_workflow(documento: Documento, etapa, acao: str = "", request=None, observacao: str = "", **kwargs):
     """
     Registra movimentação no log enterprise.
     'etapa' agora é WorkflowEtapa ou string com nome.
     """
+
+    # Compatibilidade: versões antigas chamavam registrar_workflow(..., status="...")
+    if not acao:
+        acao = (kwargs.get("status") or "").strip()
+
+    if request is None:
+        raise ValueError("registrar_workflow requer request")
 
     if isinstance(etapa, str):
         etapa_obj = WorkflowEtapa.objects.filter(nome=etapa).first()
@@ -542,7 +548,7 @@ def painel_workflow(request):
             field = "-" + field
         docs = docs.order_by(field)
     else:
-        docs = docs.order_by("etapa", "codigo")
+        docs = docs.order_by("etapa__ordem", "codigo")
 
     disciplinas = (
         docs_base.exclude(disciplina__isnull=True)
@@ -749,11 +755,6 @@ def painel_workflow_exportar_excel(request):
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
-# no topo do arquivo (se ainda não tiver):
-from django.db.models import Q
-from django.shortcuts import render
-from apps.documentos.models import Documento
-# ... (deixe os outros imports que você já tem)
 # =====================================================================
 # 📁 LISTA DE DOCUMENTOS – com filtros funcionando 100%
 # =====================================================================
@@ -916,12 +917,6 @@ def historico(request, codigo):
 
 
 # =================================================================
-# AVANÇAR ETAPA — WORKFLOW ENTERPRISE
-# =================================================================
-
-@login_required
-
-# =================================================================
 # AVANÇAR / RETORNAR ETAPA — WORKFLOW ENTERPRISE (COM OBS + ANEXOS)
 # =================================================================
 
@@ -1038,7 +1033,7 @@ def nova_versao(request, documento_id):
         registrar_workflow(
             documento,
             etapa="Nova Versão",
-            status="Criada",
+            acao="Criada",
             request=request,
             observacao=f"Versão {numero_revisao} adicionada.",
         )
@@ -1051,34 +1046,19 @@ def nova_versao(request, documento_id):
 # =================================================================
 # UPLOAD DOCUMENTO (CRIAR)
 # =================================================================
-
 import logging
-from django.contrib import messages
-from django.shortcuts import redirect, render
-from django.contrib.auth.decorators import login_required
-
 logger = logging.getLogger(__name__)
-
-def montar_descricao_log(usuario, doc, verbo: str) -> str:
-    """
-    Versão simples e segura (pra não dar NameError).
-    """
-    nome = getattr(usuario, "username", "usuario")
-    return f"{nome} {verbo} o documento {doc.codigo} (Rev {doc.revisao}) - {doc.titulo}"
-
 
 @login_required
 @has_perm("documento.criar")
 def upload_documento(request):
     if request.method == "POST":
-        # revisão
         revisao = normalizar_revisao(request.POST.get("revisao"))
         if revisao is None:
             messages.error(request, "Revisão inválida!")
             return redirect("documentos:upload_documento")
         revisao = revisao or "0"
 
-        # campos essenciais
         titulo = (request.POST.get("titulo") or "").strip()
         codigo = (request.POST.get("codigo") or "").strip()
         if not titulo or not codigo:
@@ -1089,19 +1069,16 @@ def upload_documento(request):
         projeto = None
         projeto_id = (request.POST.get("projeto") or "").strip()
         if projeto_id:
-            try:
-                projeto = Projeto.objects.get(id=projeto_id, ativo=True)
-            except Projeto.DoesNotExist:
-                messages.error(request, "Projeto inválido.")
-                return redirect("documentos:upload_documento")
-        else:
+            projeto = Projeto.objects.filter(id=projeto_id, ativo=True).first()
+
+        if not projeto:
             projeto = Projeto.objects.filter(ativo=True).order_by("id").first()
 
         if not projeto:
             messages.error(request, "Cadastre ao menos 1 Projeto antes de criar documentos.")
             return redirect("documentos:upload_documento")
 
-        # cria o documento primeiro (independente do upload)
+        # cria documento (independente do upload)
         doc = Documento.objects.create(
             projeto=projeto,
             titulo=titulo,
@@ -1109,12 +1086,12 @@ def upload_documento(request):
             revisao=revisao,
             disciplina=((request.POST.get("disciplina") or "").strip() or None),
             tipo_doc=((request.POST.get("tipo_doc") or "").strip() or None),
-            fase=(request.POST.get("fase") or "").strip(),
+            fase=((request.POST.get("fase") or "").strip() or ""),
             ativo=True,
             deletado_em=None,
         )
 
-        # arquivos: "arquivos" (multiple) OU "arquivo" (single)
+        # arquivos: "arquivos" (multiple) ou "arquivo" (single)
         arquivos = request.FILES.getlist("arquivos") or []
         if not arquivos:
             unico = request.FILES.get("arquivo")
@@ -1122,61 +1099,46 @@ def upload_documento(request):
                 arquivos = [unico]
 
         anexados = 0
-        falhou_upload = False
+        falha_storage = False
 
         for arq in arquivos:
             try:
                 ArquivoDocumento.objects.create(
                     documento=doc,
-                    arquivo=arq,  # aqui é onde o storage (R2/S3) tenta PutObject
+                    arquivo=arq,  # R2/S3 PutObject
                     nome_original=getattr(arq, "name", None),
                     tipo=(arq.name.split(".")[-1].lower() if getattr(arq, "name", "") else None),
                 )
                 anexados += 1
             except Exception:
-                falhou_upload = True
+                falha_storage = True
                 logger.exception("Falha ao salvar anexo no storage (R2/S3)")
-                # não derruba a request — segue o fluxo e deixa o doc criado
+                break
 
-        # workflow + auditoria (sem derrubar a página)
+        # workflow (não pode derrubar)
         try:
             registrar_workflow(doc, "Criação", "Criado", request)
         except Exception:
-            logger.exception("Falha ao registrar workflow na criação do documento")
+            logger.exception("Falha ao registrar workflow")
 
+        # auditoria (não usa montar_descricao_log -> evita NameError)
         try:
-            descricao = montar_descricao_log(request.user, doc, "criou")
+            usuario = getattr(request.user, "username", None) or getattr(request.user, "email", None) or str(request.user)
+            descricao = f"{usuario} criou o documento {doc.codigo} (Rev {doc.revisao}) - {doc.titulo}"
             registrar_log(request.user, doc, "Criação de Documento", descricao)
         except Exception:
-            logger.exception("Falha ao registrar log de auditoria na criação do documento")
+            logger.exception("Falha ao registrar log de auditoria")
 
-        # mensagens finais
-        if not arquivos:
-            messages.warning(request, "Documento criado, mas sem arquivo anexado.")
-        elif falhou_upload:
-            messages.error(
+        if falha_storage:
+            messages.warning(
                 request,
-                "Documento criado, mas falhou o upload do arquivo (R2/S3 Unauthorized). "
+                "Documento criado, mas falhou o upload do arquivo (R2 Unauthorized). "
                 "Corrija as credenciais/permissões do R2 no Railway."
             )
+        elif anexados == 0 and arquivos:
+            messages.warning(request, "Documento criado, mas sem anexos.")
         else:
-            messages.success(request, f"Documento criado com sucesso! ({anexados} arquivo(s) anexado(s))")
-
-        return redirect("documentos:listar_documentos")
-
-    projetos = Projeto.objects.filter(ativo=True).order_by("nome")
-    return render(request, "documentos/upload.html", {"projetos": projetos})
-
-
-        # =============== 🔥 AUDITORIA ENTERPRISE 🔥 ===============
-        descricao = montar_descricao_log(request.user, doc, "criou")
-        registrar_log(request.user, doc, "Criação de Documento", descricao)
-        # ==========================================================
-
-        if anexados > 0:
             messages.success(request, f"Documento criado com sucesso! ({anexados} arquivo(s))")
-        else:
-            messages.warning(request, "Documento criado, porém sem anexos (falha no storage).")
 
         return redirect("documentos:listar_documentos")
 
@@ -1186,7 +1148,6 @@ def upload_documento(request):
         "documentos/upload.html",
         {"projetos": projetos, "REVISOES_VALIDAS": REVISOES_VALIDAS},
     )
-
 
 
 # =================================================================
@@ -1729,27 +1690,6 @@ def restaurar_documento(request, documento_id):
     messages.success(request, "Documento restaurado com sucesso.")
     return redirect("documentos:lixeira")
 
-
-# =================================================================
-# CONFIGURAÇÕES BÁSICAS
-# =================================================================
-
-@login_required
-@allow_admin
-def configuracoes(request):
-    projetos = Projeto.objects.all().order_by("nome")
-    resp_disc = ResponsavelDisciplina.objects.all().order_by("disciplina")
-    etapas = WorkflowEtapa.objects.all().order_by("ordem")
-
-    return render(
-        request,
-        "documentos/configuracoes.html",
-        {
-            "projetos": projetos,
-            "responsaveis": resp_disc,
-            "etapas": etapas,
-        },
-    )
 
 # =================================================================
 # CONFIGURAÇÕES UNIFICADAS (Usuário + Administração)

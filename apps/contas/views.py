@@ -8,6 +8,7 @@ import logging
 
 from .models import UserConfig, SolicitacaoAcesso
 from .forms import UserConfigForm, SolicitacaoAcessoForm
+from .permissions import has_perm
 
 logger = logging.getLogger(__name__)
 
