@@ -1,55 +1,55 @@
-﻿from django.shortcuts import render, redirect, get_object_or_404
-from django.core.files.storage import default_storage
-from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from django.db.models import Count, Q, Sum
-from django.utils import timezone
-from django.http import HttpResponse, JsonResponse
-from django.core.paginator import Paginator
-from django.contrib.auth.models import Group
-from datetime import date, datetime
-from io import BytesIO
-from django.db.models import Q
-from django.shortcuts import render
-from django.shortcuts import get_object_or_404, redirect
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required
+﻿# apps/documentos/views.py
+
+from __future__ import annotations
+
 import csv
 import json
+import logging
 import os
 import re
+from datetime import date, datetime
 from difflib import unified_diff
-import logging
-from django.contrib import messages
-from django.shortcuts import get_object_or_404, redirect, render
-from django.contrib.auth.decorators import login_required
-logger = logging.getLogger(__name__)
+from io import BytesIO
+
 import openpyxl
-from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
-from apps.contas.permissions import has_perm
+from django.contrib import messages
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import Group
+from django.core.files.storage import default_storage
+from django.core.paginator import Paginator
+from django.db.models import Count, Q, Sum
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+
 from apps.contas.decorators import allow_admin
+from apps.contas.permissions import has_perm
 
 from .models import (
-    Projeto,
-    Documento,
     ArquivoDocumento,
+    Documento,
+    DocumentoAprovacao,
     DocumentoVersao,
-    ResponsavelDisciplina,
-    WorkflowEtapa,
     DocumentoWorkflowStatus,
     LogAuditoria,
+    Projeto,
     ProjetoFinanceiro,
-    DocumentoAprovacao,   # ★ AGORA IMPORTADO ★
+    ResponsavelDisciplina,
+    WorkflowEtapa,
     registrar_log,
 )
-
 from .utils_email import enviar_email
+
+logger = logging.getLogger(__name__)
+
 # ==============================================================
 # DEFINIÇÃO OFICIAL DAS ETAPAS DO WORKFLOW (CODIFICADAS)
 # ==============================================================
+
 
 ETAPAS_WORKFLOW = [
     "ELABORACAO",
@@ -79,27 +79,6 @@ from decimal import Decimal  # <-- garante precisão nos valores em dólar/reais
 
 VALOR_MEDICAO_USD = Decimal("979.00")  # ainda usado na medição genérica
 TAXA_CAMBIO_REAIS = Decimal("5.7642")  # taxa fixa que você passou
-# =================================================================
-# TESTE E-MAIL
-# =================================================================
-
-from django.contrib.admin.views.decorators import staff_member_required
-from django.http import HttpResponse
-from django.core.mail import send_mail
-from django.conf import settings
-
-@staff_member_required
-def teste_email(request):
-    send_mail(
-        "Teste GED (Railway)",
-        "Se você recebeu, o SMTP do ambiente está OK.",
-        settings.DEFAULT_FROM_EMAIL,
-        ["daniellaranjoadm@gmail.com"],  # pode trocar depois por request.user.email se quiser
-        fail_silently=False,
-    )
-    return HttpResponse("OK: e-mail enviado")
-
-
 
 # =================================================================
 # FUNÇÕES AUXILIARES – ENTERPRISE S7
@@ -273,52 +252,56 @@ def registrar_workflow(documento: Documento, etapa, acao: str = "", request=None
         descricao
     )
 
-
 # -------------------------------------------------------------
 # NOTIFICAÇÕES
 # -------------------------------------------------------------
 
-def notificar_evento_documento(documento: Documento, tipo_evento: str):
-    """Centraliza notificações por e-mail."""
+import os
+import logging
+
+logger = logging.getLogger(__name__)
+DEFAULT_NOTIF_EMAIL = os.getenv("DEFAULT_NOTIF_EMAIL", "")
+
+def notificar_evento_documento(documento: Documento, tipo_evento: str, destinatarios=None) -> bool:
+    """Centraliza notificações por e-mail. Retorna True/False."""
     assunto = ""
     mensagem = ""
 
     if tipo_evento == "envio_revisao":
-        assunto = f"Documento em Revisão: {documento.codigo}"
-        mensagem = (
-            f"O documento {documento.codigo} (Rev {documento.revisao}) "
-            "foi enviado para revisão."
-        )
+        assunto = f"[GED] Documento em Revisão: {documento.codigo}"
+        mensagem = f"O documento {documento.codigo} (Rev {documento.revisao}) foi enviado para revisão."
     elif tipo_evento == "aprovacao":
-        assunto = f"Documento Aprovado: {documento.codigo}"
-        mensagem = (
-            f"O documento {documento.codigo} (Rev {documento.revisao}) "
-            "foi aprovado."
-        )
+        assunto = f"[GED] Documento Aprovado: {documento.codigo}"
+        mensagem = f"O documento {documento.codigo} (Rev {documento.revisao}) foi aprovado."
     elif tipo_evento == "emissao":
-        assunto = f"Documento Emitido: {documento.codigo}"
-        mensagem = (
-            f"O documento {documento.codigo} (Rev {documento.revisao}) "
-            f"foi emitido em {documento.data_emissao_grdt}."
-        )
+        assunto = f"[GED] Documento Emitido: {documento.codigo}"
+        mensagem = f"O documento {documento.codigo} (Rev {documento.revisao}) foi emitido em {documento.data_emissao_grdt}."
     elif tipo_evento == "cancelamento":
-        assunto = f"Documento Cancelado: {documento.codigo}"
-        mensagem = (
-            f"O documento {documento.codigo} (Rev {documento.revisao}) "
-            "foi cancelado."
-        )
+        assunto = f"[GED] Documento Cancelado: {documento.codigo}"
+        mensagem = f"O documento {documento.codigo} (Rev {documento.revisao}) foi cancelado."
     else:
-        return
+        return False
+
+    # Destinatários: usa o que foi passado; senão cai no DEFAULT_NOTIF_EMAIL (Railway)
+    if destinatarios is None:
+        destinatarios = [DEFAULT_NOTIF_EMAIL] if DEFAULT_NOTIF_EMAIL else []
+
+    if not destinatarios:
+        logger.warning("Sem destinatários para notificação | doc=%s | evento=%s", documento.codigo, tipo_evento)
+        return False
 
     try:
-        enviar_email(
+        ok = enviar_email(
             assunto=assunto,
             mensagem=mensagem,
-            destinatarios=["seu.email@empresa.com"],
+            destinatarios=destinatarios,
         )
-    except:
-        pass
-
+        if not ok:
+            logger.warning("Falha ao enviar e-mail | doc=%s | evento=%s", documento.codigo, tipo_evento)
+        return ok
+    except Exception as e:
+        logger.exception("Erro ao enviar e-mail | doc=%s | evento=%s | erro=%s", documento.codigo, tipo_evento, e)
+        return False
 
 # -------------------------------------------------------------
 # LIXEIRA
@@ -1239,13 +1222,9 @@ def editar_documento(request, documento_id):
         },
     )
 
-
 # =================================================================
 # NOVA REVISÃO (WORKFLOW)
 # =================================================================
-
-import logging
-logger = logging.getLogger(__name__)
 
 @login_required
 @has_perm("documento.revisar")
@@ -1267,7 +1246,7 @@ def nova_revisao(request, documento_id):
             DocumentoVersao.objects.create(
                 documento=documento,
                 numero_revisao=nova_rev,
-                arquivo=arquivo,  # chama storage aqui
+                arquivo=arquivo,  # chama storage aqui (R2/S3)
                 criado_por=request.user,
                 observacao=observacao,
                 status_revisao="REVISAO",
@@ -1286,7 +1265,13 @@ def nova_revisao(request, documento_id):
         documento.save(update_fields=["revisao", "status_documento"])
 
         registrar_workflow(documento, "Nova Revisão", "Criado", request)
-        notificar_evento_documento(documento, "envio_revisao")
+
+        # Notificação por e-mail (usa email do usuário; se não tiver, cai no DEFAULT_NOTIF_EMAIL)
+        destinatarios = []
+        if getattr(request.user, "email", ""):
+            destinatarios.append(request.user.email)
+
+        notificar_evento_documento(documento, "envio_revisao", destinatarios=destinatarios or None)
 
         messages.success(request, f"Revisão {nova_rev} criada com sucesso!")
         return redirect("documentos:detalhes_documento", documento_id=documento.id)
@@ -1301,6 +1286,7 @@ def nova_revisao(request, documento_id):
 # =================================================================
 # UPLOAD DE ANEXOS
 # =================================================================
+
 @login_required
 def adicionar_arquivos(request, documento_id):
     documento = get_object_or_404(Documento, id=documento_id)
@@ -1373,7 +1359,6 @@ def excluir_arquivo(request, arquivo_id):
     messages.success(request, "Arquivo excluído com sucesso.")
     return redirect("documentos:detalhes_documento", documento_id=documento_id)
 
-
 # =================================================================
 # WORKFLOW DE EMISSÃO / APROVAÇÃO
 # =================================================================
@@ -1386,7 +1371,11 @@ def enviar_para_revisao(request, documento_id):
     documento.save(update_fields=["status_documento"])
 
     registrar_workflow(documento, "Revisão Interna – Disciplina", "Enviado", request)
-    notificar_evento_documento(documento, "envio_revisao")
+
+    destinatarios = []
+    if getattr(request.user, "email", ""):
+        destinatarios.append(request.user.email)
+    notificar_evento_documento(documento, "envio_revisao", destinatarios=destinatarios or None)
 
     messages.success(request, "Documento enviado para revisão.")
     return redirect("documentos:detalhes_documento", documento_id=documento.id)
@@ -1400,7 +1389,11 @@ def aprovar_documento(request, documento_id):
     documento.save(update_fields=["status_documento"])
 
     registrar_workflow(documento, "Aprovação Técnica – Coordenador", "Aprovado", request)
-    notificar_evento_documento(documento, "aprovacao")
+
+    destinatarios = []
+    if getattr(request.user, "email", ""):
+        destinatarios.append(request.user.email)
+    notificar_evento_documento(documento, "aprovacao", destinatarios=destinatarios or None)
 
     messages.success(request, "Documento aprovado.")
     return redirect("documentos:detalhes_documento", documento_id=documento.id)
@@ -1415,7 +1408,11 @@ def emitir_documento(request, documento_id):
     documento.save(update_fields=["status_emissao", "data_emissao_grdt"])
 
     registrar_workflow(documento, "Emissão Final", "Emitido", request)
-    notificar_evento_documento(documento, "emissao")
+
+    destinatarios = []
+    if getattr(request.user, "email", ""):
+        destinatarios.append(request.user.email)
+    notificar_evento_documento(documento, "emissao", destinatarios=destinatarios or None)
 
     messages.success(request, "Documento emitido.")
     return redirect("documentos:detalhes_documento", documento_id=documento.id)
@@ -1430,7 +1427,11 @@ def cancelar_documento(request, documento_id):
     documento.save(update_fields=["status_documento", "status_emissao"])
 
     registrar_workflow(documento, "Emissão Final", "Cancelado", request)
-    notificar_evento_documento(documento, "cancelamento")
+
+    destinatarios = []
+    if getattr(request.user, "email", ""):
+        destinatarios.append(request.user.email)
+    notificar_evento_documento(documento, "cancelamento", destinatarios=destinatarios or None)
 
     messages.success(request, "Documento cancelado.")
     return redirect("documentos:detalhes_documento", documento_id=documento.id)
@@ -1439,6 +1440,7 @@ def cancelar_documento(request, documento_id):
 # =================================================================
 # GERAR DIFF ENTRE DUAS REVISÕES
 # =================================================================
+
 
 @login_required
 def gerar_diff(request, documento_id, revA, revB):
