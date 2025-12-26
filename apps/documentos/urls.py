@@ -1,6 +1,6 @@
 ﻿from django.urls import path
 from . import views
-from .views import teste_email
+
 
 app_name = "documentos"
 
@@ -11,11 +11,6 @@ urlpatterns = [
     path("", views.listar_documentos, name="home"),
     path("documentos/", views.listar_documentos, name="listar_documentos"),
     path("upload/", views.upload_documento, name="upload_documento"),
-
-    # ============================
-    # TESTE E-MAIL
-    # ============================
-    path("teste-email/", teste_email, name="teste_email"),
 
     # ============================
     # DETALHES / EDIÇÃO
