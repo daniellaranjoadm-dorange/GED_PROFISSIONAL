@@ -92,12 +92,13 @@ from django.conf import settings
 def teste_email(request):
     send_mail(
         "Teste GED (Railway)",
-        "Se você recebeu, o SMTP do Railway está OK.",
+        "Se você recebeu, o SMTP do ambiente está OK.",
         settings.DEFAULT_FROM_EMAIL,
-        ["daniellaranjoadm@gmail.com"],
+        ["daniellaranjoadm@gmail.com"],  # pode trocar depois por request.user.email se quiser
         fail_silently=False,
     )
     return HttpResponse("OK: e-mail enviado")
+
 
 
 # =================================================================

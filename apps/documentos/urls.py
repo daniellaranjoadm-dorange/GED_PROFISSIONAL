@@ -1,22 +1,27 @@
 ﻿from django.urls import path
 from . import views
-from apps.core.views import teste_email
+from .views import teste_email
 
 app_name = "documentos"
 
 urlpatterns = [
+    # ============================
     # HOME / LISTAGEM
+    # ============================
     path("", views.listar_documentos, name="home"),
     path("documentos/", views.listar_documentos, name="listar_documentos"),
     path("upload/", views.upload_documento, name="upload_documento"),
 
+    # ============================
     # TESTE E-MAIL
+    # ============================
     path("teste-email/", teste_email, name="teste_email"),
 
+    # ============================
     # DETALHES / EDIÇÃO
+    # ============================
     path("documento/<int:documento_id>/", views.detalhes_documento, name="detalhes_documento"),
     path("editar/<int:documento_id>/", views.editar_documento, name="editar_documento"),
-]
 
     # ============================
     # REVISÕES
@@ -35,7 +40,6 @@ urlpatterns = [
     path("documento/<int:documento_id>/arquivos/", views.adicionar_arquivos, name="adicionar_arquivos"),
     path("arquivo/<int:arquivo_id>/excluir/", views.excluir_arquivo, name="excluir_arquivo"),
 
-
     # ============================
     # WORKFLOW
     # ============================
@@ -43,11 +47,8 @@ urlpatterns = [
     path("aprovar/<int:documento_id>/", views.aprovar_documento, name="aprovar_documento"),
     path("emitir/<int:documento_id>/", views.emitir_documento, name="emitir_documento"),
     path("cancelar/<int:documento_id>/", views.cancelar_documento, name="cancelar_documento"),
-
     path("documento/<int:documento_id>/enviar-proxima-etapa/", views.enviar_proxima_etapa, name="enviar_proxima_etapa"),
     path("retornar-etapa/<int:documento_id>/", views.retornar_etapa, name="retornar_etapa"),
-
-    # ⚠️ ESTA era a rota que estava FORA DO ARRAY — agora corrigida
     path("gerar-diff/<int:documento_id>/<str:revA>/<str:revB>/", views.gerar_diff, name="gerar_diff"),
 
     # ============================
@@ -55,19 +56,14 @@ urlpatterns = [
     # ============================
     path("importar-ldp/", views.importar_ldp, name="importar_ldp"),
 
-        # ============================
-  # ============================
-  # DASHBOARDS
-  # ============================
-path("dashboard/", views.dashboard, name="dashboard"),
-path("dashboard-enterprise/", views.dashboard_enterprise, name="dashboard_enterprise"),
-
-# Painel de Workflow
-path("painel-workflow/", views.painel_workflow, name="painel_workflow"),
-path("painel-workflow/exportar/", views.painel_workflow_exportar_excel, name="painel_workflow_exportar"),
-
-# DASHBOARD MASTER SUPREMO 🚀
-path("dashboard-master/", views.dashboard_master, name="dashboard_master"),
+    # ============================
+    # DASHBOARDS
+    # ============================
+    path("dashboard/", views.dashboard, name="dashboard"),
+    path("dashboard-enterprise/", views.dashboard_enterprise, name="dashboard_enterprise"),
+    path("painel-workflow/", views.painel_workflow, name="painel_workflow"),
+    path("painel-workflow/exportar/", views.painel_workflow_exportar_excel, name="painel_workflow_exportar"),
+    path("dashboard-master/", views.dashboard_master, name="dashboard_master"),
 
     # ============================
     # MEDIÇÃO
@@ -80,7 +76,6 @@ path("dashboard-master/", views.dashboard_master, name="dashboard_master"),
     # ============================
     path("excluir/<int:documento_id>/", views.excluir_documento, name="excluir_documento"),
     path("excluir-selecionados/", views.excluir_selecionados, name="excluir_selecionados"),
-
     path("lixeira/", views.lixeira, name="lixeira"),
     path("restaurar/<int:documento_id>/", views.restaurar_documento, name="restaurar_documento"),
 
