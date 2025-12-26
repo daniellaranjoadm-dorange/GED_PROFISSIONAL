@@ -1219,21 +1219,16 @@ def editar_documento(request, documento_id):
 # NOVA REVISÃO (WORKFLOW)
 # =================================================================
 
+import logging
+logger = logging.getLogger(__name__)
+
 @login_required
 @has_perm("documento.revisar")
 def nova_revisao(request, documento_id):
     documento = get_object_or_404(Documento, id=documento_id)
 
-    idx = (
-        REVISOES_VALIDAS.index(documento.revisao)
-        if documento.revisao in REVISOES_VALIDAS
-        else -1
-    )
-    nova_rev = (
-        REVISOES_VALIDAS[idx + 1]
-        if idx + 1 < len(REVISOES_VALIDAS)
-        else "A"
-    )
+    idx = REVISOES_VALIDAS.index(documento.revisao) if documento.revisao in REVISOES_VALIDAS else -1
+    nova_rev = REVISOES_VALIDAS[idx + 1] if idx + 1 < len(REVISOES_VALIDAS) else "A"
 
     if request.method == "POST":
         arquivo = request.FILES.get("arquivo")
@@ -1243,14 +1238,23 @@ def nova_revisao(request, documento_id):
             messages.error(request, "Envie o arquivo da nova revisão.")
             return redirect("documentos:detalhes_documento", documento_id=documento.id)
 
-        DocumentoVersao.objects.create(
-            documento=documento,
-            numero_revisao=nova_rev,
-            arquivo=arquivo,
-            criado_por=request.user,
-            observacao=observacao,
-            status_revisao="REVISAO",
-        )
+        try:
+            DocumentoVersao.objects.create(
+                documento=documento,
+                numero_revisao=nova_rev,
+                arquivo=arquivo,  # chama storage aqui
+                criado_por=request.user,
+                observacao=observacao,
+                status_revisao="REVISAO",
+            )
+        except Exception:
+            logger.exception("Falha ao salvar nova revisão no storage (R2/S3)")
+            messages.error(
+                request,
+                "Falha ao enviar o arquivo da nova revisão (storage/R2 Unauthorized). "
+                "A revisão do documento NÃO foi alterada."
+            )
+            return redirect("documentos:detalhes_documento", documento_id=documento.id)
 
         documento.revisao = nova_rev
         documento.status_documento = "Em Revisão"
@@ -1273,38 +1277,67 @@ def nova_revisao(request, documento_id):
 # UPLOAD DE ANEXOS
 # =================================================================
 
+import logging
+logger = logging.getLogger(__name__)
+
 @login_required
 def adicionar_arquivos(request, documento_id):
     documento = get_object_or_404(Documento, id=documento_id)
 
     if request.method == "POST":
-        arquivos = request.FILES.getlist("arquivos")
+        # suporta <input name="arquivos" multiple> e fallback <input name="arquivo">
+        arquivos = request.FILES.getlist("arquivos") or []
+        if not arquivos:
+            unico = request.FILES.get("arquivo")
+            if unico:
+                arquivos = [unico]
+
+        if not arquivos:
+            messages.error(request, "Selecione ao menos 1 arquivo.")
+            return redirect("documentos:detalhes_documento", documento_id=documento.id)
+
+        anexados = 0
+        falhas = 0
 
         for arq in arquivos:
-            ArquivoDocumento.objects.create(
-                documento=documento,
-                arquivo=arq,
-                nome_original=arq.name,
-                tipo=arq.name.split(".")[-1].lower(),
+            try:
+                ArquivoDocumento.objects.create(
+                    documento=documento,
+                    arquivo=arq,  # aqui o R2/S3 tenta PutObject
+                    nome_original=getattr(arq, "name", None),
+                    tipo=(arq.name.split(".")[-1].lower() if getattr(arq, "name", "") else None),
+                )
+                anexados += 1
+            except Exception:
+                falhas += 1
+                logger.exception("Falha ao salvar anexo no storage (R2/S3)")
+
+        # não deixa o workflow derrubar a tela
+        try:
+            registrar_workflow(
+                documento,
+                "Upload de anexos",
+                "Arquivos adicionados" if anexados else "Falha no upload",
+                request,
+                observacao=f"{anexados} ok / {falhas} falha(s)",
+            )
+        except Exception:
+            logger.exception("Falha ao registrar_workflow em adicionar_arquivos")
+
+        if anexados and falhas:
+            messages.warning(request, f"{anexados} arquivo(s) enviados, {falhas} falharam (R2 Unauthorized).")
+        elif anexados:
+            messages.success(request, "Arquivos enviados com sucesso!")
+        else:
+            messages.error(
+                request,
+                "Falhou o envio dos arquivos (R2/S3 Unauthorized). "
+                "O documento continua, mas sem anexos. Corrija o R2 no Railway."
             )
 
-        registrar_workflow(
-            documento,
-            "Upload de anexos",
-            "Arquivos adicionados",
-            request,
-            observacao=f"{len(arquivos)} arquivos enviados",
-        )
-
-        messages.success(request, "Arquivos enviados com sucesso!")
         return redirect("documentos:detalhes_documento", documento_id=documento.id)
 
-    return render(
-        request,
-        "documentos/adicionar_arquivos.html",
-        {"documento": documento},
-    )
-
+    return render(request, "documentos/adicionar_arquivos.html", {"documento": documento})
 
 # =================================================================
 # EXCLUIR ARQUIVO INDIVIDUAL
