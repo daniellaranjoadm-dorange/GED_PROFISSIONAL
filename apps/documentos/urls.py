@@ -1,22 +1,22 @@
 ﻿from django.urls import path
 from . import views
+from apps.core.views import teste_email
 
 app_name = "documentos"
 
 urlpatterns = [
-
-    # ============================
     # HOME / LISTAGEM
-    # ============================
     path("", views.listar_documentos, name="home"),
     path("documentos/", views.listar_documentos, name="listar_documentos"),
     path("upload/", views.upload_documento, name="upload_documento"),
 
-    # ============================
+    # TESTE E-MAIL
+    path("teste-email/", teste_email, name="teste_email"),
+
     # DETALHES / EDIÇÃO
-    # ============================
     path("documento/<int:documento_id>/", views.detalhes_documento, name="detalhes_documento"),
     path("editar/<int:documento_id>/", views.editar_documento, name="editar_documento"),
+]
 
     # ============================
     # REVISÕES

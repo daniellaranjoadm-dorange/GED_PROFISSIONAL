@@ -1,0 +1,29 @@
+# Imagem base
+FROM python:3.12-slim
+
+# Evitar buffers no Python (bom para logs)
+ENV PYTHONUNBUFFERED=1
+
+# Criar diretório da aplicação
+WORKDIR /app
+
+# Instalar dependências do sistema, incluindo psycopg2
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+       libpq-dev gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copiar requirements
+COPY requirements.txt /app/
+
+# Instalar dependências Python
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copiar o projeto inteiro
+COPY . /app/
+
+# Porta usada pelo Django
+EXPOSE 8000
+
+# Comando padrão: rodar Django
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

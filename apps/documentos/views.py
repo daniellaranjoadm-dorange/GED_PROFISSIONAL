@@ -20,7 +20,11 @@ import json
 import os
 import re
 from difflib import unified_diff
-
+import logging
+from django.contrib import messages
+from django.shortcuts import get_object_or_404, redirect, render
+from django.contrib.auth.decorators import login_required
+logger = logging.getLogger(__name__)
 import openpyxl
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
@@ -75,6 +79,26 @@ from decimal import Decimal  # <-- garante precisão nos valores em dólar/reais
 
 VALOR_MEDICAO_USD = Decimal("979.00")  # ainda usado na medição genérica
 TAXA_CAMBIO_REAIS = Decimal("5.7642")  # taxa fixa que você passou
+# =================================================================
+# TESTE E-MAIL
+# =================================================================
+
+from django.contrib.admin.views.decorators import staff_member_required
+from django.http import HttpResponse
+from django.core.mail import send_mail
+from django.conf import settings
+
+@staff_member_required
+def teste_email(request):
+    send_mail(
+        "Teste GED (Railway)",
+        "Se você recebeu, o SMTP do Railway está OK.",
+        settings.DEFAULT_FROM_EMAIL,
+        ["daniellaranjoadm@gmail.com"],
+        fail_silently=False,
+    )
+    return HttpResponse("OK: e-mail enviado")
+
 
 # =================================================================
 # FUNÇÕES AUXILIARES – ENTERPRISE S7
@@ -1276,21 +1300,12 @@ def nova_revisao(request, documento_id):
 # =================================================================
 # UPLOAD DE ANEXOS
 # =================================================================
-
-import logging
-logger = logging.getLogger(__name__)
-
 @login_required
 def adicionar_arquivos(request, documento_id):
     documento = get_object_or_404(Documento, id=documento_id)
 
     if request.method == "POST":
-        # suporta <input name="arquivos" multiple> e fallback <input name="arquivo">
         arquivos = request.FILES.getlist("arquivos") or []
-        if not arquivos:
-            unico = request.FILES.get("arquivo")
-            if unico:
-                arquivos = [unico]
 
         if not arquivos:
             messages.error(request, "Selecione ao menos 1 arquivo.")
@@ -1303,7 +1318,7 @@ def adicionar_arquivos(request, documento_id):
             try:
                 ArquivoDocumento.objects.create(
                     documento=documento,
-                    arquivo=arq,  # aqui o R2/S3 tenta PutObject
+                    arquivo=arq,  # aqui é onde o S3/R2 tenta fazer PutObject
                     nome_original=getattr(arq, "name", None),
                     tipo=(arq.name.split(".")[-1].lower() if getattr(arq, "name", "") else None),
                 )
@@ -1312,27 +1327,26 @@ def adicionar_arquivos(request, documento_id):
                 falhas += 1
                 logger.exception("Falha ao salvar anexo no storage (R2/S3)")
 
-        # não deixa o workflow derrubar a tela
-        try:
-            registrar_workflow(
-                documento,
-                "Upload de anexos",
-                "Arquivos adicionados" if anexados else "Falha no upload",
-                request,
-                observacao=f"{anexados} ok / {falhas} falha(s)",
-            )
-        except Exception:
-            logger.exception("Falha ao registrar_workflow em adicionar_arquivos")
+        # Log de workflow (ajusta a observação para refletir sucesso/falha)
+        registrar_workflow(
+            documento,
+            "Upload de anexos",
+            "Arquivos adicionados",
+            request,
+            observacao=f"{anexados} enviado(s), {falhas} falha(s)",
+        )
 
-        if anexados and falhas:
-            messages.warning(request, f"{anexados} arquivo(s) enviados, {falhas} falharam (R2 Unauthorized).")
-        elif anexados:
+        if anexados > 0 and falhas == 0:
             messages.success(request, "Arquivos enviados com sucesso!")
+        elif anexados > 0 and falhas > 0:
+            messages.warning(
+                request,
+                f"{anexados} arquivo(s) enviado(s), mas {falhas} falharam (storage/R2). Verifique credenciais/permissões.",
+            )
         else:
             messages.error(
                 request,
-                "Falhou o envio dos arquivos (R2/S3 Unauthorized). "
-                "O documento continua, mas sem anexos. Corrija o R2 no Railway."
+                "Nenhum arquivo foi anexado (falha no storage/R2). Verifique credenciais/permissões do Cloudflare R2.",
             )
 
         return redirect("documentos:detalhes_documento", documento_id=documento.id)

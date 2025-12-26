@@ -1,35 +1,46 @@
-# Ignore instaladores e executáveis 
+# Python / Django
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*.log
+
+# Django local DB
+db.sqlite3
+db_old.sqlite3
+
+# Env
+.env
+.env.*
+
+# Static/media gerados
+media/
+staticfiles/
+
+# IDE/OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Backups
+**/Backup/
+**/_backup/
+*.bak
+
+# Instaladores
 *.exe
 *.msi
 
-# Ignore arquivos grandes de mídia (por padrão)
+# Mídia grande
 *.mp4
 *.mov
 *.avi
 *.mkv
 *.wav
+*.mp3
+*.m4a
 
-# ✅ EXCEÇÃO: permitir vídeos do site (somente aqui)
+# ✅ permitir assets do site
 !static/videos/
-!static/videos/*.mp4
-
-# Ignore ambiente virtual
-venv/
-
-# Ignore arquivos temporários
-__pycache__/
-*.pyc
-
-# Ignore arquivos de banco para dev local
-db_old.sqlite3
-db.sqlite3
-
-.env
-docker-compose.yml
-Dockerfile
-Dockerfile.txt
-*.log
-
-# Ignore uploads e estáticos gerados
-media/
-staticfiles/
+!static/videos/**
