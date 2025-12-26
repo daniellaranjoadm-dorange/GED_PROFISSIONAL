@@ -46,6 +46,7 @@ from .utils_email import enviar_email
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_NOTIF_EMAIL = os.getenv("DEFAULT_NOTIF_EMAIL", "")
 # ==============================================================
 # DEFINIÇÃO OFICIAL DAS ETAPAS DO WORKFLOW (CODIFICADAS)
 # ==============================================================
@@ -255,13 +256,6 @@ def registrar_workflow(documento: Documento, etapa, acao: str = "", request=None
 # -------------------------------------------------------------
 # NOTIFICAÇÕES
 # -------------------------------------------------------------
-
-import os
-import logging
-
-logger = logging.getLogger(__name__)
-DEFAULT_NOTIF_EMAIL = os.getenv("DEFAULT_NOTIF_EMAIL", "")
-
 def notificar_evento_documento(documento: Documento, tipo_evento: str, destinatarios=None) -> bool:
     """Centraliza notificações por e-mail. Retorna True/False."""
     assunto = ""
@@ -1281,8 +1275,6 @@ def nova_revisao(request, documento_id):
         "documentos/nova_revisao.html",
         {"documento": documento, "proxima_revisao": nova_rev},
     )
-
-
 # =================================================================
 # UPLOAD DE ANEXOS
 # =================================================================
@@ -1380,7 +1372,6 @@ def enviar_para_revisao(request, documento_id):
     messages.success(request, "Documento enviado para revisão.")
     return redirect("documentos:detalhes_documento", documento_id=documento.id)
 
-
 @login_required
 def aprovar_documento(request, documento_id):
     documento = get_object_or_404(Documento, id=documento_id)
@@ -1397,7 +1388,6 @@ def aprovar_documento(request, documento_id):
 
     messages.success(request, "Documento aprovado.")
     return redirect("documentos:detalhes_documento", documento_id=documento.id)
-
 
 @login_required
 def emitir_documento(request, documento_id):
@@ -1417,7 +1407,6 @@ def emitir_documento(request, documento_id):
     messages.success(request, "Documento emitido.")
     return redirect("documentos:detalhes_documento", documento_id=documento.id)
 
-
 @login_required
 def cancelar_documento(request, documento_id):
     documento = get_object_or_404(Documento, id=documento_id)
@@ -1435,7 +1424,6 @@ def cancelar_documento(request, documento_id):
 
     messages.success(request, "Documento cancelado.")
     return redirect("documentos:detalhes_documento", documento_id=documento.id)
-
 
 # =================================================================
 # GERAR DIFF ENTRE DUAS REVISÕES
