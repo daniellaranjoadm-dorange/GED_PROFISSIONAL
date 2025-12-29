@@ -1,3 +1,7 @@
+:root{
+  --sidebar-width: 240px;
+}
+
 /* =================================================================================
    D’OR@NGE ENTERPRISE UI — THEME S6 NAVY + ORANGE (BUILD FINAL)
 ================================================================================= */
@@ -63,7 +67,7 @@ body {
 ============================================================ */
 
 .sidebar {
-    width: 240px;
+    width: var(--sidebar-width);
     background: var(--bg-sidebar);
     padding: 1.4rem 1rem 1rem;
     color: var(--text);
@@ -142,7 +146,7 @@ body {
 ============================================================ */
 
 .content {
-    margin-left: 240px;
+    margin-left: var(--sidebar-width);
     padding: 1.5rem 2rem;
     width: calc(100% - 240px);
 }
@@ -395,6 +399,74 @@ html, body, .layout { max-width: 100%; overflow-x: hidden; }
 
   /* Inputs/selects no mobile */
   input, select, textarea {
+    max-width: 100% !important;
+  }
+}
+
+
+/* --------------------------------------------------
+   Mobile responsiveness (off-canvas sidebar)
+   -------------------------------------------------- */
+@media (max-width: 991.98px){
+  :root{ --sidebar-width: 0px; }
+
+  /* Sidebar vira “drawer” */
+  .sidebar{
+    transform: translateX(-100%);
+    transition: transform .25s ease;
+    width: 240px; /* largura real do drawer */
+    z-index: 1200;
+  }
+  body.sidebar-open .sidebar{
+    transform: translateX(0);
+  }
+
+  /* Conteúdo ocupa 100% */
+  .content{
+    margin-left: 0 !important;
+    width: 100% !important;
+    padding: 14px !important;
+  }
+
+  /* Topbar quebra em linhas no celular */
+  .topbar-enterprise{
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .topbar-search{
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  /* Evita scroll horizontal “fantasma” */
+  html, body{
+    overflow-x: hidden;
+  }
+
+  /* Botões/ações “wrapam” */
+  .actions,
+  .acoes,
+  .botoes,
+  .btn-group,
+  .toolbar,
+  .top-actions{
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+
+  /* Tabelas com rolagem horizontal controlada */
+  .table-responsive,
+  .table-responsive-sm,
+  .table-responsive-md,
+  .table-responsive-lg,
+  .table-responsive-xl,
+  .table-responsive-xxl{
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Inputs/selects no mobile */
+  input, select, textarea{
     max-width: 100% !important;
   }
 }

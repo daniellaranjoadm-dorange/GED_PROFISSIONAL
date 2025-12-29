@@ -195,7 +195,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # evita 500 se faltar entrada no manifest
 WHITENOISE_MANIFEST_STRICT = False
-WHITENOISE_USE_FINDERS = DEBUG
+WHITENOISE_USE_FINDERS = True  # serve static also without collectstatic (Railway)
 
 # ======================
 # MEDIA
