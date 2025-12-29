@@ -1,291 +1,335 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="{{ LANGUAGE_CODE }}">
+<html lang="{{ LANGUAGE_CODE|default:'pt-br' }}">
 
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{% block title %}GED D'OR@NGE{% endblock %}</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}GED D'OR@NGE{% endblock %}</title>
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
-<link rel="stylesheet" href="{% static 'css/style.css' %}">
-<link rel="stylesheet" href="{% static 'css/enterprise.css' %}">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <link rel="stylesheet" href="{% static 'css/enterprise.css' %}">
 
-{% block extra_head %}{% endblock %}
+  {% block extra_head %}{% endblock %}
 </head>
 
 <body data-theme="auto">
-<div class="layout">
+  {# URLs “safe” — nunca quebram o template #}
+  {% url 'set_language' as url_set_language %}
+  {% url 'logout' as url_logout %}
 
+  {% url 'documentos:listar_documentos' as url_listar_documentos %}
+  {% url 'documentos:upload_documento' as url_upload_documento %}
+  {% url 'documentos:importar_ldp' as url_importar_ldp %}
+  {% url 'documentos:painel_workflow' as url_painel_workflow %}
+  {% url 'documentos:medicao' as url_medicao %}
+  {% url 'documentos:configuracoes' as url_configuracoes %}
+  {% url 'documentos:lixeira' as url_lixeira %}
+
+  {% url 'contas:minhas_configuracoes' as url_minhas_configuracoes %}
+
+  {# ✅ o mais importante: não quebra se namespace não existir #}
+  {% url 'solicitacoes:listar_solicitacoes' as url_solicitacoes %}
+
+  <div class="layout">
 
     <!-- SIDEBAR -->
     <aside class="sidebar" style="z-index:999 !important;">
-        <div class="sidebar-inner">
+      <div class="sidebar-inner">
 
-            <!-- LOGO -->
-            <div class="sidebar-brand">
-                <img src="{% static 'documentos/logo_dorange.png' %}" class="sidebar-logo" alt="">
-                <div>
-                    <div class="sidebar-brand-title">D'OR@NGE</div>
-                    <div class="sidebar-brand-sub">Document Management</div>
-                </div>
-            </div>
+        <!-- LOGO -->
+        <div class="sidebar-brand">
+          <img src="{% static 'documentos/logo_dorange.png' %}" class="sidebar-logo" alt="">
+          <div>
+            <div class="sidebar-brand-title">D'OR@NGE</div>
+            <div class="sidebar-brand-sub">Document Management</div>
+          </div>
+        </div>
 
-            <!-- IDIOMA -->
-            <div class="language-switcher mt-2 mb-3">
-                <label class="small fw-semibold mb-1 d-block">Idioma</label>
-                <div class="d-flex gap-2">
-                    <a href="/i18n/setlang/" onclick="setLanguage('pt-br'); return false;">
-                        <img src="{% static 'flags/br.svg' %}" class="flag-icon">
-                    </a>
-                    <a href="/i18n/setlang/" onclick="setLanguage('en'); return false;">
-                        <img src="{% static 'flags/us.svg' %}" class="flag-icon">
-                    </a>
-                </div>
-            </div>
+        <!-- IDIOMA -->
+        <div class="language-switcher mt-2 mb-3">
+          <label class="small fw-semibold mb-1 d-block">Idioma</label>
+          <div class="d-flex gap-2">
+            <a href="/i18n/setlang/" onclick="setLanguage('pt-br'); return false;">
+              <img src="{% static 'flags/br.svg' %}" class="flag-icon" alt="PT-BR">
+            </a>
+            <a href="/i18n/setlang/" onclick="setLanguage('en'); return false;">
+              <img src="{% static 'flags/us.svg' %}" class="flag-icon" alt="EN">
+            </a>
+          </div>
+        </div>
 
-            <form id="lang-form" action="{% url 'set_language' %}" method="post" style="display:none;">
-                {% csrf_token %}
-                <input type="hidden" id="lang-input" name="language">
-            </form>
+        <form id="lang-form" action="{{ url_set_language|default:'/set-language/' }}" method="post" style="display:none;">
+          {% csrf_token %}
+          <input type="hidden" id="lang-input" name="language">
+        </form>
 
-            <!-- TEMA -->
-            <div class="theme-switcher mt-1 mb-4">
-                <label class="small fw-semibold mb-1 d-block">Tema</label>
-                <div class="btn-group w-100">
-                    <button type="button" class="btn btn-sm btn-outline-secondary theme-btn" data-theme="light">🌞</button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary theme-btn" data-theme="dark">🌙</button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary theme-btn" data-theme="auto">🌓</button>
-                </div>
-            </div>
+        <!-- TEMA -->
+        <div class="theme-switcher mt-1 mb-4">
+          <label class="small fw-semibold mb-1 d-block">Tema</label>
+          <div class="btn-group w-100">
+            <button type="button" class="btn btn-sm btn-outline-secondary theme-btn" data-theme="light">🌞</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary theme-btn" data-theme="dark">🌙</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary theme-btn" data-theme="auto">🌓</button>
+          </div>
+        </div>
 
-            <!-- MENUS -->
-            <div class="sidebar-section-title">Documentos</div>
-            <ul class="sidebar-nav">
-                <li>
-                    <a class="sidebar-link" href="{% url 'documentos:listar_documentos' %}">
-                        <i class="bi bi-table"></i> Lista de Documentos
-                    </a>
-                </li>
-                <li>
-                    <a class="sidebar-link" href="{% url 'documentos:listar_documentos' %}?status_ldp=Em Revisão">
-                        <i class="bi bi-arrow-repeat"></i> Revisões
-                    </a>
-                </li>
-                <li>
-                    <a class="sidebar-link" href="{% url 'documentos:upload_documento' %}">
-                        <i class="bi bi-file-earmark-plus"></i> Novo Documento
-                    </a>
-                </li>
-                <li>
-                    <a class="sidebar-link" href="{% url 'documentos:importar_ldp' %}">
-                        <i class="bi bi-cloud-upload"></i> Importar LDP
-                    </a>
-                </li>
-            </ul>
+        <!-- MENUS -->
+        <div class="sidebar-section-title">Documentos</div>
+        <ul class="sidebar-nav">
+          <li>
+            <a class="sidebar-link" href="{{ url_listar_documentos|default:'/documentos/documentos/' }}">
+              <i class="bi bi-table"></i> Lista de Documentos
+            </a>
+          </li>
+          <li>
+            <a class="sidebar-link" href="{{ url_listar_documentos|default:'/documentos/documentos/' }}?status_ldp=Em Revisão">
+              <i class="bi bi-arrow-repeat"></i> Revisões
+            </a>
+          </li>
+          <li>
+            <a class="sidebar-link" href="{{ url_upload_documento|default:'#' }}">
+              <i class="bi bi-file-earmark-plus"></i> Novo Documento
+            </a>
+          </li>
+          <li>
+            <a class="sidebar-link" href="{{ url_importar_ldp|default:'#' }}">
+              <i class="bi bi-cloud-upload"></i> Importar LDP
+            </a>
+          </li>
+        </ul>
 
-            <div class="sidebar-section-title">Operações</div>
-            <ul class="sidebar-nav">
-                <li>
-                    <a class="sidebar-link" href="/dashboard/">
-                        <i class="bi bi-graph-up-arrow"></i> Dashboard GED
-                    </a>
-                </li>
-                <li>
-                    <a class="sidebar-link" href="{% url 'documentos:painel_workflow' %}">
-                        <i class="bi bi-diagram-3"></i> Workflow
-                    </a>
-                </li>
-                <li>
-                    <a class="sidebar-link" href="{% url 'documentos:medicao' %}">
-                        <i class="bi bi-cash-coin"></i> Medição
-                    </a>
-                </li>
-                <li>
-                    <a class="sidebar-link" href="{% url 'solicitacoes:listar_solicitacoes' %}">
-                        <i class="bi bi-people"></i> Solicitações de Acesso
-                    </a>
-                </li>
-            </ul>
+        <div class="sidebar-section-title">Operações</div>
+        <ul class="sidebar-nav">
+          <li>
+            <a class="sidebar-link" href="/dashboard/">
+              <i class="bi bi-graph-up-arrow"></i> Dashboard GED
+            </a>
+          </li>
+          <li>
+            <a class="sidebar-link" href="{{ url_painel_workflow|default:'#' }}">
+              <i class="bi bi-diagram-3"></i> Workflow
+            </a>
+          </li>
+          <li>
+            <a class="sidebar-link" href="{{ url_medicao|default:'#' }}">
+              <i class="bi bi-cash-coin"></i> Medição
+            </a>
+          </li>
 
-            {% if user.is_superuser %}
-            <div class="sidebar-section-title">Administração</div>
-            <ul class="sidebar-nav">
-                <li>
-                    <a class="sidebar-link" href="{% url 'documentos:configuracoes' %}">
-                        <i class="bi bi-gear"></i> Usuários & Permissões
-                    </a>
-                </li>
-                <li>
-                    <a class="sidebar-link" href="{% url 'contas:minhas_configuracoes' %}">
-                        <i class="bi bi-person-gear"></i> Minhas Configurações
-                    </a>
-                </li>
-                <li>
-                    <a class="sidebar-link" href="{% url 'documentos:lixeira' %}">
-                        <i class="bi bi-trash3"></i> Lixeira
-                    </a>
-                </li>
-            </ul>
-            {% endif %}
+          {# ✅ Link seguro: se não existir namespace, cai no antigo #}
+          <li>
+            <a class="sidebar-link" href="{{ url_solicitacoes|default:'/dashboard/solicitacoes/' }}">
+              <i class="bi bi-people"></i> Solicitações de Acesso
+            </a>
+          </li>
+        </ul>
 
-            {% if user.is_authenticated %}
-            <form method="post" action="{% url 'logout' %}">
-                {% csrf_token %}
-                <button class="btn btn-outline-secondary btn-pill logout-btn w-100">
-                    <i class="bi bi-box-arrow-right"></i> Logout
-                </button>
-            </form>
-            {% endif %}
+        {% if user.is_superuser %}
+          <div class="sidebar-section-title">Administração</div>
+          <ul class="sidebar-nav">
+            <li>
+              <a class="sidebar-link" href="{{ url_configuracoes|default:'#' }}">
+                <i class="bi bi-gear"></i> Usuários & Permissões
+              </a>
+            </li>
+            <li>
+              <a class="sidebar-link" href="{{ url_minhas_configuracoes|default:'#' }}">
+                <i class="bi bi-person-gear"></i> Minhas Configurações
+              </a>
+            </li>
+            <li>
+              <a class="sidebar-link" href="{{ url_lixeira|default:'#' }}">
+                <i class="bi bi-trash3"></i> Lixeira
+              </a>
+            </li>
+          </ul>
+        {% endif %}
 
-            <div class="sidebar-footer">© {% now "Y" %} — D’OR@NGE Enterprise</div>
+        {% if user.is_authenticated %}
+          <form method="post" action="{{ url_logout|default:'/logout/' }}">
+            {% csrf_token %}
+            <button class="btn btn-outline-secondary btn-pill logout-btn w-100" type="submit">
+              <i class="bi bi-box-arrow-right"></i> Logout
+            </button>
+          </form>
+        {% endif %}
 
+        <div class="sidebar-footer">© {% now "Y" %} — D’OR@NGE Enterprise</div>
+
+      </div>
+    </aside>
 
     <!-- CONTEÚDO -->
     <main class="content">
-        <div class="content-inner">
+      <div class="content-inner">
 
- <!-- ========================= TOPBAR GLOBAL – S4 NAVY ORANGE ========================= -->
-<div class="topbar-enterprise">
-    <button type="button" class="btn btn-sm btn-outline-secondary sidebar-toggle me-2" aria-label="Menu">
-      <i class="bi bi-list"></i>
-    </button>
-    
-    <div class="topbar-left">
-        <div class="topbar-title">D’ORANGE PLATFORM · GED ENTERPRISE</div>
-        <div class="topbar-sub">Controle documental • Workflow • Medição financeira</div>
-    </div>
+        <!-- ========================= TOPBAR GLOBAL – S4 NAVY ORANGE ========================= -->
+        <div class="topbar-enterprise">
+          <button type="button" class="btn btn-sm btn-outline-secondary sidebar-toggle me-2" aria-label="Menu">
+            <i class="bi bi-list"></i>
+          </button>
 
-    <div class="topbar-center">
-        <form method="get" action="{% url 'documentos:listar_documentos' %}" class="topbar-search">
-            <i class="bi bi-search search-icon"></i>
-            <input type="text" name="busca" placeholder="Buscar por código, título ou parte..."
-                   value="{{ request.GET.busca|default:'' }}">
-            <button class="btn-search">Buscar</button>
-        </form>
-    </div>
+          <div class="topbar-left">
+            <div class="topbar-title">D’ORANGE PLATFORM · GED ENTERPRISE</div>
+            <div class="topbar-sub">Controle documental • Workflow • Medição financeira</div>
+          </div>
 
-    <div class="topbar-right">
-        {% if user.is_authenticated %}
-        <div class="topbar-user">
-            <div class="avatar-circle">
-                {% with user.username|default:'U' as uname %}{{ uname|first|upper }}{% endwith %}
-            </div>
-            <div>
-                <div class="topbar-user-name">{{ user.get_full_name|default:user.username }}</div>
-                <div class="topbar-user-role">
+          <div class="topbar-center">
+            <form method="get"
+                  action="{{ url_listar_documentos|default:'/documentos/documentos/' }}"
+                  class="topbar-search">
+              <i class="bi bi-search search-icon"></i>
+              <input type="text" name="busca" placeholder="Buscar por código, título ou parte..."
+                     value="{{ request.GET.busca|default:'' }}">
+              <button class="btn-search" type="submit">Buscar</button>
+            </form>
+          </div>
+
+          <div class="topbar-right">
+            {% if user.is_authenticated %}
+              <div class="topbar-user">
+                <div class="avatar-circle">
+                  {% with user.username|default:'U' as uname %}{{ uname|first|upper }}{% endwith %}
+                </div>
+                <div>
+                  <div class="topbar-user-name">{{ user.get_full_name|default:user.username }}</div>
+                  <div class="topbar-user-role">
                     {% if user.is_superuser %}Master Admin{% else %}Usuário GED{% endif %}
+                  </div>
                 </div>
-            </div>
-        </div>
-        {% endif %}
-    </div>
-
-</div>
-
-            <!-- ALERTAS -->
-            {% if messages %}
-            <div id="alert-container">
-                {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
-                    {{ message }}
-                    <button class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-                {% endfor %}
-            </div>
+              </div>
             {% endif %}
-
-            <!-- PAGE CONTENT -->
-            {% block content %}{% endblock %}
+          </div>
         </div>
+
+        <!-- ALERTAS -->
+        {% if messages %}
+          <div id="alert-container">
+            {% for message in messages %}
+              <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show">
+                {{ message }}
+                <button class="btn-close" data-bs-dismiss="alert"></button>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        <!-- PAGE CONTENT -->
+        {% block content %}{% endblock %}
+
+      </div>
     </main>
-</div>
 
-<!-- SCRIPTS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  </div>
 
-<script>
-/* Troca idioma */
-function setLanguage(lang) {
-    document.getElementById('lang-input').value = lang;
-    document.getElementById('lang-form').submit();
-}
+  <!-- SCRIPTS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-/* Temas */
-const body = document.body;
-document.querySelectorAll('.theme-btn').forEach(btn => {
-    btn.onclick = () => {
-        let t = btn.dataset.theme;
-        body.setAttribute('data-theme', t);
-        localStorage.setItem('tema_ged', t);
-        document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-    };
-});
-let saved = localStorage.getItem('tema_ged') || 'auto';
-body.setAttribute('data-theme', saved);
-document.querySelector('.theme-btn[data-theme="'+saved+'"]')?.classList.add('active');
+  <script>
+    /* Troca idioma */
+    function setLanguage(lang) {
+      const input = document.getElementById('lang-input');
+      const form = document.getElementById('lang-form');
+      if (!input || !form) return;
+      input.value = lang;
+      form.submit();
+    }
 
-/* Marca o item ativo da sidebar */
-(function () {
-    const current = window.location.pathname;
-    document.querySelectorAll('.sidebar-link').forEach(link => {
-        const path = new URL(link.href).pathname;
+    /* Temas */
+    (function () {
+      const body = document.body;
+
+      document.querySelectorAll('.theme-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const t = btn.dataset.theme || 'auto';
+          body.setAttribute('data-theme', t);
+          localStorage.setItem('tema_ged', t);
+
+          document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+        });
+      });
+
+      const saved = localStorage.getItem('tema_ged') || 'auto';
+      body.setAttribute('data-theme', saved);
+      document.querySelector('.theme-btn[data-theme="' + saved + '"]')?.classList.add('active');
+    })();
+
+    /* Marca o item ativo da sidebar (robusto) */
+    (function () {
+      const current = window.location.pathname;
+
+      document.querySelectorAll('.sidebar-link').forEach(link => {
+        let path = "";
+        try {
+          path = new URL(link.getAttribute('href'), window.location.origin).pathname;
+        } catch (e) {
+          return;
+        }
+
         if (current === path) link.classList.add('active');
-    });
-})();
-</script>
 
-{% block extra_js %}{% endblock %}
-<script>
-(function () {
-    // Mapeamento simples da rota atual → URL correta de busca
-    const path = window.location.pathname;
+        // mantém ativo em rotas de detalhe (ex.: /solicitar/detalhe/4/)
+        if (
+          (path === "/solicitar/lista/" && (current.startsWith("/solicitar/lista") || current.startsWith("/solicitar/detalhe"))) ||
+          (path === "/dashboard/solicitacoes/" && current.startsWith("/dashboard/solicitacoes"))
+        ) {
+          link.classList.add('active');
+        }
+      });
+    })();
+  </script>
 
-    let rotaBusca = "{% url 'documentos:listar_documentos' %}";  // fallback
+  {% block extra_js %}{% endblock %}
 
-    if (path.includes("/documentos/documentos")) {
-        rotaBusca = "{% url 'documentos:listar_documentos' %}";
-    }
-    else if (path.includes("/documentos/medicao")) {
-        rotaBusca = "{% url 'documentos:medicao' %}";
-    }
-    else if (path.includes("/documentos/painel-workflow") ||
-             path.includes("/workflow")) {
-        rotaBusca = "{% url 'documentos:painel_workflow' %}";
-    }
-    else if (path.includes("/dashboard/solicitacoes")) {
-        rotaBusca = "/dashboard/solicitacoes/";
-    }
-    else if (path.includes("/dashboard")) {
+  <script>
+    (function () {
+      const path = window.location.pathname;
+
+      const fallbackDocs = "{{ url_listar_documentos|default:'/documentos/documentos/' }}";
+      const fallbackSolic = "{{ url_solicitacoes|default:'/dashboard/solicitacoes/' }}";
+
+      let rotaBusca = fallbackDocs;
+
+      if (path.includes("/documentos/documentos")) {
+        rotaBusca = fallbackDocs;
+      }
+      else if (path.includes("/documentos/medicao")) {
+        rotaBusca = "{{ url_medicao|default:'#' }}";
+      }
+      else if (path.includes("/documentos/painel-workflow") || path.includes("/workflow")) {
+        rotaBusca = "{{ url_painel_workflow|default:'#' }}";
+      }
+      else if (path.startsWith("/solicitar/") || path.includes("/dashboard/solicitacoes")) {
+        rotaBusca = fallbackSolic;
+      }
+      else if (path.includes("/dashboard")) {
         rotaBusca = "/dashboard/";
-    }
+      }
 
-    // Aplica dinamicamente a rota ao formulário da topbar
-    const form = document.querySelector(".topbar-search");
-    if (form) form.setAttribute("action", rotaBusca);
+      const form = document.querySelector(".topbar-search");
+      if (form && rotaBusca && rotaBusca !== "#") form.setAttribute("action", rotaBusca);
 
-    // Sidebar toggle (mobile)
-    const btn = document.querySelector(".sidebar-toggle");
-    const sidebar = document.querySelector(".sidebar");
-    if (btn && sidebar) {
+      // Sidebar toggle (mobile)
+      const btn = document.querySelector(".sidebar-toggle");
+      const sidebar = document.querySelector(".sidebar");
+      if (btn && sidebar) {
         btn.addEventListener("click", () => {
-            document.body.classList.toggle("sidebar-open");
+          document.body.classList.toggle("sidebar-open");
         });
 
         document.addEventListener("click", (e) => {
-            if (!document.body.classList.contains("sidebar-open")) return;
-            if (sidebar.contains(e.target) || btn.contains(e.target)) return;
-            document.body.classList.remove("sidebar-open");
+          if (!document.body.classList.contains("sidebar-open")) return;
+          if (sidebar.contains(e.target) || btn.contains(e.target)) return;
+          document.body.classList.remove("sidebar-open");
         });
-    }
-
-
-})();
-</script>
+      }
+    })();
+  </script>
 
 </body>
 </html>
-
