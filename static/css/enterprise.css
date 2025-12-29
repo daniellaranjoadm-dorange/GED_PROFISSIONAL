@@ -289,3 +289,112 @@ html, body, .layout { max-width: 100%; overflow-x: hidden; }
     z-index: 998; /* abaixo da sidebar (sidebar está com z-index 999 inline) */
   }
 }
+/* ==========================================================
+   MOBILE FIX — GED ENTERPRISE (Documentos / Workflow / etc)
+   Cole NO FINAL do enterprise.css
+   ========================================================== */
+
+@media (max-width: 991.98px) {
+
+  /* Layout principal não pode ficar “preso” com sidebar fixa */
+  .layout {
+    display: block !important;
+  }
+
+  /* Sidebar vira drawer (off-canvas) */
+  .sidebar {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    height: 100vh !important;
+    width: min(86vw, 320px) !important;
+    transform: translateX(-105%);
+    transition: transform .2s ease;
+    overflow-y: auto;
+  }
+
+  body.sidebar-open .sidebar {
+    transform: translateX(0);
+  }
+
+  /* Conteúdo ocupa 100% */
+  .content {
+    width: 100% !important;
+    margin-left: 0 !important;
+  }
+
+  .content-inner {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  /* Topbar precisa quebrar em linhas */
+  .topbar-enterprise {
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+    align-items: stretch !important;
+  }
+
+  .topbar-left,
+  .topbar-center,
+  .topbar-right {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .topbar-search {
+    width: 100% !important;
+  }
+
+  .topbar-search input {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  /* Botões do detalhe (Aprovar/Emitir/Cancelar etc) devem “wrapar” */
+  .btn,
+  .btn-pill {
+    max-width: 100%;
+  }
+
+  .actions,
+  .acoes,
+  .botoes,
+  .btn-group,
+  .toolbar,
+  .top-actions {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+
+  /* Cards/boxes não estourarem */
+  .card,
+  .box,
+  .panel,
+  .container,
+  .container-fluid {
+    max-width: 100% !important;
+  }
+
+  /* Tabelas: rolagem horizontal no celular (evita “desconfigurar”) */
+  table {
+    width: 100% !important;
+  }
+
+  .table-responsive,
+  .table-responsive-sm,
+  .table-responsive-md,
+  .table-responsive-lg,
+  .table-responsive-xl,
+  .table-responsive-xxl {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Inputs/selects no mobile */
+  input, select, textarea {
+    max-width: 100% !important;
+  }
+}
