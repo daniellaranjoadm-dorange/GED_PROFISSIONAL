@@ -752,6 +752,59 @@ footer span{
     }
 }
 /* =================================================================== */
+
+/* =================================================================== */
+/*  RESPONSIVO – AJUSTES MOBILE/SMALL                                   */
+/* =================================================================== */
+
+img, video { max-width: 100%; height: auto; }
+
+.container, .hero, .modulos-section, .benefits-section, .beneficios-container{
+  width: 100%;
+}
+
+@media (max-width: 768px){
+  body{ font-size: 15px; }
+  header{ padding: 14px 14px; }
+  .topbar{ padding: 0 14px; }
+  .topbar-inner{
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .nav-links{
+    width:100%;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .nav-links a{
+    padding: 10px 12px;
+  }
+  .hero{ gap: 22px; padding: 42px 16px 26px; }
+  .hero-actions{
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .hero-actions .btn{
+    width: 100%;
+    justify-content: center;
+  }
+  .video-card{ padding: 22px 18px; }
+  .beneficios-grid{ grid-template-columns: 1fr; }
+  .mod-grid{ grid-template-columns: 1fr; }
+  .benefits-grid{ grid-template-columns: 1fr; }
+
+  /* modal de vídeo ocupa a tela no mobile */
+  #modalVideo .modal-video{
+    width: 96vw !important;
+    max-width: 96vw !important;
+    padding: 14px !important;
+    border-radius: 18px !important;
+  }
+  #videoApresentacao{ max-height: 70vh; }
+}
+
 </style>
 </head>
 
@@ -1036,10 +1089,15 @@ footer span{
 <video id="videoApresentacao"
        controls
        playsinline
-       preload="metadata">
+       preload="auto"
+       muted>
     <source src="{% static 'videos/apresentacao_final.mp4' %}" type="video/mp4">
     Seu navegador não suporta vídeos.
 </video>
+
+<div id="videoErro" style="display:none; margin-top:10px; font-size:.95rem; color:#fecaca; background:rgba(127,29,29,.35); border:1px solid rgba(248,113,113,.35); padding:10px 12px; border-radius:12px;">
+        ⚠️ Não foi possível carregar o vídeo. Se estiver no Railway, confirme que <code>static/videos/apresentacao_final.mp4</code> foi enviado para o repositório e que o <code>collectstatic</code> está rodando no deploy.
+    </div>
 
 </div>
 
@@ -1093,6 +1151,23 @@ document.addEventListener('keydown', (e) => {
 document.getElementById('modalVideo')?.addEventListener('click', (e) => {
   if(e.target && e.target.id === 'modalVideo') fecharVideo();
 });
+
+// --- Monitoramento do vídeo (ajuda a debugar quando não carrega) ---
+(function(){
+  const v = document.getElementById('videoApresentacao');
+  const box = document.getElementById('videoErro');
+  if(!v) return;
+
+  v.addEventListener('error', () => {
+    console.error('[PORTAL] erro ao carregar vídeo:', v?.error);
+    if(box) box.style.display = 'block';
+  });
+
+  v.addEventListener('loadeddata', () => {
+    if(box) box.style.display = 'none';
+  });
+})();
+
 </script>
 
 </body>
