@@ -6,16 +6,11 @@
 {% block content %}
 
 <style>
-/* ===========================
-   ESTILO FUTURISTA NEON
-   =========================== */
-
 .section-title {
     font-weight: 700;
     letter-spacing: 0.03em;
     text-shadow: 0 0 12px rgba(0, 200, 255, 0.85);
 }
-
 .config-card {
     background: rgba(0, 15, 35, 0.85);
     border-radius: 16px;
@@ -28,14 +23,10 @@
 .config-card:hover {
     box-shadow: 0 0 35px rgba(0, 200, 255, 0.8);
 }
-
-/* Labels */
 .config-card label {
     font-weight: 600;
     margin-bottom: 6px;
 }
-
-/* Botão neon */
 .btn-neo {
     padding: 10px 20px;
     background: #00bfff;
@@ -65,18 +56,37 @@
     <form method="POST">
         {% csrf_token %}
 
+        <!-- IMPORTANTE: sua view verifica esse campo -->
+        <input type="hidden" name="salvar_prefs" value="1"/>
+
         <div class="mb-3">
             <label>Tema do Sistema</label>
             <select class="form-select bg-dark text-light border-info" name="tema"
                     style="box-shadow:0 0 10px rgba(0,200,255,0.25);">
-                <option value="claro">Claro</option>
-                <option value="escuro">Escuro</option>
+                <option value="claro"  {% if config.tema == "claro" %}selected{% endif %}>Claro</option>
+                <option value="escuro" {% if config.tema == "escuro" %}selected{% endif %}>Escuro</option>
             </select>
         </div>
 
+        <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" id="notificacoes_email"
+                   name="notificacoes_email" value="True"
+                   {% if config.notificacoes_email %}checked{% endif %}>
+            <label class="form-check-label" for="notificacoes_email">Receber notificações por e-mail</label>
+        </div>
+
+        <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" id="animacoes"
+                   name="animacoes" value="True"
+                   {% if config.animacoes %}checked{% endif %}>
+            <label class="form-check-label" for="animacoes">Ativar animações</label>
+        </div>
+
         <div class="form-check mb-4">
-            <input class="form-check-input" type="checkbox" checked>
-            <label class="form-check-label">Receber notificações por e-mail</label>
+            <input class="form-check-input" type="checkbox" id="dashboard_expandido"
+                   name="dashboard_expandido" value="True"
+                   {% if config.dashboard_expandido %}checked{% endif %}>
+            <label class="form-check-label" for="dashboard_expandido">Dashboard expandido</label>
         </div>
 
         <button type="submit" class="btn-neo">

@@ -1,8 +1,15 @@
 from django.urls import path
-from .views import dashboard   # agora só existe o master
+from . import views
 
 app_name = "dashboard"
 
 urlpatterns = [
-    path("", dashboard, name="dashboard_master"),   # rota principal
+    path("", views.dashboard, name="dashboard_master"),
+
+    # Compatibilidade com o link do sidebar que está batendo em /dashboard/solicitacoes/
+    path("solicitacoes/", views.solicitacoes, name="solicitacoes"),
+
+    # Link “Usuários e Permissões” do sidebar (se existir)
+    path("usuarios-permissoes/", views.usuarios_permissoes, name="usuarios_permissoes"),
 ]
+
