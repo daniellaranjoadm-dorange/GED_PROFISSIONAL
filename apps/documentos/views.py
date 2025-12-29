@@ -46,7 +46,6 @@ from .utils_email import enviar_email
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_NOTIF_EMAIL = os.getenv("DEFAULT_NOTIF_EMAIL", "")
 # ==============================================================
 # DEFINIÇÃO OFICIAL DAS ETAPAS DO WORKFLOW (CODIFICADAS)
 # ==============================================================
@@ -256,33 +255,108 @@ def registrar_workflow(documento: Documento, etapa, acao: str = "", request=None
 # -------------------------------------------------------------
 # NOTIFICAÇÕES
 # -------------------------------------------------------------
-def notificar_evento_documento(documento: Documento, tipo_evento: str, destinatarios=None) -> bool:
+
+import os
+import logging
+
+logger = logging.getLogger(__name__)
+DEFAULT_NOTIF_EMAIL = os.getenv("DEFAULT_NOTIF_EMAIL", "")
+
+def _destinatarios_padrao(request=None, extras=None):
+    """Monta lista de destinatários (sem duplicados)."""
+    emails = []
+    if extras:
+        emails.extend([e for e in extras if e])
+
+    if request is not None:
+        user_email = getattr(getattr(request, "user", None), "email", "") or ""
+        if user_email:
+            emails.append(user_email)
+
+    if DEFAULT_NOTIF_EMAIL:
+        emails.append(DEFAULT_NOTIF_EMAIL)
+
+    # remove duplicados preservando ordem
+    seen = set()
+    out = []
+    for e in emails:
+        e = (e or "").strip()
+        if e and e not in seen:
+            out.append(e)
+            seen.add(e)
+    return out
+
+
+def _etapa_code(etapa) -> str:
+    """Tenta extrair o código da etapa (ex: 'EMISSAO_FINAL')."""
+    if etapa is None:
+        return ""
+    for attr in ("codigo", "slug", "chave", "nome"):
+        val = getattr(etapa, attr, "") or ""
+        if isinstance(val, str) and val.strip():
+            return val.strip().upper()
+    return ""
+
+
+# -------------------------------------------------------------
+# NOTIFICAÇÕES
+# -------------------------------------------------------------
+def notificar_evento_documento(documento: Documento, tipo_evento: str, destinatarios=None, etapa=None) -> bool:
     """Centraliza notificações por e-mail. Retorna True/False."""
+
+    tipo_evento = (tipo_evento or "").strip()
+
+    # Destinatários
+    if destinatarios is None:
+        destinatarios = _destinatarios_padrao()
+
+    if not destinatarios:
+        logger.warning(
+            "Sem destinatários para notificação | doc=%s | evento=%s",
+            getattr(documento, "codigo", ""),
+            tipo_evento,
+        )
+        return False
+
     assunto = ""
     mensagem = ""
 
-    if tipo_evento == "envio_revisao":
-        assunto = f"[GED] Documento em Revisão: {documento.codigo}"
-        mensagem = f"O documento {documento.codigo} (Rev {documento.revisao}) foi enviado para revisão."
-    elif tipo_evento == "aprovacao":
-        assunto = f"[GED] Documento Aprovado: {documento.codigo}"
-        mensagem = f"O documento {documento.codigo} (Rev {documento.revisao}) foi aprovado."
-    elif tipo_evento == "emissao":
-        assunto = f"[GED] Documento Emitido: {documento.codigo}"
-        mensagem = f"O documento {documento.codigo} (Rev {documento.revisao}) foi emitido em {documento.data_emissao_grdt}."
-    elif tipo_evento == "cancelamento":
-        assunto = f"[GED] Documento Cancelado: {documento.codigo}"
-        mensagem = f"O documento {documento.codigo} (Rev {documento.revisao}) foi cancelado."
-    else:
-        return False
+    # 1) Notificação por ETAPA (principal)
+    # Aceita: tipo_evento='etapa' + etapa=WorkflowEtapa / ou tipo_evento='etapa_EMISSAO_FINAL'
+    etapa_code = ""
 
-    # Destinatários: usa o que foi passado; senão cai no DEFAULT_NOTIF_EMAIL (Railway)
-    if destinatarios is None:
-        destinatarios = [DEFAULT_NOTIF_EMAIL] if DEFAULT_NOTIF_EMAIL else []
+    if tipo_evento.lower() == "etapa":
+        etapa_code = _etapa_code(etapa) or _etapa_code(getattr(documento, "etapa", None))
+    elif tipo_evento.upper().startswith("ETAPA_"):
+        etapa_code = tipo_evento.upper().replace("ETAPA_", "", 1)
 
-    if not destinatarios:
-        logger.warning("Sem destinatários para notificação | doc=%s | evento=%s", documento.codigo, tipo_evento)
-        return False
+    if etapa_code:
+        label = ETAPAS_LABEL.get(etapa_code, etapa_code)
+        assunto = f"[GED] Documento na etapa: {label} ({etapa_code}) — {documento.codigo}"
+        mensagem = (
+            f"O documento {documento.codigo} (Rev {documento.revisao}) agora está na etapa: {label} ({etapa_code}).\n"
+            f"Status LDP: {getattr(documento, 'status_documento', '')}\n"
+            f"Status Emissão: {getattr(documento, 'status_emissao', '')}\n"
+        )
+
+    # 2) Eventos legados (compatibilidade)
+    if not assunto:
+        if tipo_evento == "envio_revisao":
+            assunto = f"[GED] Documento em Revisão: {documento.codigo}"
+            mensagem = f"O documento {documento.codigo} (Rev {documento.revisao}) foi enviado para revisão."
+        elif tipo_evento == "aprovacao":
+            assunto = f"[GED] Documento Aprovado: {documento.codigo}"
+            mensagem = f"O documento {documento.codigo} (Rev {documento.revisao}) foi aprovado."
+        elif tipo_evento == "emissao":
+            assunto = f"[GED] Documento Emitido: {documento.codigo}"
+            mensagem = (
+                f"O documento {documento.codigo} (Rev {documento.revisao}) foi emitido em {documento.data_emissao_grdt}."
+            )
+        elif tipo_evento == "cancelamento":
+            assunto = f"[GED] Documento Cancelado: {documento.codigo}"
+            mensagem = f"O documento {documento.codigo} (Rev {documento.revisao}) foi cancelado."
+        else:
+            return False
 
     try:
         ok = enviar_email(
@@ -952,6 +1026,14 @@ def enviar_proxima_etapa(request, documento_id):
         return redirect("documentos:detalhes_documento", documento_id=documento.id)
 
     registrar_workflow(documento, nova_etapa, "Avançou etapa", request, observacao)
+
+    # Notificação por e-mail: sempre que muda de etapa
+    notificar_evento_documento(
+        documento,
+        "etapa",
+        destinatarios=_destinatarios_padrao(request),
+        etapa=nova_etapa,
+    )
     messages.success(request, f"Documento avançado para: {nova_etapa.nome}")
     return redirect("documentos:detalhes_documento", documento_id=documento.id)
 
@@ -988,6 +1070,14 @@ def retornar_etapa(request, documento_id):
     )
 
     registrar_workflow(documento, destino, "Retornou etapa", request, observacao)
+
+    # Notificação por e-mail: sempre que muda de etapa
+    notificar_evento_documento(
+        documento,
+        "etapa",
+        destinatarios=_destinatarios_padrao(request),
+        etapa=destino,
+    )
     messages.success(request, f"Documento retornado para: {destino.nome}")
     return redirect("documentos:detalhes_documento", documento_id=documento.id)
 def nova_versao(request, documento_id):
@@ -1261,11 +1351,7 @@ def nova_revisao(request, documento_id):
         registrar_workflow(documento, "Nova Revisão", "Criado", request)
 
         # Notificação por e-mail (usa email do usuário; se não tiver, cai no DEFAULT_NOTIF_EMAIL)
-        destinatarios = []
-        if getattr(request.user, "email", ""):
-            destinatarios.append(request.user.email)
-
-        notificar_evento_documento(documento, "envio_revisao", destinatarios=destinatarios or None)
+        notificar_evento_documento(documento, "envio_revisao", destinatarios=_destinatarios_padrao(request))
 
         messages.success(request, f"Revisão {nova_rev} criada com sucesso!")
         return redirect("documentos:detalhes_documento", documento_id=documento.id)
@@ -1275,6 +1361,7 @@ def nova_revisao(request, documento_id):
         "documentos/nova_revisao.html",
         {"documento": documento, "proxima_revisao": nova_rev},
     )
+
 # =================================================================
 # UPLOAD DE ANEXOS
 # =================================================================
@@ -1364,10 +1451,7 @@ def enviar_para_revisao(request, documento_id):
 
     registrar_workflow(documento, "Revisão Interna – Disciplina", "Enviado", request)
 
-    destinatarios = []
-    if getattr(request.user, "email", ""):
-        destinatarios.append(request.user.email)
-    notificar_evento_documento(documento, "envio_revisao", destinatarios=destinatarios or None)
+    notificar_evento_documento(documento, "envio_revisao", destinatarios=_destinatarios_padrao(request))
 
     messages.success(request, "Documento enviado para revisão.")
     return redirect("documentos:detalhes_documento", documento_id=documento.id)
@@ -1381,10 +1465,7 @@ def aprovar_documento(request, documento_id):
 
     registrar_workflow(documento, "Aprovação Técnica – Coordenador", "Aprovado", request)
 
-    destinatarios = []
-    if getattr(request.user, "email", ""):
-        destinatarios.append(request.user.email)
-    notificar_evento_documento(documento, "aprovacao", destinatarios=destinatarios or None)
+    notificar_evento_documento(documento, "aprovacao", destinatarios=_destinatarios_padrao(request))
 
     messages.success(request, "Documento aprovado.")
     return redirect("documentos:detalhes_documento", documento_id=documento.id)
@@ -1399,10 +1480,7 @@ def emitir_documento(request, documento_id):
 
     registrar_workflow(documento, "Emissão Final", "Emitido", request)
 
-    destinatarios = []
-    if getattr(request.user, "email", ""):
-        destinatarios.append(request.user.email)
-    notificar_evento_documento(documento, "emissao", destinatarios=destinatarios or None)
+    notificar_evento_documento(documento, "emissao", destinatarios=_destinatarios_padrao(request))
 
     messages.success(request, "Documento emitido.")
     return redirect("documentos:detalhes_documento", documento_id=documento.id)
@@ -1417,10 +1495,7 @@ def cancelar_documento(request, documento_id):
 
     registrar_workflow(documento, "Emissão Final", "Cancelado", request)
 
-    destinatarios = []
-    if getattr(request.user, "email", ""):
-        destinatarios.append(request.user.email)
-    notificar_evento_documento(documento, "cancelamento", destinatarios=destinatarios or None)
+    notificar_evento_documento(documento, "cancelamento", destinatarios=_destinatarios_padrao(request))
 
     messages.success(request, "Documento cancelado.")
     return redirect("documentos:detalhes_documento", documento_id=documento.id)
