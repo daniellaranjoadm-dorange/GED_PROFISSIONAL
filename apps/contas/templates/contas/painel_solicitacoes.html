@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+    <div class="d-flex align-items-center gap-2">
+      <span style="font-size: 1.4rem;">🧾</span>
+      <h3 class="m-0">Solicitações de acesso</h3>
+    </div>
+  </div>
+
+  {% if messages %}
+    <div class="mb-3">
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} mb-2" role="alert">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="card shadow-sm" style="border-radius: 16px;">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Data</th>
+              <th>Usuário</th>
+              <th>E-mail</th>
+              <th>Status</th>
+              <th class="text-end">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if solicitacoes %}
+              {% for s in solicitacoes %}
+                <tr>
+                  <td>{{ s.criado_em|default:s.data|date:"d/m/Y H:i" }}</td>
+                  <td>{{ s.nome|default:s.usuario|default:"-" }}</td>
+                  <td>{{ s.email|default:"-" }}</td>
+                  <td>
+                    <span class="badge bg-secondary">{{ s.status|default:"Pendente" }}</span>
+                  </td>
+                  <td class="text-end">
+                    {% if s.id %}
+                      <a class="btn btn-sm btn-success" href="{% url 'contas:aprovar_solicitacao' s.id %}">Aprovar</a>
+                      <a class="btn btn-sm btn-outline-danger" href="{% url 'contas:rejeitar_solicitacao' s.id %}">Rejeitar</a>
+                    {% else %}
+                      -
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="5" class="text-center py-4">Nenhuma solicitação encontrada.</td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
