@@ -1,0 +1,61 @@
+{% extends "documentos/base.html" %}
+{% load static %}
+
+{% block title %}Solicitações de Acesso{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 1100px;">
+  <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; margin: 18px 0;">
+    <h2 style="margin:0;">Solicitações de Acesso</h2>
+  </div>
+
+  {% if messages %}
+    <div style="margin-bottom: 12px;">
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }}" style="margin-bottom:8px;">
+          {{ message }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="card" style="padding: 14px;">
+    {% if solicitacoes %}
+      <div style="overflow:auto;">
+        <table class="table" style="width:100%; border-collapse: collapse;">
+          <thead>
+            <tr>
+              <th style="text-align:left; padding:10px; border-bottom:1px solid rgba(255,255,255,.12);">Data</th>
+              <th style="text-align:left; padding:10px; border-bottom:1px solid rgba(255,255,255,.12);">Nome</th>
+              <th style="text-align:left; padding:10px; border-bottom:1px solid rgba(255,255,255,.12);">E-mail</th>
+              <th style="text-align:left; padding:10px; border-bottom:1px solid rgba(255,255,255,.12);">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in solicitacoes %}
+              <tr>
+                <td style="padding:10px; border-bottom:1px solid rgba(255,255,255,.08);">
+                  {{ s.criado_em|default:s.data|default:s.created_at|default:"-" }}
+                </td>
+                <td style="padding:10px; border-bottom:1px solid rgba(255,255,255,.08);">
+                  {{ s.nome|default:s.usuario.username|default:s.usuario|default:"-" }}
+                </td>
+                <td style="padding:10px; border-bottom:1px solid rgba(255,255,255,.08);">
+                  {{ s.email|default:s.usuario.email|default:"-" }}
+                </td>
+                <td style="padding:10px; border-bottom:1px solid rgba(255,255,255,.08);">
+                  {{ s.status|default:s.situacao|default:"Pendente" }}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div style="padding: 16px; opacity: .9;">
+        Nenhuma solicitação encontrada.
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
