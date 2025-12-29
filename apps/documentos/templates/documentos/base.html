@@ -75,7 +75,7 @@
                 <li><a class="sidebar-link" href="/dashboard/"><i class="bi bi-graph-up-arrow"></i> Dashboard GED</a></li>
                 <li><a class="sidebar-link" href="{% url 'documentos:painel_workflow' %}"><i class="bi bi-diagram-3"></i> Workflow</a></li>
                 <li><a class="sidebar-link" href="{% url 'documentos:medicao' %}"><i class="bi bi-cash-coin"></i> Medição</a></li>
-                <li><a class="sidebar-link" href="{% url \'contas:painel_solicitacoes\' %}"><i class="bi bi-people"></i> Solicitações de Acesso</a></li>
+                <li><a class="sidebar-link" href="/dashboard/solicitacoes/"><i class="bi bi-people"></i> Solicitações de Acesso</a></li>
             </ul>
 
             {% if user.is_superuser %}
