@@ -13,15 +13,49 @@
 
       <div class="card shadow-sm mb-4">
         <div class="card-body">
-          <p><strong>Nome:</strong> {{ solicitacao.nome }}</p>
-          <p><strong>E-mail:</strong> {{ solicitacao.email }}</p>
-          <p><strong>Setor:</strong> {{ solicitacao.setor|default:"-" }}</p>
-          <p><strong>Motivo:</strong><br>{{ solicitacao.motivo|linebreaks }}</p>
-          <p><strong>Status atual:</strong> {{ solicitacao.get_status_display }}</p>
-          <p><strong>Data da Solicitação:</strong> {{ solicitacao.data_solicitacao|date:"d/m/Y H:i" }}</p>
+          <p><strong>Nome:</strong> {{ solicitacao.nome|default:"-" }}</p>
+          <p><strong>E-mail:</strong> {{ solicitacao.email|default:"-" }}</p>
+
+          <p><strong>Setor:</strong>
+            {% if solicitacao.setor %}
+              {{ solicitacao.setor }}
+            {% else %}
+              -
+            {% endif %}
+          </p>
+
+          <p><strong>Motivo:</strong><br>
+            {% if solicitacao.motivo %}
+              {{ solicitacao.motivo|linebreaks }}
+            {% elif solicitacao.mensagem %}
+              {{ solicitacao.mensagem|linebreaks }}
+            {% else %}
+              -
+            {% endif %}
+          </p>
+
+          <p><strong>Status atual:</strong>
+            {% if solicitacao.status %}
+              {{ solicitacao.get_status_display|default:solicitacao.status }}
+            {% else %}
+              -
+            {% endif %}
+          </p>
+
+          <p><strong>Data da Solicitação:</strong>
+            {% if solicitacao.data_solicitacao %}
+              {{ solicitacao.data_solicitacao|date:"d/m/Y H:i" }}
+            {% elif solicitacao.data %}
+              {{ solicitacao.data|date:"d/m/Y H:i" }}
+            {% else %}
+              -
+            {% endif %}
+          </p>
+
           {% if solicitacao.data_decisao %}
             <p><strong>Data da Decisão:</strong> {{ solicitacao.data_decisao|date:"d/m/Y H:i" }}</p>
           {% endif %}
+
           {% if solicitacao.observacao_admin %}
             <p><strong>Observação (Admin):</strong><br>{{ solicitacao.observacao_admin|linebreaks }}</p>
           {% endif %}
@@ -43,7 +77,9 @@
             <button name="acao" value="negar" class="btn btn-danger">
               Negar
             </button>
-            <a href="{% url 'listar_solicitacoes' %}" class="btn btn-secondary ms-auto">
+
+            <!-- ✅ CORREÇÃO: namespace -->
+            <a href="{% url 'solicitacoes:listar_solicitacoes' %}" class="btn btn-secondary ms-auto">
               Voltar
             </a>
           </div>

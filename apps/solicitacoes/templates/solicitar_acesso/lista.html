@@ -29,13 +29,43 @@
             <tbody>
               {% for s in solicitacoes %}
               <tr>
-                <td>{{ s.nome }}</td>
-                <td>{{ s.email }}</td>
-                <td>{{ s.setor|default:"-" }}</td>
-                <td>{{ s.get_status_display }}</td>
-                <td>{{ s.data_solicitacao|date:"d/m/Y H:i" }}</td>
+                <td>{{ s.nome|default:"-" }}</td>
+                <td>{{ s.email|default:"-" }}</td>
+
+                <td>
+                  {% if s.setor %}
+                    {{ s.setor }}
+                  {% elif s.departamento %}
+                    {{ s.departamento }}
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+
+                <td>
+                  {% if s.status %}
+                    {{ s.get_status_display|default:s.status }}
+                  {% elif s.situacao %}
+                    {{ s.situacao }}
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+
+                <td>
+                  {% if s.data_solicitacao %}
+                    {{ s.data_solicitacao|date:"d/m/Y H:i" }}
+                  {% elif s.data %}
+                    {{ s.data|date:"d/m/Y H:i" }}
+                  {% elif s.criado_em %}
+                    {{ s.criado_em|date:"d/m/Y H:i" }}
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+
                 <td class="text-end">
-                  <a href="{% url 'detalhe_solicitacao' s.id %}" class="btn btn-sm btn-outline-primary">
+                  <a href="{% url 'solicitacoes:detalhe_solicitacao' s.id %}" class="btn btn-sm btn-outline-primary">
                     Abrir
                   </a>
                 </td>

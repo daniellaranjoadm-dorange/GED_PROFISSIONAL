@@ -2,15 +2,12 @@
 # DASHBOARD MASTER – GED ENTERPRISE NAVAL
 # ==============================================
 
-from __future__ import annotations
-
-import json
-import logging
-
 from django.contrib.admin.views.decorators import staff_member_required
-from django.core.exceptions import FieldError
+from django.contrib.auth.models import User, Group
 from django.db.models import Count, Sum, F
 from django.shortcuts import render, redirect
+import json
+import logging
 
 from apps.documentos.models import Documento, ProjetoFinanceiro, LogAuditoria
 
@@ -19,43 +16,21 @@ logger = logging.getLogger(__name__)
 TAXA = 5.7642
 
 
-def money_br(v) -> str:
+def money_br(v):
     v = float(v if v else 0)
     return f"{v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
-def _safe_sum(qs, field_name: str) -> float:
-    """
-    Soma um campo com segurança.
-    Se o campo não existir no model, retorna 0 e loga warning (sem quebrar).
-    """
-    try:
-        return float(qs.aggregate(total=Sum(field_name))["total"] or 0)
-    except FieldError:
-        logger.warning("Campo '%s' não existe em Documento. Usando 0.", field_name)
-        return 0.0
-    except Exception:
-        logger.exception("Falha ao somar campo '%s'. Usando 0.", field_name)
-        return 0.0
-
-
-def _norm_label(value: str | None, default: str) -> str:
-    v = (value or "").strip()
-    return v if v else default
-
-
 @staff_member_required
 def dashboard(request):
-    # Base (para combos e contagens globais)
-    docs_base = Documento.objects.filter(ativo=True, deletado_em__isnull=True)
+    docs = Documento.objects.filter(ativo=True, deletado_em__isnull=True).select_related("projeto")
 
-    # filtros (aplicados em docs)
+    # filtros
     projeto_filtro = (request.GET.get("projeto") or "").strip()
     disciplina_filtro = (request.GET.get("disciplina") or "").strip()
     status_ldp_filtro = (request.GET.get("status_ldp") or "").strip()
     status_emissao_filtro = (request.GET.get("status_emissao") or "").strip()
 
-    docs = docs_base
     if projeto_filtro:
         docs = docs.filter(projeto__nome__icontains=projeto_filtro)
     if disciplina_filtro:
@@ -74,26 +49,19 @@ def dashboard(request):
     total_emitidos = docs.filter(status_emissao__icontains="emit").count()
     total_nao_recebidos = docs.filter(status_emissao__icontains="pend").count()
 
-    # “Excluídos” aqui é global (fora do filtro) — mantido assim
     total_excluidos = Documento.objects.filter(deletado_em__isnull=False).count()
+    total_restaurados = Documento.objects.filter(deletado_em__isnull=False, ativo=True).count()
 
-    # “Restaurados”: tenta via auditoria (mais correto). Se não houver, fallback 0.
-    try:
-        total_restaurados = LogAuditoria.objects.filter(acao__icontains="Restaurad").count()
-    except Exception:
-        logger.exception("Falha ao calcular total_restaurados via LogAuditoria")
-        total_restaurados = 0
+    # financeiro documentos USD/BRL (se existir campos no model)
+    v_emitidos_usd = docs.filter(status_emissao__icontains="emit").aggregate(v=Sum("valor_usd"))["v"] or 0
+    v_nao_rec_usd = docs.filter(status_emissao__icontains="pend").aggregate(v=Sum("valor_usd"))["v"] or 0
+    v_total_usd = docs.aggregate(v=Sum("valor_usd"))["v"] or 0
 
-    # Financeiro por documento (se existir campo; se não, não quebra)
-    v_emitidos_usd = _safe_sum(docs.filter(status_emissao__icontains="emit"), "valor_usd")
-    v_nao_rec_usd = _safe_sum(docs.filter(status_emissao__icontains="pend"), "valor_usd")
-    v_total_usd = _safe_sum(docs, "valor_usd")
+    v_emitidos_brl = docs.filter(status_emissao__icontains="emit").aggregate(v=Sum("valor_brl"))["v"] or 0
+    v_nao_rec_brl = docs.filter(status_emissao__icontains="pend").aggregate(v=Sum("valor_brl"))["v"] or 0
+    v_total_brl = docs.aggregate(v=Sum("valor_brl"))["v"] or 0
 
-    v_emitidos_brl = _safe_sum(docs.filter(status_emissao__icontains="emit"), "valor_brl")
-    v_nao_rec_brl = _safe_sum(docs.filter(status_emissao__icontains="pend"), "valor_brl")
-    v_total_brl = _safe_sum(docs, "valor_brl")
-
-    # Financeiro projetos (ProjetoFinanceiro) — já existia
+    # financeiro projetos
     proj = ProjetoFinanceiro.objects.select_related("projeto")
     fin_usd, fin_brl = {}, {}
     for p in proj:
@@ -109,22 +77,27 @@ def dashboard(request):
     fin_labels = json.dumps(list(fin_usd.keys()), ensure_ascii=False)
     fin_data = json.dumps(list(fin_usd.values()))
 
-    # Gráficos
-    disc_query = docs.values("disciplina").annotate(total=Count("id")).order_by("-total")
-    disc_labels = json.dumps(
-        [_norm_label(i["disciplina"], "Sem Disciplina") for i in disc_query],
-        ensure_ascii=False,
+    # gráficos (evita None)
+    disc_query = (
+        docs.exclude(disciplina__isnull=True)
+        .exclude(disciplina__exact="")
+        .values("disciplina")
+        .annotate(total=Count("id"))
+        .order_by("-total")
     )
+    disc_labels = json.dumps([i["disciplina"] for i in disc_query], ensure_ascii=False)
     disc_data = json.dumps([i["total"] for i in disc_query])
 
-    status_query = docs.values("status_documento").annotate(total=Count("id"))
-    status_labels = json.dumps(
-        [_norm_label(i["status_documento"], "Sem Status") for i in status_query],
-        ensure_ascii=False,
+    status_query = (
+        docs.exclude(status_documento__isnull=True)
+        .exclude(status_documento__exact="")
+        .values("status_documento")
+        .annotate(total=Count("id"))
     )
+    status_labels = json.dumps([i["status_documento"] for i in status_query], ensure_ascii=False)
     status_data = json.dumps([i["total"] for i in status_query])
 
-    # Auditoria (top excluidores usando deletado_por do Documento)
+    # auditoria
     top_excluidores = (
         Documento.objects.filter(deletado_em__isnull=False)
         .values(usuario=F("deletado_por"))
@@ -132,36 +105,6 @@ def dashboard(request):
         .order_by("-qtd")[:5]
     )
     auditoria_acoes = LogAuditoria.objects.order_by("-data")[:10]
-
-    # Combos (sempre da base, para não “sumirem”)
-    projetos_combo = (
-        docs_base.values_list("projeto__nome", flat=True)
-        .exclude(projeto__nome__isnull=True)
-        .exclude(projeto__nome__exact="")
-        .distinct()
-        .order_by("projeto__nome")
-    )
-    disciplinas_combo = (
-        docs_base.values_list("disciplina", flat=True)
-        .exclude(disciplina__isnull=True)
-        .exclude(disciplina__exact="")
-        .distinct()
-        .order_by("disciplina")
-    )
-    status_ldp_combo = (
-        docs_base.values_list("status_documento", flat=True)
-        .exclude(status_documento__isnull=True)
-        .exclude(status_documento__exact="")
-        .distinct()
-        .order_by("status_documento")
-    )
-    status_emissao_combo = (
-        docs_base.values_list("status_emissao", flat=True)
-        .exclude(status_emissao__isnull=True)
-        .exclude(status_emissao__exact="")
-        .distinct()
-        .order_by("status_emissao")
-    )
 
     context = {
         "total_docs": total_docs,
@@ -187,10 +130,26 @@ def dashboard(request):
         "status_data": status_data,
         "top_excluidores": top_excluidores,
         "auditoria_acoes": auditoria_acoes,
-        "projetos": projetos_combo,
-        "disciplinas": disciplinas_combo,
-        "status_ldp_list": status_ldp_combo,
-        "status_emissao_list": status_emissao_combo,
+        "projetos": (
+            docs.exclude(projeto__nome__isnull=True)
+            .exclude(projeto__nome__exact="")
+            .values_list("projeto__nome", flat=True).distinct().order_by("projeto__nome")
+        ),
+        "disciplinas": (
+            docs.exclude(disciplina__isnull=True)
+            .exclude(disciplina__exact="")
+            .values_list("disciplina", flat=True).distinct().order_by("disciplina")
+        ),
+        "status_ldp_list": (
+            docs.exclude(status_documento__isnull=True)
+            .exclude(status_documento__exact="")
+            .values_list("status_documento", flat=True).distinct().order_by("status_documento")
+        ),
+        "status_emissao_list": (
+            docs.exclude(status_emissao__isnull=True)
+            .exclude(status_emissao__exact="")
+            .values_list("status_emissao", flat=True).distinct().order_by("status_emissao")
+        ),
         "ha_filtros": ha_filtros,
         "filtros": {
             "projeto": projeto_filtro,
@@ -206,8 +165,8 @@ def dashboard(request):
 @staff_member_required
 def solicitacoes(request):
     """
-    Sidebar bate em /dashboard/solicitacoes/.
-    Se o módulo real estiver em /contas/... usamos redirect com namespace.
+    Sidebar bate em /dashboard/solicitacoes/ mas o módulo real está em /contas/painel-solicitacoes/.
+    Redirect seguro para eliminar 404.
     """
     return redirect("contas:painel_solicitacoes")
 
@@ -215,7 +174,11 @@ def solicitacoes(request):
 @staff_member_required
 def usuarios_permissoes(request):
     """
-    Página ponte para "Usuários e Permissões".
-    Mantém robustez usando o admin do Django.
+    Lista todos os usuários com seus grupos e permissões.
     """
-    return redirect("/admin/auth/user/")
+    usuarios = User.objects.all().select_related().prefetch_related("groups", "user_permissions")
+
+    context = {
+        "usuarios": usuarios
+    }
+    return render(request, "dashboard/usuarios_permissoes.html", context)
