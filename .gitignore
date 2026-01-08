@@ -44,3 +44,35 @@ Thumbs.db
 # ✅ permitir assets do site
 !static/videos/
 !static/videos/**
+# Backups gerados com sufixo (seu padrão atual)
+*.bak_*
+*.before_*
+*.old*
+*_old.*
+*_backup*
+*.zip
+
+# Pastas de "velho"
+static/css/old/
+static/**/old/
+
+# Planilhas de exemplo/geradas (se não forem parte do produto)
+Docs/*.xlsx
+Docs/*.xlsm
+Docs/*.xls
+Docs/*
+!Docs/Template_LDP.xlsx
+
+# Backups com sufixo (seu padrão atual)
+*.bak_*
+*.before_*
+
+# Zips
+*.zip
+
+# Pastas antigas
+static/css/old/
+static/**/old/
+
+
+
