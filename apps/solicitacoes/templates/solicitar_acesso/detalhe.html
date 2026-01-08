@@ -1,91 +1,128 @@
-<!doctype html>
-<html lang="pt-br">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Detalhe da Solicitação</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  </head>
-  <body class="bg-light">
-    <div class="container py-4">
+{% extends "documentos/base.html" %}
+{% load static %}
 
-      <h1 class="h4 mb-4">Detalhe da Solicitação</h1>
+{% block title %}Detalhe da Solicitação{% endblock %}
 
-      <div class="card shadow-sm mb-4">
-        <div class="card-body">
-          <p><strong>Nome:</strong> {{ solicitacao.nome|default:"-" }}</p>
-          <p><strong>E-mail:</strong> {{ solicitacao.email|default:"-" }}</p>
+{% block content %}
+<div class="container-fluid py-3">
 
-          <p><strong>Setor:</strong>
-            {% if solicitacao.setor %}
-              {{ solicitacao.setor }}
-            {% else %}
-              -
-            {% endif %}
-          </p>
+  <div class="dash-header">
+    <div>
+      <h1 class="dash-title">Detalhe da Solicitação</h1>
+      <div class="dash-subtitle">Revise as informações e aprove ou negue.</div>
+    </div>
 
-          <p><strong>Motivo:</strong><br>
-            {% if solicitacao.motivo %}
-              {{ solicitacao.motivo|linebreaks }}
-            {% elif solicitacao.mensagem %}
-              {{ solicitacao.mensagem|linebreaks }}
-            {% else %}
-              -
-            {% endif %}
-          </p>
+    <a href="{% url 'solicitacoes:listar_solicitacoes' %}" class="dash-btn">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+  </div>
 
-          <p><strong>Status atual:</strong>
-            {% if solicitacao.status %}
-              {{ solicitacao.get_status_display|default:solicitacao.status }}
-            {% else %}
-              -
-            {% endif %}
-          </p>
+  <div class="dash-surface pad mb-3">
+    <div class="row g-3">
 
-          <p><strong>Data da Solicitação:</strong>
-            {% if solicitacao.data_solicitacao %}
-              {{ solicitacao.data_solicitacao|date:"d/m/Y H:i" }}
-            {% elif solicitacao.data %}
-              {{ solicitacao.data|date:"d/m/Y H:i" }}
-            {% else %}
-              -
-            {% endif %}
-          </p>
+      <div class="col-12 col-md-6">
+        <div class="small dash-muted">Nome</div>
+        <div class="fw-semibold">{{ solicitacao.nome|default:"-" }}</div>
+      </div>
 
-          {% if solicitacao.data_decisao %}
-            <p><strong>Data da Decisão:</strong> {{ solicitacao.data_decisao|date:"d/m/Y H:i" }}</p>
-          {% endif %}
+      <div class="col-12 col-md-6">
+        <div class="small dash-muted">E-mail</div>
+        <div class="fw-semibold">{{ solicitacao.email|default:"-" }}</div>
+      </div>
 
-          {% if solicitacao.observacao_admin %}
-            <p><strong>Observação (Admin):</strong><br>{{ solicitacao.observacao_admin|linebreaks }}</p>
+      <div class="col-12 col-md-6">
+        <div class="small dash-muted">Setor</div>
+        <div class="fw-semibold">{% if solicitacao.setor %}{{ solicitacao.setor }}{% else %}-{% endif %}</div>
+      </div>
+
+      <div class="col-12 col-md-6">
+        <div class="small dash-muted">Status</div>
+        {% with st=solicitacao.get_status_display|default:solicitacao.status %}
+          {% with stl=st|lower %}
+            <span class="dash-badge
+              {% if 'aprov' in stl %}dash-badge-success
+              {% elif 'neg' in stl %}dash-badge-danger
+              {% elif 'pend' in stl or 'aguard' in stl %}dash-badge-warning
+              {% else %}dash-badge-info{% endif %}">
+              {% if 'aprov' in stl %}
+                <i class="bi bi-check2-circle"></i>
+              {% elif 'neg' in stl %}
+                <i class="bi bi-x-circle"></i>
+              {% elif 'pend' in stl or 'aguard' in stl %}
+                <i class="bi bi-hourglass-split"></i>
+              {% else %}
+                <i class="bi bi-info-circle"></i>
+              {% endif %}
+              {{ st|default:"-" }}
+            </span>
+          {% endwith %}
+        {% endwith %}
+      </div>
+
+      <div class="col-12">
+        <div class="small dash-muted">Motivo</div>
+        <div class="dash-surface dash-surface-flat pad">
+          {% if solicitacao.motivo %}
+            {{ solicitacao.motivo|linebreaks }}
+          {% elif solicitacao.mensagem %}
+            {{ solicitacao.mensagem|linebreaks }}
+          {% else %}
+            <span class="dash-muted">-</span>
           {% endif %}
         </div>
       </div>
 
-      <form method="POST" class="card shadow-sm">
-        {% csrf_token %}
-        <div class="card-body">
-          <div class="mb-3">
-            <label class="form-label">Observação do administrador</label>
-            <textarea name="observacao" class="form-control" rows="3"></textarea>
-          </div>
-
-          <div class="d-flex gap-2">
-            <button name="acao" value="aprovar" class="btn btn-success">
-              Aprovar
-            </button>
-            <button name="acao" value="negar" class="btn btn-danger">
-              Negar
-            </button>
-
-            <!-- ✅ CORREÇÃO: namespace -->
-            <a href="{% url 'solicitacoes:listar_solicitacoes' %}" class="btn btn-secondary ms-auto">
-              Voltar
-            </a>
-          </div>
+      <div class="col-12 col-md-6">
+        <div class="small dash-muted">Data da Solicitação</div>
+        <div class="fw-semibold">
+          {% if solicitacao.data_solicitacao %}
+            {{ solicitacao.data_solicitacao|date:"d/m/Y H:i" }}
+          {% elif solicitacao.data %}
+            {{ solicitacao.data|date:"d/m/Y H:i" }}
+          {% else %}-{% endif %}
         </div>
-      </form>
+      </div>
+
+      <div class="col-12 col-md-6">
+        <div class="small dash-muted">Data da Decisão</div>
+        <div class="fw-semibold">
+          {% if solicitacao.data_decisao %}
+            {{ solicitacao.data_decisao|date:"d/m/Y H:i" }}
+          {% else %}-{% endif %}
+        </div>
+      </div>
+
+      {% if solicitacao.observacao_admin %}
+      <div class="col-12">
+        <div class="small dash-muted">Observação (Admin)</div>
+        <div class="dash-surface dash-surface-flat pad">
+          {{ solicitacao.observacao_admin|linebreaks }}
+        </div>
+      </div>
+      {% endif %}
 
     </div>
-  </body>
-</html>
+  </div>
+
+  <form method="post" class="dash-surface pad">
+    {% csrf_token %}
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold" for="observacao">Observação do administrador</label>
+      <textarea id="observacao" name="observacao" class="form-control" rows="3"
+                placeholder="Ex.: Acesso liberado para o projeto X.">{{ solicitacao.observacao_admin|default_if_none:"" }}</textarea>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2">
+      <button name="acao" value="aprovar" class="dash-btn dash-btn-primary" type="submit">
+        <i class="bi bi-check2-circle"></i> Aprovar
+      </button>
+
+      <button name="acao" value="negar" class="dash-btn dash-btn-danger" type="submit">
+        <i class="bi bi-x-circle"></i> Negar
+      </button>
+    </div>
+  </form>
+
+</div>
+{% endblock %}

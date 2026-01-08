@@ -1,0 +1,16 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block extrahead %}
+  {{ block.super }}
+<link rel="stylesheet" href="{% static 'css/enterprise.css' %}?v=105">
+{% endblock %}
+{% block bodyclass %}{{ block.super }} django-admin{% endblock %}
+
+
+{% block branding %}
+  <h1 id="site-name">
+    <a href="{% url 'admin:index' %}">D'OR@NGE · Administração</a>
+  </h1>
+{% endblock %}
+

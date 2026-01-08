@@ -1,7 +1,7 @@
 {% extends "documentos/base.html" %}
 {% load static %}
 
-{% block title %}Dashboard · D'ORANGE Platform{% endblock %}
+{% block title %}Dashboard · D'ORANGE PLATFORM{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -72,6 +72,15 @@
 
 {% block content %}
 
+<div class="ds-page">
+  <div class="ds-pagehead">
+    <div>
+      <h1 class="ds-title">📊 Dashboard</h1>
+      <p class="ds-subtitle">Visão geral do GED.</p>
+    </div>
+  </div>
+
+  <div class="ds-surface">
 <div class="page-title mb-3">
     <div class="page-title-icon"><i class="bi bi-speedometer"></i></div>
     <div class="page-title-text">Dashboard – <strong>D'ORANGE PLATFORM</strong></div>
@@ -177,6 +186,10 @@
         </div>
     </div>
 
+</div>
+
+
+  </div>
 </div>
 
 {% endblock %}

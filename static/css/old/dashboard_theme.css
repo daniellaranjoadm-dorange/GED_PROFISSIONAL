@@ -1,0 +1,220 @@
+/* ==========================================================
+   Dashboard GED — "Dash" Components + Skin do Django Admin
+   Objetivo: padronizar telas internas sem criar uma floresta de CSS.
+   Depende dos tokens do enterprise.css quando existirem.
+   ========================================================== */
+
+/* Tokens (com fallback) */
+:root{
+  --dash-radius: 18px;
+  --dash-border: var(--border, rgba(255,255,255,.10));
+  --dash-text:   var(--text, #eaf1ff);
+  --dash-muted:  var(--text-soft, rgba(234,241,255,.72));
+
+  --dash-accent:   var(--accent-orange, #ffb13c);
+  --dash-accent-2: var(--accent-blue, #38bdf8);
+
+  --dash-surface-1: rgba(10,16,28,.78);
+  --dash-surface-2: rgba(22,34,55,.60);
+  --dash-shadow: 0 14px 40px rgba(0,0,0,.35);
+}
+
+/* Tema claro (se você usa body[data-theme="light"]) */
+body[data-theme="light"]{
+  --dash-border: rgba(10,20,40,.12);
+  --dash-text: #0b1220;
+  --dash-muted: rgba(11,18,32,.68);
+  --dash-surface-1: rgba(255,255,255,.92);
+  --dash-surface-2: rgba(245,248,255,.92);
+  --dash-shadow: 0 14px 34px rgba(10,20,40,.12);
+}
+
+.dash-muted{ color: var(--dash-muted) !important; }
+
+/* Header (título + ações) */
+.dash-header{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:12px;
+  margin: 10px 0 14px;
+  flex-wrap: wrap;
+}
+
+.dash-title{
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  margin:0;
+  font-size: clamp(1.35rem, 2.2vw, 2.2rem);
+  color: var(--dash-text);
+}
+
+.dash-subtitle{
+  color: var(--dash-muted);
+  font-size: .92rem;
+  margin-top: 4px;
+}
+
+/* Surface / Card */
+.dash-surface{
+  border-radius: var(--dash-radius);
+  border: 1px solid var(--dash-border);
+  background: linear-gradient(135deg, var(--dash-surface-1), var(--dash-surface-2));
+  box-shadow: var(--dash-shadow);
+  backdrop-filter: blur(8px);
+}
+
+.dash-surface.pad{ padding: 16px; }
+.dash-surface-flat{ box-shadow:none !important; backdrop-filter:none !important; }
+
+/* Botões */
+.dash-btn{
+  border-radius: 999px;
+  font-weight: 800;
+  padding: 8px 14px;
+  border: 1px solid var(--dash-border);
+  background: rgba(0,0,0,.18);
+  color: var(--dash-text);
+  text-decoration:none;
+  display:inline-flex;
+  gap:8px;
+  align-items:center;
+}
+
+body[data-theme="light"] .dash-btn{ background: rgba(11,18,32,.06); }
+.dash-btn:hover{ filter: brightness(1.06); color: var(--dash-text); }
+
+.dash-btn-primary{
+  border-color: rgba(255,177,60,.45);
+  background: rgba(255,177,60,.18);
+}
+
+.dash-btn-danger{
+  border-color: rgba(251,113,133,.45);
+  background: rgba(251,113,133,.16);
+}
+
+/* Badge de status */
+.dash-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: .78rem;
+  font-weight: 900;
+  border: 1px solid var(--dash-border);
+}
+
+.dash-badge-success{ background: rgba(52,211,153,.16); border-color: rgba(52,211,153,.35); }
+.dash-badge-danger{  background: rgba(251,113,133,.16); border-color: rgba(251,113,133,.35); }
+.dash-badge-warning{ background: rgba(255,177,60,.16); border-color: rgba(255,177,60,.35); }
+.dash-badge-info{    background: rgba(34,211,238,.14); border-color: rgba(34,211,238,.32); }
+
+/* Inputs (somente dentro de .dash-surface) */
+.dash-surface .form-control,
+.dash-surface .form-select,
+.dash-surface textarea{
+  background: rgba(0,0,0,.18);
+  border: 1px solid var(--dash-border);
+  color: var(--dash-text);
+}
+
+body[data-theme="light"] .dash-surface .form-control,
+body[data-theme="light"] .dash-surface .form-select,
+body[data-theme="light"] .dash-surface textarea{
+  background: rgba(11,18,32,.04);
+}
+
+.dash-surface .form-control:focus,
+.dash-surface .form-select:focus,
+.dash-surface textarea:focus{
+  border-color: rgba(56,189,248,.55);
+  box-shadow: 0 0 0 2px rgba(56,189,248,.18);
+}
+
+.dash-surface .form-control::placeholder,
+.dash-surface textarea::placeholder{
+  color: var(--dash-muted);
+}
+
+/* Tabela */
+.dash-table{
+  --bs-table-bg: transparent;
+  --bs-table-color: var(--dash-text);
+  --bs-table-striped-bg: rgba(255,255,255,.03);
+  --bs-table-striped-color: var(--dash-text);
+  --bs-table-hover-bg: rgba(255,255,255,.06);
+  --bs-table-hover-color: var(--dash-text);
+
+  color: var(--dash-text);
+  margin:0;
+}
+
+.dash-table > :not(caption) > * > *{
+  background-color: transparent !important;
+  color: var(--dash-text) !important;
+}
+
+.dash-table thead th{
+  color: var(--dash-muted);
+  font-weight: 900;
+  font-size: .78rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  border-bottom: 1px solid var(--dash-border) !important;
+  background: rgba(0,0,0,.12);
+}
+
+body[data-theme="light"] .dash-table thead th{
+  background: rgba(11,18,32,.04);
+}
+
+.dash-table td, .dash-table th{
+  border-color: var(--dash-border) !important;
+}
+
+.dash-table tbody tr:hover{
+  background: rgba(255,255,255,.04);
+}
+
+/* ==========================================================
+   DJANGO ADMIN (skin)
+   (vai funcionar quando você injetar o CSS no admin)
+   ========================================================== */
+
+#header{
+  background: linear-gradient(90deg, rgba(11,18,32,.98), rgba(17,26,46,.98));
+  border-bottom: 1px solid var(--dash-border);
+  box-shadow: var(--dash-shadow);
+}
+
+#branding h1, #branding h1 a{
+  color: var(--dash-text) !important;
+  font-weight: 900;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+div.breadcrumbs{
+  background: rgba(0,0,0,.18);
+  border-bottom: 1px solid var(--dash-border);
+  color: var(--dash-muted);
+}
+
+body.dashboard, body.change-list, body.change-form{
+  background:
+    radial-gradient(circle at 0% 0%, rgba(255,177,60,.16), transparent 55%),
+    radial-gradient(circle at 85% 100%, rgba(56,189,248,.14), transparent 55%),
+    linear-gradient(135deg, rgba(2,6,23,1) 0%, rgba(2,6,23,1) 100%);
+  color: var(--dash-text);
+}
+
+#content-main .module,
+#content-main .inline-group,
+#content-main fieldset.module{
+  border-radius: var(--dash-radius);
+  border: 1px solid var(--dash-border);
+  background: linear-gradient(135deg, var(--dash-surface-1), var(--dash-surface-2));
+  box-shadow: var(--dash-shadow);
+}

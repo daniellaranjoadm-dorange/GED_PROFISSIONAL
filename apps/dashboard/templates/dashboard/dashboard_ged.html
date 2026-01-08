@@ -1,15 +1,19 @@
-{% extends "base.html" %}
+{% extends "documentos/base.html" %}
 {% load static %}
 
 {% block title %}D'ORANGE — Dashboard Enterprise{% endblock %}
 
 {% block content %}
 
-<div class="container mt-4">
-    <h2 class="fw-bold text-orange">📊 Dashboard GED — Enterprise</h2>
-    <hr>
+<div class="ds-page">
+  <div class="ds-pagehead">
+    <div>
+      <h1 class="ds-title">📈 Dashboard GED</h1>
+      <p class="ds-subtitle">Indicadores principais.</p>
+    </div>
+  </div>
 
-    <div class="row mt-4">
+  <div class="ds-surface"><div class="row mt-4">
         <div class="col-md-3"><div class="card p-3 shadow-sm">Total Docs: <b>{{ total_docs }}</b></div></div>
         <div class="col-md-3"><div class="card p-3 shadow-sm">Em Revisão: <b>{{ em_revisao }}</b></div></div>
         <div class="col-md-3"><div class="card p-3 shadow-sm">Aprovados: <b>{{ aprovados }}</b></div></div>
@@ -21,6 +25,10 @@
     <h4>⚙ Gráficos ainda não ativados — Próximo passo</h4>
     <p>Se você está vendo esse painel, o backend já está ok! 🚀</p>
 
+</div>
+
+
+  </div>
 </div>
 
 {% endblock %}

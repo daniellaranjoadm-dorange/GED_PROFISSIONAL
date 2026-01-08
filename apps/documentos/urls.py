@@ -72,6 +72,7 @@ urlpatterns = [
     path("excluir/<int:documento_id>/", views.excluir_documento, name="excluir_documento"),
     path("excluir-selecionados/", views.excluir_selecionados, name="excluir_selecionados"),
     path("lixeira/", views.lixeira, name="lixeira"),
+    path("lixeira/esvaziar/", views.esvaziar_lixeira, name="esvaziar_lixeira"),
     path("restaurar/<int:documento_id>/", views.restaurar_documento, name="restaurar_documento"),
 
     # ============================

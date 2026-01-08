@@ -42,21 +42,29 @@
 .filtro-card label{
   font-weight:600;
   font-size:.78rem;
-  color:var(--text-soft);
+  color:var(--content-muted);
   margin-bottom:.25rem;
   display:block;
 }
 
 .filtro-card .form-select,
 .filtro-card .form-control{
-  background:#101a2b!important;
+  background: var(--field-bg) !important;
   border-radius:10px!important;
-  border:1px solid rgba(255,255,255,.10)!important;
-  color:#dce8ff!important;
+  border:1px solid var(--field-border)!important;
+  color:var(--field-text)!important;
   font-size:.90rem;
   padding:.55rem .75rem;
   width:100%;
   max-width:100%;
+}
+.filtro-card .form-control::placeholder{
+  color: var(--field-placeholder) !important;
+}
+.filtro-card .form-select:focus,
+.filtro-card .form-control:focus{
+  border-color: var(--accent-blue) !important;
+  box-shadow: 0 0 0 .25rem var(--accent-blue-soft) !important;
 }
 
 .badge-status{ padding:4px 9px; border-radius:8px; font-size:.75rem; }
@@ -86,20 +94,22 @@
 
 .filtro-card form.filters-grid .filter-item{ min-width:0; }
 
-/* Desktop grande: 4 selects em linha (3 col cada) + busca (6) + botão (2) */
+/* Desktop grande: 4 selects em linha (3 col cada) */
 .filter-projeto{ grid-column: span 3; }
 .filter-disciplina{ grid-column: span 3; }
 .filter-statusdoc{ grid-column: span 3; }
 .filter-statusem{ grid-column: span 3; }
-.filter-busca{ grid-column: span 6; }
+
+/* Linha 2: busca + ação */
+.filter-busca{ grid-column: span 10; }
 .filter-actions{
   grid-column: span 2;
   display:flex;
   justify-content:flex-end;
 }
 
-/* Botão: nunca virar “tijolo” */
-.btn-search{
+/* Botão do filtro (escopo só aqui — não mexe no botão Buscar da topbar) */
+.filters-grid .btn-search{
   width: 100% !important;
   max-width: 220px !important;
   height: 42px;
@@ -107,7 +117,6 @@
 
 /* <= 1200px: 2 colunas (6+6), busca maior e botão com max-width */
 @media (max-width: 1200px){
-  . கொள்ள /* evita bug em algumas minificações */ {}
   .filter-projeto,
   .filter-disciplina,
   .filter-statusdoc,
@@ -123,7 +132,7 @@
   }
 }
 
-/* <= 820px (janela menor com sidebar): busca 12, botão 12 (padrão “normal”) */
+/* <= 820px: tudo empilha */
 @media (max-width: 820px){
   .filter-projeto,
   .filter-disciplina,
@@ -133,7 +142,7 @@
   .filter-actions{
     grid-column: 1 / -1;
   }
-  .btn-search{
+  .filters-grid .btn-search{
     max-width: 100% !important;
   }
 }
@@ -225,7 +234,7 @@ table.dataTable{ width:100% !important; }
   </form>
 </div>
 
-<div class="card p-3 shadow-sm">
+<div class="card enterprise-card p-3">
   <div class="table-responsive">
 
     {% if request.user.is_superuser %}

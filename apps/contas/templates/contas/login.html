@@ -1,159 +1,231 @@
+{% extends "documentos/base.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-<meta charset="UTF-8">
-<title>D’OR@NGE Enterprise • Login</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+
+{% block title %}D’OR@NGE Enterprise • Login{% endblock %}
+
+{# Login sem sidebar/topbar #}
+{% block sidebar %}{% endblock %}
+{% block topbar %}{% endblock %}
+
+{% block extra_head %}
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:"Inter",system-ui;}
+/* ====== RESET SÓ DO LOGIN (carrega apenas nesta página) ====== */
+html, body { height: 100%; margin: 0; padding: 0; }
+body { overflow: hidden; }
+
+/* Fundo full-screen (não depende do .layout/.content) */
 body{
-    height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;
-    /* Navy Premium com profundidade e atmosfera */
-    background:radial-gradient(circle at 20% 20%,rgba(255,138,0,.20),transparent 50%),
-               radial-gradient(circle at 80% 80%,rgba(0,200,255,.20),transparent 55%),
-               linear-gradient(135deg,#0a0e16 0%,#0e1524 40%,#090c12 100%);
-    background-size:cover;overflow:hidden;color:#e2e8f0;
+  background:
+    radial-gradient(circle at 20% 20%,rgba(255,138,0,.20),transparent 50%),
+    radial-gradient(circle at 80% 80%,rgba(0,200,255,.20),transparent 55%),
+    linear-gradient(135deg,#0a0e16 0%,#0e1524 40%,#090c12 100%);
+  background-size: cover;
+  color:#e2e8f0;
 }
 
-/* movimento sutil para o fundo */
+/* Textura */
 body::before{
-    content:"";position:fixed;inset:-50%;
-    background:url('https://www.transparenttextures.com/patterns/black-linen.png');
-    opacity:.06;z-index:-2;
+  content:"";
+  position: fixed;
+  inset: -50%;
+  background: url('https://www.transparenttextures.com/patterns/black-linen.png');
+  opacity: .06;
+  pointer-events:none;
+  z-index: 0;
 }
 
-/* animação flutuante do card */
+/* ====== NEUTRALIZA O LAYOUT DO APP NESTA PÁGINA ====== */
+.layout, .content, .content-inner, .page-area{
+  background: transparent !important;
+}
+
+.content{
+  margin-left: 0 !important;
+  width: 100% !important;
+  max-width: none !important;
+}
+
+.content-inner{
+  padding: 0 !important;
+  min-height: 100vh;
+}
+
+.page-area{
+  min-height: 100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  padding: 32px 16px !important;
+  position: relative;
+  z-index: 1; /* acima do body::before */
+}
+
+/* ====== SEU DESIGN DO LOGIN ====== */
+*{box-sizing:border-box;font-family:"Inter",system-ui;}
+
 @keyframes float{
-    0%{transform:translateY(0px)}
-    50%{transform:translateY(-6px)}
-    100%{transform:translateY(0px)}
+  0%{transform:translateY(0px)}
+  50%{transform:translateY(-6px)}
+  100%{transform:translateY(0px)}
 }
 
-/* CARD */
-.card{
-    width:420px;max-width:92%;padding:38px 32px 32px;border-radius:22px;
-    backdrop-filter:blur(22px);
-    background:rgba(12,16,26,.64);
-    border:1px solid rgba(255,255,255,.06);
-    box-shadow:0 0 40px rgba(0,200,255,.14),0 0 120px rgba(255,138,0,.18);
-    animation:float 6s infinite ease-in-out alternate;
-    position:relative;overflow:hidden;
-}
-.card::before{
-    content:"";position:absolute;inset:-40%;
-    background:radial-gradient(circle at top,rgba(0,200,255,.35),transparent 70%);
-    opacity:.30;pointer-events:none;
+/* Card */
+.login-card{
+  width: 440px;
+  max-width: 92%;
+  padding: 38px 32px 32px;
+  border-radius: 22px;
+  backdrop-filter: blur(22px);
+  background: rgba(12,16,26,.64);
+  border: 1px solid rgba(255,255,255,.06);
+  box-shadow: 0 0 40px rgba(0,200,255,.14), 0 0 120px rgba(255,138,0,.18);
+  animation: float 6s infinite ease-in-out alternate;
+  position: relative;
+  overflow:hidden;
 }
 
-/* LOGO */
+.login-card::before{
+  content:"";
+  position:absolute;
+  inset:-40%;
+  background: radial-gradient(circle at top, rgba(0,200,255,.35), transparent 70%);
+  opacity:.30;
+  pointer-events:none;
+}
+
 .logo-box{text-align:center;margin-bottom:18px;}
-.logo{
-    width:170px;filter:drop-shadow(0 0 8px rgba(255,140,0,.55));
-}
+.logo{width:170px;filter:drop-shadow(0 0 8px rgba(255,140,0,.55));}
 
-/* TÍTULOS */
-.title{text-align:center;font-size:1.7rem;font-weight:700;margin-bottom:4px;
-       background:linear-gradient(90deg,#ff8c00,#ffcc6b);-webkit-background-clip:text;color:transparent;}
+.title{
+  text-align:center;
+  font-size:1.7rem;
+  font-weight:700;
+  margin-bottom:4px;
+  background:linear-gradient(90deg,#ff8c00,#ffcc6b);
+  -webkit-background-clip:text;
+  color:transparent;
+}
 .subtitle{text-align:center;font-size:.9rem;color:#9ca3af;margin-bottom:22px;}
 
-/* CAMPOS */
 .field{margin-bottom:18px;}
-label{font-size:.9rem;margin-bottom:6px;display:block;color:#dce3ec;}
-input{
-    width:100%;padding:11px 14px;border-radius:12px;font-size:1rem;
-    border:1px solid rgba(255,255,255,.10);background:rgba(0,0,0,.30);color:#fff;
-    outline:none;transition:.25s;
+.login-card label{font-size:.9rem;margin-bottom:6px;display:block;color:#dce3ec;}
+.login-card input{
+  width:100%;
+  padding:11px 14px;
+  border-radius:12px;
+  font-size:1rem;
+  border:1px solid rgba(255,255,255,.10);
+  background:rgba(0,0,0,.30);
+  color:#fff;
+  outline:none;
+  transition:.25s;
 }
-input:focus{
-    border-color:#00d4ff;box-shadow:0 0 12px rgba(0,212,255,.45);
-    transform:scale(1.02);
+.login-card input:focus{
+  border-color:#00d4ff;
+  box-shadow:0 0 12px rgba(0,212,255,.45);
+  transform:scale(1.02);
 }
 
-/* Mostrar senha */
 .toggle-senha{
-    position:absolute;right:16px;margin-top:-31px;font-size:14px;color:#ffbb44;
-    cursor:pointer;user-select:none;opacity:.85;transition:.2s;
+  position:absolute;
+  right:16px;
+  top: 38px;
+  font-size:14px;
+  color:#ffbb44;
+  cursor:pointer;
+  user-select:none;
+  opacity:.85;
+  transition:.2s;
 }
 .toggle-senha:hover{opacity:1;}
 
-/* BOTÃO */
-.btn{
-    width:100%;padding:12px;border-radius:999px;border:none;margin-top:6px;
-    background:linear-gradient(90deg,#ff8c00,#ffbe2c);
-    color:#0d0d0d;font-weight:700;font-size:1rem;cursor:pointer;transition:.25s;
-    box-shadow:0 0 18px rgba(255,140,0,.4);
+.btn-login{
+  width:100%;
+  padding:12px;
+  border-radius:999px;
+  border:none;
+  margin-top:6px;
+  background:linear-gradient(90deg,#ff8c00,#ffbe2c);
+  color:#0d0d0d;
+  font-weight:700;
+  font-size:1rem;
+  cursor:pointer;
+  transition:.25s;
+  box-shadow:0 0 18px rgba(255,140,0,.4);
 }
-.btn:hover{transform:translateY(-2px);filter:brightness(1.1);}
-.btn:active{transform:translateY(0);}
+.btn-login:hover{transform:translateY(-2px);filter:brightness(1.1);}
+.btn-login:active{transform:translateY(0);}
 
-/* link Esqueci minha senha */
 .link-forgot{
-    text-align:right;font-size:.82rem;margin-top:6px;
+  text-align:right;
+  font-size:.82rem;
+  margin-top:6px;
 }
 .link-forgot a{
-    color:#66e0ff;text-decoration:none;transition:.2s;
+  color:#66e0ff;
+  text-decoration:none;
+  transition:.2s;
 }
 .link-forgot a:hover{color:#8ff6ff;text-shadow:0 0 8px rgba(0,255,255,.65);}
 
-/* mensagens */
-.msg{font-size:.85rem;padding:10px;border-radius:10px;margin-bottom:10px;text-align:center;}
-.msg-error{background:rgba(255,76,76,.12);border:1px solid rgba(255,76,76,.45);color:#ffbaba;}
-.msg-success{background:rgba(76,255,143,.12);border:1px solid rgba(76,255,143,.45);color:#c0ffd9;}
+.footer{
+  text-align:center;
+  margin-top:18px;
+  font-size:.78rem;
+  color:#7c8599;
+}
 
-.footer{text-align:center;margin-top:18px;font-size:.78rem;color:#7c8599;}
+/* Alerts do Django (base) */
+#alert-container{
+  width: 440px;
+  max-width: 92%;
+  margin: 0 auto 12px;
+}
+.alert{ border-radius:12px; }
 </style>
+{% endblock %}
 
-</head>
+{% block content %}
+<div class="login-card">
+  <div class="logo-box">
+    <img src="{% static 'img/logo.png' %}" class="logo" alt="D’OR@NGE">
+  </div>
 
-<body>
+  <h1 class="title">GED 🔶 Enterprise</h1>
+  <p class="subtitle">Acesse com suas credenciais corporativas</p>
 
-<div class="card">
-
-    <div class="logo-box">
-        <img src="{% static 'img/logo.png' %}" class="logo">
+  <form method="post">{% csrf_token %}
+    <div class="field">
+      <label for="id_username">Usuário</label>
+      <input id="id_username" type="text" name="username" placeholder="seu.usuario" required autofocus>
     </div>
 
-    <h1 class="title">GED 🔶 Enterprise</h1>
-    <p class="subtitle">Acesse com suas credenciais corporativas</p>
+    <div class="field" style="position:relative">
+      <label for="id_password">Senha</label>
+      <input id="id_password" type="password" name="password" placeholder="••••••••" required>
+      <span class="toggle-senha" onclick="toggleSenha()">👁</span>
+    </div>
 
-    {% if messages %}
-        {% for msg in messages %}
-        <div class="msg {% if msg.tags == 'success' %}msg-success{% else %}msg-error{% endif %}">{{ msg }}</div>
-        {% endfor %}
-    {% endif %}
+    <button class="btn-login" type="submit">Entrar</button>
 
-    <form method="post">{% csrf_token %}
-        <div class="field">
-            <label for="id_username">Usuário</label>
-            <input id="id_username" type="text" name="username" placeholder="seu.usuario" required>
-        </div>
-
-        <div class="field" style="position:relative">
-            <label for="id_password">Senha</label>
-            <input id="id_password" type="password" name="password" placeholder="••••••••" required>
-            <span class="toggle-senha" onclick="toggleSenha()">👁</span>
-        </div>
-
-<button class="btn">Entrar</button>
-
-<div class="link-forgot">
-    <a href="#" onclick="alert('Função disponível na versão SaaS com email corporativo.'); return false;">
+    <div class="link-forgot">
+      <a href="#" onclick="alert('Função disponível na versão SaaS com email corporativo.'); return false;">
         Esqueci minha senha
-    </a>
-</div>
-
-</form>
+      </a>
+    </div>
+  </form>
 </div>
 
 <p class="footer">© {% now "Y" %} D’OR@NGE Enterprise — Gestão Documental Naval</p>
+{% endblock %}
 
+{% block extra_js %}
 <script>
 function toggleSenha(){
-    let f=document.getElementById("id_password");
-    f.type=f.type==="password"?"text":"password";
+  const f = document.getElementById("id_password");
+  if (!f) return;
+  f.type = (f.type === "password") ? "text" : "password";
 }
 </script>
-
-</body>
-</html>
+{% endblock %}

@@ -41,9 +41,19 @@
     }
 </style>
 
-<h2 class="text-danger fw-bold mb-3" style="text-shadow: 0 0 10px #ff3355;">
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+  <h2 class="text-danger fw-bold mb-3" style="text-shadow: 0 0 10px #ff3355;">
     🗑️ Lixeira – Documentos Excluídos
 </h2>
+  {% if perms.documentos.delete_documento %}
+  <form method="POST" action="{% url 'documentos:esvaziar_lixeira' %}" onsubmit="return confirm('Esvaziar a lixeira definitivamente? Esta ação não pode ser desfeita.');">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-sm btn-delete-final">
+      <i class="bi bi-trash3-fill"></i> Esvaziar Lixeira (definitivo)
+    </button>
+  </form>
+  {% endif %}
+</div>
 
 <div class="neon-card">
 

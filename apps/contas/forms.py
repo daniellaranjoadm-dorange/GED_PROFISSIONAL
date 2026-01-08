@@ -11,7 +11,7 @@ class UserConfigForm(forms.ModelForm):
         fields = ["tema", "animacoes", "notificacoes_email", "dashboard_expandido"]
 
         widgets = {
-            "tema": forms.Select(attrs={"class": "form-control"}),
+            "tema": forms.Select(attrs={"class": "form-select"}),
             "animacoes": forms.CheckboxInput(attrs={"class": "form-check-input"}),
             "notificacoes_email": forms.CheckboxInput(attrs={"class": "form-check-input"}),
             "dashboard_expandido": forms.CheckboxInput(attrs={"class": "form-check-input"}),
@@ -30,10 +30,12 @@ class SolicitacaoAcessoForm(forms.ModelForm):
             "nome": forms.TextInput(attrs={
                 "class": "form-control",
                 "placeholder": "Seu nome completo",
+                "autocomplete": "name",
             }),
             "email": forms.EmailInput(attrs={
                 "class": "form-control",
                 "placeholder": "Seu e-mail corporativo",
+                "autocomplete": "email",
             }),
             "departamento": forms.TextInput(attrs={
                 "class": "form-control",

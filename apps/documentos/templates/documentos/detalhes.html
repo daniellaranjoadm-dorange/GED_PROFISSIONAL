@@ -37,10 +37,11 @@
     /* Layout geral da página de detalhes */
     .doc-wrapper {
     width: 100%;
-    max-width: calc(100% - var(--sidebar-width));
-    margin-left: var(--sidebar-width);
-    padding: 1.5rem 1rem 3rem;
+    max-width: 100%;
+    margin-left: 0;
+    padding: 0;
 }
+
 
     /* Título principal tipo "Microsoft / Autodesk" */
     .doc-title-main {
@@ -338,7 +339,7 @@
     /* Responsividade geral */
     @media (max-width: 992px) {
         .doc-wrapper {
-            padding-inline: 0.5rem;
+            padding-inline: 0;
         }
 
         .doc-title-main {
@@ -389,7 +390,7 @@
                     {{ documento.etapa.nome|default:"Não definido" }}
                 </div>
                 <div class="small text-muted">
-                    Código: {{ documento.etapa.codigo|default:documento.etapa_atual|default:"—" }}
+                    Código: {{ documento.codigo|default:"—"  }}
                 </div>
             </div>
 
@@ -567,7 +568,7 @@
       </div>
     </div>
          INFORMAÇÕES PRINCIPAIS
-    ================================ -->
+    
     <div class="card shadow-sm p-4 mb-4">
         <table class="table table-bordered mb-0 table-info">
             <tbody>
@@ -596,14 +597,22 @@
                     <td>{{ documento.tipo_doc }}</td>
                 </tr>
                 <tr>
-                    <th>Status LDP</th>
-                    <td>{{ documento.status_ldp }}</td>
+                    <th>Status Documento</th>
+                    <td>{{ documento.status_documento }}</td>
                 </tr>
                 <tr>
                     <th>Status Emissão</th>
                     <td>{{ documento.status_emissao }}</td>
                 </tr>
                 <tr>
+
+                </tr>
+                <tr>
+                    <th>Documento de Referencia</th>
+                    <td>{{ documento.documento_Referencia }}</td>
+                </tr>
+                <tr>
+
                     <th>Data Emissão</th>
                     <td>
                         {% if documento.data_emissao_tp %}

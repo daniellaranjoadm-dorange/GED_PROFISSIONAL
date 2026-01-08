@@ -1,6 +1,4 @@
-﻿from django.db.models import Q
-from django.views.decorators.http import require_POST
-# apps/documentos/views.py
+﻿# apps/documentos/views.py
 
 from __future__ import annotations
 
@@ -1276,11 +1274,7 @@ def editar_documento(request, documento_id):
         documento.codigo = request.POST.get("codigo") or ""
         documento.disciplina = request.POST.get("disciplina") or ""
         documento.titulo = request.POST.get("titulo") or ""
-        status_doc = (request.POST.get("status_documento")
-                      or request.POST.get("status_ldp")
-                      or request.POST.get("status")
-                      or "")
-        documento.status_documento = status_doc
+        documento.status_documento = request.POST.get("status_documento") or ""
         documento.status_emissao = request.POST.get("status_emissao") or ""
         documento.grdt_cliente = request.POST.get("grdt_cliente") or ""
         documento.resposta_cliente = request.POST.get("resposta_cliente") or ""
@@ -1847,6 +1841,7 @@ def importar_ldp(request):
             continue
 
         revisao = _clean(row.get(col_revisao)) if col_revisao else ""
+        revisao = revisao or "0"  # normaliza revisão vazia
 
         # Monta defaults com segurança (só se o field existir)
         defaults = {}
@@ -1867,7 +1862,10 @@ def importar_ldp(request):
 
         tipo_val = _clean(row.get(col_tipo)) if col_tipo else ""
         if tipo_val:
-            if "tipo_documento" in doc_fields:
+            # Campo correto no model é tipo_doc (mas mantemos compatibilidade)
+            if "tipo_doc" in doc_fields:
+                defaults["tipo_doc"] = tipo_val
+            elif "tipo_documento" in doc_fields:
                 defaults["tipo_documento"] = tipo_val
             elif "tipo" in doc_fields:
                 defaults["tipo"] = tipo_val
@@ -1884,6 +1882,18 @@ def importar_ldp(request):
                     _add_error(error_items, excel_row, codigo, "Projeto", proj_val, "Não consegui mapear Projeto (model não compatível)")
                 else:
                     defaults["projeto"] = resolved
+
+        # ✅ Garante visibilidade na "Lista de Documentos":
+        # Se o documento já existia e foi movido para a lixeira (soft delete),
+        # a importação deve restaurar automaticamente.
+        if "ativo" in doc_fields:
+            defaults["ativo"] = True
+        if "deletado_em" in doc_fields:
+            defaults["deletado_em"] = None
+        if "deletado_por" in doc_fields:
+            defaults["deletado_por"] = None
+        if "motivo_exclusao" in doc_fields:
+            defaults["motivo_exclusao"] = ""
 
         # calcula sem_mudanca (comparando antes/depois)
         try:
@@ -2009,47 +2019,91 @@ def importar_ldp_legacy(request):
 # =================================================================
 
 def _calcular_medicao_queryset(docs_qs):
-    med_raw = docs_qs.values("tipo_doc").annotate(
-        total=Count("id"),
-        emitidos=Count("id", filter=Q(status_emissao="Emitido")),
-        nr=Count("id", filter=Q(status_emissao="Não Recebido")),
+    """
+    Calcula a medição agrupada por tipo_doc usando regras simples:
+    - EMITIDOS: status_documento == STATUS_EMITIDO
+    - NÃO RECEBIDOS: status_documento == STATUS_NAO_RECEBIDO
+    Valores (USD/BRL) são calculados por quantidade * VALOR_MEDICAO_USD e taxa fixa TAXA_CAMBIO_REAIS.
+    """
+
+    med_raw = (
+        docs_qs
+        .values("tipo_doc")
+        .annotate(
+            total_docs=Count("id"),
+            emitidos=Count("id", filter=Q(status_documento=STATUS_EMITIDO)),
+            nao_recebidos=Count("id", filter=Q(status_documento=STATUS_NAO_RECEBIDO)),
+        )
+        .order_by("tipo_doc")
     )
 
+    def _fmt_br(n: float) -> str:
+        # 1,234.56 -> 1.234,56 (pt-BR)
+        s = f"{n:,.2f}"
+        return s.replace(",", "X").replace(".", ",").replace("X", ".")
+
     linhas = []
-    total_usd = 0
-    total_brl = 0
-
-    for m in med_raw:
-        tipo = m["tipo_doc"] or "Sem Tipo"
-        emit = m["emitidos"]
-        nr = m["nr"]
-
-        v_emit_usd = emit * VALOR_MEDICAO_USD
-        v_nr_usd = nr * VALOR_MEDICAO_USD
-        v_emit_brl = v_emit_usd * TAXA_CAMBIO_REAIS
-        v_nr_brl = v_nr_usd * TAXA_CAMBIO_REAIS
-
-        total_usd += v_emit_usd + v_nr_usd
-        total_brl += v_emit_brl + v_nr_brl
-
-        linhas.append(
-            {
-                "tipo_doc": tipo,
-                "total": m["total"],
-                "emitidos": emit,
-                "nao_recebidos": nr,
-                "valor_emitidos_usd": f"{v_emit_usd:,.2f}",
-                "valor_nr_usd": f"{v_nr_usd:,.2f}",
-                "valor_emitidos_brl": f"{v_emit_brl:,.2f}",
-                "valor_nr_brl": f"{v_nr_brl:,.2f}",
-            }
-        )
-
     totais = {
-        "total_docs": sum(m["total"] for m in med_raw),
-        "total_usd": f"{total_usd:,.2f}",
-        "total_brl": f"{total_brl:,.2f}",
+        "total_docs": 0,
+        "total_emitidos": 0,
+        "total_nao_recebidos": 0,
+        "total_emitidos_usd": "0,00",
+        "total_emitidos_brl": "0,00",
+        "total_nr_usd": "0,00",
+        "total_nr_brl": "0,00",
+        "total_usd": "0,00",
+        "total_brl": "0,00",
     }
+
+    # acumuladores numéricos
+    _acc_emit_usd = 0.0
+    _acc_emit_brl = 0.0
+    _acc_nr_usd = 0.0
+    _acc_nr_brl = 0.0
+
+    for row in med_raw:
+        tipo_doc = row.get("tipo_doc") or "Sem Tipo"
+        total_docs = int(row.get("total_docs") or 0)
+        emitidos = int(row.get("emitidos") or 0)
+        nao_recebidos = int(row.get("nao_recebidos") or 0)
+
+        valor_emitidos_usd = float(emitidos) * float(VALOR_MEDICAO_USD)
+        valor_emitidos_brl = valor_emitidos_usd * float(TAXA_CAMBIO_REAIS)
+
+        valor_nr_usd = float(nao_recebidos) * float(VALOR_MEDICAO_USD)
+        valor_nr_brl = valor_nr_usd * float(TAXA_CAMBIO_REAIS)
+
+        total_usd = valor_emitidos_usd + valor_nr_usd
+        total_brl = valor_emitidos_brl + valor_nr_brl
+
+        linhas.append({
+            "tipo_doc": tipo_doc,
+            "total_docs": total_docs,
+            "emitidos": emitidos,
+            "nao_recebidos": nao_recebidos,
+            "valor_emitidos_usd": _fmt_br(valor_emitidos_usd),
+            "valor_emitidos_brl": _fmt_br(valor_emitidos_brl),
+            "valor_nr_usd": _fmt_br(valor_nr_usd),
+            "valor_nr_brl": _fmt_br(valor_nr_brl),
+            # valores brutos para gráficos
+            "total_usd_raw": total_usd,
+            "total_brl_raw": total_brl,
+        })
+
+        totais["total_docs"] += total_docs
+        totais["total_emitidos"] += emitidos
+        totais["total_nao_recebidos"] += nao_recebidos
+        _acc_emit_usd += valor_emitidos_usd
+        _acc_emit_brl += valor_emitidos_brl
+        _acc_nr_usd += valor_nr_usd
+        _acc_nr_brl += valor_nr_brl
+
+    totais["total_emitidos_usd"] = _fmt_br(_acc_emit_usd)
+    totais["total_emitidos_brl"] = _fmt_br(_acc_emit_brl)
+    totais["total_nr_usd"] = _fmt_br(_acc_nr_usd)
+    totais["total_nr_brl"] = _fmt_br(_acc_nr_brl)
+    totais["total_usd"] = _fmt_br(_acc_emit_usd + _acc_nr_usd)
+    totais["total_brl"] = _fmt_br(_acc_emit_brl + _acc_nr_brl)
 
     return linhas, totais
 
@@ -2058,13 +2112,23 @@ def _calcular_medicao_queryset(docs_qs):
 def medicao(request):
     docs = Documento.objects.filter(ativo=True)
 
-    projeto = request.GET.get("projeto") or ""
+    projeto = (request.GET.get("projeto") or "").strip()
     if projeto:
         docs = docs.filter(projeto__nome__icontains=projeto)
 
     linhas, totais = _calcular_medicao_queryset(docs)
 
+    # Gráficos: valores totais por tipo (USD/BRL)
+    tipos = [l.get("tipo_doc") for l in linhas]
+    usd_vals = [round(float(l.get("total_usd_raw") or 0.0), 2) for l in linhas]
+    brl_vals = [round(float(l.get("total_brl_raw") or 0.0), 2) for l in linhas]
+
+    def _fmt_br(n: float) -> str:
+        s = f"{n:,.2f}"
+        return s.replace(",", "X").replace(".", ",").replace("X", ".")
+
     base_qs = Documento.objects.filter(ativo=True).select_related("projeto")
+    projetos = list(base_qs.values_list("projeto__nome", flat=True).distinct())
 
     return render(
         request,
@@ -2072,8 +2136,15 @@ def medicao(request):
         {
             "linhas": linhas,
             "totais": totais,
-            "projetos": base_qs.values_list("projeto__nome", flat=True).distinct(),
+            "projetos": projetos,
             "projeto_selecionado": projeto,
+            # KPI cards
+            "TAXA_CAMBIO_REAIS": _fmt_br(float(TAXA_CAMBIO_REAIS)),
+            "VALOR_MEDICAO_USD": _fmt_br(float(VALOR_MEDICAO_USD)),
+            # Chart.js (JSON)
+            "tipos_js": json.dumps(tipos, ensure_ascii=False),
+            "usd_js": json.dumps(usd_vals),
+            "brl_js": json.dumps(brl_vals),
         },
     )
 
@@ -2421,29 +2492,27 @@ def buscar_ajax(request):
 
     return JsonResponse({"results": items})
 
-# ==============================
-# AUTO-FIX v2 - views ausentes
-# ==============================
+# === AUTO-FALLBACK-VIEWS (do not remove) ===
+# Gerado: 2026-01-08 13:37:38
+# Objetivo: evitar crash de import quando urls.py referencia views inexistentes.
+
+from django.http import HttpResponse
+from django.contrib.auth.decorators import login_required
+
+from django.shortcuts import get_object_or_404, redirect
+from django.utils import timezone
+from django.contrib import messages
+from .models import Documento
 
 @login_required
-@require_POST
 def esvaziar_lixeira(request, *args, **kwargs):
-    """
-    Esvazia a lixeira (hard delete) dos documentos marcados como deletados.
-    Regra: Documento deletado => deletado_em != None OU ativo == False.
-    """
-    from django.contrib import messages
-    from django.shortcuts import redirect
-    from django.db import transaction
-    from django.db.models import Q
-    from .models import Documento
-
-    qs = Documento.objects.filter(Q(deletado_em__isnull=False) | Q(ativo=False))
+    # Recomendado: chamar via POST para evitar exclusoes acidentais
+    if request.method != "POST":
+        return HttpResponse("Method Not Allowed", status=405)
+    qs = Documento.objects.exclude(deletado_em__isnull=True)
     total = qs.count()
-
-    with transaction.atomic():
-        qs.delete()
-
-    messages.success(request, f"Lixeira esvaziada com sucesso ({total} itens removidos).")
+    qs.delete()
+    messages.success(request, f"Lixeira esvaziada: {total} item(ns) removido(s).")
     return redirect("documentos:lixeira")
 
+# === /AUTO-FALLBACK-VIEWS ===

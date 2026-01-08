@@ -1,100 +1,128 @@
 {% extends "documentos/base.html" %}
 {% load static %}
 
-{% block title %}Configurações do Sistema | GED{% endblock %}
+{% block title %}Usuários & Permissões{% endblock %}
 
 {% block content %}
+<div class="container-fluid py-3">
 
-<style>
-.section-title {
-    font-weight: 700;
-    letter-spacing: 0.03em;
-    text-shadow: 0 0 12px rgba(0, 200, 255, 0.85);
-}
-.config-card {
-    background: rgba(0, 15, 35, 0.85);
-    border-radius: 16px;
-    border: 1px solid rgba(0, 200, 255, 0.45);
-    box-shadow: 0 0 25px rgba(0, 200, 255, 0.45);
-    padding: 25px;
-    max-width: 560px;
-    transition: 0.25s ease;
-}
-.config-card:hover {
-    box-shadow: 0 0 35px rgba(0, 200, 255, 0.8);
-}
-.config-card label {
-    font-weight: 600;
-    margin-bottom: 6px;
-}
-.btn-neo {
-    padding: 10px 20px;
-    background: #00bfff;
-    border: none;
-    color: #000;
-    font-weight: bold;
-    border-radius: 8px;
-    box-shadow: 0 0 18px #00bfff;
-    transition: 0.25s ease;
-}
-.btn-neo:hover {
-    box-shadow: 0 0 35px #00bfff;
-    transform: scale(1.05);
-}
-</style>
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div>
+      <h1 class="h5 mb-1">Usuários &amp; Permissões</h1>
+      <div class="text-muted small">
+        Administração de acessos e preferências do sistema.
+      </div>
+    </div>
 
-<h2 class="mb-4 text-info fw-bold section-title">
-    <i class="bi bi-gear"></i> Configurações do Sistema
-</h2>
+    {% if user.is_superuser %}
+    <div class="d-flex flex-wrap gap-2">
+      <a class="btn btn-sm btn-outline-primary" href="/admin/auth/user/" target="_blank" rel="noopener">
+        <i class="bi bi-person-badge"></i> Usuários
+      </a>
+      <a class="btn btn-sm btn-outline-primary" href="/admin/auth/group/" target="_blank" rel="noopener">
+        <i class="bi bi-people"></i> Grupos
+      </a>
+      <a class="btn btn-sm btn-outline-secondary" href="/admin/" target="_blank" rel="noopener">
+        <i class="bi bi-shield-lock"></i> Admin Django
+      </a>
+    </div>
+    {% endif %}
+  </div>
 
-<div class="config-card">
+  <div class="row g-3">
 
-    <h4 class="text-info mb-3" style="text-shadow:0 0 8px #00c8ff;">
-        <i class="bi bi-sliders"></i> Preferências do Usuário
-    </h4>
-
-    <form method="POST">
-        {% csrf_token %}
-
-        <!-- IMPORTANTE: sua view verifica esse campo -->
-        <input type="hidden" name="salvar_prefs" value="1"/>
-
-        <div class="mb-3">
-            <label>Tema do Sistema</label>
-            <select class="form-select bg-dark text-light border-info" name="tema"
-                    style="box-shadow:0 0 10px rgba(0,200,255,0.25);">
-                <option value="claro"  {% if config.tema == "claro" %}selected{% endif %}>Claro</option>
-                <option value="escuro" {% if config.tema == "escuro" %}selected{% endif %}>Escuro</option>
-            </select>
+    <!-- Preferências do usuário -->
+    <div class="col-12 col-lg-6">
+      <div class="card shadow-sm">
+        <div class="card-header">
+          <div class="fw-semibold">Preferências do usuário</div>
+          <div class="text-muted small">Afeta somente a sua conta.</div>
         </div>
 
-        <div class="form-check mb-2">
-            <input class="form-check-input" type="checkbox" id="notificacoes_email"
-                   name="notificacoes_email" value="True"
-                   {% if config.notificacoes_email %}checked{% endif %}>
-            <label class="form-check-label" for="notificacoes_email">Receber notificações por e-mail</label>
+        <div class="card-body">
+          <form method="post" class="row g-3">
+            {% csrf_token %}
+
+            {% for field in form %}
+              <div class="col-12">
+                <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+
+                <div>
+                  {{ field }}
+                </div>
+
+                {% if field.help_text %}
+                  <div class="form-text">{{ field.help_text }}</div>
+                {% endif %}
+
+                {% for error in field.errors %}
+                  <div class="invalid-feedback d-block">{{ error }}</div>
+                {% endfor %}
+              </div>
+            {% endfor %}
+
+            <div class="col-12 d-flex justify-content-end">
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-save"></i> Salvar
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Indicadores / atalhos -->
+    <div class="col-12 col-lg-6">
+      <div class="card shadow-sm">
+        <div class="card-header">
+          <div class="fw-semibold">Parâmetros do sistema</div>
+          <div class="text-muted small">
+            Visão rápida dos cadastros base do GED (workflow, projetos, responsáveis).
+          </div>
         </div>
 
-        <div class="form-check mb-2">
-            <input class="form-check-input" type="checkbox" id="animacoes"
-                   name="animacoes" value="True"
-                   {% if config.animacoes %}checked{% endif %}>
-            <label class="form-check-label" for="animacoes">Ativar animações</label>
+        <div class="card-body">
+          <div class="row g-2">
+            <div class="col-12 col-md-4">
+              <div class="border rounded p-3 h-100">
+                <div class="fw-semibold">Projetos</div>
+                <div class="text-muted small">{{ projetos|length }} cadastrados</div>
+              </div>
+            </div>
+
+            <div class="col-12 col-md-4">
+              <div class="border rounded p-3 h-100">
+                <div class="fw-semibold">Responsáveis</div>
+                <div class="text-muted small">{{ responsaveis|length }} cadastrados</div>
+              </div>
+            </div>
+
+            <div class="col-12 col-md-4">
+              <div class="border rounded p-3 h-100">
+                <div class="fw-semibold">Etapas</div>
+                <div class="text-muted small">{{ etapas|length }} no workflow</div>
+              </div>
+            </div>
+          </div>
+
+          <hr>
+
+          <div class="text-muted small">
+            Dica: para editar usuários, grupos, permissões e cadastros base, utilize o Admin do Django.
+          </div>
+
+          {% if user.is_superuser %}
+          <div class="mt-2 d-flex flex-wrap gap-2">
+            <a class="btn btn-sm btn-outline-secondary" href="/admin/" target="_blank" rel="noopener">
+              Abrir Admin
+            </a>
+          </div>
+          {% endif %}
         </div>
+      </div>
+    </div>
 
-        <div class="form-check mb-4">
-            <input class="form-check-input" type="checkbox" id="dashboard_expandido"
-                   name="dashboard_expandido" value="True"
-                   {% if config.dashboard_expandido %}checked{% endif %}>
-            <label class="form-check-label" for="dashboard_expandido">Dashboard expandido</label>
-        </div>
-
-        <button type="submit" class="btn-neo">
-            <i class="bi bi-save"></i> Salvar Configurações
-        </button>
-
-    </form>
+  </div>
 
 </div>
-
 {% endblock %}

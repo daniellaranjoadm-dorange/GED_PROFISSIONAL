@@ -1,7 +1,34 @@
 :root{
   --sidebar-width: 240px;
-}
 
+  /* Defaults (fallback) — use DARK as base so pages without data-theme (ex: admin/login) stay ok */
+  --bg: #020617;
+  --bg-card: #0b1220;
+  --bg-sidebar: #0C1220;
+
+  /* Chrome/UI (sidebar/topbar) text */
+  --text: #ffffff;
+  --text-soft: #94a3b8;
+
+  /* Content text (main area) */
+  --content-text: #eaf1ff;
+  --content-muted: rgba(234,241,255,.72);
+
+  --accent-blue: #38BDF8;
+  --accent-blue-soft: rgba(56,189,248,.12);
+
+  --accent-orange: #FF8A00;
+  --accent-orange-soft: rgba(255,138,0,0.22);
+
+  --border: #1e2636;
+  --shadow: rgba(0,0,0,.45);
+
+  /* Form fields (content area) */
+  --field-bg: #101a2b;
+  --field-text: #dce8ff;
+  --field-border: rgba(255,255,255,0.14);
+  --field-placeholder: rgba(220,232,255,.70);
+}
 /* =================================================================================
    D’OR@NGE ENTERPRISE UI — THEME S6 NAVY + ORANGE (BUILD FINAL)
 ================================================================================= */
@@ -26,6 +53,16 @@ body[data-theme="light"] {
 
     --border: #d0d7e4;
     --shadow: rgba(0,0,0,.15);
+
+    /* Content area text (light mode) */
+    --content-text: #0b1220;
+    --content-muted: rgba(11,18,32,.68);
+
+    /* Form fields (light mode) */
+    --field-bg: #ffffff;
+    --field-text: #0b1220;
+    --field-border: rgba(11,18,32,.16);
+    --field-placeholder: rgba(11,18,32,.50);
 }
 
 body[data-theme="dark"],
@@ -45,13 +82,23 @@ body[data-theme="auto"] {
 
     --border: #1e2636;
     --shadow: rgba(0,0,0,.45);
+
+    /* Content area text (dark mode) */
+    --content-text: #eaf1ff;
+    --content-muted: rgba(234,241,255,.72);
+
+    /* Form fields (dark mode) */
+    --field-bg: #101a2b;
+    --field-text: #dce8ff;
+    --field-border: rgba(255,255,255,0.14);
+    --field-placeholder: rgba(220,232,255,.70);
 }
 
 /* GLOBAL */
 
 body {
     background: var(--bg);
-    color: var(--text);
+    color: var(--content-text, var(--text));
     font-family: "Inter", sans-serif;
     transition: .25s ease;
 }
@@ -70,7 +117,7 @@ body {
     width: var(--sidebar-width);
     background: var(--bg-sidebar);
     padding: 1.4rem 1rem 1rem;
-    color: var(--text);
+    color: var(--content-text, var(--text));
     position: fixed;
     top: 0; bottom: 0; left: 0;
     overflow-y: auto;
@@ -224,11 +271,44 @@ body {
    FORMULÁRIOS / TABELAS
 ============================================================ */
 
-input, select, textarea {
-    background-color: #101a2b !important;
-    color: #dce8ff !important;
-    border: 1px solid rgba(255,255,255,0.14) !important;
+.page-area input,
+.page-area select,
+.page-area textarea,
+.page-area .form-control,
+.page-area .form-select{
+    background-color: var(--field-bg) !important;
+    color: var(--field-text) !important;
+    border: 1px solid var(--field-border) !important;
 }
+
+/* placeholders */
+.page-area input::placeholder,
+.page-area textarea::placeholder{
+    color: var(--field-placeholder) !important;
+    opacity: 1;
+}
+
+/* labels & helper text */
+.page-area label,
+.page-area .form-label,
+.page-area .form-check-label{
+    color: var(--content-text) !important;
+}
+
+.page-area .form-text,
+.page-area small,
+.page-area .small,
+.page-area .text-muted{
+    color: var(--content-muted) !important;
+}
+
+/* keep topbar search clean */
+.topbar-search input{
+    background: transparent !important;
+    border: none !important;
+    color: #E2E8F0 !important;
+}
+
 
 /* Remover azul fantasma */
 .card, .btn, table tbody tr {
@@ -470,3 +550,976 @@ html, body, .layout { max-width: 100%; overflow-x: hidden; }
     max-width: 100% !important;
   }
 }
+/* ==========================================================
+   Dashboard GED — "Dash" Components + Skin do Django Admin
+   Objetivo: padronizar telas internas sem criar uma floresta de CSS.
+   Depende dos tokens do enterprise.css quando existirem.
+   ========================================================== */
+
+/* Tokens (com fallback) */
+:root{
+  --dash-radius: 18px;
+  --dash-border: var(--border, rgba(255,255,255,.10));
+  --dash-text:   var(--text, #eaf1ff);
+  --dash-muted:  var(--text-soft, rgba(234,241,255,.72));
+
+  --dash-accent:   var(--accent-orange, #ffb13c);
+  --dash-accent-2: var(--accent-blue, #38bdf8);
+
+  --dash-surface-1: rgba(10,16,28,.78);
+  --dash-surface-2: rgba(22,34,55,.60);
+  --dash-shadow: 0 14px 40px rgba(0,0,0,.35);
+}
+
+/* Tema claro (se você usa body[data-theme="light"]) */
+body[data-theme="light"]{
+  --dash-border: rgba(10,20,40,.12);
+  --dash-text: #0b1220;
+  --dash-muted: rgba(11,18,32,.68);
+  --dash-surface-1: rgba(255,255,255,.92);
+  --dash-surface-2: rgba(245,248,255,.92);
+  --dash-shadow: 0 14px 34px rgba(10,20,40,.12);
+}
+
+.dash-muted{ color: var(--dash-muted) !important; }
+
+/* Header (título + ações) */
+.dash-header{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:12px;
+  margin: 10px 0 14px;
+  flex-wrap: wrap;
+}
+
+.dash-title{
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  margin:0;
+  font-size: clamp(1.35rem, 2.2vw, 2.2rem);
+  color: var(--dash-text);
+}
+
+.dash-subtitle{
+  color: var(--dash-muted);
+  font-size: .92rem;
+  margin-top: 4px;
+}
+
+/* Surface / Card */
+.dash-surface{
+  border-radius: var(--dash-radius);
+  border: 1px solid var(--dash-border);
+  background: linear-gradient(135deg, var(--dash-surface-1), var(--dash-surface-2));
+  box-shadow: var(--dash-shadow);
+  backdrop-filter: blur(8px);
+}
+
+.dash-surface.pad{ padding: 16px; }
+.dash-surface-flat{ box-shadow:none !important; backdrop-filter:none !important; }
+
+/* Botões */
+.dash-btn{
+  border-radius: 999px;
+  font-weight: 800;
+  padding: 8px 14px;
+  border: 1px solid var(--dash-border);
+  background: rgba(0,0,0,.18);
+  color: var(--dash-text);
+  text-decoration:none;
+  display:inline-flex;
+  gap:8px;
+  align-items:center;
+}
+
+body[data-theme="light"] .dash-btn{ background: rgba(11,18,32,.06); }
+.dash-btn:hover{ filter: brightness(1.06); color: var(--dash-text); }
+
+.dash-btn-primary{
+  border-color: rgba(255,177,60,.45);
+  background: rgba(255,177,60,.18);
+}
+
+.dash-btn-danger{
+  border-color: rgba(251,113,133,.45);
+  background: rgba(251,113,133,.16);
+}
+
+/* Badge de status */
+.dash-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: .78rem;
+  font-weight: 900;
+  border: 1px solid var(--dash-border);
+}
+
+.dash-badge-success{ background: rgba(52,211,153,.16); border-color: rgba(52,211,153,.35); }
+.dash-badge-danger{  background: rgba(251,113,133,.16); border-color: rgba(251,113,133,.35); }
+.dash-badge-warning{ background: rgba(255,177,60,.16); border-color: rgba(255,177,60,.35); }
+.dash-badge-info{    background: rgba(34,211,238,.14); border-color: rgba(34,211,238,.32); }
+
+/* Inputs (somente dentro de .dash-surface) */
+.dash-surface .form-control,
+.dash-surface .form-select,
+.dash-surface textarea{
+  background: rgba(0,0,0,.18);
+  border: 1px solid var(--dash-border);
+  color: var(--dash-text);
+}
+
+body[data-theme="light"] .dash-surface .form-control,
+body[data-theme="light"] .dash-surface .form-select,
+body[data-theme="light"] .dash-surface textarea{
+  background: rgba(11,18,32,.04);
+}
+
+.dash-surface .form-control:focus,
+.dash-surface .form-select:focus,
+.dash-surface textarea:focus{
+  border-color: rgba(56,189,248,.55);
+  box-shadow: 0 0 0 2px rgba(56,189,248,.18);
+}
+
+.dash-surface .form-control::placeholder,
+.dash-surface textarea::placeholder{
+  color: var(--dash-muted);
+}
+
+/* Tabela */
+.dash-table{
+  --bs-table-bg: transparent;
+  --bs-table-color: var(--dash-text);
+  --bs-table-striped-bg: rgba(255,255,255,.03);
+  --bs-table-striped-color: var(--dash-text);
+  --bs-table-hover-bg: rgba(255,255,255,.06);
+  --bs-table-hover-color: var(--dash-text);
+
+  color: var(--dash-text);
+  margin:0;
+}
+
+.dash-table > :not(caption) > * > *{
+  background-color: transparent !important;
+  color: var(--dash-text) !important;
+}
+
+.dash-table thead th{
+  color: var(--dash-muted);
+  font-weight: 900;
+  font-size: .78rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  border-bottom: 1px solid var(--dash-border) !important;
+  background: rgba(0,0,0,.12);
+}
+
+body[data-theme="light"] .dash-table thead th{
+  background: rgba(11,18,32,.04);
+}
+
+.dash-table td, .dash-table th{
+  border-color: var(--dash-border) !important;
+}
+
+.dash-table tbody tr:hover{
+  background: rgba(255,255,255,.04);
+}
+
+/* ==========================================================
+   DJANGO ADMIN (skin)
+   (vai funcionar quando você injetar o CSS no admin)
+   ========================================================== */
+
+#header{
+  background: linear-gradient(90deg, rgba(11,18,32,.98), rgba(17,26,46,.98));
+  border-bottom: 1px solid var(--dash-border);
+  box-shadow: var(--dash-shadow);
+}
+
+#branding h1, #branding h1 a{
+  color: var(--dash-text) !important;
+  font-weight: 900;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+div.breadcrumbs{
+  background: rgba(0,0,0,.18);
+  border-bottom: 1px solid var(--dash-border);
+  color: var(--dash-muted);
+}
+
+body.dashboard, body.change-list, body.change-form{
+  background:
+    radial-gradient(circle at 0% 0%, rgba(255,177,60,.16), transparent 55%),
+    radial-gradient(circle at 85% 100%, rgba(56,189,248,.14), transparent 55%),
+    linear-gradient(135deg, rgba(2,6,23,1) 0%, rgba(2,6,23,1) 100%);
+  color: var(--dash-text);
+}
+
+#content-main .module,
+#content-main .inline-group,
+#content-main fieldset.module{
+  border-radius: var(--dash-radius);
+  border: 1px solid var(--dash-border);
+  background: linear-gradient(135deg, var(--dash-surface-1), var(--dash-surface-2));
+  box-shadow: var(--dash-shadow);
+}
+
+
+/* ==========================================================
+   MERGE: dashboard_theme.css (dash components + admin skin)
+   ========================================================== */
+
+/* ==========================================================
+   Dashboard GED — "Dash" Components + Skin do Django Admin
+   Objetivo: padronizar telas internas sem criar uma floresta de CSS.
+   Depende dos tokens do enterprise.css quando existirem.
+   ========================================================== */
+
+/* Tokens (com fallback) */
+:root{
+  --dash-radius: 18px;
+  --dash-border: var(--border, rgba(255,255,255,.10));
+  --dash-text:   var(--text, #eaf1ff);
+  --dash-muted:  var(--text-soft, rgba(234,241,255,.72));
+
+  --dash-accent:   var(--accent-orange, #ffb13c);
+  --dash-accent-2: var(--accent-blue, #38bdf8);
+
+  --dash-surface-1: rgba(10,16,28,.78);
+  --dash-surface-2: rgba(22,34,55,.60);
+  --dash-shadow: 0 14px 40px rgba(0,0,0,.35);
+}
+
+/* Tema claro (se você usa body[data-theme="light"]) */
+body[data-theme="light"]{
+  --dash-border: rgba(10,20,40,.12);
+  --dash-text: #0b1220;
+  --dash-muted: rgba(11,18,32,.68);
+  --dash-surface-1: rgba(255,255,255,.92);
+  --dash-surface-2: rgba(245,248,255,.92);
+  --dash-shadow: 0 14px 34px rgba(10,20,40,.12);
+}
+
+.dash-muted{ color: var(--dash-muted) !important; }
+
+/* Header (título + ações) */
+.dash-header{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:12px;
+  margin: 10px 0 14px;
+  flex-wrap: wrap;
+}
+
+.dash-title{
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  margin:0;
+  font-size: clamp(1.35rem, 2.2vw, 2.2rem);
+  color: var(--dash-text);
+}
+
+.dash-subtitle{
+  color: var(--dash-muted);
+  font-size: .92rem;
+  margin-top: 4px;
+}
+
+/* Surface / Card */
+.dash-surface{
+  border-radius: var(--dash-radius);
+  border: 1px solid var(--dash-border);
+  background: linear-gradient(135deg, var(--dash-surface-1), var(--dash-surface-2));
+  box-shadow: var(--dash-shadow);
+  backdrop-filter: blur(8px);
+}
+
+.dash-surface.pad{ padding: 16px; }
+.dash-surface-flat{ box-shadow:none !important; backdrop-filter:none !important; }
+
+/* Botões */
+.dash-btn{
+  border-radius: 999px;
+  font-weight: 800;
+  padding: 8px 14px;
+  border: 1px solid var(--dash-border);
+  background: rgba(0,0,0,.18);
+  color: var(--dash-text);
+  text-decoration:none;
+  display:inline-flex;
+  gap:8px;
+  align-items:center;
+}
+
+body[data-theme="light"] .dash-btn{ background: rgba(11,18,32,.06); }
+.dash-btn:hover{ filter: brightness(1.06); color: var(--dash-text); }
+
+.dash-btn-primary{
+  border-color: rgba(255,177,60,.45);
+  background: rgba(255,177,60,.18);
+}
+
+.dash-btn-danger{
+  border-color: rgba(251,113,133,.45);
+  background: rgba(251,113,133,.16);
+}
+
+/* Badge de status */
+.dash-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: .78rem;
+  font-weight: 900;
+  border: 1px solid var(--dash-border);
+}
+
+.dash-badge-success{ background: rgba(52,211,153,.16); border-color: rgba(52,211,153,.35); }
+.dash-badge-danger{  background: rgba(251,113,133,.16); border-color: rgba(251,113,133,.35); }
+.dash-badge-warning{ background: rgba(255,177,60,.16); border-color: rgba(255,177,60,.35); }
+.dash-badge-info{    background: rgba(34,211,238,.14); border-color: rgba(34,211,238,.32); }
+
+/* Inputs (somente dentro de .dash-surface) */
+.dash-surface .form-control,
+.dash-surface .form-select,
+.dash-surface textarea{
+  background: rgba(0,0,0,.18);
+  border: 1px solid var(--dash-border);
+  color: var(--dash-text);
+}
+
+body[data-theme="light"] .dash-surface .form-control,
+body[data-theme="light"] .dash-surface .form-select,
+body[data-theme="light"] .dash-surface textarea{
+  background: rgba(11,18,32,.04);
+}
+
+.dash-surface .form-control:focus,
+.dash-surface .form-select:focus,
+.dash-surface textarea:focus{
+  border-color: rgba(56,189,248,.55);
+  box-shadow: 0 0 0 2px rgba(56,189,248,.18);
+}
+
+.dash-surface .form-control::placeholder,
+.dash-surface textarea::placeholder{
+  color: var(--dash-muted);
+}
+
+/* Tabela */
+.dash-table{
+  --bs-table-bg: transparent;
+  --bs-table-color: var(--dash-text);
+  --bs-table-striped-bg: rgba(255,255,255,.03);
+  --bs-table-striped-color: var(--dash-text);
+  --bs-table-hover-bg: rgba(255,255,255,.06);
+  --bs-table-hover-color: var(--dash-text);
+
+  color: var(--dash-text);
+  margin:0;
+}
+
+.dash-table > :not(caption) > * > *{
+  background-color: transparent !important;
+  color: var(--dash-text) !important;
+}
+
+.dash-table thead th{
+  color: var(--dash-muted);
+  font-weight: 900;
+  font-size: .78rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  border-bottom: 1px solid var(--dash-border) !important;
+  background: rgba(0,0,0,.12);
+}
+
+body[data-theme="light"] .dash-table thead th{
+  background: rgba(11,18,32,.04);
+}
+
+.dash-table td, .dash-table th{
+  border-color: var(--dash-border) !important;
+}
+
+.dash-table tbody tr:hover{
+  background: rgba(255,255,255,.04);
+}
+
+/* ==========================================================
+   DJANGO ADMIN (skin)
+   (vai funcionar quando você injetar o CSS no admin)
+   ========================================================== */
+
+#header{
+  background: linear-gradient(90deg, rgba(11,18,32,.98), rgba(17,26,46,.98));
+  border-bottom: 1px solid var(--dash-border);
+  box-shadow: var(--dash-shadow);
+}
+
+#branding h1, #branding h1 a{
+  color: var(--dash-text) !important;
+  font-weight: 900;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+div.breadcrumbs{
+  background: rgba(0,0,0,.18);
+  border-bottom: 1px solid var(--dash-border);
+  color: var(--dash-muted);
+}
+
+body.dashboard, body.change-list, body.change-form{
+  background:
+    radial-gradient(circle at 0% 0%, rgba(255,177,60,.16), transparent 55%),
+    radial-gradient(circle at 85% 100%, rgba(56,189,248,.14), transparent 55%),
+    linear-gradient(135deg, rgba(2,6,23,1) 0%, rgba(2,6,23,1) 100%);
+  color: var(--dash-text);
+}
+
+#content-main .module,
+#content-main .inline-group,
+#content-main fieldset.module{
+  border-radius: var(--dash-radius);
+  border: 1px solid var(--dash-border);
+  background: linear-gradient(135deg, var(--dash-surface-1), var(--dash-surface-2));
+  box-shadow: var(--dash-shadow);
+}
+
+
+/* ==========================================================
+   MERGE: style.css
+   ========================================================== */
+
+/* STYLE.CSS — PACK S6 CLEAN */
+
+* {
+    box-sizing: border-box;
+}
+
+a {
+    text-decoration: none !important;
+}
+
+table th {
+    font-weight: 600;
+}
+
+.alert {
+    margin-bottom: 1rem;
+}
+
+/* ==========================================================
+   DJANGO ADMIN — SKIN no padrão D'ORANGE (sem arquivo extra)
+   ========================================================== */
+
+body.dashboard, body.change-list, body.change-form{
+  color: var(--dash-text, #eaf1ff);
+}
+
+body.dashboard #container,
+body.change-list #container,
+body.change-form #container{
+  background: transparent !important;
+}
+
+/* Sidebar do Admin (esquerda) */
+#nav-sidebar{
+  background: rgba(0,0,0,.14) !important;
+  border-right: 1px solid rgba(255,255,255,.10) !important;
+}
+
+#nav-sidebar .module{
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+#nav-sidebar th{
+  background: rgba(0,0,0,.18) !important;
+  color: rgba(234,241,255,.72) !important;
+  border-bottom: 1px solid rgba(255,255,255,.10) !important;
+}
+
+#nav-sidebar a{
+  color: rgba(234,241,255,.92) !important;
+}
+
+#nav-sidebar a:hover{
+  filter: brightness(1.08);
+}
+
+/* Box do changelist (centro) */
+body.change-list #changelist{
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: linear-gradient(135deg, rgba(10,16,28,.78), rgba(22,34,55,.60));
+  box-shadow: 0 14px 40px rgba(0,0,0,.35);
+  overflow: hidden;
+}
+
+/* Barra de busca / ações */
+#changelist #toolbar,
+#changelist .actions,
+#changelist .paginator{
+  background: rgba(0,0,0,.12) !important;
+  border-top: 1px solid rgba(255,255,255,.10) !important;
+  border-bottom: 1px solid rgba(255,255,255,.10) !important;
+  color: rgba(234,241,255,.72) !important;
+}
+
+/* Inputs do admin */
+body.change-list input,
+body.change-list select,
+body.change-form input,
+body.change-form select,
+body.change-form textarea{
+  background: rgba(0,0,0,.18) !important;
+  border: 1px solid rgba(255,255,255,.10) !important;
+  color: rgba(234,241,255,.92) !important;
+  border-radius: 10px;
+}
+
+body.change-list input:focus,
+body.change-list select:focus,
+body.change-form input:focus,
+body.change-form select:focus,
+body.change-form textarea:focus{
+  outline: none !important;
+  border-color: rgba(56,189,248,.55) !important;
+  box-shadow: 0 0 0 2px rgba(56,189,248,.18) !important;
+}
+
+/* Tabela (a parte branca que está te incomodando) */
+#result_list{
+  background: transparent !important;
+  color: rgba(234,241,255,.92) !important;
+}
+
+#result_list thead th{
+  background: rgba(0,0,0,.14) !important;
+  color: rgba(234,241,255,.72) !important;
+  font-weight: 900 !important;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-size: .78rem;
+  border-bottom: 1px solid rgba(255,255,255,.10) !important;
+}
+
+#result_list tbody td,
+#result_list tbody th{
+  background: transparent !important;
+  border-bottom: 1px solid rgba(255,255,255,.08) !important;
+  color: rgba(234,241,255,.92) !important;
+}
+
+#result_list tbody tr:nth-child(even){
+  background: rgba(255,255,255,.03) !important;
+}
+
+#result_list tbody tr:hover{
+  background: rgba(255,255,255,.06) !important;
+}
+
+/* Links dentro da tabela */
+#result_list a{
+  color: rgba(56,189,248,.95) !important;
+}
+
+#result_list a:hover{
+  filter: brightness(1.08);
+}
+
+/* Filtro (direita) */
+#changelist-filter{
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: linear-
+
+
+
+/* Auto theme: follow OS preference */
+@media (prefers-color-scheme: light){
+  body[data-theme="auto"]{
+    --bg: #f4f6fa;
+    --bg-card: #ffffff;
+    --bg-sidebar: #0C1220;
+
+    /* keep chrome text readable on dark sidebar */
+    --text: #ffffff;
+    --text-soft: #b9c3d6;
+
+    --content-text: #0b1220;
+    --content-muted: rgba(11,18,32,.68);
+
+    --field-bg: #ffffff;
+    --field-text: #0b1220;
+    --field-border: rgba(11,18,32,.16);
+    --field-placeholder: rgba(11,18,32,.50);
+
+    --border: #d0d7e4;
+    --shadow: rgba(0,0,0,.15);
+  }
+}
+
+/* ==========================================================
+   THEME FIX — separa cores do CONTEÚDO da SIDEBAR/TOPBAR
+   Corrige sumiço de textos em light/dark/auto
+   ========================================================== */
+
+/* Conteúdo (não mexe na sidebar/topbar) */
+:root{
+  --content-text: var(--text, #eaf1ff);
+  --content-muted: var(--text-soft, rgba(234,241,255,.72));
+  --content-border: var(--border, rgba(255,255,255,.10));
+}
+
+/* Light: conteúdo escuro (sidebar continua escura porque seus links já são #fff) */
+body[data-theme="light"]{
+  --content-text: #0b1220;
+  --content-muted: rgba(11,18,32,.68);
+  --content-border: rgba(11,18,32,.14);
+  color-scheme: light;
+}
+
+/* Dark: conteúdo claro */
+body[data-theme="dark"]{
+  --content-text: rgba(234,241,255,.92);
+  --content-muted: rgba(234,241,255,.72);
+  --content-border: rgba(255,255,255,.10);
+  color-scheme: dark;
+}
+
+/* Auto: segue sistema */
+body[data-theme="auto"]{
+  --content-text: rgba(234,241,255,.92);
+  --content-muted: rgba(234,241,255,.72);
+  --content-border: rgba(255,255,255,.10);
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: light){
+  body[data-theme="auto"]{
+    --content-text: #0b1220;
+    --content-muted: rgba(11,18,32,.68);
+    --content-border: rgba(11,18,32,.14);
+  }
+}
+
+/* Aplica o “conteúdo padrão” em todas as páginas internas */
+.page-area{
+  color: var(--content-text) !important;
+}
+
+/* Corrige utilitários Bootstrap que detonam no tema (sem quebrar sidebar) */
+body[data-theme="dark"] .page-area .text-dark{ color: var(--content-text) !important; }
+body[data-theme="light"] .page-area .text-white{ color: var(--content-text) !important; }
+.page-area .text-muted{ color: var(--content-muted) !important; }
+
+/* Labels e textos de formulário (Novo Documento / Importar LDP) */
+.page-area label,
+.page-area .form-label,
+.page-area .form-check-label,
+.page-area small,
+.page-area .form-text{
+  color: var(--content-text) !important;
+  opacity: 1 !important;
+}
+
+/* Inputs (só no conteúdo, não pega a topbar) */
+.page-area .form-control,
+.page-area .form-select,
+.page-area textarea,
+.page-area input[type="text"],
+.page-area input[type="email"],
+.page-area input[type="number"],
+.page-area input[type="search"]{
+  color: var(--content-text) !important;
+  border-color: var(--content-border) !important;
+}
+
+body[data-theme="dark"] .page-area .form-control,
+body[data-theme="dark"] .page-area .form-select,
+body[data-theme="dark"] .page-area textarea{
+  background: rgba(0,0,0,.18) !important;
+}
+
+body[data-theme="light"] .page-area .form-control,
+body[data-theme="light"] .page-area .form-select,
+body[data-theme="light"] .page-area textarea{
+  background: rgba(11,18,32,.04) !important;
+}
+
+/* Placeholders */
+.page-area .form-control::placeholder,
+.page-area textarea::placeholder{
+  color: var(--content-muted) !important;
+}
+
+/* Tabelas (Medição) */
+.page-area table,
+.page-area .table{
+  color: var(--content-text) !important;
+}
+.page-area .table thead th{
+  color: var(--content-muted) !important;
+}
+/* ==========================================================
+   OVERRIDES ROBUSTOS — garante legibilidade em templates antigos
+   (Medição / Upload / Importar LDP) mesmo com classes Bootstrap.
+   ========================================================== */
+
+/* Dark/Auto: impede textos "text-dark" sumirem em fundo escuro */
+body[data-theme="dark"] .page-area .text-dark,
+body[data-theme="dark"] .page-area .text-body,
+body[data-theme="dark"] .page-area .text-black,
+body[data-theme="auto"] .page-area .text-dark,
+body[data-theme="auto"] .page-area .text-body,
+body[data-theme="auto"] .page-area .text-black{
+  color: var(--content-text) !important;
+}
+
+body[data-theme="dark"] .page-area .text-muted,
+body[data-theme="auto"] .page-area .text-muted{
+  color: var(--content-muted) !important;
+}
+
+/* Light: impede textos "text-white" sumirem em fundo claro */
+body[data-theme="light"] .page-area .text-white,
+body[data-theme="light"] .page-area .text-light{
+  color: var(--content-text) !important;
+}
+body[data-theme="light"] .page-area .text-muted{
+  color: var(--content-muted) !important;
+}
+
+/* Links do conteúdo */
+.page-area a{ color: var(--accent-blue) !important; }
+.page-area a:hover{ filter: brightness(1.06); }
+
+/* ==========================================================
+   AUTO DE VERDADE — segue o tema do sistema operacional
+   ========================================================== */
+@media (prefers-color-scheme: light){
+  body[data-theme="auto"]{
+    --bg: #f4f6fa;
+    --bg-card: #ffffff;
+    --bg-sidebar: #0C1220;
+
+    --text: #ffffff;
+    --text-soft: #b9c3d6;
+
+    --border: #d0d7e4;
+    --shadow: rgba(0,0,0,.15);
+
+    --content-text: #0b1220;
+    --content-muted: rgba(11,18,32,.68);
+
+    --field-bg: #ffffff;
+    --field-text: #0b1220;
+    --field-border: rgba(11,18,32,.16);
+    --field-placeholder: rgba(11,18,32,.50);
+
+    --dash-border: rgba(10,20,40,.12);
+    --dash-text: #0b1220;
+    --dash-muted: rgba(11,18,32,.68);
+    --dash-surface-1: rgba(255,255,255,.92);
+    --dash-surface-2: rgba(245,248,255,.92);
+    --dash-shadow: 0 14px 34px rgba(10,20,40,.12);
+  }
+}
+
+/* ==========================================================
+   DJANGO ADMIN — layout e cores (Usuários & Permissões)
+   Corrige: "caixa pequena no meio", linhas brancas, sidebar clara.
+   ========================================================== */
+
+body.change-list #content,
+body.change-form #content,
+body.dashboard #content{
+  max-width: none !important;
+  width: auto !important;
+  margin: 0 !important;
+  padding: 18px 24px !important;
+}
+
+body.change-list #content-main,
+body.change-form #content-main{
+  float: none !important;
+  width: auto !important;
+}
+
+body.change-list #changelist{
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 16px;
+  align-items: start;
+}
+
+body.change-list #changelist-form{ min-width: 0; }
+body.change-list #changelist-filter{
+  width: auto !important;
+  margin: 0 !important;
+  position: sticky;
+  top: 14px;
+}
+
+/* Results container */
+body.change-list .results,
+body.change-list .results table,
+body.change-list #result_list{
+  background: transparent !important;
+}
+
+/* Table header + links */
+body.change-list #result_list thead th,
+body.change-list #result_list thead th a{
+  background: rgba(0,0,0,.14) !important;
+  color: rgba(234,241,255,.78) !important;
+  border-bottom: 1px solid rgba(255,255,255,.10) !important;
+}
+body.change-list #result_list thead th a:hover{
+  color: rgba(255,255,255,.92) !important;
+}
+
+/* Table body */
+body.change-list #result_list tbody td,
+body.change-list #result_list tbody th{
+  background: transparent !important;
+  color: rgba(234,241,255,.92) !important;
+  border-bottom: 1px solid rgba(255,255,255,.08) !important;
+}
+body.change-list #result_list tbody tr:nth-child(even){
+  background: rgba(255,255,255,.03) !important;
+}
+body.change-list #result_list tbody tr:hover{
+  background: rgba(255,255,255,.06) !important;
+}
+
+/* Actions/toolbar */
+body.change-list #changelist #toolbar,
+body.change-list #changelist .actions,
+body.change-list #changelist .paginator{
+  background: rgba(0,0,0,.12) !important;
+  border-top: 1px solid rgba(255,255,255,.10) !important;
+  border-bottom: 1px solid rgba(255,255,255,.10) !important;
+  color: rgba(234,241,255,.72) !important;
+}
+
+/* Left nav sidebar */
+#nav-sidebar{
+  background: rgba(0,0,0,.14) !important;
+  border-right: 1px solid rgba(255,255,255,.10) !important;
+}
+#nav-sidebar table,
+#nav-sidebar th,
+#nav-sidebar td{
+  background: transparent !important;
+}
+#nav-sidebar th{
+  background: rgba(0,0,0,.18) !important;
+  color: rgba(234,241,255,.72) !important;
+  border-bottom: 1px solid rgba(255,255,255,.10) !important;
+}
+#nav-sidebar a{ color: rgba(234,241,255,.92) !important; }
+#nav-sidebar a:hover{ filter: brightness(1.08); }
+
+/* Mobile: evita quebrar layout do admin */
+@media (max-width: 991.98px){
+  body.change-list #changelist{
+    grid-template-columns: 1fr;
+  }
+  body.change-list #changelist-filter{
+    position: static;
+  }
+}
+
+/* === DORANGE DS: Importar LDP (opt-in) === */
+/* Opt-in styles for Importar LDP screen */
+.ldp-wrap{ max-width: 1160px; margin: 0 auto; }
+.ldp-surface{ padding: 18px; }
+
+.ldp-dropzone{
+  position: relative;
+  border-radius: var(--dash-radius);
+  border: 2px dashed color-mix(in srgb, var(--dash-border) 80%, transparent);
+  background: color-mix(in srgb, var(--dash-surface-2) 70%, transparent);
+  padding: 16px 18px;
+  transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+}
+body[data-theme="light"] .ldp-dropzone{ background: rgba(11,18,32,.03); }
+.ldp-dropzone:hover{ border-color: color-mix(in srgb, var(--dash-accent) 55%, var(--dash-border)); }
+.ldp-dropzone.is-dragover{
+  border-color: var(--dash-accent);
+  background: color-mix(in srgb, var(--dash-accent) 12%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--dash-accent) 18%, transparent);
+}
+
+.ldp-file-input{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  opacity:0;
+  cursor:pointer;
+}
+
+.ldp-title{ font-weight: 900; display:flex; align-items:center; gap:10px; }
+.ldp-title i{ color: var(--dash-accent); font-size: 1.1rem; }
+.ldp-sub{ color: var(--dash-muted); font-weight: 650; margin-top: 2px; }
+.ldp-meta{ color: var(--dash-muted); font-size: .85rem; margin-top: 6px; }
+
+.ldp-chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top: 10px; }
+.ldp-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--dash-border);
+  background: rgba(0,0,0,.18);
+  max-width: 100%;
+}
+body[data-theme="light"] .ldp-chip{ background: rgba(11,18,32,.05); }
+.ldp-chip-name{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width: 56ch; }
+.ldp-chip-remove{ border:0; background:transparent; padding:0; line-height:1; color: var(--dash-muted); }
+.ldp-chip-remove:hover{ color: var(--dash-text); }
+
+.ldp-actions{ display:flex; justify-content:flex-start; gap:10px; flex-wrap:wrap; margin-top: 14px; }
+
+.ldp-progress{ margin-top: 14px; padding: 14px 16px; border-radius: var(--dash-radius); border: 1px solid var(--dash-border); background: rgba(0,0,0,.08); }
+body[data-theme="light"] .ldp-progress{ background: rgba(11,18,32,.03); }
+
+.ldp-progress-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom: 10px; }
+.ldp-progress-title{ font-weight: 850; }
+.ldp-progress-sub{ color: var(--dash-muted); font-weight: 650; font-size: .9rem; }
+.ldp-percent{ font-variant-numeric: tabular-nums; font-weight: 900; }
+
+.ldp-bar{
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(148,163,184,.22);
+  overflow:hidden;
+}
+.ldp-bar > #progressBar{
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--dash-accent) 88%, #fff), var(--dash-accent));
+  transition: width .12s ease;
+}
+
+.ldp-log{ white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+
+/* === /DORANGE DS: Importar LDP (opt-in) === */
+

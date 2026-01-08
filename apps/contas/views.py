@@ -4,6 +4,9 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.template import TemplateDoesNotExist
 from django.http import HttpResponse
+from django.urls import reverse
+from django.urls.exceptions import NoReverseMatch
+from django.utils.http import url_has_allowed_host_and_scheme
 import logging
 
 from .models import UserConfig
@@ -30,7 +33,21 @@ def login_view(request):
 
         if user:
             login(request, user)
-            next_url = request.GET.get("next") or "documentos:listar_documentos"
+
+            # next seguro (evita open-redirect)
+            next_url = (
+                request.POST.get("next")
+                or request.GET.get("next")
+                or reverse("documentos:listar_documentos")
+            )
+
+            if not url_has_allowed_host_and_scheme(
+                url=next_url,
+                allowed_hosts={request.get_host()},
+                require_https=request.is_secure(),
+            ):
+                next_url = reverse("documentos:listar_documentos")
+
             return redirect(next_url)
 
         messages.error(request, "Usuário ou senha incorretos!")
@@ -67,6 +84,7 @@ def minhas_configuracoes(request):
     try:
         return render(request, "contas/minhas_configuracoes.html", {"form": form})
     except TemplateDoesNotExist:
+        # fallback simples (não quebra)
         return HttpResponse(form.as_p())
 
 
@@ -74,10 +92,9 @@ def is_master(user):
     return user.is_authenticated and (user.is_superuser or getattr(user, "is_master", False))
 
 
-# ✅ IMPORTANTÍSSIMO:
-# tudo que for "Solicitação de Acesso" fica centralizado no app solicitacoes.
+# ✅ Compatibilidade:
+# tudo que for "Solicitação de Acesso" fica no app solicitacoes.
 # aqui no contas a gente só redireciona (compatibilidade com links antigos)
-
 def solicitar_acesso(request):
     return redirect("solicitacoes:solicitar_acesso")
 
@@ -91,16 +108,26 @@ def painel_solicitacoes(request):
 @login_required
 @user_passes_test(is_master)
 def aprovar_solicitacao(request, id):
+    # fluxo oficial de aprovar/negar é no detalhe (POST).
     return redirect("solicitacoes:detalhe_solicitacao", id=id)
 
 
 @login_required
 @user_passes_test(is_master)
 def negar_solicitacao(request, id):
+    # fluxo oficial de aprovar/negar é no detalhe (POST).
     return redirect("solicitacoes:detalhe_solicitacao", id=id)
 
 
 @login_required
 @user_passes_test(is_master)
 def usuarios_permissoes(request):
-    return redirect("/admin/auth/user/")
+    """
+    Vai para o Django Admin do seu User customizado (contas.Usuario).
+    (O /admin/auth/user/ dá 404 porque você não usa o User padrão do Django.)
+    """
+    try:
+        return redirect(reverse("admin:contas_usuario_changelist"))
+    except NoReverseMatch:
+        # fallback garantido
+        return redirect("/admin/contas/usuario/")
