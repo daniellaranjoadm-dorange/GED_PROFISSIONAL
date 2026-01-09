@@ -1,0 +1,128 @@
+GED_PROFISSIONAL — Passo a passo (Gate de Segurança + Workflow Git)
+Data: 2026-01-09_120943
+
+OBJETIVO
+- Parar de “mexer em 5 arquivos e quebrar outro”.
+- Bloquear commits quando:
+  1) houver erro de sintaxe (Python)
+  2) Django não carregar (manage.py check)
+  3) URLs críticas usadas no menu/templates quebrarem (reverse)
+
+========================================
+1) ONDE FICAM OS ARQUIVOS DO GATE
+========================================
+Projeto:
+  C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL
+
+Hooks do Git:
+  C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\.git\hooks\pre-commit
+  C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\.git\hooks\pre-commit.ps1
+
+IMPORTANTE
+- O Git só executa “pre-commit” SEM extensão (não pode ser pre-commit.txt).
+- No Windows, usamos “pre-commit” (launcher sh) chamando “pre-commit.ps1” (PowerShell).
+
+========================================
+2) COMO INSTALAR / REINSTALAR (manual)
+========================================
+2.1) Criar pasta hooks (se não existir):
+  cd C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL
+  New-Item -ItemType Directory -Force .git\hooks | Out-Null
+
+2.2) Criar/atualizar o launcher (pre-commit):
+  notepad .git\hooks\pre-commit
+
+Cole:
+  #!/bin/sh
+  powershell -ExecutionPolicy Bypass -File ".git/hooks/pre-commit.ps1"
+  exit $?
+
+2.3) Criar/atualizar o gate (pre-commit.ps1):
+  notepad .git\hooks\pre-commit.ps1
+
+Cole (versão final “sem _Backup / lixo”):
+  $ErrorActionPreference = "Stop"
+  $py = ".\venv\Scripts\python.exe"
+  if (!(Test-Path $py)) { $py = "python" }
+
+  Write-Host "== GED GATE: compileall (apps ativos, ignorando backups/lixo) =="
+  $exclude = "^\.(?:\\|/)(?:\.git|venv|\.venv|media|staticfiles|Docs|scripts|tools|tmp|temp)(?:\\|/)|(?:\\|/)(?:_Backup|Backup|_backup)(?:\\|/)|(?:\\|/)old(?:\\|/)|(?:\\|/)\.pytest_cache(?:\\|/)|(?:\\|/)__pycache__(?:\\|/)"
+  & $py -m compileall `
+    .\ged `
+    .\apps\contas `
+    .\apps\documentos `
+    .\apps\dashboard `
+    .\apps\solicitacoes `
+    .\manage.py `
+    -q -x $exclude | Out-Host
+
+  Write-Host "== GED GATE: django check =="
+  & $py manage.py check | Out-Host
+
+  Write-Host "== GED GATE: url reverse smoke =="
+  $one = "from django.urls import reverse; names=['set_language','logout','contas:minhas_configuracoes','contas:usuarios_permissoes','solicitacoes:listar_solicitacoes','documentos:listar_documentos','documentos:upload_documento','documentos:importar_ldp','documentos:painel_workflow','documentos:medicao','documentos:lixeira']; [reverse(n) for n in names]; print('URL_REVERSE_OK')"
+  & $py manage.py shell -c $one | Out-Host
+
+  Write-Host "== GED GATE: OK (commit liberado) =="
+  exit 0
+
+========================================
+3) COMO TESTAR O GATE (SEM MEXER EM NADA)
+========================================
+Testar hook sem mudanças:
+  git commit -m "teste gate" --allow-empty
+
+Saída esperada:
+  == GED GATE: compileall ...
+  == GED GATE: django check ...
+  URL_REVERSE_OK
+  == GED GATE: OK ...
+
+Se falhar:
+- O commit é bloqueado e você vê o erro na tela (isso é o objetivo).
+
+========================================
+4) WORKFLOW PADRÃO (NUNCA MAIS SOFRER)
+========================================
+4.1) Uma mudança = um branch:
+  git checkout -b fix-alguma-coisa
+
+4.2) Faça a mudança (1–5 arquivos no máximo)
+
+4.3) Commit (o gate roda automaticamente):
+  git add -A
+  git commit -m "fix: alguma coisa"
+
+4.4) Se passou, merge:
+  git checkout main
+  git merge fix-alguma-coisa
+  git branch -d fix-alguma-coisa
+
+4.5) Se deu ruim, volta instantâneo no branch:
+  git reset --hard
+
+========================================
+5) LIMPEZA (pra não subir backup/zip/old)
+========================================
+Recomendado no .gitignore:
+  *.bak_*
+  *.before_*
+  *.zip
+  static/css/old/
+  static/**/old/
+
+Obs: .gitignore NÃO remove arquivos já trackeados.
+Para remover do tracking sem apagar do disco:
+  git rm --cached caminho/do/arquivo
+  git commit -m "chore: stop tracking backups/zips"
+
+========================================
+6) DICA DE OURO (pra não quebrar URL/template)
+========================================
+Sempre que mexer em URL/template, valide com o gate (automaticamente no commit).
+Se quiser validar “na mão”:
+  .\venv\Scripts\Activate.ps1
+  python manage.py check
+  python manage.py shell -c "from django.urls import reverse; print(reverse('documentos:listar_documentos'))"
+
+FIM.

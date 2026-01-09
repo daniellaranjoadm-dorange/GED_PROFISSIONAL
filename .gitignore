@@ -76,3 +76,10 @@ static/**/old/
 
 
 
+
+# GED Gate - extras recomendados (backups/zips/old)
+*.bak_*
+*.before_*
+*.zip
+static/css/old/
+static/**/old/
