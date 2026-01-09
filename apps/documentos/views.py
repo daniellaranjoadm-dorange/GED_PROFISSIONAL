@@ -2153,7 +2153,7 @@ def medicao(request):
     labels_usd, values_usd, has_usd = _build_chart_data(
         linhas, "valor_emitidos_usd", is_currency=True
     )
-    charts_have_data = has_totais and has_usd
+    charts_have_data = has_totais or has_usd
 
     if total_count > 0 and charts_have_data and settings.MEDIA_ROOT:
         try:
@@ -2194,7 +2194,7 @@ def medicao(request):
             chart1_path = os.path.join(charts_dir, chart1_name)
             chart2_path = os.path.join(charts_dir, chart2_name)
 
-            if not os.path.exists(chart1_path):
+            if has_totais and not os.path.exists(chart1_path):
                 fig, ax = plt.subplots(figsize=(12, 5), dpi=100)
                 fig.patch.set_facecolor("#ffffff")
                 ax.set_facecolor("#ffffff")
@@ -2214,7 +2214,7 @@ def medicao(request):
                 fig.savefig(chart1_path, bbox_inches="tight")
                 plt.close(fig)
 
-            if not os.path.exists(chart2_path):
+            if has_usd and not os.path.exists(chart2_path):
                 fig, ax = plt.subplots(figsize=(12, 5), dpi=100)
                 fig.patch.set_facecolor("#ffffff")
                 ax.set_facecolor("#ffffff")
@@ -2232,11 +2232,18 @@ def medicao(request):
                 plt.close(fig)
 
             base_media = (settings.MEDIA_URL or "/media/").rstrip("/")
-            chart1_url = f"{base_media}/medicao_charts/{chart1_name}"
-            chart2_url = f"{base_media}/medicao_charts/{chart2_name}"
-            charts_ok = True
+            if has_totais:
+                chart1_url = f"{base_media}/medicao_charts/{chart1_name}"
+                charts_ok = True
+            if has_usd:
+                chart2_url = f"{base_media}/medicao_charts/{chart2_name}"
+                charts_ok = True
         except Exception:
             charts_ok = False
+
+    tem_dados_medicao = bool(linhas) and (
+        total_count > 0 or total_emit_usd > 0 or total_emit_brl > 0
+    )
 
     base_qs = Documento.objects.filter(ativo=True).select_related("projeto")
 
@@ -2247,7 +2254,7 @@ def medicao(request):
             "linhas": linhas,
             "totais": totais,
             "totais_gerais": totais_gerais,
-            "tem_dados_medicao": total_count > 0,
+            "tem_dados_medicao": tem_dados_medicao,
             "charts_ok": charts_ok,
             "chart1_url": chart1_url,
             "chart2_url": chart2_url,

@@ -116,12 +116,30 @@
   padding: 12px;
 }
 
+.doc-wrapper .charts-grid{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
 .doc-wrapper .chart-card{
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow);
-  padding: 12px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(2,6,23,0.08);
+  padding: 16px;
+  min-height: 120px;
+}
+
+.doc-wrapper .chart-card h6{
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 8px;
+}
+
+.doc-wrapper .chart-card p{
+  color: #475569;
+  margin-bottom: 0;
 }
 
 .doc-wrapper .chart-img{
@@ -173,23 +191,14 @@
   background: rgba(56,189,248,.08);
 }
 
-/* linha total (assume que é a última linha) */
-.doc-wrapper .table-finance tbody tr:last-child{
-  background: rgba(2, 6, 23, .04);
-  font-weight: 900;
-}
-.doc-wrapper .table-finance tbody tr:last-child td{
-  border-top: 2px solid rgba(15,23,42,.12);
-}
-
-
 .doc-wrapper .table-finance tfoot tr.total-row{
-  background: rgba(2, 6, 23, .04);
-  font-weight: 900;
+  background: rgba(0,128,128,0.08);
+  font-weight: 700;
+  color: #0f172a;
 }
 .doc-wrapper .table-finance tfoot tr.total-row td{
-  border-top: 2px solid rgba(15,23,42,.12);
-  color: var(--ink);
+  border-top: 1px solid #cbd5e1;
+  color: #0f172a;
 }
 
 /* badges de cor (mantém sua intenção sem neon gritante) */
@@ -200,12 +209,20 @@
 .doc-wrapper hr, .doc-wrapper .divider, .doc-wrapper .medicao-divider{
   display:none !important;
 }
+.doc-wrapper .page-area::after{
+  content: none !important;
+}
+.doc-wrapper .page-area{
+  border-bottom: none !important;
+  outline: none !important;
+}
 
 /* Responsivo */
 @media (max-width: 992px){
   .doc-wrapper .page-header{ flex-direction: column; align-items: stretch; }
   .doc-wrapper .btn-exportar{ align-self: flex-start; }
   .doc-wrapper .table-finance{ font-size: .86rem; }
+  .doc-wrapper .charts-grid{ grid-template-columns: 1fr; }
 }
 </style>
 
@@ -324,34 +341,36 @@
     <i class="bi bi-bar-chart"></i> Gráficos da Medição
 </h4>
 
-{% if tem_dados_medicao and charts_ok and chart1_url and chart2_url %}
-<div class="row g-4 mb-5 charts-area">
-    <div class="col-md-6">
-        <div class="chart-card">
-            <img src="{{ chart1_url }}" alt="Totais por Tipo de Documento" class="chart-img">
-        </div>
+{% if tem_dados_medicao %}
+<div class="charts-grid mb-5">
+    <div class="chart-card">
+        <h6>Totais por Tipo de Documento</h6>
+        {% if chart1_url %}
+        <img src="{{ chart1_url }}" alt="Totais por Tipo de Documento" class="chart-img">
+        {% else %}
+        <p>Gráfico em preparação.</p>
+        {% endif %}
     </div>
 
-    <div class="col-md-6">
-        <div class="chart-card">
-            <img src="{{ chart2_url }}" alt="Valores Emitidos por Tipo (USD)" class="chart-img">
-        </div>
+    <div class="chart-card">
+        <h6>Valores Emitidos por Tipo (USD)</h6>
+        {% if chart2_url %}
+        <img src="{{ chart2_url }}" alt="Valores Emitidos por Tipo (USD)" class="chart-img">
+        {% else %}
+        <p>Gráfico em preparação.</p>
+        {% endif %}
     </div>
 </div>
 {% else %}
-<div class="row g-4 mb-5 charts-area">
-    <div class="col-md-6">
-        <div class="medicao-card p-4">
-            <h6 class="fw-bold mb-2">Distribuição por Disciplina</h6>
-            <p class="mb-0 text-muted">Os gráficos serão exibidos quando houver dados suficientes.</p>
-        </div>
+<div class="charts-grid mb-5">
+    <div class="chart-card">
+        <h6>Distribuição por Disciplina</h6>
+        <p>Os gráficos serão exibidos quando houver dados suficientes.</p>
     </div>
 
-    <div class="col-md-6">
-        <div class="medicao-card p-4">
-            <h6 class="fw-bold mb-2">Status Geral</h6>
-            <p class="mb-0 text-muted">Os gráficos serão exibidos quando houver dados suficientes.</p>
-        </div>
+    <div class="chart-card">
+        <h6>Status Geral</h6>
+        <p>Os gráficos serão exibidos quando houver dados suficientes.</p>
     </div>
 </div>
 {% endif %}
