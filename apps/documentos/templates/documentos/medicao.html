@@ -1,110 +1,156 @@
-{% extends "documentos/base.html" %}
+﻿{% extends "documentos/base.html" %}
 {% load static %}
 
 {% block title %}Medição – GED Profissional{% endblock %}
 
 {% block content %}
 
-<div class="doc-wrapper">
+<div class="doc-wrapper medicao-pro">
 
 <style>
 /* ============================
-   NOVO GLASS-NEON PRO
-   ============================ */
-
-.doc-wrapper .medicao-card {
-    background: rgba(15, 23, 42, 0.06);
-    border: 1px solid rgba(15, 23, 42, 0.10);
-    border-radius: 16px;
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
-}
-
-.doc-wrapper .medicao-title {
-    font-size: 26px;
-    font-weight: 800;
-    letter-spacing: .2px;
-    color: var(--accent-blue);
-    text-shadow: none;
-}
-
-/* ============================
-     NOVA TABELA PREMIUM
+   MEDIÇÃO — PREMIUM GLASS (B)
+   Escopo total: .doc-wrapper
 ============================ */
-.doc-wrapper .table-finance {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    overflow: hidden;
-    border-radius: 14px;
-    background: rgba(255, 255, 255, 0.75);
-    border: 1px solid rgba(15, 23, 42, 0.10);
+.doc-wrapper{
+  --bg0:#060A12;
+  --bg1:#0B1630;
+  --glass: rgba(10, 24, 44, .52);
+  --glass2: rgba(10, 24, 44, .36);
+  --border: rgba(41, 217, 255, .22);
+  --border2: rgba(255, 170, 0, .22);
+  --text: #E7EEF8;
+  --muted:#B8C7D9;
+  --cyan:#29D9FF;
+  --teal:#00FFC8;
+  --orange:#FFB020;
+
+  /* “fundo premium” só dentro do conteúdo */
+  position: relative;
+  padding: clamp(14px, 1.2vw, 22px);
+  border-radius: 18px;
+
+  background:
+    radial-gradient(900px 420px at 14% 18%, rgba(41,217,255,.14), transparent 55%),
+    radial-gradient(900px 420px at 85% 10%, rgba(255,176,32,.10), transparent 52%),
+    radial-gradient(780px 520px at 70% 80%, rgba(0,255,200,.08), transparent 55%),
+    linear-gradient(180deg, rgba(6,10,18,.04), rgba(6,10,18,.02));
+  color: var(--text);
 }
 
-.doc-wrapper .table-finance thead th {
-    background: rgba(56, 189, 248, 0.12);
-    color: rgba(15, 23, 42, 0.85);
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    font-size: .78rem;
-    border-bottom: 1px solid rgba(15, 23, 42, 0.10);
+/* Título + subtítulo (reduz glow e melhora leitura) */
+.doc-wrapper .medicao-title{
+  color: var(--cyan);
+  text-shadow:
+    0 0 14px rgba(41,217,255,.28),
+    0 0 28px rgba(41,217,255,.14);
+  letter-spacing: .2px;
+}
+.doc-wrapper .page-subtitle{
+  color: var(--muted);
+  opacity: .92;
 }
 
-.doc-wrapper .table-finance tbody tr {
-    background: transparent;
-    transition: background-color .15s ease;
+/* “pílula” glass reutilizável (aplicamos via seletores abaixo) */
+.doc-wrapper .glass-panel{
+  background: var(--glass);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow:
+    0 14px 38px rgba(2,8,23,.18),
+    inset 0 1px 0 rgba(255,255,255,.05);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
-.doc-wrapper .table-finance tbody tr:hover {
-    background: rgba(56, 189, 248, 0.08);
-    transform: none;
+/* Aplica glass automaticamente nos blocos principais, sem mexer muito no HTML */
+.doc-wrapper .medicao-card,
+.doc-wrapper .totais-box,
+.doc-wrapper .card,
+.doc-wrapper .table-wrapper,
+.doc-wrapper .chart-card,
+.doc-wrapper .grafico-card,
+.doc-wrapper .grafico-box,
+.doc-wrapper .chart-box{
+  background: var(--glass);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow:
+    0 14px 38px rgba(2,8,23,.18),
+    inset 0 1px 0 rgba(255,255,255,.05);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
-.doc-wrapper .table-finance td {
-    padding: 10px;
-    text-align: center;
-    color: rgba(15, 23, 42, 0.80);
-    border-top: 1px solid rgba(15, 23, 42, 0.06);
+/* KPI boxes (os dois cards do topo) */
+.doc-wrapper .totais-box{
+  background: linear-gradient(180deg, rgba(10,24,44,.58), rgba(10,24,44,.40));
+}
+.doc-wrapper .totais-box strong,
+.doc-wrapper .totais-box .value{
+  color: var(--text);
+}
+.doc-wrapper .totais-box .label{
+  color: var(--muted);
 }
 
-.doc-wrapper .valor-usd { color: rgba(2, 132, 199, 1); font-weight: 700; }
-.doc-wrapper .valor-brl { color: rgba(22, 163, 74, 1); font-weight: 700; }
-.doc-wrapper .valor-nr  { color: rgba(234, 88, 12, 1); font-weight: 700; }
-
-.doc-wrapper .totais-box {
-    background: rgba(15, 23, 42, 0.04);
-    border: 1px solid rgba(15, 23, 42, 0.10);
-    border-radius: 14px;
+/* Tabela finance premium */
+.doc-wrapper .table-finance{
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+}
+.doc-wrapper .table-finance thead th{
+  background: linear-gradient(90deg, rgba(41,217,255,.16), rgba(43,124,255,.10));
+  color: var(--text);
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.doc-wrapper .table-finance tbody tr{
+  background: rgba(255,255,255,.03);
+  transition: transform .18s ease, background .18s ease;
+}
+.doc-wrapper .table-finance tbody tr:hover{
+  background: rgba(41,217,255,.10);
+  transform: translateY(-1px);
+}
+.doc-wrapper .table-finance td,
+.doc-wrapper .table-finance th{
+  border-color: rgba(255,255,255,.06) !important;
 }
 
-.doc-wrapper .btn-exportar {
-    background: rgba(224, 96, 0, 0.10);
-    border: 1px solid rgba(224, 96, 0, 0.35);
-    color: rgba(15, 23, 42, 0.85);
-    border-radius: 999px;
-    padding: 10px 14px;
-    font-weight: 700;
+/* Valores (mantém teu esquema, mas mais “premium”) */
+.doc-wrapper .valor-usd{ color: var(--teal); font-weight: 700; }
+.doc-wrapper .valor-brl{ color: #7CFFB6; font-weight: 700; }
+.doc-wrapper .valor-nr { color: var(--orange); font-weight: 700; }
+
+/* Botão Exportar (premium, sem ficar “apagado”) */
+.doc-wrapper .btn-exportar{
+  background: linear-gradient(180deg, rgba(255,176,32,.18), rgba(255,176,32,.10));
+  border: 1px solid var(--border2);
+  color: var(--text);
+  border-radius: 999px;
+  box-shadow: 0 10px 24px rgba(255,176,32,.12);
+}
+.doc-wrapper .btn-exportar:hover{
+  background: linear-gradient(180deg, rgba(255,176,32,.28), rgba(255,176,32,.16));
+  transform: translateY(-1px);
 }
 
-.doc-wrapper .btn-exportar:hover {
-    background: rgba(224, 96, 0, 0.16);
-    border-color: rgba(224, 96, 0, 0.55);
-    color: rgba(15, 23, 42, 0.95);
+/* Caixas dos gráficos (os dois retângulos grandes) */
+.doc-wrapper .grafico-area,
+.doc-wrapper .charts-area{
+  gap: 16px;
+}
+.doc-wrapper .grafico-area > *,
+.doc-wrapper .charts-area > *{
+  min-height: 220px;
 }
 
-.doc-wrapper .page-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 1.5rem;
-}
-
-.doc-wrapper .page-subtitle {
-    color: rgba(15, 23, 42, 0.65);
-    font-size: 0.95rem;
+/* Mobile: reduz sombras/padding */
+@media (max-width: 768px){
+  .doc-wrapper{ padding: 14px; border-radius: 14px; }
+  .doc-wrapper .medicao-title{ font-size: 1.55rem; }
 }
 </style>
 
@@ -130,7 +176,7 @@
     <div class="col-md-4">
         <div class="totais-box">
             <h5 class="text-info fw-bold">Taxa de câmbio fixa</h5>
-            <p class="valor-brl">R$ {{ TAXA_CAMBIO_REAIS }}</p>
+            <p class="valor-brl">R$ 5,7642</p>
         </div>
     </div>
 
@@ -142,7 +188,7 @@
     </div>
 
     <div class="col-md-4 text-end">
-        <a href="{% url 'documentos:exportar_medicao_excel' %}" class="btn btn-exportar px-4 py-2">
+        <a href="{% url 'documentos:exportar_medicao_excel' %}" class="btn btn-primary btn-exportar px-4 py-2">
             <i class="bi bi-file-earmark-excel"></i> Exportar Excel
         </a>
     </div>
@@ -223,7 +269,7 @@
     <i class="bi bi-bar-chart"></i> Gráficos da Medição
 </h4>
 
-<div class="row g-4 mb-5">
+<div class="row g-4 mb-5 charts-area">
     <div class="col-md-6">
         <div class="medicao-card">
             <canvas id="chartMedicaoBars"></canvas>
