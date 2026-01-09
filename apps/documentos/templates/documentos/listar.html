@@ -10,11 +10,10 @@
 <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css">
 
 <style>
-:root{
-  --gap: clamp(10px, 1.1vw, 16px);
-}
+.doc-wrapper{ --gap: clamp(10px, 1.1vw, 16px); }
 
-.page-header{
+
+.doc-wrapper .page-header{
   display:flex;
   align-items:center;
   justify-content:space-between;
@@ -22,7 +21,7 @@
   gap: var(--gap);
   flex-wrap:wrap;
 }
-.page-header h2{
+.doc-wrapper .page-header h2{
   margin:0;
   font-weight:700;
   font-size:clamp(1.15rem, 1.1vw + .7rem, 1.55rem);
@@ -148,19 +147,20 @@
 }
 
 /* Tabela */
-.table-responsive{
+.doc-wrapper .table-responsive{
   width:100%;
   overflow-x:auto;
 }
-.dataTables_wrapper{ width:100% !important; }
-table.dataTable{ width:100% !important; }
+.doc-wrapper .dataTables_wrapper{ width:100% !important; }
+.doc-wrapper table.dataTable{ width:100% !important; }
 
-#tabelaDocumentos{ font-size:.88rem; width:100% !important; }
-#tabelaDocumentos thead{ background:rgba(56,189,248,0.10); color:var(--accent-blue); }
+.doc-wrapper #tabelaDocumentos{ font-size:.88rem; width:100% !important; }
+.doc-wrapper #tabelaDocumentos thead{ background:rgba(56,189,248,0.10); color:var(--accent-blue); }
 </style>
 {% endblock %}
 
 {% block content %}
+<div class="doc-wrapper">
 <div class="page-header">
   <h2><i class="bi bi-folder2-open"></i> Lista de Documentos</h2>
 
@@ -303,6 +303,7 @@ table.dataTable{ width:100% !important; }
     {% endif %}
 
   </div>
+</div>
 </div>
 {% endblock %}
 
