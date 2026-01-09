@@ -1,4 +1,4 @@
-{% extends "documentos/base.html" %}
+﻿{% extends "documentos/base.html" %}
 {% load static %}
 {% load permisos %}
 
@@ -627,7 +627,7 @@
     </div>
 
     <!-- ============================
-         REVISÃO ATUAL - PDF PRINCIPAL
+         REVIS&Atilde;O ATUAL - PDF PRINCIPAL
     =============================== -->
     {% if versoes %}
         {% for v in versoes %}
@@ -889,7 +889,7 @@
             </thead>
             <tbody>
 
-                <!-- REVISÃO ATUAL NO TOPO -->
+                <!-- REVIS&Atilde;O ATUAL NO TOPO -->
                 {% for v in versoes %}
                     {% if v.numero_revisao == documento.revisao %}
                     <tr class="versao-atual"
@@ -966,7 +966,7 @@
     </div>
 
     <!-- ======================================================
-         MODAL — NOVA VERSÃO DO DOCUMENTO
+         MODAL — NOVA VERS&Atilde;O DO DOCUMENTO
     ====================================================== -->
     <div class="modal fade" id="modalNovaVersao" tabindex="-1">
         <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -1033,7 +1033,7 @@
       
             <div class="modal-body">
       
-              <!-- DROPDOWNS DE COMPARAÇÃO -->
+              <!-- DROPDOWNS DE COMPARAÇ&Atilde;O -->
               <div class="row mb-3">
       
                   <div class="col-md-5">
@@ -1134,7 +1134,7 @@ document.addEventListener("DOMContentLoaded", function () {
 </script>
 
 <!-- ======================================================
-     JS — COMPARAR VERSÕES (BOTÃO GLOBAL)
+     JS — COMPARAR VERSÕES (BOT&Atilde;O GLOBAL)
 ====================================================== -->
 <script>
 document.addEventListener("DOMContentLoaded", function () {
