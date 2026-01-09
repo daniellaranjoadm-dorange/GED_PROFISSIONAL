@@ -91,12 +91,20 @@
   color: var(--ink);
   box-shadow: 0 10px 22px rgba(2, 6, 23, .08);
   transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+  opacity: 1;
 }
 
 .doc-wrapper .btn-exportar:hover{
   transform: translateY(-1px);
   background: rgba(224,96,0,.16);
   box-shadow: 0 16px 32px rgba(2, 6, 23, .12);
+}
+
+.doc-wrapper .btn-exportar[disabled],
+.doc-wrapper .btn-exportar.disabled{
+  opacity: .55;
+  cursor: not-allowed;
+  filter: grayscale(.2);
 }
 
 /* Tabela */
@@ -151,8 +159,11 @@
 
 /* linha total (assume que ? a ?ltima linha) */
 .doc-wrapper .table-finance tbody tr:last-child{
-  background: rgba(56,189,248,.10);
-  font-weight: 800;
+  background: rgba(2, 6, 23, .04);
+  font-weight: 900;
+}
+.doc-wrapper .table-finance tbody tr:last-child td{
+  border-top: 2px solid rgba(15,23,42,.12);
 }
 
 /* ?badges? de cor (mant?m sua inten??o sem neon gritante) */
@@ -217,7 +228,7 @@
 <div class="medicao-card">
 
     <h4 class="medicao-title mb-3">
-        <i class="bi bi-ui-checks-grid"></i> Tabela de Medição por Tipo (Glass-Neon PRO)
+        <i class="bi bi-ui-checks-grid"></i> Resumo Financeiro por Tipo de Documento
     </h4>
 
     <div class="table-responsive">
