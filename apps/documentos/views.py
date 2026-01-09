@@ -2,7 +2,6 @@
 from django.views.decorators.http import require_POST
 # apps/documentos/views.py
 
-from __future__ import annotations
 
 import csv
 import json
@@ -27,7 +26,7 @@ from django.contrib.auth.models import Group
 from django.core.files.storage import default_storage
 from django.core.paginator import Paginator
 from django.db.models import Count, Q, Sum
-from django.http import HttpResponse, JsonResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
@@ -1262,12 +1261,15 @@ def editar_documento(request, documento_id):
             messages.error(request, "Revisão inválida.")
             return redirect("documentos:editar_documento", documento_id=documento.id)
 
-        projeto_id = request.POST.get("projeto")
+        projeto_id = (request.POST.get("projeto") or "").strip()
         if projeto_id:
             try:
-                projeto = Projeto.objects.get(id=projeto_id)
+                if projeto_id.isdigit():
+                    projeto = get_object_or_404(Projeto, id=projeto_id)
+                else:
+                    projeto = get_object_or_404(Projeto, nome__iexact=projeto_id)
                 documento.projeto = projeto
-            except Projeto.DoesNotExist:
+            except Http404:
                 messages.error(request, "Projeto inválido.")
                 return redirect("documentos:editar_documento", documento_id=documento.id)
 

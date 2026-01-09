@@ -66,7 +66,14 @@
                 <!-- PROJETO -->
                 <div class="col-md-4 mb-3">
                     <label class="form-label">Projeto</label>
-                    <input type="text" name="projeto" value="{{ documento.projeto }}" class="form-control">
+                    <select name="projeto" class="form-control">
+                        <option value="">(sem projeto)</option>
+                        {% for p in projetos %}
+                            <option value="{{ p.id }}" {% if documento.projeto and documento.projeto.id == p.id %}selected{% endif %}>
+                                {{ p.nome }}
+                            </option>
+                        {% endfor %}
+                    </select>
                 </div>
 
                 <!-- FASE -->
