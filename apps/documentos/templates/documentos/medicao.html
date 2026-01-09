@@ -13,19 +13,20 @@
    ============================ */
 
 .doc-wrapper .medicao-card {
-    background: rgba(0, 20, 40, 0.55);
+    background: rgba(15, 23, 42, 0.06);
+    border: 1px solid rgba(15, 23, 42, 0.10);
+    border-radius: 16px;
     backdrop-filter: blur(6px);
-    border-radius: 15px;
-    border: 1px solid rgba(0, 200, 255, 0.35);
-    padding: 25px;
-    margin-bottom: 30px;
-    box-shadow: 0 0 18px rgba(0,255,255,0.15);
+    -webkit-backdrop-filter: blur(6px);
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
 }
 
 .doc-wrapper .medicao-title {
     font-size: 26px;
-    font-weight: bold;
-    text-shadow: 0 0 8px #00eaff;
+    font-weight: 800;
+    letter-spacing: .2px;
+    color: var(--accent-blue);
+    text-shadow: none;
 }
 
 /* ============================
@@ -34,65 +35,63 @@
 .doc-wrapper .table-finance {
     width: 100%;
     border-collapse: separate;
-    border-spacing: 0 6px;
+    border-spacing: 0;
+    overflow: hidden;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.75);
+    border: 1px solid rgba(15, 23, 42, 0.10);
 }
 
 .doc-wrapper .table-finance thead th {
-    background: linear-gradient(90deg, rgba(0,180,255,0.25), rgba(0,80,140,0.25));
-    color: #9fe8ff;
-    padding: 12px;
-    text-align: center;
-    font-weight: bold;
-    font-size: 13px;
+    background: rgba(56, 189, 248, 0.12);
+    color: rgba(15, 23, 42, 0.85);
+    font-weight: 700;
     text-transform: uppercase;
-    border-bottom: 1px solid rgba(0,200,255,0.3);
-    backdrop-filter: blur(6px);
+    letter-spacing: 0.04em;
+    font-size: .78rem;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.10);
 }
 
 .doc-wrapper .table-finance tbody tr {
-    background: rgba(255,255,255,0.05);
-    transition: 0.20s ease;
+    background: transparent;
+    transition: background-color .15s ease;
 }
 
 .doc-wrapper .table-finance tbody tr:hover {
-    background: rgba(0,200,255,0.18);
-    transform: scale(1.008);
+    background: rgba(56, 189, 248, 0.08);
+    transform: none;
 }
 
 .doc-wrapper .table-finance td {
     padding: 10px;
     text-align: center;
-    color: #e8faff;
-    border: none;
-    font-size: 14px;
+    color: rgba(15, 23, 42, 0.80);
+    border-top: 1px solid rgba(15, 23, 42, 0.06);
 }
 
-.doc-wrapper .valor-usd { color: #00ffcc; font-weight: bold; }
-.doc-wrapper .valor-brl { color: #00ffaa; font-weight: bold; }
-.doc-wrapper .valor-nr  { color: #ffae00; font-weight: bold; }
+.doc-wrapper .valor-usd { color: rgba(2, 132, 199, 1); font-weight: 700; }
+.doc-wrapper .valor-brl { color: rgba(22, 163, 74, 1); font-weight: 700; }
+.doc-wrapper .valor-nr  { color: rgba(234, 88, 12, 1); font-weight: 700; }
 
 .doc-wrapper .totais-box {
-    background: rgba(0, 80, 140, 0.3);
-    border: 1px solid rgba(0,200,255,0.4);
-    border-radius: 10px;
-    padding: 18px;
-    box-shadow: 0 0 14px rgba(0,200,255,0.2);
+    background: rgba(15, 23, 42, 0.04);
+    border: 1px solid rgba(15, 23, 42, 0.10);
+    border-radius: 14px;
 }
 
 .doc-wrapper .btn-exportar {
-    background: rgba(0, 255, 140, 0.15);
-    border: 1px solid #00ff99;
-    color: #00ffcc;
-    font-weight: bold;
-    transition: 0.3s;
-    box-shadow: 0 0 12px rgba(0,255,180,0.4);
+    background: rgba(224, 96, 0, 0.10);
+    border: 1px solid rgba(224, 96, 0, 0.35);
+    color: rgba(15, 23, 42, 0.85);
+    border-radius: 999px;
+    padding: 10px 14px;
+    font-weight: 700;
 }
 
 .doc-wrapper .btn-exportar:hover {
-    background: #00ff99;
-    color: #003300;
-    transform: scale(1.05);
-    box-shadow: 0 0 20px #00ff99;
+    background: rgba(224, 96, 0, 0.16);
+    border-color: rgba(224, 96, 0, 0.55);
+    color: rgba(15, 23, 42, 0.95);
 }
 
 .doc-wrapper .page-header {
@@ -104,7 +103,7 @@
 }
 
 .doc-wrapper .page-subtitle {
-    color: #cbd5e1;
+    color: rgba(15, 23, 42, 0.65);
     font-size: 0.95rem;
 }
 </style>
@@ -113,9 +112,9 @@
 
 <div class="page-header">
     <div>
-        <h2 class="text-info fw-bold" style="text-shadow: 0 0 8px #00eaff;">
-            <i class="bi bi-cash-coin"></i> Medi????o ??" Relat??rio Financeiro
-        </h2>
+        <h1 class="text-info fw-bold" style="text-shadow: 0 0 8px #00eaff;">
+            <i class="bi bi-cash-coin me-2"></i>Medição – Relatório Financeiro
+        </h1>
         <div class="page-subtitle">
             Acompanhe os totais por tipo de documento e exporte os resultados.
         </div>
