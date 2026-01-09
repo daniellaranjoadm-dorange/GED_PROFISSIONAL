@@ -79,7 +79,7 @@ ETAPAS_LABEL = {
 # CONFIG GLOBAL
 # =================================================================
 
-from decimal import Decimal  # <-- garante precisão nos valores em dólar/reais
+from decimal import Decimal, InvalidOperation  # <-- garante precisão nos valores em dólar/reais
 
 VALOR_MEDICAO_USD = Decimal("979.00")  # ainda usado na medição genérica
 TAXA_CAMBIO_REAIS = Decimal("5.7642")  # taxa fixa que você passou
@@ -2066,6 +2066,42 @@ def medicao(request):
 
     linhas, totais = _calcular_medicao_queryset(docs)
 
+    def _to_decimal(value):
+        if value is None:
+            return Decimal("0")
+        if isinstance(value, Decimal):
+            return value
+        if isinstance(value, (int, float)):
+            return Decimal(str(value))
+        s = str(value).strip()
+        if not s:
+            return Decimal("0")
+        s = s.replace("R$", "").replace("US$", "").strip()
+        s = s.replace(",", "")
+        try:
+            return Decimal(s)
+        except (InvalidOperation, ValueError):
+            return Decimal("0")
+
+    total_count = sum(int(m.get("total") or 0) for m in linhas)
+    emitidos = sum(int(m.get("emitidos") or 0) for m in linhas)
+    nao_recebidos = sum(int(m.get("nao_recebidos") or 0) for m in linhas)
+
+    total_emit_usd = sum(_to_decimal(m.get("valor_emitidos_usd")) for m in linhas)
+    total_nr_usd = sum(_to_decimal(m.get("valor_nr_usd")) for m in linhas)
+    total_emit_brl = sum(_to_decimal(m.get("valor_emitidos_brl")) for m in linhas)
+    total_nr_brl = sum(_to_decimal(m.get("valor_nr_brl")) for m in linhas)
+
+    totais_gerais = {
+        "total": total_count,
+        "emitidos": emitidos,
+        "nao_recebidos": nao_recebidos,
+        "valor_emitidos_usd": f"{total_emit_usd:,.2f}",
+        "valor_emitidos_brl": f"{total_emit_brl:,.2f}",
+        "valor_nao_recebidos_usd": f"{total_nr_usd:,.2f}",
+        "valor_nao_recebidos_brl": f"{total_nr_brl:,.2f}",
+    }
+
     base_qs = Documento.objects.filter(ativo=True).select_related("projeto")
 
     return render(
@@ -2074,6 +2110,8 @@ def medicao(request):
         {
             "linhas": linhas,
             "totais": totais,
+            "totais_gerais": totais_gerais,
+            "tem_dados_medicao": total_count > 0,
             "projetos": base_qs.values_list("projeto__nome", flat=True).distinct(),
             "projeto_selecionado": projeto,
         },

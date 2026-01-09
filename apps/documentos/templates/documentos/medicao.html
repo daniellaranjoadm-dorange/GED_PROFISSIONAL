@@ -9,7 +9,7 @@
 
 <style>
 /* ============================
-   MEDI??O ? PREMIUM v2.2
+   MEDIÇÃO – PREMIUM v2.2
    (CSS 100% escopado em .doc-wrapper)
    ============================ */
 
@@ -29,7 +29,7 @@
   --shadow-soft: 0 10px 24px rgba(2, 6, 23, .08);
 }
 
-/* Header da p?gina */
+/* Header da página */
 .doc-wrapper .page-header{
   display:flex;
   align-items:flex-start;
@@ -44,7 +44,7 @@
   line-height: 1.12;
   letter-spacing: -0.02em;
   color: var(--accent);
-  text-shadow: 0 6px 18px rgba(56,189,248,.18); /* glow bem mais sutil */
+  text-shadow: 0 4px 12px rgba(56,189,248,.12); /* glow bem mais sutil */
 }
 
 .doc-wrapper .page-subtitle{
@@ -82,7 +82,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Bot?o export (mais corporativo e consistente) */
+/* Botão export (mais corporativo e consistente) */
 .doc-wrapper .btn-exportar{
   border-radius: 999px;
   padding: 10px 14px;
@@ -142,7 +142,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* primeira coluna (tipo doc) alinhada ? esquerda, n?meros ? direita */
+/* primeira coluna (tipo doc) alinhada à esquerda, números à direita */
 .doc-wrapper .table-finance thead th:first-child,
 .doc-wrapper .table-finance tbody td:first-child{ text-align:left; }
 
@@ -157,7 +157,7 @@
   background: rgba(56,189,248,.08);
 }
 
-/* linha total (assume que ? a ?ltima linha) */
+/* linha total (assume que é a última linha) */
 .doc-wrapper .table-finance tbody tr:last-child{
   background: rgba(2, 6, 23, .04);
   font-weight: 900;
@@ -166,10 +166,24 @@
   border-top: 2px solid rgba(15,23,42,.12);
 }
 
-/* ?badges? de cor (mant?m sua inten??o sem neon gritante) */
+
+.doc-wrapper .table-finance tfoot tr.total-row{
+  background: rgba(2, 6, 23, .04);
+  font-weight: 900;
+}
+.doc-wrapper .table-finance tfoot tr.total-row td{
+  border-top: 2px solid rgba(15,23,42,.12);
+  color: var(--ink);
+}
+
+/* badges de cor (mantém sua intenção sem neon gritante) */
 .doc-wrapper .valor-usd{ color:#0ea5e9; font-weight:800; }
 .doc-wrapper .valor-brl{ color:#16a34a; font-weight:800; }
 .doc-wrapper .valor-nr { color:#dc2626; font-weight:800; }
+
+.doc-wrapper hr, .doc-wrapper .divider, .doc-wrapper .medicao-divider{
+  display:none !important;
+}
 
 /* Responsivo */
 @media (max-width: 992px){
@@ -183,7 +197,7 @@
 
 <div class="page-header">
     <div>
-        <h1 class="text-info fw-bold" style="text-shadow: 0 0 8px #00eaff;">
+        <h1 class="medicao-title fw-bold">
             <i class="bi bi-cash-coin me-2"></i>Medição – Relatório Financeiro
         </h1>
         <div class="page-subtitle">
@@ -266,17 +280,17 @@
             </tbody>
 
             <tfoot>
-                <tr style="background: rgba(0,255,200,0.15); font-weight:bold;">
+                <tr class="total-row">
                     <td>Total Geral</td>
-                    <td>{{ totais.total_docs }}</td>
-                    <td>{{ totais.total_emitidos }}</td>
-                    <td>{{ totais.total_nao_recebidos }}</td>
+                    <td>{{ totais_gerais.total }}</td>
+                    <td>{{ totais_gerais.emitidos }}</td>
+                    <td>{{ totais_gerais.nao_recebidos }}</td>
 
-                    <td class="valor-usd">US$ {{ totais.total_emitidos_usd }}</td>
-                    <td class="valor-brl">R$ {{ totais.total_emitidos_brl }}</td>
+                    <td >US$ {{ totais_gerais.valor_emitidos_usd }}</td>
+                    <td >R$ {{ totais_gerais.valor_emitidos_brl }}</td>
 
-                    <td class="valor-nr">US$ {{ totais.total_nr_usd }}</td>
-                    <td class="valor-nr">R$ {{ totais.total_nr_brl }}</td>
+                    <td >US$ {{ totais_gerais.valor_nao_recebidos_usd }}</td>
+                    <td >R$ {{ totais_gerais.valor_nao_recebidos_brl }}</td>
                 </tr>
             </tfoot>
 
@@ -294,6 +308,7 @@
     <i class="bi bi-bar-chart"></i> Gráficos da Medição
 </h4>
 
+{% if tem_dados_medicao %}
 <div class="row g-4 mb-5 charts-area">
     <div class="col-md-6">
         <div class="medicao-card">
@@ -365,6 +380,23 @@
         }
     });
 </script>
+{% else %}
+<div class="row g-4 mb-5 charts-area">
+    <div class="col-md-6">
+        <div class="medicao-card p-4">
+            <h6 class="fw-bold mb-2">Distribuição por Disciplina</h6>
+            <p class="mb-0 text-muted">Os gráficos serão exibidos quando houver dados suficientes.</p>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="medicao-card p-4">
+            <h6 class="fw-bold mb-2">Status Geral</h6>
+            <p class="mb-0 text-muted">Os gráficos serão exibidos quando houver dados suficientes.</p>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 
 </div>
