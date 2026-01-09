@@ -2038,21 +2038,24 @@ def _calcular_medicao_queryset(docs_qs):
 
         linhas.append(
             {
+                "tipo": tipo,
                 "tipo_doc": tipo,
-                "total": m["total"],
-                "emitidos": emit,
-                "nao_recebidos": nr,
-                "valor_emitidos_usd": f"{v_emit_usd:,.2f}",
-                "valor_nr_usd": f"{v_nr_usd:,.2f}",
-                "valor_emitidos_brl": f"{v_emit_brl:,.2f}",
-                "valor_nr_brl": f"{v_nr_brl:,.2f}",
+                "total": int(m["total"] or 0),
+                "emitidos": int(emit or 0),
+                "nao_recebidos": int(nr or 0),
+                "valor_emitidos_usd": v_emit_usd,
+                "valor_nao_recebidos_usd": v_nr_usd,
+                "valor_emitidos_brl": v_emit_brl,
+                "valor_nao_recebidos_brl": v_nr_brl,
+                "valor_nr_usd": v_nr_usd,
+                "valor_nr_brl": v_nr_brl,
             }
         )
 
     totais = {
         "total_docs": sum(m["total"] for m in med_raw),
-        "total_usd": f"{total_usd:,.2f}",
-        "total_brl": f"{total_brl:,.2f}",
+        "total_usd": total_usd,
+        "total_brl": total_brl,
     }
 
     return linhas, totais
@@ -2090,18 +2093,18 @@ def medicao(request):
     nao_recebidos = sum(int(m.get("nao_recebidos") or 0) for m in linhas)
 
     total_emit_usd = sum(_to_decimal(m.get("valor_emitidos_usd")) for m in linhas)
-    total_nr_usd = sum(_to_decimal(m.get("valor_nr_usd")) for m in linhas)
+    total_nr_usd = sum(_to_decimal(m.get("valor_nao_recebidos_usd")) for m in linhas)
     total_emit_brl = sum(_to_decimal(m.get("valor_emitidos_brl")) for m in linhas)
-    total_nr_brl = sum(_to_decimal(m.get("valor_nr_brl")) for m in linhas)
+    total_nr_brl = sum(_to_decimal(m.get("valor_nao_recebidos_brl")) for m in linhas)
 
     totais_gerais = {
         "total": total_count,
         "emitidos": emitidos,
         "nao_recebidos": nao_recebidos,
-        "valor_emitidos_usd": f"{total_emit_usd:,.2f}",
-        "valor_emitidos_brl": f"{total_emit_brl:,.2f}",
-        "valor_nao_recebidos_usd": f"{total_nr_usd:,.2f}",
-        "valor_nao_recebidos_brl": f"{total_nr_brl:,.2f}",
+        "valor_emitidos_usd": total_emit_usd,
+        "valor_emitidos_brl": total_emit_brl,
+        "valor_nao_recebidos_usd": total_nr_usd,
+        "valor_nao_recebidos_brl": total_nr_brl,
     }
 
     total_geral = totais_gerais
@@ -2244,8 +2247,18 @@ def medicao(request):
             charts_ok = False
 
     tem_dados_medicao = bool(linhas) and (
-        total_count > 0 or total_emit_usd > 0 or total_emit_brl > 0
+        total_count > 0
+        or total_emit_usd > 0
+        or total_emit_brl > 0
+        or total_nr_usd > 0
+        or total_nr_brl > 0
     )
+
+    chart_labels_totais = labels_totais
+    chart_values_totais = [int(v) for v in values_totais]
+    chart_labels_usd = labels_usd
+    chart_values_usd = [float(v) for v in values_usd]
+    has_chart_data = charts_have_data
 
     base_qs = Documento.objects.filter(ativo=True).select_related("projeto")
 
@@ -2254,14 +2267,21 @@ def medicao(request):
         "documentos/medicao.html",
         {
             "linhas": linhas,
+            "rows": linhas,
             "resumo": linhas,
             "totais": totais,
             "totais_gerais": totais_gerais,
             "total_geral": total_geral,
             "tem_dados_medicao": tem_dados_medicao,
+            "has_chart_data": has_chart_data,
+            "chart_labels_totais": chart_labels_totais,
+            "chart_values_totais": chart_values_totais,
+            "chart_labels_usd": chart_labels_usd,
+            "chart_values_usd": chart_values_usd,
             "charts_ok": charts_ok,
             "chart1_url": chart1_url,
             "chart2_url": chart2_url,
+            "VALOR_MEDICAO_USD": VALOR_MEDICAO_USD,
             "projetos": base_qs.values_list("projeto__nome", flat=True).distinct(),
             "projeto_selecionado": projeto,
         },
