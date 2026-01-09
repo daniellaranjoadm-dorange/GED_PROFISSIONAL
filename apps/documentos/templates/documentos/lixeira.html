@@ -5,8 +5,10 @@
 
 {% block content %}
 
+<div class="doc-wrapper">
+
 <style>
-    .neon-card {
+    .doc-wrapper .neon-card {
         background: rgba(0, 15, 30, 0.6);
         border: 1px solid rgba(255, 0, 80, 0.3);
         box-shadow: 0 0 15px rgba(255, 0, 80, 0.4);
@@ -15,36 +17,54 @@
         padding: 20px;
     }
 
-    .btn-restore {
+    .doc-wrapper .btn-restore {
         background: rgba(0,150,255,0.15);
         border: 1px solid #00aaff;
         color: #00c8ff;
         font-weight: bold;
         transition: 0.3s;
     }
-    .btn-restore:hover {
+    .doc-wrapper .btn-restore:hover {
         background: #00aaff;
         color: white;
         box-shadow: 0 0 18px #00c8ff;
     }
 
-    .btn-delete-final {
+    .doc-wrapper .btn-delete-final {
         background: rgba(255,0,70,0.15);
         border: 1px solid #ff2345;
         color: #ff3355;
         transition: 0.3s;
     }
-    .btn-delete-final:hover {
+    .doc-wrapper .btn-delete-final:hover {
         background: #ff2345;
         color: white;
         box-shadow: 0 0 18px #ff2345;
     }
+
+    .doc-wrapper .page-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 1rem;
+    }
+
+    .doc-wrapper .page-subtitle {
+        color: #cbd5e1;
+        font-size: 0.95rem;
+    }
 </style>
 
-<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
-  <h2 class="text-danger fw-bold mb-3" style="text-shadow: 0 0 10px #ff3355;">
-    🗑️ Lixeira – Documentos Excluídos
-</h2>
+<div class="page-header">
+  <div>
+    <h2 class="text-danger fw-bold mb-1" style="text-shadow: 0 0 10px #ff3355;">
+      ?Y-'??? Lixeira ??" Documentos Exclu??dos
+    </h2>
+    <div class="page-subtitle">
+      Documentos removidos permanecem aqui at?? a restaura????o ou exclus????o definitiva.
+    </div>
+  </div>
   {% if perms.documentos.delete_documento %}
   <form method="POST" action="{% url 'documentos:esvaziar_lixeira' %}" onsubmit="return confirm('Esvaziar a lixeira definitivamente? Esta ação não pode ser desfeita.');">
     {% csrf_token %}
@@ -100,6 +120,8 @@
     {% else %}
         <p class="text-light">Nenhum documento na lixeira.</p>
     {% endif %}
+
+</div>
 
 </div>
 
