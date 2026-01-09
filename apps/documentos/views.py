@@ -2104,6 +2104,8 @@ def medicao(request):
         "valor_nao_recebidos_brl": f"{total_nr_brl:,.2f}",
     }
 
+    total_geral = totais_gerais
+
     def _normalize_tipo(label):
         label = str(label or "").strip()
         return label if label else "Sem Tipo"
@@ -2252,8 +2254,10 @@ def medicao(request):
         "documentos/medicao.html",
         {
             "linhas": linhas,
+            "resumo": linhas,
             "totais": totais,
             "totais_gerais": totais_gerais,
+            "total_geral": total_geral,
             "tem_dados_medicao": tem_dados_medicao,
             "charts_ok": charts_ok,
             "chart1_url": chart1_url,

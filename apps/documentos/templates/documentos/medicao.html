@@ -151,39 +151,49 @@
 }
 
 .doc-wrapper .table-finance{
-  width:100%;
+  width: 100%;
+  table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0;
   overflow: hidden;
   border-radius: 12px;
 }
 
+.doc-wrapper .table-finance th,
+.doc-wrapper .table-finance td{
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
 .doc-wrapper .table-finance thead th{
-  background: rgba(56,189,248,.12);
-  color: rgba(15,23,42,.85);
-  font-weight: 800;
+  background: rgba(2, 132, 199, 0.10);
+  color: #0f172a;
+  font-weight: 700;
   letter-spacing: .02em;
   padding: 10px 12px;
-  border-bottom: 1px solid rgba(15,23,42,.10);
+  border-bottom: 1px solid #cbd5e1;
   white-space: nowrap;
   font-size: 12px;
   text-transform: none;
 }
 
 .doc-wrapper .table-finance tbody td{
-  padding: 10px 12px;
-  border-bottom: 1px solid rgba(15,23,42,.06);
+  border-bottom: 1px solid rgba(203,213,225,.55);
   color: rgba(15,23,42,.88);
   font-variant-numeric: tabular-nums;
-  font-size: 13px;
 }
 
-/* primeira coluna (tipo doc) alinhada à esquerda, números à direita */
-.doc-wrapper .table-finance thead th:first-child,
-.doc-wrapper .table-finance tbody td:first-child{ text-align:left; }
+.doc-wrapper .table-finance .t-left{ text-align: left; }
+.doc-wrapper .table-finance .t-right{ text-align: right; font-variant-numeric: tabular-nums; }
 
-.doc-wrapper .table-finance thead th:not(:first-child),
-.doc-wrapper .table-finance tbody td:not(:first-child){ text-align:right; }
+.doc-wrapper .table-finance col.c-tipo { width: 120px; }
+.doc-wrapper .table-finance col.c-total,
+.doc-wrapper .table-finance col.c-emitidos,
+.doc-wrapper .table-finance col.c-naorec { width: 80px; }
+.doc-wrapper .table-finance col.c-usd-e,
+.doc-wrapper .table-finance col.c-brl-e,
+.doc-wrapper .table-finance col.c-usd-nr,
+.doc-wrapper .table-finance col.c-brl-nr { width: 160px; }
 
 /* zebra discreta + hover corporativo (sem scale) */
 .doc-wrapper .table-finance tbody tr:nth-child(even){
@@ -193,13 +203,12 @@
   background: rgba(56,189,248,.08);
 }
 
-.doc-wrapper .table-finance tfoot .row-total td,
-.doc-wrapper .table-finance tfoot .row-total th{
-  background: rgba(2, 132, 199, 0.08);
+.doc-wrapper .table-finance tfoot .row-total td{
+  background: rgba(2, 132, 199, 0.14);
   color: #0f172a;
-  font-weight: 700;
+  font-weight: 800;
   padding: 10px 12px;
-  border-top: 1px solid #cbd5e1;
+  border-top: 2px solid rgba(2,132,199,.35);
   border-bottom: 0;
   vertical-align: middle;
 }
@@ -317,50 +326,54 @@
 
     <div class="table-responsive">
         <table class="table-finance">
+            <colgroup>
+                <col class="c-tipo">
+                <col class="c-total">
+                <col class="c-emitidos">
+                <col class="c-naorec">
+                <col class="c-usd-e">
+                <col class="c-brl-e">
+                <col class="c-usd-nr">
+                <col class="c-brl-nr">
+            </colgroup>
             <thead>
                 <tr>
                     <th>Tipo Doc</th>
                     <th>Total</th>
                     <th>Emitidos</th>
-                    <th>Não Recebidos</th>
-
+                    <th>N?o Recebidos</th>
                     <th>Valor Emitidos (USD)</th>
                     <th>Valor Emitidos (BRL)</th>
-
-                    <th>Valor Não Recebidos (USD)</th>
-                    <th>Valor Não Recebidos (BRL)</th>
+                    <th>Valor N?o Recebidos (USD)</th>
+                    <th>Valor N?o Recebidos (BRL)</th>
                 </tr>
             </thead>
 
             <tbody>
-                {% for linha in linhas %}
+                {% for r in resumo %}
                 <tr>
-                    <td class="fw-bold text-info">{{ linha.tipo_doc }}</td>
-                    <td>{{ linha.total }}</td>
-                    <td class="text-primary fw-bold">{{ linha.emitidos }}</td>
-                    <td class="text-danger fw-bold">{{ linha.nao_recebidos }}</td>
-
-                    <td class="valor-usd">US$ {{ linha.valor_emitidos_usd }}</td>
-                    <td class="valor-brl">R$ {{ linha.valor_emitidos_brl }}</td>
-
-                    <td class="valor-nr">US$ {{ linha.valor_nr_usd }}</td>
-                    <td class="valor-nr">R$ {{ linha.valor_nr_brl }}</td>
+                    <td class="t-left fw-bold text-info">{{ r.tipo_doc|default:"-" }}</td>
+                    <td class="t-right">{{ r.total|default:0 }}</td>
+                    <td class="t-right">{{ r.emitidos|default:0 }}</td>
+                    <td class="t-right">{{ r.nao_recebidos|default:0 }}</td>
+                    <td class="t-right">US$ {{ r.valor_emitidos_usd|default:0 }}</td>
+                    <td class="t-right">R$ {{ r.valor_emitidos_brl|default:0 }}</td>
+                    <td class="t-right">US$ {{ r.valor_nr_usd|default:0 }}</td>
+                    <td class="t-right">R$ {{ r.valor_nr_brl|default:0 }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
 
             <tfoot>
                 <tr class="row-total">
-                    <td>Total Geral</td>
-                    <td>{{ totais_gerais.total }}</td>
-                    <td>{{ totais_gerais.emitidos }}</td>
-                    <td>{{ totais_gerais.nao_recebidos }}</td>
-
-                    <td >US$ {{ totais_gerais.valor_emitidos_usd }}</td>
-                    <td >R$ {{ totais_gerais.valor_emitidos_brl }}</td>
-
-                    <td >US$ {{ totais_gerais.valor_nao_recebidos_usd }}</td>
-                    <td >R$ {{ totais_gerais.valor_nao_recebidos_brl }}</td>
+                    <td class="t-left">Total Geral</td>
+                    <td class="t-right">{{ total_geral.total|default:0 }}</td>
+                    <td class="t-right">{{ total_geral.emitidos|default:0 }}</td>
+                    <td class="t-right">{{ total_geral.nao_recebidos|default:0 }}</td>
+                    <td class="t-right">US$ {{ total_geral.valor_emitidos_usd|default:0 }}</td>
+                    <td class="t-right">R$ {{ total_geral.valor_emitidos_brl|default:0 }}</td>
+                    <td class="t-right">US$ {{ total_geral.valor_nao_recebidos_usd|default:0 }}</td>
+                    <td class="t-right">R$ {{ total_geral.valor_nao_recebidos_brl|default:0 }}</td>
                 </tr>
             </tfoot>
 
