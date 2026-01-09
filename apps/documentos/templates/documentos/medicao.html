@@ -156,7 +156,6 @@
   border-spacing: 0;
   overflow: hidden;
   border-radius: 12px;
-  font-size: .90rem;
 }
 
 .doc-wrapper .table-finance thead th{
@@ -167,6 +166,8 @@
   padding: 10px 12px;
   border-bottom: 1px solid rgba(15,23,42,.10);
   white-space: nowrap;
+  font-size: 12px;
+  text-transform: none;
 }
 
 .doc-wrapper .table-finance tbody td{
@@ -174,6 +175,7 @@
   border-bottom: 1px solid rgba(15,23,42,.06);
   color: rgba(15,23,42,.88);
   font-variant-numeric: tabular-nums;
+  font-size: 13px;
 }
 
 /* primeira coluna (tipo doc) alinhada à esquerda, números à direita */
@@ -191,14 +193,21 @@
   background: rgba(56,189,248,.08);
 }
 
-.doc-wrapper .table-finance tfoot tr.total-row{
-  background: rgba(0,128,128,0.08);
+.doc-wrapper .table-finance tfoot .row-total td,
+.doc-wrapper .table-finance tfoot .row-total th{
+  background: rgba(2, 132, 199, 0.08);
+  color: #0f172a;
   font-weight: 700;
-  color: #0f172a;
-}
-.doc-wrapper .table-finance tfoot tr.total-row td{
+  padding: 10px 12px;
   border-top: 1px solid #cbd5e1;
-  color: #0f172a;
+  border-bottom: 0;
+  vertical-align: middle;
+}
+.doc-wrapper .table-finance tfoot .row-total td:first-child{
+  border-bottom-left-radius: 10px;
+}
+.doc-wrapper .table-finance tfoot .row-total td:last-child{
+  border-bottom-right-radius: 10px;
 }
 
 /* badges de cor (mantém sua intenção sem neon gritante) */
@@ -209,12 +218,40 @@
 .doc-wrapper hr, .doc-wrapper .divider, .doc-wrapper .medicao-divider{
   display:none !important;
 }
-.doc-wrapper .page-area::after{
+.doc-wrapper::before,
+.doc-wrapper::after{
   content: none !important;
+  display: none !important;
 }
-.doc-wrapper .page-area{
-  border-bottom: none !important;
-  outline: none !important;
+.doc-wrapper .page-area::before,
+.doc-wrapper .page-area::after,
+.doc-wrapper .content::before,
+.doc-wrapper .content::after,
+.doc-wrapper main::before,
+.doc-wrapper main::after,
+.doc-wrapper .container::before,
+.doc-wrapper .container::after{
+  content: none !important;
+  display: none !important;
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+}
+.doc-wrapper{
+  border-bottom: 0 !important;
+  outline: 0 !important;
+}
+.doc-wrapper .page-area,
+.doc-wrapper .content,
+.doc-wrapper main,
+.doc-wrapper .container{
+  border-bottom: 0 !important;
+  outline: 0 !important;
+}
+.doc-wrapper .divider,
+.doc-wrapper .separator,
+.doc-wrapper .footer-line{
+  display: none !important;
 }
 
 /* Responsivo */
@@ -313,7 +350,7 @@
             </tbody>
 
             <tfoot>
-                <tr class="total-row">
+                <tr class="row-total">
                     <td>Total Geral</td>
                     <td>{{ totais_gerais.total }}</td>
                     <td>{{ totais_gerais.emitidos }}</td>
