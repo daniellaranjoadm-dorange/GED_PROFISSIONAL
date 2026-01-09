@@ -7,6 +7,7 @@ import csv
 import json
 import logging
 import os
+import hashlib
 import re
 from django.db import transaction
 from django.contrib import messages
@@ -29,6 +30,7 @@ from django.db.models import Count, Q, Sum
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.conf import settings
 
 from apps.contas.decorators import allow_admin
 from apps.contas.permissions import has_perm
@@ -2102,6 +2104,140 @@ def medicao(request):
         "valor_nao_recebidos_brl": f"{total_nr_brl:,.2f}",
     }
 
+    def _normalize_tipo(label):
+        label = str(label or "").strip()
+        return label if label else "Sem Tipo"
+
+    def _build_chart_data(rows, value_key, is_currency=False):
+        data = {}
+        for row in rows:
+            label = _normalize_tipo(row.get("tipo_doc"))
+            raw = row.get(value_key)
+            if is_currency:
+                value = _to_decimal(raw)
+            else:
+                try:
+                    value = int(raw or 0)
+                except (TypeError, ValueError):
+                    value = 0
+            data[label] = data.get(label, 0) + value
+
+        if not data:
+            return [], [], False
+
+        items = sorted(data.items(), key=lambda kv: kv[1], reverse=True)
+        if len(items) > 10:
+            top = items[:10]
+            rest = items[10:]
+            if is_currency:
+                outros = sum((v for _, v in rest), Decimal("0"))
+            else:
+                outros = sum((int(v) for _, v in rest), 0)
+            if outros:
+                top.append(("Outros", outros))
+            items = top
+
+        labels = [k for k, _ in items]
+        values = [v for _, v in items]
+        if not values or all(v == 0 for v in values):
+            return labels, values, False
+        return labels, values, True
+
+    charts_ok = False
+    chart1_url = None
+    chart2_url = None
+
+    labels_totais, values_totais, has_totais = _build_chart_data(
+        linhas, "total", is_currency=False
+    )
+    labels_usd, values_usd, has_usd = _build_chart_data(
+        linhas, "valor_emitidos_usd", is_currency=True
+    )
+    charts_have_data = has_totais and has_usd
+
+    if total_count > 0 and charts_have_data and settings.MEDIA_ROOT:
+        try:
+            import matplotlib
+
+            matplotlib.use("Agg")
+            import matplotlib.pyplot as plt
+
+            charts_dir = os.path.join(settings.MEDIA_ROOT, "medicao_charts")
+            os.makedirs(charts_dir, exist_ok=True)
+
+            def _serialize_values(vals):
+                out = []
+                for v in vals:
+                    if isinstance(v, Decimal):
+                        out.append(f"{v:.2f}")
+                    else:
+                        out.append(str(int(v)))
+                return out
+
+            payload = json.dumps(
+                {
+                    "totais": {
+                        "labels": labels_totais,
+                        "values": _serialize_values(values_totais),
+                    },
+                    "usd": {
+                        "labels": labels_usd,
+                        "values": _serialize_values(values_usd),
+                    },
+                },
+                ensure_ascii=False,
+                sort_keys=True,
+            )
+            digest = hashlib.md5(payload.encode("utf-8")).hexdigest()[:12]
+            chart1_name = f"chart_totais_{digest}.png"
+            chart2_name = f"chart_usd_{digest}.png"
+            chart1_path = os.path.join(charts_dir, chart1_name)
+            chart2_path = os.path.join(charts_dir, chart2_name)
+
+            if not os.path.exists(chart1_path):
+                fig, ax = plt.subplots(figsize=(12, 5), dpi=100)
+                fig.patch.set_facecolor("#ffffff")
+                ax.set_facecolor("#ffffff")
+                vals = [int(v) for v in values_totais]
+                y_pos = range(len(labels_totais))
+                ax.barh(y_pos, vals, color="#2563eb")
+                ax.set_yticks(y_pos)
+                ax.set_yticklabels(labels_totais)
+                ax.invert_yaxis()
+                ax.set_xlabel("Total")
+                ax.set_title("Totais por Tipo de Documento", color="#0f172a")
+                ax.grid(axis="x", color="#e2e8f0", linestyle="--", linewidth=0.8)
+                ax.tick_params(colors="#334155")
+                for spine in ax.spines.values():
+                    spine.set_color("#e2e8f0")
+                fig.tight_layout()
+                fig.savefig(chart1_path, bbox_inches="tight")
+                plt.close(fig)
+
+            if not os.path.exists(chart2_path):
+                fig, ax = plt.subplots(figsize=(12, 5), dpi=100)
+                fig.patch.set_facecolor("#ffffff")
+                ax.set_facecolor("#ffffff")
+                vals = [float(v) for v in values_usd]
+                ax.bar(labels_usd, vals, color="#0ea5e9")
+                ax.set_ylabel("USD")
+                ax.set_title("Valores Emitidos por Tipo (USD)", color="#0f172a")
+                ax.grid(axis="y", color="#e2e8f0", linestyle="--", linewidth=0.8)
+                ax.tick_params(colors="#334155")
+                ax.tick_params(axis="x", rotation=25)
+                for spine in ax.spines.values():
+                    spine.set_color("#e2e8f0")
+                fig.tight_layout()
+                fig.savefig(chart2_path, bbox_inches="tight")
+                plt.close(fig)
+
+            base_media = (settings.MEDIA_URL or "/media/").rstrip("/")
+            chart1_url = f"{base_media}/medicao_charts/{chart1_name}"
+            chart2_url = f"{base_media}/medicao_charts/{chart2_name}"
+            charts_ok = True
+        except Exception:
+            charts_ok = False
+
     base_qs = Documento.objects.filter(ativo=True).select_related("projeto")
 
     return render(
@@ -2112,6 +2248,9 @@ def medicao(request):
             "totais": totais,
             "totais_gerais": totais_gerais,
             "tem_dados_medicao": total_count > 0,
+            "charts_ok": charts_ok,
+            "chart1_url": chart1_url,
+            "chart2_url": chart2_url,
             "projetos": base_qs.values_list("projeto__nome", flat=True).distinct(),
             "projeto_selecionado": projeto,
         },

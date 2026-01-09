@@ -116,6 +116,22 @@
   padding: 12px;
 }
 
+.doc-wrapper .chart-card{
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 12px;
+}
+
+.doc-wrapper .chart-img{
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
 .doc-wrapper .table-finance{
   width:100%;
   border-collapse: separate;
@@ -308,78 +324,20 @@
     <i class="bi bi-bar-chart"></i> Gráficos da Medição
 </h4>
 
-{% if tem_dados_medicao %}
+{% if tem_dados_medicao and charts_ok and chart1_url and chart2_url %}
 <div class="row g-4 mb-5 charts-area">
     <div class="col-md-6">
-        <div class="medicao-card">
-            <canvas id="chartMedicaoBars"></canvas>
+        <div class="chart-card">
+            <img src="{{ chart1_url }}" alt="Totais por Tipo de Documento" class="chart-img">
         </div>
     </div>
 
     <div class="col-md-6">
-        <div class="medicao-card">
-            <canvas id="chartMedicaoPie"></canvas>
+        <div class="chart-card">
+            <img src="{{ chart2_url }}" alt="Valores Emitidos por Tipo (USD)" class="chart-img">
         </div>
     </div>
 </div>
-
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<script>
-    const tipos = {{ tipos_js|safe }};
-    const valoresUSD = {{ usd_js|safe }};
-    const valoresBRL = {{ brl_js|safe }};
-
-    /* GRÁFICO DE BARRAS */
-    new Chart(document.getElementById("chartMedicaoBars"), {
-        type: "bar",
-        data: {
-            labels: tipos,
-            datasets: [{
-                label: "Valor Total (BRL)",
-                data: valoresBRL,
-                backgroundColor: "rgba(0, 200, 255, 0.6)",
-                borderColor: "rgba(0, 200, 255, 1)",
-                borderWidth: 1
-            }]
-        },
-        options: {
-            plugins: {
-                legend: {
-                    labels: { color: "#fff" }
-                }
-            },
-            scales: {
-                x: { ticks: { color: "#fff" } },
-                y: { ticks: { color: "#fff" } }
-            }
-        }
-    });
-
-    /* GRÁFICO DE PIZZA */
-    new Chart(document.getElementById("chartMedicaoPie"), {
-        type: "pie",
-        data: {
-            labels: tipos,
-            datasets: [{
-                data: valoresUSD,
-                backgroundColor: [
-                    "#00eaff", "#00ffaa", "#ffae00", "#ff0099",
-                    "#ffaa00", "#33ccff", "#66ff66", "#ff6666",
-                    "#0099ff", "#ff9900", "#cc33ff", "#33ffcc"
-                ]
-            }]
-        },
-        options: {
-            plugins: {
-                legend: {
-                    labels: { color: "#fff" }
-                }
-            }
-        }
-    });
-</script>
 {% else %}
 <div class="row g-4 mb-5 charts-area">
     <div class="col-md-6">
