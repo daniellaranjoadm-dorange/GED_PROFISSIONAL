@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\manage.py", line 9, in main
+    from django.core.management import execute_from_command_line
+ModuleNotFoundError: No module named 'django'
+System.Management.Automation.RemoteException
+The above exception was the direct cause of the following exception:
+System.Management.Automation.RemoteException
+Traceback (most recent call last):
+  File "C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\manage.py", line 19, in <module>
+    main()
+  File "C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\manage.py", line 11, in main
+    raise ImportError(
+ImportError: Couldn't import Django. Are you sure it's installed and available on your PYTHONPATH environment variable? Did you forget to activate a virtual environment?
