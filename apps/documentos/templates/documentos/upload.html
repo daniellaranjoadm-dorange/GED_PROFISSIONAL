@@ -13,7 +13,7 @@
 .doc-wrapper .page-area .dash-req{ color: var(--dash-accent); font-weight: 900; margin-left: 2px; }
 .doc-wrapper .page-area .dash-reqhint{ color: var(--dash-muted); font-size: .78rem; margin-left: 6px; font-weight: 700; }
 
-.doc-wrapper .page-area .dash-dropzone{
+.doc-wrapper .page-area .ldp-dropzone{
   position: relative;
   border-radius: var(--dash-radius);
   border: 2px dashed rgba(148,163,184,.45);
@@ -21,31 +21,31 @@
   padding: 14px 16px;
   transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
 }
-body[data-theme="dark"] .doc-wrapper .page-area .dash-dropzone{ background: rgba(0,0,0,.14); border-color: rgba(148,163,184,.30); }
-.doc-wrapper .page-area .dash-dropzone:hover{ border-color: rgba(224,96,0,.55); }
-.doc-wrapper .page-area .dash-dropzone.is-dragover{
+body[data-theme="dark"] .doc-wrapper .page-area .ldp-dropzone{ background: rgba(0,0,0,.14); border-color: rgba(148,163,184,.30); }
+.doc-wrapper .page-area .ldp-dropzone:hover{ border-color: rgba(224,96,0,.55); }
+.doc-wrapper .page-area .ldp-dropzone.is-dragover{
   border-color: rgba(224,96,0,1);
   background: rgba(224,96,0,.08);
   box-shadow: 0 0 0 4px rgba(224,96,0,.12);
 }
 
-.doc-wrapper .page-area .dz-title{ font-weight: 900; color: var(--dash-text); display:flex; align-items:center; gap:10px; }
-.doc-wrapper .page-area .dz-title i{ color: var(--dash-accent); font-size: 1.1rem; }
-.doc-wrapper .page-area .dz-sub{ color: var(--dash-muted); font-weight: 650; margin-top: 2px; }
-.doc-wrapper .page-area .dz-meta{ color: var(--dash-muted); font-size: .85rem; margin-top: 6px; }
+.doc-wrapper .page-area .ldp-title{ font-weight: 900; color: var(--dash-text); display:flex; align-items:center; gap:10px; }
+.doc-wrapper .page-area .ldp-title i{ color: var(--dash-accent); font-size: 1.1rem; }
+.doc-wrapper .page-area .ldp-sub{ color: var(--dash-muted); font-weight: 650; margin-top: 2px; }
+.doc-wrapper .page-area .ldp-meta{ color: var(--dash-muted); font-size: .85rem; margin-top: 6px; }
 
-.doc-wrapper .page-area .dash-filechips{ display:flex; flex-wrap:wrap; gap:8px; margin-top: 10px; }
-.doc-wrapper .page-area .dash-chip{
+.doc-wrapper .page-area .ldp-chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top: 10px; }
+.doc-wrapper .page-area .ldp-chip{
   display:inline-flex; align-items:center; gap:8px;
   padding: 6px 10px; border-radius: 999px;
   border: 1px solid rgba(148,163,184,.28);
   background: rgba(0,0,0,.10);
   max-width: 100%;
 }
-body[data-theme="light"] .doc-wrapper .page-area .dash-chip{ background: rgba(11,18,32,.05); }
-.doc-wrapper .page-area .dash-chip-name{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width: 42ch; }
-.doc-wrapper .page-area .dash-chip-remove{ border:0; background:transparent; padding:0; line-height:1; color: var(--dash-muted); }
-.doc-wrapper .page-area .dash-chip-remove:hover{ color: var(--dash-text); }
+body[data-theme="light"] .doc-wrapper .page-area .ldp-chip{ background: rgba(11,18,32,.05); }
+.doc-wrapper .page-area .ldp-chip-name{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width: 42ch; }
+.doc-wrapper .page-area .ldp-chip-remove{ border:0; background:transparent; padding:0; line-height:1; color: var(--dash-muted); }
+.doc-wrapper .page-area .ldp-chip-remove:hover{ color: var(--dash-text); }
 
 /* Validation (se Django/Bootstrap aplicar classes) */
 .doc-wrapper .page-area .is-invalid{ border-color:#ef4444 !important; box-shadow: 0 0 0 .2rem rgba(239,68,68,.14) !important; }
@@ -147,16 +147,16 @@ body[data-theme="light"] .doc-wrapper .page-area .dash-chip{ background: rgba(11
       <div class="col-12">
         <label class="form-label">Arquivo(s) <span class="dash-req">*</span><span class="dash-reqhint">Obrigatório</span></label>
 
-        <div class="dash-dropzone" id="dzArquivos" tabindex="0" role="button" aria-label="Área para anexar arquivos">
+        <div class="ldp-dropzone" id="dzArquivos" tabindex="0" role="button" aria-label="Área para anexar arquivos">
           <!-- Fallback inline style: esconde o input mesmo sem CSS externo -->
           <input type="file" name="arquivos" id="id_arquivos" required multiple
                  style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;">
 
-          <div class="dz-title"><i class="bi bi-cloud-arrow-up"></i> Arraste e solte aqui</div>
-          <div class="dz-sub">ou clique para selecionar arquivos</div>
-          <div class="dz-meta">Dica: você pode selecionar mais de um arquivo (Ctrl/Shift).</div>
+          <div class="ldp-title"><i class="bi bi-cloud-arrow-up"></i> Arraste e solte aqui</div>
+          <div class="ldp-sub">ou clique para selecionar arquivos</div>
+          <div class="ldp-meta">Dica: você pode selecionar mais de um arquivo (Ctrl/Shift).</div>
 
-          <div class="dash-filechips" id="fileChips"></div>
+          <div class="ldp-chips" id="fileChips"></div>
           <div class="small text-muted mt-2" id="fileEmpty">Nenhum arquivo selecionado.</div>
         </div>
 
@@ -207,16 +207,16 @@ body[data-theme="light"] .doc-wrapper .page-area .dash-chip{ background: rgba(11
 
     files.forEach((f, idx) => {
       const chip = document.createElement('span');
-      chip.className = 'dash-chip';
+      chip.className = 'ldp-chip';
 
       const name = document.createElement('span');
-      name.className = 'dash-chip-name';
+      name.className = 'ldp-chip-name';
       name.title = f.name;
       name.textContent = f.name;
 
       const rm = document.createElement('button');
       rm.type = 'button';
-      rm.className = 'dash-chip-remove';
+      rm.className = 'ldp-chip-remove';
       rm.title = 'Remover';
       rm.setAttribute('aria-label', 'Remover arquivo');
       rm.innerHTML = '&times;';

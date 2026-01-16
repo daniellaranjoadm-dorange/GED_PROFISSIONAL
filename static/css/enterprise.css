@@ -1523,3 +1523,58 @@ body[data-theme="light"] .ldp-progress{ background: rgba(11,18,32,.03); }
 
 /* === /DORANGE DS: Importar LDP (opt-in) === */
 
+/* === FIX: Legibilidade no tema claro (sidebar + links) === */
+:root[data-theme="light"] .sidebar,
+body.theme-light .sidebar,
+html.light .sidebar,
+body.light .sidebar {
+  color: #0b1220;
+}
+:root[data-theme="light"] .sidebar a,
+body.theme-light .sidebar a,
+html.light .sidebar a,
+body.light .sidebar a,
+:root[data-theme="light"] .sidebar .nav-link,
+body.theme-light .sidebar .nav-link,
+html.light .sidebar .nav-link,
+body.light .sidebar .nav-link {
+  color: #0b1220 !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+}
+:root[data-theme="light"] .sidebar .nav-link:hover,
+body.theme-light .sidebar .nav-link:hover,
+html.light .sidebar .nav-link:hover,
+body.light .sidebar .nav-link:hover {
+  color: #0b1220 !important;
+  opacity: 1 !important;
+}
+:root[data-theme="light"] .sidebar .muted,
+body.theme-light .sidebar .muted,
+html.light .sidebar .muted,
+body.light .sidebar .muted {
+  color: #334155 !important;
+  opacity: 1 !important;
+}
+
+:root[data-theme="light"] .page-area,
+body.theme-light .page-area,
+html.light .page-area,
+body.light .page-area {
+  color: #0b1220;
+}
+:root[data-theme="light"] .page-area h1,
+:root[data-theme="light"] .page-area h2,
+:root[data-theme="light"] .page-area label,
+body.theme-light .page-area h1,
+body.theme-light .page-area h2,
+body.theme-light .page-area label,
+html.light .page-area h1,
+html.light .page-area h2,
+html.light .page-area label,
+body.light .page-area h1,
+body.light .page-area h2,
+body.light .page-area label {
+  color: #0b1220 !important;
+}
+
