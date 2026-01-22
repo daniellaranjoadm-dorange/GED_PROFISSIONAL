@@ -1,4 +1,5 @@
 {% extends "documentos/base.html" %}
+{% block body_attrs %} data-force-reload-on-show="1"{% endblock %}
 {% block title %}Revisões{% endblock %}
 
 {% block content %}
@@ -55,4 +56,22 @@
     </div>
   </div>
 </div>
+<script>
+(function () {
+  function cameFromBFCache(ev) {
+    if (ev && ev.persisted) return true;
+    try {
+      var nav = performance.getEntriesByType && performance.getEntriesByType("navigation");
+      if (nav && nav.length && nav[0].type === "back_forward") return true;
+    } catch (e) {}
+    return false;
+  }
+
+  window.addEventListener("pageshow", function (ev) {
+    if (cameFromBFCache(ev)) {
+      window.location.reload();
+    }
+  });
+})();
+</script>
 {% endblock %}

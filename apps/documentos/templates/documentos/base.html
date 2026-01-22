@@ -29,7 +29,7 @@
   {% block extra_head %}{% endblock %}
 </head>
 
-<body data-theme="light" data-theme-pref="auto" class="{% block body_class %}{% endblock %}">
+<body data-theme="light" data-theme-pref="auto" class="{% block body_class %}{% endblock %}"{% block body_attrs %}{% endblock %}>
 <div class="layout">
 
   {# Permite ocultar sidebar em páginas específicas (login/portal) sem quebrar o resto #}
@@ -365,6 +365,45 @@ function setLanguage(lang) {
 
   const form = document.querySelector(".topbar-search");
   if (form && action) form.setAttribute("action", action);
+})();
+</script>
+
+<script>
+(function () {
+  function isBFCacheRestore(ev) {
+    if (ev && ev.persisted) return true;
+    try {
+      if (performance && performance.getEntriesByType) {
+        var nav = performance.getEntriesByType("navigation");
+        if (nav && nav.length && nav[0].type === "back_forward") return true;
+      }
+    } catch (e) {}
+    return false;
+  }
+
+  window.addEventListener("pageshow", function (ev) {
+    var body = document.body;
+    if (!body) return;
+
+    if (body.dataset && body.dataset.forceReloadOnShow === "1") {
+      if (isBFCacheRestore(ev)) {
+        try {
+          if (window.jQuery && jQuery.fn && jQuery.fn.dataTable) {
+            var tbl = jQuery(".dataTable").first();
+            if (tbl.length && jQuery.fn.dataTable.isDataTable(tbl)) {
+              var dt = tbl.DataTable();
+              if (dt && dt.ajax && typeof dt.ajax.reload === "function") {
+                dt.ajax.reload(null, false);
+                return;
+              }
+            }
+          }
+        } catch (e) {}
+
+        window.location.reload();
+      }
+    }
+  });
 })();
 </script>
 

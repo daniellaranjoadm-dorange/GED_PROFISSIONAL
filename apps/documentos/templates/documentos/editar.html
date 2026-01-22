@@ -188,19 +188,19 @@
                 <!-- GRDT -->
                 <div class="col-md-3 mb-3">
                     <label class="form-label">Nº GRDT</label>
-                    <input type="text" name="numero_grdt" value="{{ documento.numero_grdt }}" class="form-control">
+                    <input type="text" name="num_grdt" value="{% firstof documento.num_grdt documento.numero_grdt documento.grdt documento.n_grdt documento.grdt_cliente '' %}" class="form-control">
                 </div>
 
                 <!-- PCF -->
                 <div class="col-md-3 mb-3">
                     <label class="form-label">Nº PCF</label>
-                    <input type="text" name="numero_pcf" value="{{ documento.numero_pcf }}" class="form-control">
+                    <input type="text" name="num_pcf" value="{% firstof documento.num_pcf documento.numero_pcf documento.pcf documento.n_pcf documento.resposta_cliente '' %}" class="form-control">
                 </div>
 
                 <!-- Data Emissão -->
                 <div class="col-md-3 mb-3">
                     <label class="form-label">Data Emissão TP</label>
-                    <input type="date" name="data_emissao_tp" value="{{ documento.data_emissao_tp|date:'Y-m-d' }}" class="form-control">
+                    <input type="date" name="data_emissao_tp_doc" value="{% if documento.data_emissao_tp %}{{ documento.data_emissao_tp|date:'Y-m-d' }}{% elif documento.data_emissao_tp_doc %}{{ documento.data_emissao_tp_doc|date:'Y-m-d' }}{% elif documento.data_emissao_grdt %}{{ documento.data_emissao_grdt|date:'Y-m-d' }}{% elif documento.data_emissao %}{{ documento.data_emissao|date:'Y-m-d' }}{% elif documento.data %}{{ documento.data|date:'Y-m-d' }}{% endif %}" class="form-control">
                 </div>
 
                 <!-- Arquivo -->

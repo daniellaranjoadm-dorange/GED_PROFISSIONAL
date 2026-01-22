@@ -31,6 +31,7 @@ from django.core.paginator import Paginator
 from django.db.models import Count, Q, Sum
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.cache import never_cache
 from django.utils import timezone
 from django.conf import settings
 
@@ -842,9 +843,13 @@ def painel_workflow_exportar_excel(request):
 # =====================================================================
 # 📁 LISTA DE DOCUMENTOS – com filtros funcionando 100%
 # =====================================================================
+@never_cache
 def listar_documentos(request):
     # Base: só documentos ativos e não deletados
-    documentos = Documento.objects.filter(ativo=True, deletado_em__isnull=True)
+    documentos = (
+        Documento.objects.filter(ativo=True, deletado_em__isnull=True)
+        .select_related("projeto")
+    )
 
     # ---- Filtros vindos da barra superior ----
     projeto_filtro        = request.GET.get("projeto", "") or ""
@@ -922,6 +927,7 @@ def listar_documentos(request):
     return render(request, "documentos/listar.html", context)
 
 
+@never_cache
 def revisoes(request):
     candidatos = [
         "VersaoDocumento",
@@ -1372,6 +1378,54 @@ def upload_documento(request):
 # EDITAR DOCUMENTO
 # =================================================================
 
+def _set_if_exists(obj, field, value):
+    if value is None:
+        return
+    if hasattr(obj, field):
+        setattr(obj, field, value)
+
+
+def _parse_date(value):
+    if not value:
+        return None
+    value = str(value).strip()
+    try:
+        if len(value) == 10 and value[4] == "-" and value[7] == "-":
+            return datetime.strptime(value, "%Y-%m-%d").date()
+        if len(value) == 10 and value[2] == "/" and value[5] == "/":
+            return datetime.strptime(value, "%d/%m/%Y").date()
+    except Exception:
+        return None
+    return None
+
+
+def _first_post_value(request, keys):
+    for key in keys:
+        val = request.POST.get(key)
+        if val is None:
+            continue
+        val = str(val).strip()
+        if val != "":
+            return val
+    return None
+
+
+def _first_attr_value(obj, fields):
+    for field in fields:
+        if hasattr(obj, field):
+            val = getattr(obj, field)
+            if val not in (None, ""):
+                return val
+    return None
+
+
+def _format_date(value):
+    if isinstance(value, datetime):
+        return value.strftime("%d/%m/%Y")
+    if isinstance(value, date):
+        return value.strftime("%d/%m/%Y")
+    return str(value) if value else ""
+
 @login_required
 @has_perm("documento.editar")
 def editar_documento(request, documento_id):
@@ -1406,26 +1460,73 @@ def editar_documento(request, documento_id):
                       or "")
         documento.status_documento = status_doc
         documento.status_emissao = request.POST.get("status_emissao") or ""
-        documento.grdt_cliente = request.POST.get("grdt_cliente") or ""
-        documento.resposta_cliente = request.POST.get("resposta_cliente") or ""
         documento.ged_interna = request.POST.get("ged_interna") or ""
         documento.revisao = revisao
 
-        data_emissao_grdt = request.POST.get("data_emissao_grdt") or ""
-        if data_emissao_grdt:
-            try:
-                documento.data_emissao_grdt = datetime.strptime(
-                    data_emissao_grdt, "%Y-%m-%d"
-                ).date()
-            except ValueError:
-                messages.error(request, "Data de emissão GRDT inválida.")
-                return redirect("documentos:editar_documento", documento_id=documento.id)
-        else:
-            documento.data_emissao_grdt = None
+        grdt_val = _first_post_value(
+            request,
+            ["num_grdt", "numero_grdt", "grdt", "n_grdt", "grdt_cliente"],
+        )
+        pcf_val = _first_post_value(
+            request,
+            ["num_pcf", "numero_pcf", "pcf", "n_pcf", "resposta_cliente"],
+        )
+        dt_raw = _first_post_value(
+            request,
+            [
+                "data_emissao_tp",
+                "data_emissao_tp_doc",
+                "data_emissao_grdt",
+                "data_emissao",
+                "data",
+            ],
+        )
+        dt_val = _parse_date(dt_raw)
+
+        _set_if_exists(documento, "num_grdt", grdt_val)
+        _set_if_exists(documento, "numero_grdt", grdt_val)
+        _set_if_exists(documento, "grdt", grdt_val)
+        _set_if_exists(documento, "n_grdt", grdt_val)
+        _set_if_exists(documento, "grdt_cliente", grdt_val)
+
+        _set_if_exists(documento, "num_pcf", pcf_val)
+        _set_if_exists(documento, "numero_pcf", pcf_val)
+        _set_if_exists(documento, "pcf", pcf_val)
+        _set_if_exists(documento, "n_pcf", pcf_val)
+        _set_if_exists(documento, "resposta_cliente", pcf_val)
+
+        _set_if_exists(documento, "data_emissao_tp", dt_val)
+        _set_if_exists(documento, "data_emissao_tp_doc", dt_val)
+        _set_if_exists(documento, "data_emissao_grdt", dt_val)
+        _set_if_exists(documento, "data_emissao", dt_val)
+        _set_if_exists(documento, "data", dt_val)
 
         documento.save()
+        documento.refresh_from_db()
 
-        messages.success(request, "Documento atualizado.")
+        grdt_saved = _first_attr_value(
+            documento,
+            ["num_grdt", "numero_grdt", "grdt", "n_grdt", "grdt_cliente"],
+        )
+        pcf_saved = _first_attr_value(
+            documento,
+            ["num_pcf", "numero_pcf", "pcf", "n_pcf", "resposta_cliente"],
+        )
+        dt_saved = _first_attr_value(
+            documento,
+            [
+                "data_emissao_tp",
+                "data_emissao_tp_doc",
+                "data_emissao_grdt",
+                "data_emissao",
+                "data",
+            ],
+        )
+
+        messages.success(
+            request,
+            f"Salvo: GRDT={grdt_saved or '—'} PCF={pcf_saved or '—'} DATA={_format_date(dt_saved) or '—'}",
+        )
         return redirect("documentos:detalhes_documento", documento_id=documento.id)
 
     projetos = Projeto.objects.filter(ativo=True).order_by("nome")
