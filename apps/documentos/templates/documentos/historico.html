@@ -53,7 +53,7 @@
 
         <h5 class="fw-bold text-primary mb-3">🕑 Lista de Revisões</h5>
 
-        {% if versoes %}
+        {% if versoes_resumo %}
         <div class="table-responsive">
             <table class="table table-bordered table-striped align-middle">
                 <thead class="table-primary">
@@ -68,9 +68,9 @@
                 </thead>
 
                 <tbody>
-                    {% for rev in versoes %}
+                    {% for rev in versoes_resumo %}
                     <tr>
-                        <td><strong>{% firstof rev.numero_revisao rev.revisao "—" %}</strong></td>
+                        <td><strong>{% firstof rev.numero_revisao "—" %}</strong></td>
                         <td>
                             {% if rev.criado_em %}{{ rev.criado_em|date:"d/m/Y H:i" }}{% else %}—{% endif %}
                         </td>
@@ -81,12 +81,23 @@
                             {% if rev.status_revisao %}{{ rev.status_revisao }}{% else %}—{% endif %}
                         </td>
                         <td>
-                            {% if rev.arquivo %}
-                            <a href="{{ rev.arquivo.url }}" class="btn btn-outline-primary btn-sm" download>
-                                <i class="bi bi-download"></i> Baixar
-                            </a>
+                            {% if rev.arquivos and rev.arquivos|length == 1 %}
+                                <a href="{{ rev.arquivos.0.url }}" class="btn btn-outline-primary btn-sm" download>
+                                    <i class="bi bi-download"></i> Baixar
+                                </a>
+                            {% elif rev.arquivos and rev.arquivos|length > 1 %}
+                                <details>
+                                    <summary>Ver arquivos ({{ rev.arquivos|length }})</summary>
+                                    <div class="mt-2">
+                                        {% for arq in rev.arquivos %}
+                                            <a href="{{ arq.url }}" class="btn btn-outline-primary btn-sm mb-1" download>
+                                                <i class="bi bi-download"></i> {{ arq.nome }}
+                                            </a>
+                                        {% endfor %}
+                                    </div>
+                                </details>
                             {% else %}
-                            <span class="text-muted">Sem arquivo</span>
+                                <span class="text-muted">Sem arquivo</span>
                             {% endif %}
                         </td>
                         <td>

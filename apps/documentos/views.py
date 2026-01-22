@@ -863,7 +863,7 @@ def listar_documentos(request):
     documentos = (
         base_qs.filter(pk=Subquery(latest_pk))
         .select_related("projeto")
-        .annotate(versoes_count=Count("versoes", distinct=True))
+        .annotate(versoes_count=Count("versoes__numero_revisao", distinct=True))
     )
 
     # Aplica filtros sobre o conjunto "atual" por código
@@ -954,7 +954,7 @@ def revisoes(request):
     versoes_count = (
         DocumentoVersao.objects.filter(documento__codigo=OuterRef("codigo"))
         .values("documento__codigo")
-        .annotate(c=Count("id"))
+        .annotate(c=Count("numero_revisao", distinct=True))
         .values("c")[:1]
     )
 
@@ -1067,12 +1067,50 @@ def historico(request, codigo):
         "criado_por"
     ).order_by("-criado_em", "-id")
 
+    versoes_resumo = []
+    versoes_por_numero = {}
+    for v in versoes:
+        numero = (
+            str(getattr(v, "numero_revisao", None) or getattr(v, "revisao", "") or "")
+            .strip()
+        )
+        if not numero:
+            numero = "-"
+
+        entry = versoes_por_numero.get(numero)
+        if not entry:
+            entry = {
+                "numero_revisao": numero,
+                "criado_em": getattr(v, "criado_em", None),
+                "criado_por": getattr(v, "criado_por", None),
+                "status_revisao": getattr(v, "status_revisao", "") or "",
+                "arquivos": [],
+            }
+            versoes_por_numero[numero] = entry
+            versoes_resumo.append(entry)
+
+        arquivo = getattr(v, "arquivo", None)
+        if arquivo:
+            try:
+                url = arquivo.url
+            except Exception:
+                url = ""
+            nome = getattr(v, "nome_original", "") or os.path.basename(
+                getattr(arquivo, "name", "") or ""
+            )
+            entry["arquivos"].append(
+                {
+                    "nome": nome or "arquivo",
+                    "url": url,
+                }
+            )
+
     return render(
         request,
         "documentos/historico.html",
         {
             "documento": documento,
-            "versoes": versoes,
+            "versoes_resumo": versoes_resumo,
         },
     )
 
