@@ -147,10 +147,8 @@ body[data-theme="light"] .doc-wrapper .page-area .ldp-chip{ background: rgba(11,
       <div class="col-12">
         <label class="form-label">Arquivo(s) <span class="dash-req">*</span><span class="dash-reqhint">Obrigatório</span></label>
 
-        <div class="ldp-dropzone" id="dzArquivos" tabindex="0" role="button" aria-label="Área para anexar arquivos">
-          <!-- Fallback inline style: esconde o input mesmo sem CSS externo -->
-          <input type="file" name="arquivos" id="id_arquivos" required multiple
-                 style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;">
+        <div class="upload-dropzone ldp-dropzone" id="dzArquivos" tabindex="0" role="button" aria-label="Área para anexar arquivos">
+          <input type="file" name="arquivos" id="id_arquivos" class="ldp-file-input" required multiple>
 
           <div class="ldp-title"><i class="bi bi-cloud-arrow-up"></i> Arraste e solte aqui</div>
           <div class="ldp-sub">ou clique para selecionar arquivos</div>
