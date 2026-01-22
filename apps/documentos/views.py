@@ -2287,6 +2287,37 @@ def importar_ldp_legacy(request):
 # MEDIÇÃO / EXPORTAÇÃO MEDIÇÃO
 # =================================================================
 
+def _aplicar_filtros_medicao(qs, request):
+    filtros = {
+        "projeto": (request.GET.get("projeto") or "").strip(),
+        "disciplina": (request.GET.get("disciplina") or "").strip(),
+        "fase": (request.GET.get("fase") or "").strip(),
+        "tipo_doc": (request.GET.get("tipo_doc") or "").strip(),
+        "status_documento": (request.GET.get("status_documento") or "").strip(),
+        "status_emissao": (request.GET.get("status_emissao") or "").strip(),
+        "q": (request.GET.get("q") or "").strip(),
+    }
+
+    if filtros["projeto"]:
+        qs = qs.filter(projeto__nome__icontains=filtros["projeto"])
+    if filtros["disciplina"]:
+        qs = qs.filter(disciplina__icontains=filtros["disciplina"])
+    if filtros["fase"]:
+        qs = qs.filter(fase__icontains=filtros["fase"])
+    if filtros["tipo_doc"]:
+        qs = qs.filter(tipo_doc__icontains=filtros["tipo_doc"])
+    if filtros["status_documento"]:
+        qs = qs.filter(status_documento__icontains=filtros["status_documento"])
+    if filtros["status_emissao"]:
+        qs = qs.filter(status_emissao__icontains=filtros["status_emissao"])
+    if filtros["q"]:
+        qs = qs.filter(
+            Q(codigo__icontains=filtros["q"]) | Q(titulo__icontains=filtros["q"])
+        )
+
+    return qs, filtros
+
+
 def _calcular_medicao_queryset(docs_qs):
     med_raw = docs_qs.values("tipo_doc").annotate(
         total=Count("id"),
@@ -2335,11 +2366,8 @@ def _calcular_medicao_queryset(docs_qs):
 
 @login_required
 def medicao(request):
-    docs = Documento.objects.filter(ativo=True)
-
-    projeto = request.GET.get("projeto") or ""
-    if projeto:
-        docs = docs.filter(projeto__nome__icontains=projeto)
+    base_qs = Documento.objects.filter(ativo=True).select_related("projeto")
+    docs, filtros = _aplicar_filtros_medicao(base_qs, request)
 
     linhas, totais = _calcular_medicao_queryset(docs)
 
@@ -2368,6 +2396,10 @@ def medicao(request):
     total_nr_usd = sum(_to_decimal(m.get("valor_nr_usd")) for m in linhas)
     total_emit_brl = sum(_to_decimal(m.get("valor_emitidos_brl")) for m in linhas)
     total_nr_brl = sum(_to_decimal(m.get("valor_nr_brl")) for m in linhas)
+
+    total_usd = total_emit_usd + total_nr_usd
+    total_brl = total_emit_brl + total_nr_brl
+    ticket_medio_usd = (total_usd / emitidos) if emitidos > 0 else Decimal("0")
 
     totais_gerais = {
         "total": total_count,
@@ -2522,8 +2554,6 @@ def medicao(request):
         total_count > 0 or total_emit_usd > 0 or total_emit_brl > 0
     )
 
-    base_qs = Documento.objects.filter(ativo=True).select_related("projeto")
-
     return render(
         request,
         "documentos/medicao.html",
@@ -2533,23 +2563,73 @@ def medicao(request):
             "totais": totais,
             "totais_gerais": totais_gerais,
             "total_geral": total_geral,
+            "total_docs": total_count,
+            "emitidos_total": emitidos,
+            "nao_recebidos_total": nao_recebidos,
+            "total_usd": f"{total_usd:,.2f}",
+            "total_brl": f"{total_brl:,.2f}",
+            "ticket_medio_usd": f"{ticket_medio_usd:,.2f}",
             "tem_dados_medicao": tem_dados_medicao,
             "charts_ok": charts_ok,
             "chart1_url": chart1_url,
             "chart2_url": chart2_url,
-            "projetos": base_qs.values_list("projeto__nome", flat=True).distinct(),
-            "projeto_selecionado": projeto,
+            "filtros": filtros,
+            "projetos": (
+                Documento.objects.filter(ativo=True)
+                .values_list("projeto__nome", flat=True)
+                .exclude(projeto__nome__isnull=True)
+                .exclude(projeto__nome__exact="")
+                .distinct()
+                .order_by("projeto__nome")
+            ),
+            "disciplinas": (
+                Documento.objects.filter(ativo=True)
+                .values_list("disciplina", flat=True)
+                .exclude(disciplina__isnull=True)
+                .exclude(disciplina__exact="")
+                .distinct()
+                .order_by("disciplina")
+            ),
+            "fases": (
+                Documento.objects.filter(ativo=True)
+                .values_list("fase", flat=True)
+                .exclude(fase__isnull=True)
+                .exclude(fase__exact="")
+                .distinct()
+                .order_by("fase")
+            ),
+            "tipos": (
+                Documento.objects.filter(ativo=True)
+                .values_list("tipo_doc", flat=True)
+                .exclude(tipo_doc__isnull=True)
+                .exclude(tipo_doc__exact="")
+                .distinct()
+                .order_by("tipo_doc")
+            ),
+            "status_docs": (
+                Documento.objects.filter(ativo=True)
+                .values_list("status_documento", flat=True)
+                .exclude(status_documento__isnull=True)
+                .exclude(status_documento__exact="")
+                .distinct()
+                .order_by("status_documento")
+            ),
+            "status_emissoes": (
+                Documento.objects.filter(ativo=True)
+                .values_list("status_emissao", flat=True)
+                .exclude(status_emissao__isnull=True)
+                .exclude(status_emissao__exact="")
+                .distinct()
+                .order_by("status_emissao")
+            ),
         },
     )
 
 
 @login_required
 def exportar_medicao_excel(request):
-    docs = Documento.objects.filter(ativo=True)
-
-    projeto = request.GET.get("projeto") or ""
-    if projeto:
-        docs = docs.filter(projeto__nome__icontains=projeto)
+    base_qs = Documento.objects.filter(ativo=True).select_related("projeto")
+    docs, _filtros = _aplicar_filtros_medicao(base_qs, request)
 
     linhas, totais = _calcular_medicao_queryset(docs)
 

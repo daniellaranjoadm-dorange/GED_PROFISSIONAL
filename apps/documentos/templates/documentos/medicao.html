@@ -82,6 +82,34 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Filtros */
+.doc-wrapper .medicao-filtros{
+  display: grid;
+  grid-template-columns: repeat(4, minmax(180px, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+
+.doc-wrapper .medicao-filtros .form-label{
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.doc-wrapper .medicao-actions{
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.doc-wrapper .medicao-kpis{
+  display: grid;
+  grid-template-columns: repeat(3, minmax(180px, 1fr));
+  gap: 12px;
+}
+
 /* Botão export (mais corporativo e consistente) */
 .doc-wrapper .btn-exportar{
   border-radius: 999px;
@@ -269,6 +297,13 @@
   .doc-wrapper .btn-exportar{ align-self: flex-start; }
   .doc-wrapper .table-finance{ font-size: .86rem; }
   .doc-wrapper .charts-grid{ grid-template-columns: 1fr; }
+  .doc-wrapper .medicao-filtros{ grid-template-columns: repeat(2, minmax(160px, 1fr)); }
+  .doc-wrapper .medicao-kpis{ grid-template-columns: repeat(2, minmax(160px, 1fr)); }
+}
+
+@media (max-width: 640px){
+  .doc-wrapper .medicao-filtros{ grid-template-columns: 1fr; }
+  .doc-wrapper .medicao-kpis{ grid-template-columns: 1fr; }
 }
 </style>
 
@@ -286,29 +321,111 @@
 </div>
 
 
+<div class="medicao-card mb-4">
+    <form method="get" class="medicao-filtros">
+        <div>
+            <label class="form-label">Projeto</label>
+            <select class="form-select" name="projeto">
+                <option value="">Todos</option>
+                {% for p in projetos %}
+                    <option value="{{ p }}" {% if filtros.projeto == p %}selected{% endif %}>{{ p }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label class="form-label">Disciplina</label>
+            <select class="form-select" name="disciplina">
+                <option value="">Todos</option>
+                {% for d in disciplinas %}
+                    <option value="{{ d }}" {% if filtros.disciplina == d %}selected{% endif %}>{{ d }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label class="form-label">Fase</label>
+            <select class="form-select" name="fase">
+                <option value="">Todos</option>
+                {% for f in fases %}
+                    <option value="{{ f }}" {% if filtros.fase == f %}selected{% endif %}>{{ f }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label class="form-label">Tipo Doc</label>
+            <select class="form-select" name="tipo_doc">
+                <option value="">Todos</option>
+                {% for t in tipos %}
+                    <option value="{{ t }}" {% if filtros.tipo_doc == t %}selected{% endif %}>{{ t }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label class="form-label">Status Documento</label>
+            <select class="form-select" name="status_documento">
+                <option value="">Todos</option>
+                {% for s in status_docs %}
+                    <option value="{{ s }}" {% if filtros.status_documento == s %}selected{% endif %}>{{ s }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label class="form-label">Status Emissão</label>
+            <select class="form-select" name="status_emissao">
+                <option value="">Todos</option>
+                {% for s in status_emissoes %}
+                    <option value="{{ s }}" {% if filtros.status_emissao == s %}selected{% endif %}>{{ s }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label class="form-label">Busca</label>
+            <input type="text" class="form-control" name="q" value="{{ filtros.q }}" placeholder="Código ou título">
+        </div>
+
+        <div class="medicao-actions">
+            <button type="submit" class="btn btn-primary">Aplicar filtros</button>
+            <a href="{% url 'documentos:medicao' %}" class="btn btn-outline-secondary">Limpar</a>
+            <a href="{% url 'documentos:exportar_medicao_excel' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" class="btn btn-primary btn-exportar">
+                <i class="bi bi-file-earmark-excel"></i> Exportar Excel
+            </a>
+        </div>
+    </form>
+</div>
+
 
 <!-- ============================
      KPIs
 ============================ -->
-<div class="row g-3 mb-4">
-    <div class="col-md-4">
-        <div class="totais-box">
-            <h5 class="text-info fw-bold">Taxa de câmbio fixa</h5>
-            <p class="valor-brl">R$ 5,7642</p>
-        </div>
+<div class="medicao-kpis mb-4">
+    <div class="totais-box">
+        <div class="kpi-label">Total Docs</div>
+        <div class="kpi-value">{{ total_docs|default:0 }}</div>
     </div>
-
-    <div class="col-md-4">
-        <div class="totais-box">
-            <h5 class="text-info fw-bold">Valor por documento</h5>
-            <p class="valor-usd">US$ {{ VALOR_MEDICAO_USD }}</p>
-        </div>
+    <div class="totais-box">
+        <div class="kpi-label">Emitidos</div>
+        <div class="kpi-value">{{ emitidos_total|default:0 }}</div>
     </div>
-
-    <div class="col-md-4 text-end">
-        <a href="{% url 'documentos:exportar_medicao_excel' %}" class="btn btn-primary btn-exportar px-4 py-2">
-            <i class="bi bi-file-earmark-excel"></i> Exportar Excel
-        </a>
+    <div class="totais-box">
+        <div class="kpi-label">Não Recebidos</div>
+        <div class="kpi-value">{{ nao_recebidos_total|default:0 }}</div>
+    </div>
+    <div class="totais-box">
+        <div class="kpi-label">Total USD</div>
+        <div class="kpi-value">US$ {{ total_usd|default:"0,00" }}</div>
+    </div>
+    <div class="totais-box">
+        <div class="kpi-label">Total BRL</div>
+        <div class="kpi-value">R$ {{ total_brl|default:"0,00" }}</div>
+    </div>
+    <div class="totais-box">
+        <div class="kpi-label">Ticket médio USD</div>
+        <div class="kpi-value">US$ {{ ticket_medio_usd|default:"0,00" }}</div>
     </div>
 </div>
 
