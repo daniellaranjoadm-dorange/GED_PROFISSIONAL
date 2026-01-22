@@ -9,7 +9,6 @@ import logging
 import os
 import hashlib
 import re
-from collections import defaultdict
 from django.apps import apps
 from django.urls import reverse
 from django.db import transaction
@@ -945,24 +944,32 @@ def revisoes(request):
 
     agg = (
         base.values("codigo")
-        .annotate(qtd=Count("id"))
-        .filter(qtd__gt=1)
+        .annotate(qtd_docs=Count("id"))
+        .filter(qtd_docs__gt=1)
         .order_by("codigo")
     )
 
     latest_doc = base.filter(codigo=OuterRef("codigo")).order_by("-criado_em", "-id")
+    versoes_count = (
+        DocumentoVersao.objects.filter(documento__codigo=OuterRef("codigo"))
+        .values("documento__codigo")
+        .annotate(c=Count("id"))
+        .values("c")[:1]
+    )
+
     agg = agg.annotate(
         doc_id=Subquery(latest_doc.values("id")[:1]),
         rev_atual=Subquery(latest_doc.values("revisao")[:1]),
         disciplina=Subquery(latest_doc.values("disciplina")[:1]),
         projeto_nome=Subquery(latest_doc.values("projeto__nome")[:1]),
+        versoes=Subquery(versoes_count),
     )
 
     rows = [
         {
             "codigo": row["codigo"],
             "rev_atual": row["rev_atual"] or "—",
-            "qtd": row["qtd"],
+            "qtd": row["versoes"] or row["qtd_docs"],
             "projeto_nome": row["projeto_nome"] or "",
             "disciplina": row["disciplina"] or "",
             "doc_id": row["doc_id"],
@@ -983,6 +990,10 @@ def revisoes(request):
 # Revisões permitidas no sistema
 # ==============================
 REVISOES_VALIDAS = ["0"] + [chr(i) for i in range(ord("A"), ord("Z")+1)]
+
+
+def _documento_atual_por_codigo(qs_base, codigo):
+    return qs_base.filter(codigo=codigo).order_by("-criado_em", "-id").first()
 
 # =================================================================
 # DETALHE DO DOCUMENTO
@@ -1045,22 +1056,19 @@ def detalhes_documento(request, documento_id):
 
 @login_required
 def historico(request, codigo):
-    qs = (
-        Documento.objects.filter(codigo=codigo, ativo=True, deletado_em__isnull=True)
-        .order_by("-criado_em", "-id")
-    )
-    documento = qs.first()
+    base = Documento.objects.filter(codigo=codigo, ativo=True, deletado_em__isnull=True)
+    documento = _documento_atual_por_codigo(base, codigo)
     if not documento:
         raise Http404("Documento não encontrado")
 
-    revisoes = qs
+    versoes = DocumentoVersao.objects.filter(documento__codigo=codigo).order_by("-criado_em", "-id")
 
     return render(
         request,
         "documentos/historico.html",
         {
             "documento": documento,
-            "revisoes": revisoes,
+            "versoes": versoes,
         },
     )
 
@@ -1529,7 +1537,7 @@ def nova_revisao(request, documento_id):
     nova_rev = REVISOES_VALIDAS[idx + 1] if idx + 1 < len(REVISOES_VALIDAS) else "A"
 
     if request.method == "POST":
-        arquivos = request.FILES.getlist("arquivo")
+        arquivos = request.FILES.getlist("arquivo") or request.FILES.getlist("arquivos")
         observacao = request.POST.get("observacao", "")
 
         if not arquivos:
@@ -1559,7 +1567,7 @@ def nova_revisao(request, documento_id):
                     return redirect("documentos:detalhes_documento", documento_id=documento.id)
 
             documento.revisao = nova_rev
-            documento.status_documento = "REVISAO_INTERNA"
+            documento.status_documento = "Em Revisão"
             _reset_campos_emissao(documento)
             update_fields = ["revisao", "status_documento"]
             for fname in [
