@@ -1600,6 +1600,196 @@ body.light .page-area label {
   color: #0b1220 !important;
 }
 
+/* ==========================================================
+   FIX THEME LIGHT: sidebar text + tables visibility
+   ========================================================== */
+
+/* Detectores de tema claro (cobre várias implementações) */
+html[data-theme="light"], body[data-theme="light"],
+.theme-light, body.theme-light, body.light, html.light,
+[data-theme="light"]{
+  /* fallback geral para texto legível */
+  --text: #101214;
+  --content-text: #101214;
+  --muted: rgba(16,18,20,.72);
+
+  /* sidebar */
+  --sidebar-text: #0f1216;
+  --sidebar-muted: rgba(15,18,22,.70);
+  --sidebar-link: #0f1216;
+  --sidebar-link-hover: #000;
+}
+
+/* Sidebar: texto do menu, ícones e títulos */
+html[data-theme="light"] .sidebar,
+body[data-theme="light"] .sidebar,
+.theme-light .sidebar,
+body.theme-light .sidebar,
+body.light .sidebar,
+html.light .sidebar,
+[data-theme="light"] .sidebar{
+  color: var(--sidebar-text, #0f1216) !important;
+}
+
+/* Links e textos dentro do menu */
+html[data-theme="light"] .sidebar a,
+body[data-theme="light"] .sidebar a,
+.theme-light .sidebar a,
+body.theme-light .sidebar a,
+body.light .sidebar a,
+html.light .sidebar a,
+[data-theme="light"] .sidebar a{
+  color: var(--sidebar-link, #0f1216) !important;
+}
+
+/* Itens comuns do sidebar (cobre variações de markup) */
+html[data-theme="light"] .sidebar .nav-link,
+html[data-theme="light"] .sidebar .menu-link,
+html[data-theme="light"] .sidebar .sidebar-link,
+html[data-theme="light"] .sidebar .menu-item,
+html[data-theme="light"] .sidebar .nav-item,
+html[data-theme="light"] .sidebar .menu-title,
+html[data-theme="light"] .sidebar .sidebar-title,
+html[data-theme="light"] .sidebar .small,
+html[data-theme="light"] .sidebar .text-muted,
+body[data-theme="light"] .sidebar .nav-link,
+body[data-theme="light"] .sidebar .menu-link,
+body[data-theme="light"] .sidebar .sidebar-link,
+body[data-theme="light"] .sidebar .menu-item,
+body[data-theme="light"] .sidebar .nav-item,
+body[data-theme="light"] .sidebar .menu-title,
+body[data-theme="light"] .sidebar .sidebar-title,
+body[data-theme="light"] .sidebar .small,
+body[data-theme="light"] .sidebar .text-muted,
+.theme-light .sidebar .nav-link,
+.theme-light .sidebar .menu-link,
+.theme-light .sidebar .sidebar-link,
+.theme-light .sidebar .menu-item,
+.theme-light .sidebar .nav-item,
+.theme-light .sidebar .menu-title,
+.theme-light .sidebar .sidebar-title,
+.theme-light .sidebar .small,
+.theme-light .sidebar .text-muted,
+body.theme-light .sidebar .nav-link,
+body.theme-light .sidebar .menu-link,
+body.theme-light .sidebar .sidebar-link,
+body.theme-light .sidebar .menu-item,
+body.theme-light .sidebar .nav-item,
+body.theme-light .sidebar .menu-title,
+body.theme-light .sidebar .sidebar-title,
+body.theme-light .sidebar .small,
+body.theme-light .sidebar .text-muted,
+body.light .sidebar .nav-link,
+body.light .sidebar .menu-link,
+body.light .sidebar .sidebar-link,
+body.light .sidebar .menu-item,
+body.light .sidebar .nav-item,
+body.light .sidebar .menu-title,
+body.light .sidebar .sidebar-title,
+body.light .sidebar .small,
+body.light .sidebar .text-muted,
+html.light .sidebar .nav-link,
+html.light .sidebar .menu-link,
+html.light .sidebar .sidebar-link,
+html.light .sidebar .menu-item,
+html.light .sidebar .nav-item,
+html.light .sidebar .menu-title,
+html.light .sidebar .sidebar-title,
+html.light .sidebar .small,
+html.light .sidebar .text-muted,
+[data-theme="light"] .sidebar .nav-link,
+[data-theme="light"] .sidebar .menu-link,
+[data-theme="light"] .sidebar .sidebar-link,
+[data-theme="light"] .sidebar .menu-item,
+[data-theme="light"] .sidebar .nav-item,
+[data-theme="light"] .sidebar .menu-title,
+[data-theme="light"] .sidebar .sidebar-title,
+[data-theme="light"] .sidebar .small,
+[data-theme="light"] .sidebar .text-muted{
+  color: var(--sidebar-text, #0f1216) !important;
+}
+
+/* Hover/active */
+html[data-theme="light"] .sidebar a:hover,
+body[data-theme="light"] .sidebar a:hover,
+.theme-light .sidebar a:hover,
+body.theme-light .sidebar a:hover,
+body.light .sidebar a:hover,
+html.light .sidebar a:hover,
+[data-theme="light"] .sidebar a:hover{
+  color: var(--sidebar-link-hover, #000) !important;
+}
+
+/* Tabelas / DataTables no light: garantir texto visível */
+html[data-theme="light"] .page-area,
+body[data-theme="light"] .page-area,
+.theme-light .page-area,
+body.theme-light .page-area,
+body.light .page-area,
+html.light .page-area,
+[data-theme="light"] .page-area{
+  color: var(--text, #101214) !important;
+}
+
+html[data-theme="light"] table,
+html[data-theme="light"] .table,
+html[data-theme="light"] th,
+html[data-theme="light"] td,
+body[data-theme="light"] table,
+body[data-theme="light"] .table,
+body[data-theme="light"] th,
+body[data-theme="light"] td,
+.theme-light table,
+.theme-light .table,
+.theme-light th,
+.theme-light td,
+body.theme-light table,
+body.theme-light .table,
+body.theme-light th,
+body.theme-light td,
+body.light table,
+body.light .table,
+body.light th,
+body.light td,
+html.light table,
+html.light .table,
+html.light th,
+html.light td,
+[data-theme="light"] table,
+[data-theme="light"] .table,
+[data-theme="light"] th,
+[data-theme="light"] td{
+  color: var(--text, #101214) !important;
+}
+
+/* Inputs/paginação DataTables */
+html[data-theme="light"] .dataTables_wrapper,
+html[data-theme="light"] .dataTables_wrapper label,
+html[data-theme="light"] .dataTables_wrapper .dataTables_info,
+html[data-theme="light"] .dataTables_wrapper .dataTables_paginate,
+body[data-theme="light"] .dataTables_wrapper,
+body[data-theme="light"] .dataTables_wrapper label,
+body[data-theme="light"] .dataTables_wrapper .dataTables_info,
+body[data-theme="light"] .dataTables_wrapper .dataTables_paginate,
+.theme-light .dataTables_wrapper,
+.theme-light .dataTables_wrapper label,
+.theme-light .dataTables_wrapper .dataTables_info,
+.theme-light .dataTables_wrapper .dataTables_paginate,
+[data-theme="light"] .dataTables_wrapper,
+[data-theme="light"] .dataTables_wrapper label,
+[data-theme="light"] .dataTables_wrapper .dataTables_info,
+[data-theme="light"] .dataTables_wrapper .dataTables_paginate{
+  color: var(--text, #101214) !important;
+}
+
+/* Pills/status: evitar texto branco no light */
+html[data-theme="light"] .status-pill,
+body[data-theme="light"] .status-pill,
+.theme-light .status-pill,
+[data-theme="light"] .status-pill{
+  color: #0f1216 !important;
+}
+
 /* FIX: impedir input[type=file] global invisível cobrindo a tela (cliques abrindo seletor) */
 .ent-root input[type="file"]{
   position: static !important;

@@ -1553,30 +1553,31 @@ def nova_revisao(request, documento_id):
     nova_rev = REVISOES_VALIDAS[idx + 1] if idx + 1 < len(REVISOES_VALIDAS) else "A"
 
     if request.method == "POST":
-        arquivo = request.FILES.get("arquivo")
+        arquivos = request.FILES.getlist("arquivo")
         observacao = request.POST.get("observacao", "")
 
-        if not arquivo:
-            messages.error(request, "Envie o arquivo da nova revisão.")
+        if not arquivos:
+            messages.error(request, "Envie ao menos 1 arquivo da nova revisão.")
             return redirect("documentos:detalhes_documento", documento_id=documento.id)
 
-        try:
-            DocumentoVersao.objects.create(
-                documento=documento,
-                numero_revisao=nova_rev,
-                arquivo=arquivo,  # chama storage aqui (R2/S3)
-                criado_por=request.user,
-                observacao=observacao,
-                status_revisao="REVISAO",
-            )
-        except Exception:
-            logger.exception("Falha ao salvar nova revisão no storage (R2/S3)")
-            messages.error(
-                request,
-                "Falha ao enviar o arquivo da nova revisão (storage/R2 Unauthorized). "
-                "A revisão do documento NÃO foi alterada."
-            )
-            return redirect("documentos:detalhes_documento", documento_id=documento.id)
+        for arquivo in arquivos:
+            try:
+                DocumentoVersao.objects.create(
+                    documento=documento,
+                    numero_revisao=nova_rev,
+                    arquivo=arquivo,  # chama storage aqui (R2/S3)
+                    criado_por=request.user,
+                    observacao=observacao,
+                    status_revisao="REVISAO",
+                )
+            except Exception:
+                logger.exception("Falha ao salvar nova revisão no storage (R2/S3)")
+                messages.error(
+                    request,
+                    "Falha ao enviar o arquivo da nova revisão (storage/R2 Unauthorized). "
+                    "A revisão do documento NÃO foi alterada."
+                )
+                return redirect("documentos:detalhes_documento", documento_id=documento.id)
 
         documento.revisao = nova_rev
         documento.status_documento = "Em Revisão"
