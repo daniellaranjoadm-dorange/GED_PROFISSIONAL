@@ -256,6 +256,7 @@
           <th>Rev</th>
           <th>Disciplina</th>
           <th>Título</th>
+          <th>Versões</th>
           <th>Status Documento</th>
           <th>Status Emissão</th>
           <th>GRDT</th>
@@ -279,6 +280,12 @@
           <td>{{ doc.revisao }}</td>
           <td>{{ doc.disciplina }}</td>
           <td>{{ doc.titulo }}</td>
+          <td class="text-nowrap">
+            {{ doc.versoes_count|default:0 }}
+            {% if doc.versoes_count %}
+              <a href="{% url 'documentos:historico' doc.codigo %}" class="btn btn-outline-primary btn-sm ms-2">Histórico</a>
+            {% endif %}
+          </td>
           <td>{% if doc.status_documento %}<span class="badge badge-status badge-doc">{{ doc.status_documento }}</span>{% else %}—{% endif %}</td>
           <td>{% if doc.status_emissao %}<span class="badge badge-status badge-emissao">{{ doc.status_emissao }}</span>{% else %}—{% endif %}</td>
           <td>{% firstof doc.num_grdt doc.numero_grdt doc.grdt doc.n_grdt doc.grdt_cliente "—" %}</td>

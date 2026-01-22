@@ -846,10 +846,7 @@ def painel_workflow_exportar_excel(request):
 @never_cache
 def listar_documentos(request):
     # Base: só documentos ativos e não deletados
-    base = (
-        Documento.objects.filter(ativo=True, deletado_em__isnull=True)
-        .select_related("projeto")
-    )
+    base_qs = Documento.objects.filter(ativo=True, deletado_em__isnull=True)
 
     # ---- Filtros vindos da barra superior ----
     projeto_filtro        = request.GET.get("projeto", "") or ""
@@ -858,32 +855,38 @@ def listar_documentos(request):
     status_emissao_filtro = request.GET.get("status_emissao", "") or ""
     busca                 = request.GET.get("busca", "") or ""
 
-    # Aplica filtros
+    latest_pk = (
+        base_qs.filter(codigo=OuterRef("codigo"))
+        .order_by("-criado_em", "-id")
+        .values("pk")[:1]
+    )
+    documentos = (
+        base_qs.filter(pk=Subquery(latest_pk))
+        .select_related("projeto")
+        .annotate(versoes_count=Count("versoes", distinct=True))
+    )
+
+    # Aplica filtros sobre o conjunto "atual" por código
     if projeto_filtro:
-        base = base.filter(projeto__nome__icontains=projeto_filtro)
+        documentos = documentos.filter(projeto__nome__icontains=projeto_filtro)
 
     if disciplina_filtro:
-        base = base.filter(disciplina__icontains=disciplina_filtro)
+        documentos = documentos.filter(disciplina__icontains=disciplina_filtro)
 
     if status_doc_filtro:
-        base = base.filter(status_documento__icontains=status_doc_filtro)
+        documentos = documentos.filter(status_documento__icontains=status_doc_filtro)
 
     if status_emissao_filtro:
-        base = base.filter(status_emissao__icontains=status_emissao_filtro)
+        documentos = documentos.filter(status_emissao__icontains=status_emissao_filtro)
 
     # 🔥 CORREÇÃO DEFINITIVA DA BUSCA GLOBAL
     if busca:
-        base = base.filter(
+        documentos = documentos.filter(
             Q(codigo__icontains=busca) |
             Q(titulo__icontains=busca)
         )
 
-    latest_pk = (
-        base.filter(codigo=OuterRef("codigo"))
-        .order_by("-criado_em", "-id")
-        .values("pk")[:1]
-    )
-    documentos = base.filter(pk=Subquery(latest_pk)).order_by("codigo")
+    documentos = documentos.order_by("codigo")
 
     # ---- Combos dos selects (usados no template listar.html) ----
     projetos = (
@@ -936,20 +939,18 @@ def listar_documentos(request):
 
 @never_cache
 def revisoes(request):
-    base = (
+    base_qs = (
         Documento.objects.filter(ativo=True, deletado_em__isnull=True)
         .exclude(revisao__isnull=True)
         .exclude(revisao__exact="")
     )
 
-    agg = (
-        base.values("codigo")
-        .annotate(qtd_docs=Count("id"))
-        .filter(qtd_docs__gt=1)
-        .order_by("codigo")
+    latest_pk = (
+        base_qs.filter(codigo=OuterRef("codigo"))
+        .order_by("-criado_em", "-id")
+        .values("pk")[:1]
     )
 
-    latest_doc = base.filter(codigo=OuterRef("codigo")).order_by("-criado_em", "-id")
     versoes_count = (
         DocumentoVersao.objects.filter(documento__codigo=OuterRef("codigo"))
         .values("documento__codigo")
@@ -957,25 +958,26 @@ def revisoes(request):
         .values("c")[:1]
     )
 
-    agg = agg.annotate(
-        doc_id=Subquery(latest_doc.values("id")[:1]),
-        rev_atual=Subquery(latest_doc.values("revisao")[:1]),
-        disciplina=Subquery(latest_doc.values("disciplina")[:1]),
-        projeto_nome=Subquery(latest_doc.values("projeto__nome")[:1]),
-        versoes=Subquery(versoes_count),
+    documentos = (
+        base_qs.filter(pk=Subquery(latest_pk))
+        .select_related("projeto")
+        .annotate(versoes_count=Subquery(versoes_count))
+        .filter(versoes_count__gt=0)
+        .order_by("-criado_em", "codigo")
     )
 
-    rows = [
-        {
-            "codigo": row["codigo"],
-            "rev_atual": row["rev_atual"] or "—",
-            "qtd": row["versoes"] or row["qtd_docs"],
-            "projeto_nome": row["projeto_nome"] or "",
-            "disciplina": row["disciplina"] or "",
-            "doc_id": row["doc_id"],
-        }
-        for row in agg
-    ]
+    rows = []
+    for doc in documentos:
+        rows.append(
+            {
+                "codigo": doc.codigo,
+                "rev_atual": (str(getattr(doc, "revisao", "") or "").strip() or "—"),
+                "versoes_count": doc.versoes_count or 0,
+                "projeto_nome": getattr(getattr(doc, "projeto", None), "nome", "") or "",
+                "disciplina": getattr(doc, "disciplina", "") or "",
+                "doc_id": doc.id,
+            }
+        )
 
     return render(
         request,
@@ -1061,7 +1063,9 @@ def historico(request, codigo):
     if not documento:
         raise Http404("Documento não encontrado")
 
-    versoes = DocumentoVersao.objects.filter(documento__codigo=codigo).order_by("-criado_em", "-id")
+    versoes = DocumentoVersao.objects.filter(documento__codigo=codigo).select_related(
+        "criado_por"
+    ).order_by("-criado_em", "-id")
 
     return render(
         request,
