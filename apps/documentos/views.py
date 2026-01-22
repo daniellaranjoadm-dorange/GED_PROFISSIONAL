@@ -10,6 +10,7 @@ import logging
 import os
 import hashlib
 import re
+from collections import defaultdict
 from django.apps import apps
 from django.urls import reverse
 from django.db import transaction
@@ -930,114 +931,51 @@ def listar_documentos(request):
 
 @never_cache
 def revisoes(request):
-    candidatos = [
-        "VersaoDocumento",
-        "DocumentoVersao",
-        "RevisaoDocumento",
-        "Versao",
-        "Revisao",
-    ]
+    qs = (
+        Documento.objects.filter(ativo=True, deletado_em__isnull=True)
+        .select_related("projeto")
+    )
+    qs = qs.exclude(revisao__isnull=True).exclude(revisao__exact="")
 
-    model = None
-    for nome in candidatos:
-        try:
-            model = apps.get_model("documentos", nome)
-            break
-        except LookupError:
+    grupos = defaultdict(list)
+    for doc in qs:
+        if not doc.codigo:
             continue
-
-    if model is None:
-        return render(
-            request,
-            "documentos/revisoes.html",
-            {
-                "revisoes_rows": [],
-                "total_revisoes": 0,
-                "erro_modelo": "Modelo de versões não encontrado",
-            },
-        )
-
-    def has_field(field_name):
-        try:
-            model._meta.get_field(field_name)
-            return True
-        except Exception:
-            return False
-
-    versoes = model.objects.all()
-    if has_field("documento"):
-        versoes = versoes.select_related("documento")
-
-    date_fields = ["criado_em", "created_at", "data", "criado"]
-    date_field = next((f for f in date_fields if has_field(f)), None)
-    if date_field:
-        versoes = versoes.order_by(f"-{date_field}", "-id")
-    else:
-        versoes = versoes.order_by("-id")
-
-    arquivo_field = None
-    for field_name in ["arquivo", "file"]:
-        if has_field(field_name):
-            arquivo_field = field_name
-            break
-
-    if arquivo_field:
-        versoes = versoes.exclude(**{f"{arquivo_field}__isnull": True}).exclude(
-            **{f"{arquivo_field}__exact": ""}
-        )
-
-    revisao_field = None
-    for field_name in ["numero_revisao", "revisao"]:
-        if has_field(field_name):
-            revisao_field = field_name
-            break
+        grupos[doc.codigo].append(doc)
 
     rows = []
-    for versao in versoes:
-        documento = getattr(versao, "documento", None)
-        if documento is None:
+    for codigo, items in grupos.items():
+        items.sort(key=lambda x: x.id or 0, reverse=True)
+        latest = items[0]
+        total = len(items)
+
+        rev = str(getattr(latest, "revisao", "") or "").strip()
+        if total == 1 and rev in ("", "0"):
             continue
 
-        revisao_val = getattr(versao, revisao_field, "") if revisao_field else ""
-        if revisao_val is None:
-            revisao_val = ""
-        else:
-            revisao_val = str(revisao_val).strip()
-
-        data_val = getattr(versao, date_field, None) if date_field else None
-        if isinstance(data_val, datetime):
-            data_fmt = data_val.strftime("%d/%m/%Y %H:%M")
-        elif isinstance(data_val, date):
-            data_fmt = data_val.strftime("%d/%m/%Y")
-        elif data_val:
-            data_fmt = str(data_val)
-        else:
-            data_fmt = ""
-
-        detalhes_url = None
-        try:
-            detalhes_url = reverse("documentos:detalhes_documento", args=[documento.id])
-        except Exception:
-            detalhes_url = None
+        projeto_nome = ""
+        if getattr(latest, "projeto", None):
+            projeto_nome = getattr(latest.projeto, "nome", "") or ""
 
         rows.append(
             {
-                "codigo": getattr(documento, "codigo", ""),
-                "projeto": getattr(getattr(documento, "projeto", None), "nome", ""),
-                "disciplina": getattr(documento, "disciplina", ""),
-                "revisao": revisao_val,
-                "data": data_fmt,
-                "historico_url": reverse("documentos:historico", args=[documento.codigo]),
-                "detalhes_url": detalhes_url,
+                "codigo": codigo,
+                "rev_atual": rev if rev else "—",
+                "total_versoes": total,
+                "projeto": projeto_nome,
+                "disciplina": getattr(latest, "disciplina", "") or "",
+                "documento_id": latest.id,
             }
         )
+
+    rows.sort(key=lambda r: r["documento_id"] or 0, reverse=True)
 
     return render(
         request,
         "documentos/revisoes.html",
         {
             "revisoes_rows": rows,
-            "total_revisoes": len(rows),
+            "total": len(rows),
         },
     )
 
@@ -1107,26 +1045,25 @@ def detalhes_documento(request, documento_id):
 
 @login_required
 def historico(request, codigo):
-    qs = Documento.objects.filter(codigo=codigo)
-    if hasattr(Documento, "ativo"):
-        doc_atual = qs.filter(ativo=True).order_by("-id").first() or qs.order_by("-id").first()
-    else:
-        doc_atual = qs.order_by("-id").first()
-    if not doc_atual:
-        raise Http404("Documento não encontrado")
-    documento = doc_atual
-    versoes = (
-        DocumentoVersao.objects.filter(documento__codigo=codigo)
-        .select_related("documento", "criado_por")
-        .order_by("-criado_em")
+    qs = (
+        Documento.objects.filter(codigo=codigo, ativo=True, deletado_em__isnull=True)
+        .select_related("projeto")
+        .order_by("-id")
     )
+    documento = qs.first()
+    if not documento:
+        raise Http404("Documento não encontrado")
+
+    revisoes = list(qs)
+
     return render(
         request,
         "documentos/historico.html",
         {
             "documento": documento,
             "documento_id": documento.id,
-            "versoes": versoes,
+            "revisoes": revisoes,
+            "versoes": revisoes,
             "codigo": codigo,
         },
     )

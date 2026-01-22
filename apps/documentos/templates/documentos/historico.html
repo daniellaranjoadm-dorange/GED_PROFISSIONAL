@@ -53,33 +53,43 @@
 
         <h5 class="fw-bold text-primary mb-3">🕑 Lista de Revisões</h5>
 
-        {% if revisoes %}
+        {% if versoes %}
         <div class="table-responsive">
             <table class="table table-bordered table-striped align-middle">
                 <thead class="table-primary">
                     <tr>
                         <th>Revisão</th>
-                        <th>Arquivo</th>
-                        <th>Criado em</th>
+                        <th>Data</th>
+                        <th>Ações</th>
                     </tr>
                 </thead>
 
                 <tbody>
-                    {% for rev in revisoes %}
+                    {% for rev in versoes %}
                     <tr>
                         <td><strong>{{ rev.revisao }}</strong></td>
-
                         <td>
-                            {% if rev.arquivo %}
-                            <a href="{{ rev.arquivo.url }}" class="btn btn-outline-primary btn-sm" download>
-                                <i class="bi bi-download"></i> Baixar
-                            </a>
+                            {% if rev.data_atualizacao %}
+                                {{ rev.data_atualizacao|date:"d/m/Y H:i" }}
+                            {% elif rev.atualizado_em %}
+                                {{ rev.atualizado_em|date:"d/m/Y H:i" }}
+                            {% elif rev.updated_at %}
+                                {{ rev.updated_at|date:"d/m/Y H:i" }}
+                            {% elif rev.modified %}
+                                {{ rev.modified|date:"d/m/Y H:i" }}
+                            {% elif rev.modified_at %}
+                                {{ rev.modified_at|date:"d/m/Y H:i" }}
+                            {% elif rev.criado_em %}
+                                {{ rev.criado_em|date:"d/m/Y H:i" }}
                             {% else %}
-                            <span class="text-muted">Sem arquivo</span>
+                                —
                             {% endif %}
                         </td>
-
-                        <td>{{ rev.criado_em|date:"d/m/Y H:i" }}</td>
+                        <td>
+                            <a href="{% url 'documentos:detalhes_documento' rev.id %}" class="btn btn-outline-secondary btn-sm">
+                                <i class="bi bi-eye"></i> Detalhes
+                            </a>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
