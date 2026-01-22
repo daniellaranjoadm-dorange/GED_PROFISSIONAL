@@ -3,7 +3,6 @@ from django.views.decorators.http import require_POST
 # apps/documentos/views.py
 
 
-import copy
 import csv
 import json
 import logging
@@ -1054,17 +1053,14 @@ def historico(request, codigo):
     if not documento:
         raise Http404("Documento não encontrado")
 
-    revisoes = list(qs)
+    versoes = documento.versoes.all().order_by("-criado_em")
 
     return render(
         request,
         "documentos/historico.html",
         {
             "documento": documento,
-            "documento_id": documento.id,
-            "revisoes": revisoes,
-            "versoes": revisoes,
-            "codigo": codigo,
+            "versoes": versoes,
         },
     )
 
@@ -1489,56 +1485,37 @@ def editar_documento(request, documento_id):
 # NOVA REVISÃO (WORKFLOW)
 # =================================================================
 
-def _blank_value_for_field(model, fname):
-    try:
-        field = model._meta.get_field(fname)
-    except Exception:
-        return None, False
-
-    internal_type = field.get_internal_type()
-    if internal_type in ("DateField", "DateTimeField"):
-        return None, True
-    if internal_type == "BooleanField":
-        return False, True
-    if internal_type in ("CharField", "TextField", "SlugField"):
-        return "", True
-    if internal_type in ("ForeignKey", "OneToOneField"):
-        return None, True
-    if internal_type in (
-        "IntegerField",
-        "BigIntegerField",
-        "FloatField",
-        "DecimalField",
-        "PositiveIntegerField",
-    ):
-        return None, True
-    return None, False
-
-
 def _reset_campos_emissao(doc):
     """
     Zera campos que NÃO podem ser herdados ao criar nova revisão.
     Feito com hasattr para suportar variações de nomes no model.
     """
-    campos = [
+    for fname in [
         "status_emissao",
         "status_emissao_tp",
         "status_emissao_cliente",
+        "grdt_cliente",
+        "resposta_cliente",
+    ]:
+        if hasattr(doc, fname):
+            setattr(doc, fname, "")
+
+    for fname in [
         "num_grdt", "numero_grdt", "grdt", "n_grdt",
         "num_pcf", "numero_pcf", "pcf", "n_pcf",
-        "grdt_cliente", "resposta_cliente",
-        "data_emissao_tp", "data_emissao_tp_doc",
-        "data_emissao", "data_emissao_grdt",
-        "data",
-    ]
-
-    for fname in campos:
+    ]:
         if hasattr(doc, fname):
-            value, ok = _blank_value_for_field(doc.__class__, fname)
-            if ok:
-                setattr(doc, fname, value)
-            else:
-                setattr(doc, fname, None)
+            setattr(doc, fname, "")
+
+    for fname in [
+        "data_emissao_tp",
+        "data_emissao_tp_doc",
+        "data_emissao",
+        "data_emissao_grdt",
+        "data",
+    ]:
+        if hasattr(doc, fname):
+            setattr(doc, fname, None)
 
     return doc
 
@@ -1562,48 +1539,10 @@ def nova_revisao(request, documento_id):
         with transaction.atomic():
             documento = Documento.objects.select_for_update().get(pk=documento_id)
 
-            novo = copy.copy(documento)
-            novo.pk = None
-            if hasattr(novo, "id"):
-                novo.id = None
-
-            novo.revisao = nova_rev
-            if hasattr(novo, "status_documento"):
-                novo.status_documento = "Em Revisão"
-
-            _reset_campos_emissao(novo)
-
-            if hasattr(novo, "ativo"):
-                novo.ativo = True
-            if hasattr(novo, "deletado_em"):
-                novo.deletado_em = None
-
-            novo.save()
-
-            updates = {}
-            for fname in [
-                "status_emissao", "status_emissao_tp", "status_emissao_cliente",
-                "num_grdt", "numero_grdt", "grdt", "n_grdt",
-                "num_pcf", "numero_pcf", "pcf", "n_pcf",
-                "grdt_cliente", "resposta_cliente",
-                "data_emissao_tp", "data_emissao_tp_doc",
-                "data_emissao", "data_emissao_grdt", "data",
-            ]:
-                if hasattr(novo, fname):
-                    value, ok = _blank_value_for_field(Documento, fname)
-                    updates[fname] = value if ok else None
-
-            if updates:
-                Documento.objects.filter(pk=novo.pk).update(**updates)
-
-            if hasattr(documento, "ativo"):
-                documento.ativo = False
-                documento.save(update_fields=["ativo"])
-
             for arquivo in arquivos:
                 try:
                     DocumentoVersao.objects.create(
-                        documento=novo,
+                        documento=documento,
                         numero_revisao=nova_rev,
                         arquivo=arquivo,  # chama storage aqui (R2/S3)
                         criado_por=request.user,
@@ -1619,13 +1558,41 @@ def nova_revisao(request, documento_id):
                     )
                     return redirect("documentos:detalhes_documento", documento_id=documento.id)
 
-        registrar_workflow(novo, "Nova Revisão", "Criado", request)
+            documento.revisao = nova_rev
+            documento.status_documento = "REVISAO_INTERNA"
+            _reset_campos_emissao(documento)
+            update_fields = ["revisao", "status_documento"]
+            for fname in [
+                "status_emissao",
+                "status_emissao_tp",
+                "status_emissao_cliente",
+                "grdt_cliente",
+                "resposta_cliente",
+                "num_grdt",
+                "numero_grdt",
+                "grdt",
+                "n_grdt",
+                "num_pcf",
+                "numero_pcf",
+                "pcf",
+                "n_pcf",
+                "data_emissao_tp",
+                "data_emissao_tp_doc",
+                "data_emissao",
+                "data_emissao_grdt",
+                "data",
+            ]:
+                if hasattr(documento, fname):
+                    update_fields.append(fname)
+            documento.save(update_fields=update_fields)
+
+        registrar_workflow(documento, "Nova Revisão", "Criado", request)
 
         # Notificação por e-mail (usa email do usuário; se não tiver, cai no DEFAULT_NOTIF_EMAIL)
-        notificar_evento_documento(novo, "envio_revisao", destinatarios=_destinatarios_padrao(request))
+        notificar_evento_documento(documento, "envio_revisao", destinatarios=_destinatarios_padrao(request))
 
         messages.success(request, f"Revisão {nova_rev} criada com sucesso!")
-        return redirect("documentos:detalhes_documento", documento_id=novo.id)
+        return redirect("documentos:detalhes_documento", documento_id=documento.id)
 
     return render(
         request,

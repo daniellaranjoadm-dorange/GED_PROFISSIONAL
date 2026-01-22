@@ -59,7 +59,10 @@
                 <thead class="table-primary">
                     <tr>
                         <th>Revisão</th>
-                        <th>Data</th>
+                        <th>Criado em</th>
+                        <th>Criado por</th>
+                        <th>Status</th>
+                        <th>Arquivo</th>
                         <th>Ações</th>
                     </tr>
                 </thead>
@@ -67,26 +70,31 @@
                 <tbody>
                     {% for rev in versoes %}
                     <tr>
-                        <td><strong>{{ rev.revisao }}</strong></td>
+                        <td><strong>{% firstof rev.numero_revisao rev.revisao "—" %}</strong></td>
                         <td>
-                            {% if rev.data_atualizacao %}
-                                {{ rev.data_atualizacao|date:"d/m/Y H:i" }}
-                            {% elif rev.atualizado_em %}
-                                {{ rev.atualizado_em|date:"d/m/Y H:i" }}
-                            {% elif rev.updated_at %}
-                                {{ rev.updated_at|date:"d/m/Y H:i" }}
-                            {% elif rev.modified %}
-                                {{ rev.modified|date:"d/m/Y H:i" }}
-                            {% elif rev.modified_at %}
-                                {{ rev.modified_at|date:"d/m/Y H:i" }}
-                            {% elif rev.criado_em %}
+                            {% if rev.criado_em %}
                                 {{ rev.criado_em|date:"d/m/Y H:i" }}
                             {% else %}
                                 —
                             {% endif %}
                         </td>
                         <td>
-                            <a href="{% url 'documentos:detalhes_documento' rev.id %}" class="btn btn-outline-secondary btn-sm">
+                            {% if rev.criado_por %}{{ rev.criado_por }}{% else %}—{% endif %}
+                        </td>
+                        <td>
+                            {% if rev.status_revisao %}{{ rev.status_revisao }}{% else %}—{% endif %}
+                        </td>
+                        <td>
+                            {% if rev.arquivo %}
+                            <a href="{{ rev.arquivo.url }}" class="btn btn-outline-primary btn-sm" download>
+                                <i class="bi bi-download"></i> Baixar
+                            </a>
+                            {% else %}
+                            <span class="text-muted">Sem arquivo</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'documentos:detalhes_documento' documento.id %}" class="btn btn-outline-secondary btn-sm">
                                 <i class="bi bi-eye"></i> Detalhes
                             </a>
                         </td>
