@@ -29,7 +29,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group
 from django.core.files.storage import default_storage
 from django.core.paginator import Paginator
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, Q, Sum, OuterRef, Subquery
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import never_cache
@@ -847,7 +847,7 @@ def painel_workflow_exportar_excel(request):
 @never_cache
 def listar_documentos(request):
     # Base: só documentos ativos e não deletados
-    documentos = (
+    base = (
         Documento.objects.filter(ativo=True, deletado_em__isnull=True)
         .select_related("projeto")
     )
@@ -861,23 +861,30 @@ def listar_documentos(request):
 
     # Aplica filtros
     if projeto_filtro:
-        documentos = documentos.filter(projeto__nome__icontains=projeto_filtro)
+        base = base.filter(projeto__nome__icontains=projeto_filtro)
 
     if disciplina_filtro:
-        documentos = documentos.filter(disciplina__icontains=disciplina_filtro)
+        base = base.filter(disciplina__icontains=disciplina_filtro)
 
     if status_doc_filtro:
-        documentos = documentos.filter(status_documento__icontains=status_doc_filtro)
+        base = base.filter(status_documento__icontains=status_doc_filtro)
 
     if status_emissao_filtro:
-        documentos = documentos.filter(status_emissao__icontains=status_emissao_filtro)
+        base = base.filter(status_emissao__icontains=status_emissao_filtro)
 
     # 🔥 CORREÇÃO DEFINITIVA DA BUSCA GLOBAL
     if busca:
-        documentos = documentos.filter(
+        base = base.filter(
             Q(codigo__icontains=busca) |
             Q(titulo__icontains=busca)
         )
+
+    latest_pk = (
+        base.filter(codigo=OuterRef("codigo"))
+        .order_by("-criado_em", "-id")
+        .values("pk")[:1]
+    )
+    documentos = base.filter(pk=Subquery(latest_pk)).order_by("codigo")
 
     # ---- Combos dos selects (usados no template listar.html) ----
     projetos = (
@@ -930,50 +937,44 @@ def listar_documentos(request):
 
 @never_cache
 def revisoes(request):
-    qs = (
+    base = (
         Documento.objects.filter(ativo=True, deletado_em__isnull=True)
-        .select_related("projeto")
+        .exclude(revisao__isnull=True)
+        .exclude(revisao__exact="")
     )
-    qs = qs.exclude(revisao__isnull=True).exclude(revisao__exact="")
 
-    grupos = defaultdict(list)
-    for doc in qs:
-        if not doc.codigo:
-            continue
-        grupos[doc.codigo].append(doc)
+    agg = (
+        base.values("codigo")
+        .annotate(qtd=Count("id"))
+        .filter(qtd__gt=1)
+        .order_by("codigo")
+    )
 
-    rows = []
-    for codigo, items in grupos.items():
-        items.sort(key=lambda x: x.id or 0, reverse=True)
-        latest = items[0]
-        total = len(items)
+    latest_doc = base.filter(codigo=OuterRef("codigo")).order_by("-criado_em", "-id")
+    agg = agg.annotate(
+        doc_id=Subquery(latest_doc.values("id")[:1]),
+        rev_atual=Subquery(latest_doc.values("revisao")[:1]),
+        disciplina=Subquery(latest_doc.values("disciplina")[:1]),
+        projeto_nome=Subquery(latest_doc.values("projeto__nome")[:1]),
+    )
 
-        rev = str(getattr(latest, "revisao", "") or "").strip()
-        if total == 1 and rev in ("", "0"):
-            continue
-
-        projeto_nome = ""
-        if getattr(latest, "projeto", None):
-            projeto_nome = getattr(latest.projeto, "nome", "") or ""
-
-        rows.append(
-            {
-                "codigo": codigo,
-                "rev_atual": rev if rev else "—",
-                "total_versoes": total,
-                "projeto": projeto_nome,
-                "disciplina": getattr(latest, "disciplina", "") or "",
-                "documento_id": latest.id,
-            }
-        )
-
-    rows.sort(key=lambda r: r["documento_id"] or 0, reverse=True)
+    rows = [
+        {
+            "codigo": row["codigo"],
+            "rev_atual": row["rev_atual"] or "—",
+            "qtd": row["qtd"],
+            "projeto_nome": row["projeto_nome"] or "",
+            "disciplina": row["disciplina"] or "",
+            "doc_id": row["doc_id"],
+        }
+        for row in agg
+    ]
 
     return render(
         request,
         "documentos/revisoes.html",
         {
-            "revisoes_rows": rows,
+            "rows": rows,
             "total": len(rows),
         },
     )
@@ -1046,21 +1047,20 @@ def detalhes_documento(request, documento_id):
 def historico(request, codigo):
     qs = (
         Documento.objects.filter(codigo=codigo, ativo=True, deletado_em__isnull=True)
-        .select_related("projeto")
-        .order_by("-id")
+        .order_by("-criado_em", "-id")
     )
     documento = qs.first()
     if not documento:
         raise Http404("Documento não encontrado")
 
-    versoes = documento.versoes.all().order_by("-criado_em")
+    revisoes = qs
 
     return render(
         request,
         "documentos/historico.html",
         {
             "documento": documento,
-            "versoes": versoes,
+            "revisoes": revisoes,
         },
     )
 

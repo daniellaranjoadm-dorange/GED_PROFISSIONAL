@@ -14,7 +14,7 @@
 
   <div class="card enterprise-card p-3">
     <div class="table-responsive">
-      {% if revisoes_rows %}
+      {% if rows %}
         <table class="table table-bordered table-sm align-middle w-100">
           <thead>
             <tr>
@@ -27,16 +27,16 @@
             </tr>
           </thead>
           <tbody>
-            {% for row in revisoes_rows %}
+            {% for row in rows %}
               <tr>
                 <td><strong>{{ row.codigo }}</strong></td>
                 <td>{{ row.rev_atual }}</td>
-                <td>{{ row.total_versoes }}</td>
-                <td>{% if row.projeto %}{{ row.projeto }}{% else %}—{% endif %}</td>
+                <td>{{ row.qtd }}</td>
+                <td>{% if row.projeto_nome %}{{ row.projeto_nome }}{% else %}—{% endif %}</td>
                 <td>{% if row.disciplina %}{{ row.disciplina }}{% else %}—{% endif %}</td>
                 <td class="text-nowrap">
                   <a class="btn btn-outline-primary btn-sm" href="{% url 'documentos:historico' row.codigo %}">Histórico</a>
-                  <a class="btn btn-outline-secondary btn-sm" href="{% url 'documentos:detalhes_documento' row.documento_id %}">Detalhes</a>
+                  <a class="btn btn-outline-secondary btn-sm" href="{% url 'documentos:detalhes_documento' row.doc_id %}">Detalhes</a>
                 </td>
               </tr>
             {% endfor %}
