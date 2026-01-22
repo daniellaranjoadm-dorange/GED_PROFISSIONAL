@@ -9,6 +9,8 @@ import logging
 import os
 import hashlib
 import re
+from django.apps import apps
+from django.urls import reverse
 from django.db import transaction
 from django.contrib import messages
 from django.shortcuts import render, redirect
@@ -919,6 +921,119 @@ def listar_documentos(request):
 
     return render(request, "documentos/listar.html", context)
 
+
+def revisoes(request):
+    candidatos = [
+        "VersaoDocumento",
+        "DocumentoVersao",
+        "RevisaoDocumento",
+        "Versao",
+        "Revisao",
+    ]
+
+    model = None
+    for nome in candidatos:
+        try:
+            model = apps.get_model("documentos", nome)
+            break
+        except LookupError:
+            continue
+
+    if model is None:
+        return render(
+            request,
+            "documentos/revisoes.html",
+            {
+                "revisoes_rows": [],
+                "total_revisoes": 0,
+                "erro_modelo": "Modelo de versões não encontrado",
+            },
+        )
+
+    def has_field(field_name):
+        try:
+            model._meta.get_field(field_name)
+            return True
+        except Exception:
+            return False
+
+    versoes = model.objects.all()
+    if has_field("documento"):
+        versoes = versoes.select_related("documento")
+
+    date_fields = ["criado_em", "created_at", "data", "criado"]
+    date_field = next((f for f in date_fields if has_field(f)), None)
+    if date_field:
+        versoes = versoes.order_by(f"-{date_field}", "-id")
+    else:
+        versoes = versoes.order_by("-id")
+
+    arquivo_field = None
+    for field_name in ["arquivo", "file"]:
+        if has_field(field_name):
+            arquivo_field = field_name
+            break
+
+    if arquivo_field:
+        versoes = versoes.exclude(**{f"{arquivo_field}__isnull": True}).exclude(
+            **{f"{arquivo_field}__exact": ""}
+        )
+
+    revisao_field = None
+    for field_name in ["numero_revisao", "revisao"]:
+        if has_field(field_name):
+            revisao_field = field_name
+            break
+
+    rows = []
+    for versao in versoes:
+        documento = getattr(versao, "documento", None)
+        if documento is None:
+            continue
+
+        revisao_val = getattr(versao, revisao_field, "") if revisao_field else ""
+        if revisao_val is None:
+            revisao_val = ""
+        else:
+            revisao_val = str(revisao_val).strip()
+
+        data_val = getattr(versao, date_field, None) if date_field else None
+        if isinstance(data_val, datetime):
+            data_fmt = data_val.strftime("%d/%m/%Y %H:%M")
+        elif isinstance(data_val, date):
+            data_fmt = data_val.strftime("%d/%m/%Y")
+        elif data_val:
+            data_fmt = str(data_val)
+        else:
+            data_fmt = ""
+
+        detalhes_url = None
+        try:
+            detalhes_url = reverse("documentos:detalhes_documento", args=[documento.id])
+        except Exception:
+            detalhes_url = None
+
+        rows.append(
+            {
+                "codigo": getattr(documento, "codigo", ""),
+                "projeto": getattr(getattr(documento, "projeto", None), "nome", ""),
+                "disciplina": getattr(documento, "disciplina", ""),
+                "revisao": revisao_val,
+                "data": data_fmt,
+                "historico_url": reverse("documentos:historico", args=[documento.codigo]),
+                "detalhes_url": detalhes_url,
+            }
+        )
+
+    return render(
+        request,
+        "documentos/revisoes.html",
+        {
+            "revisoes_rows": rows,
+            "total_revisoes": len(rows),
+        },
+    )
+
 # ==============================
 # Revisões permitidas no sistema
 # ==============================
@@ -985,7 +1100,7 @@ def detalhes_documento(request, documento_id):
 
 @login_required
 def historico(request, codigo):
-    documentos = Documento.objects.filter(codigo=codigo).order_by("-revisao")
+    documento = get_object_or_404(Documento, codigo=codigo)
     versoes = (
         DocumentoVersao.objects.filter(documento__codigo=codigo)
         .select_related("documento", "criado_por")
@@ -994,7 +1109,12 @@ def historico(request, codigo):
     return render(
         request,
         "documentos/historico.html",
-        {"documentos": documentos, "versoes": versoes, "codigo": codigo},
+        {
+            "documento": documento,
+            "documento_id": documento.id,
+            "versoes": versoes,
+            "codigo": codigo,
+        },
     )
 
 
