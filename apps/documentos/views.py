@@ -3,6 +3,7 @@ from django.views.decorators.http import require_POST
 # apps/documentos/views.py
 
 
+import copy
 import csv
 import json
 import logging
@@ -1106,7 +1107,14 @@ def detalhes_documento(request, documento_id):
 
 @login_required
 def historico(request, codigo):
-    documento = get_object_or_404(Documento, codigo=codigo)
+    qs = Documento.objects.filter(codigo=codigo)
+    if hasattr(Documento, "ativo"):
+        doc_atual = qs.filter(ativo=True).order_by("-id").first() or qs.order_by("-id").first()
+    else:
+        doc_atual = qs.order_by("-id").first()
+    if not doc_atual:
+        raise Http404("Documento não encontrado")
+    documento = doc_atual
     versoes = (
         DocumentoVersao.objects.filter(documento__codigo=codigo)
         .select_related("documento", "criado_por")
@@ -1544,6 +1552,60 @@ def editar_documento(request, documento_id):
 # NOVA REVISÃO (WORKFLOW)
 # =================================================================
 
+def _blank_value_for_field(model, fname):
+    try:
+        field = model._meta.get_field(fname)
+    except Exception:
+        return None, False
+
+    internal_type = field.get_internal_type()
+    if internal_type in ("DateField", "DateTimeField"):
+        return None, True
+    if internal_type == "BooleanField":
+        return False, True
+    if internal_type in ("CharField", "TextField", "SlugField"):
+        return "", True
+    if internal_type in ("ForeignKey", "OneToOneField"):
+        return None, True
+    if internal_type in (
+        "IntegerField",
+        "BigIntegerField",
+        "FloatField",
+        "DecimalField",
+        "PositiveIntegerField",
+    ):
+        return None, True
+    return None, False
+
+
+def _reset_campos_emissao(doc):
+    """
+    Zera campos que NÃO podem ser herdados ao criar nova revisão.
+    Feito com hasattr para suportar variações de nomes no model.
+    """
+    campos = [
+        "status_emissao",
+        "status_emissao_tp",
+        "status_emissao_cliente",
+        "num_grdt", "numero_grdt", "grdt", "n_grdt",
+        "num_pcf", "numero_pcf", "pcf", "n_pcf",
+        "grdt_cliente", "resposta_cliente",
+        "data_emissao_tp", "data_emissao_tp_doc",
+        "data_emissao", "data_emissao_grdt",
+        "data",
+    ]
+
+    for fname in campos:
+        if hasattr(doc, fname):
+            value, ok = _blank_value_for_field(doc.__class__, fname)
+            if ok:
+                setattr(doc, fname, value)
+            else:
+                setattr(doc, fname, None)
+
+    return doc
+
+
 @login_required
 @has_perm("documento.revisar")
 def nova_revisao(request, documento_id):
@@ -1560,36 +1622,73 @@ def nova_revisao(request, documento_id):
             messages.error(request, "Envie ao menos 1 arquivo da nova revisão.")
             return redirect("documentos:detalhes_documento", documento_id=documento.id)
 
-        for arquivo in arquivos:
-            try:
-                DocumentoVersao.objects.create(
-                    documento=documento,
-                    numero_revisao=nova_rev,
-                    arquivo=arquivo,  # chama storage aqui (R2/S3)
-                    criado_por=request.user,
-                    observacao=observacao,
-                    status_revisao="REVISAO",
-                )
-            except Exception:
-                logger.exception("Falha ao salvar nova revisão no storage (R2/S3)")
-                messages.error(
-                    request,
-                    "Falha ao enviar o arquivo da nova revisão (storage/R2 Unauthorized). "
-                    "A revisão do documento NÃO foi alterada."
-                )
-                return redirect("documentos:detalhes_documento", documento_id=documento.id)
+        with transaction.atomic():
+            documento = Documento.objects.select_for_update().get(pk=documento_id)
 
-        documento.revisao = nova_rev
-        documento.status_documento = "Em Revisão"
-        documento.save(update_fields=["revisao", "status_documento"])
+            novo = copy.copy(documento)
+            novo.pk = None
+            if hasattr(novo, "id"):
+                novo.id = None
 
-        registrar_workflow(documento, "Nova Revisão", "Criado", request)
+            novo.revisao = nova_rev
+            if hasattr(novo, "status_documento"):
+                novo.status_documento = "Em Revisão"
+
+            _reset_campos_emissao(novo)
+
+            if hasattr(novo, "ativo"):
+                novo.ativo = True
+            if hasattr(novo, "deletado_em"):
+                novo.deletado_em = None
+
+            novo.save()
+
+            updates = {}
+            for fname in [
+                "status_emissao", "status_emissao_tp", "status_emissao_cliente",
+                "num_grdt", "numero_grdt", "grdt", "n_grdt",
+                "num_pcf", "numero_pcf", "pcf", "n_pcf",
+                "grdt_cliente", "resposta_cliente",
+                "data_emissao_tp", "data_emissao_tp_doc",
+                "data_emissao", "data_emissao_grdt", "data",
+            ]:
+                if hasattr(novo, fname):
+                    value, ok = _blank_value_for_field(Documento, fname)
+                    updates[fname] = value if ok else None
+
+            if updates:
+                Documento.objects.filter(pk=novo.pk).update(**updates)
+
+            if hasattr(documento, "ativo"):
+                documento.ativo = False
+                documento.save(update_fields=["ativo"])
+
+            for arquivo in arquivos:
+                try:
+                    DocumentoVersao.objects.create(
+                        documento=novo,
+                        numero_revisao=nova_rev,
+                        arquivo=arquivo,  # chama storage aqui (R2/S3)
+                        criado_por=request.user,
+                        observacao=observacao,
+                        status_revisao="REVISAO",
+                    )
+                except Exception:
+                    logger.exception("Falha ao salvar nova revisão no storage (R2/S3)")
+                    messages.error(
+                        request,
+                        "Falha ao enviar o arquivo da nova revisão (storage/R2 Unauthorized). "
+                        "A revisão do documento NÃO foi alterada."
+                    )
+                    return redirect("documentos:detalhes_documento", documento_id=documento.id)
+
+        registrar_workflow(novo, "Nova Revisão", "Criado", request)
 
         # Notificação por e-mail (usa email do usuário; se não tiver, cai no DEFAULT_NOTIF_EMAIL)
-        notificar_evento_documento(documento, "envio_revisao", destinatarios=_destinatarios_padrao(request))
+        notificar_evento_documento(novo, "envio_revisao", destinatarios=_destinatarios_padrao(request))
 
         messages.success(request, f"Revisão {nova_rev} criada com sucesso!")
-        return redirect("documentos:detalhes_documento", documento_id=documento.id)
+        return redirect("documentos:detalhes_documento", documento_id=novo.id)
 
     return render(
         request,
