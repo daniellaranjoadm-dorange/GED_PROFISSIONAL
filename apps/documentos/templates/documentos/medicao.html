@@ -5,7 +5,7 @@
 
 {% block content %}
 
-<div class="doc-wrapper">
+<div class="doc-wrapper page-medicao">
 
 <style>
 /* ============================
@@ -391,7 +391,7 @@
         <div class="medicao-actions">
             <button type="submit" class="btn btn-primary">Aplicar filtros</button>
             <a href="{% url 'documentos:medicao' %}" class="btn btn-outline-secondary">Limpar</a>
-            <a href="{% url 'documentos:exportar_medicao_excel' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" class="btn btn-primary btn-exportar">
+            <a href="{% url 'documentos:exportar_medicao_excel' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" class="btn btn-outline-secondary btn-sm btn-exportar">
                 <i class="bi bi-file-earmark-excel"></i> Exportar Excel
             </a>
         </div>

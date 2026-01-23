@@ -1818,3 +1818,96 @@ body[data-theme="light"] .status-pill,
   cursor: pointer;
 }
 
+/* Medicao: garantir contraste nos KPIs */
+.page-area .medicao-kpis .kpi-value{
+  font-weight: 700;
+  opacity: 1;
+  color: inherit;
+}
+
+/* =========================
+   MEDIÇÃO — Legibilidade / Contraste
+   ========================= */
+.page-medicao{
+  color: #111827;
+}
+
+.page-medicao h1,
+.page-medicao h2,
+.page-medicao .page-title,
+.page-medicao .section-title{
+  color: #0b5ed7;
+}
+
+.page-medicao .kpi-label{
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .2px;
+  color: #374151;
+  opacity: 1 !important;
+}
+
+.page-medicao .kpi-value{
+  font-size: 22px;
+  font-weight: 800;
+  color: #111827;
+  opacity: 1 !important;
+}
+
+.page-medicao .card,
+.page-medicao .kpi-card,
+.page-medicao .filter-card{
+  color: #111827;
+}
+
+.page-medicao table,
+.page-medicao .table{
+  color: #111827;
+}
+
+.page-medicao table thead th,
+.page-medicao .table thead th{
+  color: #111827;
+  font-weight: 700;
+}
+
+.page-medicao table tbody td,
+.page-medicao .table tbody td{
+  color: #111827;
+  font-weight: 500;
+}
+
+.page-medicao .text-muted,
+.page-medicao .muted,
+.page-medicao .subtle{
+  color: #374151 !important;
+  opacity: 1 !important;
+}
+
+body.dark .page-medicao,
+[data-theme="dark"] .page-medicao{
+  color: #e5e7eb;
+}
+
+body.dark .page-medicao .kpi-label,
+[data-theme="dark"] .page-medicao .kpi-label{
+  color: #cbd5e1;
+}
+
+body.dark .page-medicao .kpi-value,
+[data-theme="dark"] .page-medicao .kpi-value{
+  color: #f9fafb;
+}
+
+body.dark .page-medicao table,
+[data-theme="dark"] .page-medicao table,
+body.dark .page-medicao .table,
+[data-theme="dark"] .page-medicao .table{
+  color: #e5e7eb;
+}
+
+body.dark .page-medicao table thead th,
+[data-theme="dark"] .page-medicao table thead th{
+  color: #f9fafb;
+}
+
