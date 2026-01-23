@@ -1912,6 +1912,65 @@ body.dark .page-medicao table thead th,
 }
 
 /* =========================
+   MEDICAO — CONTRASTE / LEGIBILIDADE
+   ========================= */
+.medicao-page h1,
+.medicao-page h2,
+.medicao-page h3 {
+  color: #0b2239;
+  font-weight: 700;
+}
+
+.medicao-page .text-muted,
+.medicao-page small {
+  color: #4b5563;
+}
+
+/* KPIs */
+.medicao-page .kpi-value,
+.medicao-page .kpi-number,
+.medicao-page .kpi-card .value,
+.medicao-page .card .kpi {
+  color: #0b2239 !important;
+  font-weight: 800 !important;
+  opacity: 1 !important;
+}
+
+.medicao-page .kpi-label,
+.medicao-page .kpi-title,
+.medicao-page .card-title {
+  color: #334155;
+  font-weight: 600;
+  opacity: 1;
+}
+
+/* Tabela */
+.medicao-page table {
+  color: #0f172a;
+}
+
+.medicao-page thead th {
+  color: #0b2239;
+  font-weight: 700;
+}
+
+.medicao-page tbody td {
+  color: #0f172a;
+  font-weight: 500;
+}
+
+/* Inputs/filters */
+.medicao-page label {
+  color: #0b2239;
+  font-weight: 600;
+}
+
+.medicao-page input::placeholder {
+  color: #64748b;
+  opacity: 1;
+}
+
+/* =========================
    MEDICAO — CONTRASTE / TIPOGRAFIA
    ========================= */
 .page-medicao,
