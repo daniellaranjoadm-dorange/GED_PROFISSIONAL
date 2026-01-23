@@ -2547,3 +2547,110 @@ body.page-medicao .chart-box .subtitle {
 
 /* FIM MEDIÇÃO */
 
+/* =========================
+   MEDIÇÃO — MARTELLO DE CONTRASTE / OPACIDADE / TABELA
+   ========================= */
+
+body.page-medicao #medicao-kpis,
+body.page-medicao #medicao-resumo,
+body.page-medicao #medicao-graficos {
+  opacity: 1 !important;
+  filter: none !important;
+}
+
+body.page-medicao #medicao-kpis * {
+  opacity: 1 !important;
+  filter: none !important;
+}
+
+body.page-medicao #medicao-kpis .card,
+body.page-medicao #medicao-kpis .kpi-card,
+body.page-medicao #medicao-kpis .kpi-box,
+body.page-medicao #medicao-kpis .kpi-item {
+  background: rgba(248, 250, 252, 1) !important;
+  border: 1px solid rgba(15, 23, 42, 0.14) !important;
+  border-radius: 12px !important;
+}
+
+body.page-medicao #medicao-kpis .card-title,
+body.page-medicao #medicao-kpis .kpi-title,
+body.page-medicao #medicao-kpis .kpi-label,
+body.page-medicao #medicao-kpis .label,
+body.page-medicao #medicao-kpis small {
+  color: #475569 !important;
+  font-weight: 700 !important;
+}
+
+body.page-medicao #medicao-kpis .kpi-value,
+body.page-medicao #medicao-kpis .kpi-number,
+body.page-medicao #medicao-kpis .value,
+body.page-medicao #medicao-kpis .number,
+body.page-medicao #medicao-kpis strong,
+body.page-medicao #medicao-kpis b {
+  color: #0f172a !important;
+  font-weight: 900 !important;
+  text-shadow: none !important;
+}
+
+body.page-medicao #medicao-kpis .text-white,
+body.page-medicao #medicao-kpis .text-light,
+body.page-medicao #medicao-kpis .opacity-50,
+body.page-medicao #medicao-kpis .opacity-25,
+body.page-medicao #medicao-kpis .opacity-75 {
+  color: #0f172a !important;
+  opacity: 1 !important;
+}
+
+/* RESUMO — tabela estável e alinhada */
+body.page-medicao #medicao-resumo .table,
+body.page-medicao #medicao-resumo table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  color: #0f172a !important;
+  background: transparent !important;
+}
+
+body.page-medicao #medicao-resumo .table thead th,
+body.page-medicao #medicao-resumo table thead th {
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  color: #0f172a !important;
+  white-space: nowrap !important;
+  padding: 10px 12px !important;
+  vertical-align: middle !important;
+}
+
+body.page-medicao #medicao-resumo .table tbody td,
+body.page-medicao #medicao-resumo table tbody td {
+  font-size: 13px !important;
+  color: #0f172a !important;
+  padding: 10px 12px !important;
+  vertical-align: middle !important;
+}
+
+body.page-medicao #medicao-resumo .table td:last-child,
+body.page-medicao #medicao-resumo .table th:last-child {
+  padding-right: 16px !important;
+}
+
+/* se tiver overflow/estouro, garante scroll horizontal */
+body.page-medicao #medicao-resumo .table-responsive,
+body.page-medicao #medicao-resumo .table-wrap,
+body.page-medicao #medicao-resumo .table-container {
+  overflow-x: auto !important;
+}
+
+/* GRÁFICOS — garantir legibilidade */
+body.page-medicao #medicao-graficos .card,
+body.page-medicao #medicao-graficos .chart-card,
+body.page-medicao #medicao-graficos .chart-box {
+  background: rgba(248, 250, 252, 1) !important;
+  border: 1px solid rgba(15, 23, 42, 0.14) !important;
+  border-radius: 12px !important;
+}
+
+body.page-medicao #medicao-graficos * {
+  opacity: 1 !important;
+  color: #0f172a;
+}
+
