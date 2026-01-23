@@ -2654,3 +2654,96 @@ body.page-medicao #medicao-graficos * {
   color: #0f172a;
 }
 
+/* =========================
+   MEDIÇÃO — PATCH DE GUERRA (contraste + anti-opacidade + tabela estável)
+   ========================= */
+
+body.page-medicao,
+body.page-medicao main,
+body.page-medicao .page-area,
+body.page-medicao .page-area *,
+body.page-medicao .container,
+body.page-medicao .container-fluid,
+body.page-medicao .content,
+body.page-medicao .content * {
+  opacity: 1 !important;
+  filter: none !important;
+}
+
+/* KPIs: números e labels SEMPRE legíveis */
+body.page-medicao .kpi-card,
+body.page-medicao .kpi-box,
+body.page-medicao .kpi-item,
+body.page-medicao .card {
+  background: #f8fafc !important;
+  border: 1px solid rgba(15, 23, 42, 0.14) !important;
+  border-radius: 12px !important;
+}
+
+body.page-medicao .kpi-title,
+body.page-medicao .kpi-label,
+body.page-medicao .card-title,
+body.page-medicao small,
+body.page-medicao label {
+  color: #475569 !important;
+  font-weight: 700 !important;
+}
+
+body.page-medicao .kpi-value,
+body.page-medicao .kpi-number,
+body.page-medicao .value,
+body.page-medicao .number,
+body.page-medicao .metric,
+body.page-medicao strong,
+body.page-medicao b {
+  color: #0f172a !important;
+  font-weight: 900 !important;
+}
+
+/* Mata classes que “embranquecem” texto */
+body.page-medicao .text-white,
+body.page-medicao .text-light,
+body.page-medicao .opacity-25,
+body.page-medicao .opacity-50,
+body.page-medicao .opacity-75 {
+  color: #0f172a !important;
+  opacity: 1 !important;
+}
+
+/* TABELA DO RESUMO: não “desconfigurar” */
+body.page-medicao table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  table-layout: auto !important;
+}
+
+body.page-medicao table thead th {
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  color: #0f172a !important;
+  padding: 10px 12px !important;
+  white-space: nowrap !important;
+  vertical-align: middle !important;
+}
+
+body.page-medicao table tbody td {
+  font-size: 13px !important;
+  color: #0f172a !important;
+  padding: 10px 12px !important;
+  vertical-align: middle !important;
+}
+
+body.page-medicao .table-responsive,
+body.page-medicao .table-wrap,
+body.page-medicao .table-container {
+  overflow-x: auto !important;
+}
+
+/* Cards dos gráficos: coerentes e legíveis */
+body.page-medicao .chart-card,
+body.page-medicao .chart-box {
+  background: #f8fafc !important;
+  border: 1px solid rgba(15, 23, 42, 0.14) !important;
+  border-radius: 12px !important;
+}
+
