@@ -1,6 +1,8 @@
 ﻿{% extends "documentos/base.html" %}
 {% load static %}
 
+{% block body_attrs %}class="page-medicao"{% endblock %}
+
 {% block title %}Medição – GED Profissional{% endblock %}
 
 {% block content %}
@@ -403,29 +405,29 @@
      KPIs
 ============================ -->
 <div class="medicao-kpis mb-4">
-    <div class="totais-box">
-        <div class="kpi-label">Total Docs</div>
-        <div class="kpi-value">{{ total_docs|default:0 }}</div>
+    <div class="totais-box kpi-card">
+        <div class="medicao-kpi-label kpi-label">Total Docs</div>
+        <div class="medicao-kpi-value kpi-value">{{ total_docs|default:0 }}</div>
     </div>
-    <div class="totais-box">
-        <div class="kpi-label">Emitidos</div>
-        <div class="kpi-value">{{ emitidos_total|default:0 }}</div>
+    <div class="totais-box kpi-card">
+        <div class="medicao-kpi-label kpi-label">Emitidos</div>
+        <div class="medicao-kpi-value kpi-value">{{ emitidos_total|default:0 }}</div>
     </div>
-    <div class="totais-box">
-        <div class="kpi-label">Não Recebidos</div>
-        <div class="kpi-value">{{ nao_recebidos_total|default:0 }}</div>
+    <div class="totais-box kpi-card">
+        <div class="medicao-kpi-label kpi-label">Não Recebidos</div>
+        <div class="medicao-kpi-value kpi-value">{{ nao_recebidos_total|default:0 }}</div>
     </div>
-    <div class="totais-box">
-        <div class="kpi-label">Total USD</div>
-        <div class="kpi-value">US$ {{ total_usd|default:"0,00" }}</div>
+    <div class="totais-box kpi-card">
+        <div class="medicao-kpi-label kpi-label">Total USD</div>
+        <div class="medicao-kpi-value kpi-value">US$ {{ total_usd|default:"0,00" }}</div>
     </div>
-    <div class="totais-box">
-        <div class="kpi-label">Total BRL</div>
-        <div class="kpi-value">R$ {{ total_brl|default:"0,00" }}</div>
+    <div class="totais-box kpi-card">
+        <div class="medicao-kpi-label kpi-label">Total BRL</div>
+        <div class="medicao-kpi-value kpi-value">R$ {{ total_brl|default:"0,00" }}</div>
     </div>
-    <div class="totais-box">
-        <div class="kpi-label">Ticket médio USD</div>
-        <div class="kpi-value">US$ {{ ticket_medio_usd|default:"0,00" }}</div>
+    <div class="totais-box kpi-card">
+        <div class="medicao-kpi-label kpi-label">Ticket médio USD</div>
+        <div class="medicao-kpi-value kpi-value">US$ {{ ticket_medio_usd|default:"0,00" }}</div>
     </div>
 </div>
 
@@ -441,8 +443,8 @@
         <i class="bi bi-ui-checks-grid"></i> Resumo Financeiro por Tipo de Documento
     </h4>
 
-    <div class="table-responsive">
-        <table class="table-finance">
+    <div class="table-responsive medicao-table-wrap">
+        <table class="table medicao-table table-finance">
             <colgroup>
                 <col class="c-tipo">
                 <col class="c-total">
@@ -455,42 +457,42 @@
             </colgroup>
             <thead>
                 <tr>
-                    <th>Tipo Doc</th>
-                    <th>Total</th>
-                    <th>Emitidos</th>
-                    <th>Não Recebidos</th>
-                    <th>Valor Emitidos (USD)</th>
-                    <th>Valor Emitidos (BRL)</th>
-                    <th>Valor Não Recebidos (USD)</th>
-                    <th>Valor Não Recebidos (BRL)</th>
+                    <th class="medicao-col-left">Tipo Doc</th>
+                    <th class="medicao-col-center">Total</th>
+                    <th class="medicao-col-center">Emitidos</th>
+                    <th class="medicao-col-center">Não Recebidos</th>
+                    <th class="medicao-col-right">Valor Emitidos (USD)</th>
+                    <th class="medicao-col-right">Valor Emitidos (BRL)</th>
+                    <th class="medicao-col-right">Valor Não Recebidos (USD)</th>
+                    <th class="medicao-col-right">Valor Não Recebidos (BRL)</th>
                 </tr>
             </thead>
 
             <tbody>
                 {% for r in resumo %}
                 <tr>
-                    <td class="t-left fw-bold text-info">{{ r.tipo_doc|default:"-" }}</td>
-                    <td class="t-right">{{ r.total|default:0 }}</td>
-                    <td class="t-right">{{ r.emitidos|default:0 }}</td>
-                    <td class="t-right">{{ r.nao_recebidos|default:0 }}</td>
-                    <td class="t-right">US$ {{ r.valor_emitidos_usd|default:0 }}</td>
-                    <td class="t-right">R$ {{ r.valor_emitidos_brl|default:0 }}</td>
-                    <td class="t-right">US$ {{ r.valor_nr_usd|default:0 }}</td>
-                    <td class="t-right">R$ {{ r.valor_nr_brl|default:0 }}</td>
+                    <td class="t-left medicao-col-left fw-bold text-info">{{ r.tipo_doc|default:"-" }}</td>
+                    <td class="t-right medicao-col-center">{{ r.total|default:0 }}</td>
+                    <td class="t-right medicao-col-center">{{ r.emitidos|default:0 }}</td>
+                    <td class="t-right medicao-col-center">{{ r.nao_recebidos|default:0 }}</td>
+                    <td class="t-right medicao-col-right">US$ {{ r.valor_emitidos_usd|default:0 }}</td>
+                    <td class="t-right medicao-col-right">R$ {{ r.valor_emitidos_brl|default:0 }}</td>
+                    <td class="t-right medicao-col-right">US$ {{ r.valor_nr_usd|default:0 }}</td>
+                    <td class="t-right medicao-col-right">R$ {{ r.valor_nr_brl|default:0 }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
 
             <tfoot>
-                <tr class="row-total">
-                    <td class="t-left">Total Geral</td>
-                    <td class="t-right">{{ total_geral.total|default:0 }}</td>
-                    <td class="t-right">{{ total_geral.emitidos|default:0 }}</td>
-                    <td class="t-right">{{ total_geral.nao_recebidos|default:0 }}</td>
-                    <td class="t-right">US$ {{ total_geral.valor_emitidos_usd|default:0 }}</td>
-                    <td class="t-right">R$ {{ total_geral.valor_emitidos_brl|default:0 }}</td>
-                    <td class="t-right">US$ {{ total_geral.valor_nao_recebidos_usd|default:0 }}</td>
-                    <td class="t-right">R$ {{ total_geral.valor_nao_recebidos_brl|default:0 }}</td>
+                <tr class="row-total medicao-total-row">
+                    <td class="t-left medicao-col-left">Total Geral</td>
+                    <td class="t-right medicao-col-center">{{ total_geral.total|default:0 }}</td>
+                    <td class="t-right medicao-col-center">{{ total_geral.emitidos|default:0 }}</td>
+                    <td class="t-right medicao-col-center">{{ total_geral.nao_recebidos|default:0 }}</td>
+                    <td class="t-right medicao-col-right">US$ {{ total_geral.valor_emitidos_usd|default:0 }}</td>
+                    <td class="t-right medicao-col-right">R$ {{ total_geral.valor_emitidos_brl|default:0 }}</td>
+                    <td class="t-right medicao-col-right">US$ {{ total_geral.valor_nao_recebidos_usd|default:0 }}</td>
+                    <td class="t-right medicao-col-right">R$ {{ total_geral.valor_nao_recebidos_brl|default:0 }}</td>
                 </tr>
             </tfoot>
 

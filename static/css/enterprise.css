@@ -2056,3 +2056,494 @@ body.dark .page-medicao table thead th,
   opacity: 1 !important;
 }
 
+/* =========================
+   MEDICAO - TIPOGRAFIA / CONTRASTE (v2)
+   ========================= */
+.page-medicao {
+  --med-text: var(--ds-text, #111827);
+  --med-muted: var(--ds-text-muted, #4b5563);
+  --med-card: var(--ds-card-bg, #ffffff);
+  --med-border: var(--ds-border, #e5e7eb);
+}
+
+/* KPIs: titulos e valores nao podem ficar "apagados" */
+.page-medicao .kpi-card,
+.page-medicao .kpi,
+.page-medicao .kpi-box,
+.page-medicao .card.kpi,
+.page-medicao .card.kpi-card {
+  background: var(--med-card) !important;
+  border: 1px solid var(--med-border) !important;
+}
+
+.page-medicao .kpi-title,
+.page-medicao .kpi-label,
+.page-medicao .kpi .label,
+.page-medicao .kpi-box .label,
+.page-medicao .card.kpi .label,
+.page-medicao .card.kpi-card .label {
+  color: var(--med-muted) !important;
+  font-weight: 600 !important;
+  opacity: 1 !important;
+}
+
+.page-medicao .kpi-value,
+.page-medicao .kpi-number,
+.page-medicao .kpi .value,
+.page-medicao .kpi-box .value,
+.page-medicao .card.kpi .value,
+.page-medicao .card.kpi-card .value {
+  color: var(--med-text) !important;
+  font-weight: 800 !important;
+  font-size: 1.35rem !important;
+  line-height: 1.15 !important;
+  letter-spacing: 0.2px !important;
+  opacity: 1 !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+/* Quando os KPIs estao dentro de bootstrap .text-muted ou opacity herdada */
+.page-medicao .kpi-card *,
+.page-medicao .kpi *,
+.page-medicao .kpi-box *,
+.page-medicao .card.kpi *,
+.page-medicao .card.kpi-card * {
+  opacity: 1;
+}
+
+/* Tabela do resumo: aumentar legibilidade geral */
+.page-medicao table,
+.page-medicao .table {
+  color: var(--med-text) !important;
+  font-size: 13.5px !important;
+}
+
+.page-medicao thead th {
+  color: var(--med-text) !important;
+  font-weight: 700 !important;
+  opacity: 1 !important;
+}
+
+.page-medicao tbody td {
+  color: var(--med-text) !important;
+  opacity: 1 !important;
+}
+
+/* Numeros alinhados e "tabular" */
+.page-medicao td:nth-last-child(-n+6),
+.page-medicao th:nth-last-child(-n+6) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Badges nao apagadas */
+.page-medicao .badge,
+.page-medicao .pill,
+.page-medicao .status-badge {
+  font-weight: 700 !important;
+  opacity: 1 !important;
+}
+
+/* Inputs e selects: texto mais forte */
+.page-medicao input,
+.page-medicao select {
+  color: var(--med-text) !important;
+}
+
+/* =========================
+   MEDIÇÃO — CONTRASTE / TIPOGRAFIA (v3 ultra-robusto)
+   ========================= */
+.page-medicao{
+  --m-text:#0f172a;
+  --m-muted:#334155;
+  --m-border:#e2e8f0;
+  --m-bg:#ffffff;
+}
+
+/* Neutraliza “apagado” herdado (text-muted/opacity) */
+.page-medicao,
+.page-medicao *{
+  opacity: 1;
+}
+
+/* Faixa de KPIs (os 6 cards) — pega por padrões comuns de layout */
+.page-medicao .kpi,
+.page-medicao .kpi-card,
+.page-medicao .kpi-box,
+.page-medicao .kpi-grid,
+.page-medicao .cards,
+.page-medicao .cards-row,
+.page-medicao .row,
+.page-medicao .col,
+.page-medicao .card{
+  color: var(--m-text);
+}
+
+/* Cards: fundo e borda consistentes */
+.page-medicao .card{
+  background: var(--m-bg) !important;
+  border: 1px solid var(--m-border) !important;
+}
+
+/* Títulos/labels (inclui bootstrap card-title / small / text-muted) */
+.page-medicao .card .card-title,
+.page-medicao .card .title,
+.page-medicao .card .label,
+.page-medicao .card small,
+.page-medicao .card .text-muted,
+.page-medicao .card [class*="muted"],
+.page-medicao .filters label{
+  color: var(--m-muted) !important;
+  font-weight: 650 !important;
+  opacity: 1 !important;
+}
+
+/* Valores (números grandes): tenta cobrir qualquer markup */
+.page-medicao .card .card-text,
+.page-medicao .card .value,
+.page-medicao .card .valor,
+.page-medicao .card .number,
+.page-medicao .card .kpi-value,
+.page-medicao .card strong,
+.page-medicao .card b{
+  color: var(--m-text) !important;
+  font-weight: 800 !important;
+  opacity: 1 !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+/* Se o número estiver em h1/h2/h3 dentro do card */
+.page-medicao .card h1,
+.page-medicao .card h2,
+.page-medicao .card h3{
+  color: var(--m-text) !important;
+  font-weight: 850 !important;
+  opacity: 1 !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+/* Inputs/selects */
+.page-medicao input,
+.page-medicao select{
+  color: var(--m-text) !important;
+}
+
+/* Tabela resumo */
+.page-medicao table,
+.page-medicao .table{
+  color: var(--m-text) !important;
+  font-size: 13.5px !important;
+}
+.page-medicao thead th{
+  color: var(--m-text) !important;
+  font-weight: 750 !important;
+  opacity: 1 !important;
+}
+.page-medicao tbody td{
+  color: var(--m-text) !important;
+  opacity: 1 !important;
+}
+
+/* Números da tabela alinhados à direita (colunas de valores) */
+.page-medicao td,
+.page-medicao th{
+  font-variant-numeric: tabular-nums;
+}
+.page-medicao td:nth-last-child(-n+6),
+.page-medicao th:nth-last-child(-n+6){
+  text-align: right;
+}
+
+/* Botão Exportar (quando desabilitado) manter legível */
+.page-medicao .btn:disabled,
+.page-medicao button:disabled{
+  opacity: .55 !important;
+}
+
+/* KPI labels/values (quando marcados explicitamente) */
+.page-medicao .kpi-label{
+  color: var(--m-muted) !important;
+  font-weight: 650 !important;
+}
+.page-medicao .kpi-value{
+  color: var(--m-text) !important;
+  font-weight: 850 !important;
+  font-size: 1.35rem !important;
+}
+
+.page-medicao .medicao-kpis,
+.page-medicao .medicao-kpis *{
+  opacity: 1 !important;
+  filter: none !important;
+}
+
+.page-medicao .medicao-kpis .card{
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+.page-medicao .medicao-kpis .medicao-kpi-label{
+  color: #334155 !important;
+  font-weight: 700 !important;
+  font-size: 12px !important;
+  letter-spacing: .2px !important;
+  opacity: 1 !important;
+}
+
+.page-medicao .medicao-kpis .medicao-kpi-value{
+  color: #0f172a !important;
+  font-weight: 900 !important;
+  font-size: 18px !important;
+  line-height: 1.2 !important;
+  font-variant-numeric: tabular-nums !important;
+  opacity: 1 !important;
+}
+
+/* Se algum trecho ainda vier "muted", forçar dentro dos KPIs */
+.page-medicao .medicao-kpis .text-muted,
+.page-medicao .medicao-kpis [class*="muted"],
+.page-medicao .medicao-kpis [class*="opacity"]{
+  color: #334155 !important;
+  opacity: 1 !important;
+}
+
+/* ===== Medição (tipografia + tabela) ===== */
+.medicao-page{
+}
+
+.medicao-page .kpi-card .kpi-label{
+  font-size: 12px;
+  color: #334155;
+  font-weight: 600;
+}
+.medicao-page .kpi-card .kpi-value{
+  font-size: 18px;
+  color: #0f172a;
+  font-weight: 800;
+  letter-spacing: .2px;
+}
+
+.medicao-page .medicao-table-wrap{
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 12px;
+}
+.medicao-page .medicao-table{
+  width: 100%;
+  min-width: 1100px;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: auto;
+  background: transparent;
+}
+.medicao-page .medicao-table thead{ display: table-header-group; }
+.medicao-page .medicao-table tbody{ display: table-row-group; }
+.medicao-page .medicao-table tfoot{ display: table-footer-group; }
+.medicao-page .medicao-table tr{ display: table-row; }
+.medicao-page .medicao-table th,
+.medicao-page .medicao-table td{
+  display: table-cell;
+  vertical-align: middle;
+}
+
+.medicao-page .medicao-table th{
+  font-size: 12px;
+  font-weight: 800;
+  color: #0f172a;
+  background: #e6f3fb;
+  padding: 10px 12px;
+  white-space: nowrap;
+  border-bottom: 1px solid #cfe7f7;
+}
+.medicao-page .medicao-table td{
+  font-size: 13px;
+  color: #0f172a;
+  padding: 10px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.medicao-page .medicao-col-left{ text-align: left; }
+.medicao-page .medicao-col-center{ text-align: center; }
+.medicao-page .medicao-col-right{
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.medicao-page .medicao-total-row td{
+  background: #dff1fb;
+  font-weight: 900;
+  border-top: 2px solid #8fd0f5;
+}
+
+body.dark .medicao-page .kpi-card .kpi-label,
+body.theme-dark .medicao-page .kpi-card .kpi-label,
+[data-theme="dark"] .medicao-page .kpi-card .kpi-label{
+  color: #cbd5e1;
+}
+
+body.dark .medicao-page .kpi-card .kpi-value,
+body.theme-dark .medicao-page .kpi-card .kpi-value,
+[data-theme="dark"] .medicao-page .kpi-card .kpi-value{
+  color: #f1f5f9;
+}
+
+body.dark .medicao-page .medicao-table th,
+body.theme-dark .medicao-page .medicao-table th,
+[data-theme="dark"] .medicao-page .medicao-table th{
+  color: #e2e8f0;
+  background: rgba(56, 189, 248, .14);
+  border-bottom-color: rgba(148, 163, 184, .25);
+}
+
+body.dark .medicao-page .medicao-table td,
+body.theme-dark .medicao-page .medicao-table td,
+[data-theme="dark"] .medicao-page .medicao-table td{
+  color: #e2e8f0;
+  border-bottom-color: rgba(148, 163, 184, .25);
+}
+
+body.dark .medicao-page .medicao-total-row td,
+body.theme-dark .medicao-page .medicao-total-row td,
+[data-theme="dark"] .medicao-page .medicao-total-row td{
+  background: rgba(56, 189, 248, .12);
+  border-top-color: rgba(56, 189, 248, .35);
+}
+
+/* =========================
+   MEDIÇÃO — FIX TIPOGRAFIA / CONTRASTE / TABELA
+   Escopo: somente quando body tiver class="page-medicao"
+   ========================= */
+
+body.page-medicao {
+  /* variáveis locais */
+  --medicao-fg: #0f172a;
+  --medicao-muted: #475569;
+  --medicao-card-bg: #f8fafc;
+  --medicao-card-bd: rgba(15, 23, 42, 0.12);
+}
+
+/* suportar dark theme mesmo sem saber o nome exato: cobrimos os padrões comuns */
+html.dark body.page-medicao,
+body.dark.page-medicao,
+body.theme-dark.page-medicao,
+html[data-theme="dark"] body.page-medicao,
+body[data-theme="dark"].page-medicao {
+  --medicao-fg: #e5e7eb;
+  --medicao-muted: #94a3b8;
+  --medicao-card-bg: rgba(15, 23, 42, 0.45);
+  --medicao-card-bd: rgba(148, 163, 184, 0.22);
+}
+
+/* TÍTULOS / TEXTOS */
+body.page-medicao h1,
+body.page-medicao h2,
+body.page-medicao h3,
+body.page-medicao .page-title,
+body.page-medicao .section-title {
+  color: var(--medicao-fg) !important;
+}
+
+body.page-medicao .page-subtitle,
+body.page-medicao .text-muted,
+body.page-medicao small {
+  color: var(--medicao-muted) !important;
+}
+
+/* KPI CARDS — aqui está o bug principal (números brancos/apagados) */
+body.page-medicao .kpi-card,
+body.page-medicao .kpi-box,
+body.page-medicao .kpi-item,
+body.page-medicao .kpi {
+  background: var(--medicao-card-bg) !important;
+  border: 1px solid var(--medicao-card-bd) !important;
+  border-radius: 12px !important;
+}
+
+body.page-medicao .kpi-title,
+body.page-medicao .kpi-label,
+body.page-medicao .kpi-card .label,
+body.page-medicao .kpi-card .title {
+  color: var(--medicao-muted) !important;
+  font-weight: 700 !important;
+  letter-spacing: .2px;
+}
+
+body.page-medicao .kpi-value,
+body.page-medicao .kpi-number,
+body.page-medicao .kpi-card .value,
+body.page-medicao .kpi-card .number,
+body.page-medicao .kpi-card strong {
+  color: var(--medicao-fg) !important;
+  opacity: 1 !important;
+  filter: none !important;
+  text-shadow: none !important;
+  font-weight: 800 !important;
+}
+
+/* Se algum estilo global estiver reduzindo opacidade do conteúdo do card */
+body.page-medicao .kpi-card *,
+body.page-medicao .kpi-box *,
+body.page-medicao .kpi-item * {
+  opacity: 1;
+}
+
+/* TABELA DO RESUMO — evitar “desconfigurar” com mudanças globais */
+body.page-medicao .table,
+body.page-medicao table {
+  color: var(--medicao-fg) !important;
+}
+
+body.page-medicao .table thead th,
+body.page-medicao table thead th {
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  color: var(--medicao-fg) !important;
+  vertical-align: middle !important;
+  white-space: nowrap;
+}
+
+body.page-medicao .table tbody td,
+body.page-medicao table tbody td {
+  font-size: 13px !important;
+  vertical-align: middle !important;
+}
+
+body.page-medicao .table th,
+body.page-medicao .table td,
+body.page-medicao table th,
+body.page-medicao table td {
+  padding: 10px 12px !important;
+}
+
+/* garantir que a tabela não estoure e que a sombra/borda fiquem estáveis */
+body.page-medicao .table-responsive,
+body.page-medicao .table-wrap,
+body.page-medicao .table-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* CARD DOS GRÁFICOS / PLACEHOLDERS */
+body.page-medicao .chart-card,
+body.page-medicao .chart-box,
+body.page-medicao .chart-container {
+  background: var(--medicao-card-bg) !important;
+  border: 1px solid var(--medicao-card-bd) !important;
+  border-radius: 12px !important;
+}
+
+body.page-medicao .chart-card .title,
+body.page-medicao .chart-box .title {
+  color: var(--medicao-fg) !important;
+  font-weight: 800 !important;
+}
+
+body.page-medicao .chart-card .subtitle,
+body.page-medicao .chart-box .subtitle {
+  color: var(--medicao-muted) !important;
+}
+
+/* FIM MEDIÇÃO */
+
