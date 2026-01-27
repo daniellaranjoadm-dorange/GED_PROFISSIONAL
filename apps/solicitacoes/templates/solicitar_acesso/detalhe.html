@@ -4,9 +4,9 @@
 {% block title %}Detalhe da Solicitação{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-3">
+<div class="container-fluid py-3 page-solicitacao-detalhe">
   {% url 'solicitacoes:listar_solicitacoes' as url_lista %}
-  <div class="dash-container page-solicitacoes page-solicitacoes--detalhe">
+  <div class="solicitacoes-shell">
 
     <div class="dash-header">
       <div>
@@ -19,8 +19,8 @@
       </a>
     </div>
 
-    <div class="row g-3 align-items-start">
-      <div class="col-12 col-lg-8">
+    <div class="solicitacao-grid">
+      <div class="solicitacao-col solicitacao-col--main">
         <div class="dash-surface pad">
           <div class="solicitacao-kv">
             <div class="kv">
@@ -78,7 +78,7 @@
             </div>
 
             <div class="kv">
-              <div class="k">Data da Solicita??o</div>
+              <div class="k">Data da Solicita&ccedil;&atilde;o</div>
               <div class="v fw-bold">
                 {% if solicitacao.data_solicitacao %}
                   {{ solicitacao.data_solicitacao|date:"d/m/Y H:i" }}
@@ -89,7 +89,7 @@
             </div>
 
             <div class="kv">
-              <div class="k">Data da Decis?o</div>
+              <div class="k">Data da Decis&atilde;o</div>
               <div class="v fw-bold">
                 {% if solicitacao.data_decisao %}
                   {{ solicitacao.data_decisao|date:"d/m/Y H:i" }}
@@ -99,7 +99,7 @@
 
             {% if solicitacao.observacao_admin %}
             <div class="kv kv-full">
-              <div class="k">Observa??o (Admin)</div>
+              <div class="k">Observa&ccedil;&atilde;o (Admin)</div>
               <div class="v">{{ solicitacao.observacao_admin|linebreaks }}</div>
             </div>
             {% endif %}
@@ -107,12 +107,12 @@
         </div>
       </div>
 
-      <div class="col-12 col-lg-4">
+      <div class="solicitacao-col solicitacao-col--side">
         <form method="post" class="dash-surface pad solicitacao-decisao">
           {% csrf_token %}
 
           <div class="mb-3">
-            <label class="form-label fw-semibold" for="observacao">Observa??o do administrador</label>
+            <label class="form-label fw-semibold" for="observacao">Observa&ccedil;&atilde;o do administrador</label>
             <textarea id="observacao" name="observacao" class="form-control" rows="6"
                       placeholder="Ex.: Acesso liberado para o projeto X.">{{ solicitacao.observacao_admin|default_if_none:"" }}</textarea>
           </div>

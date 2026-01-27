@@ -2146,317 +2146,6 @@ body.page-medicao .medicao-select-opt:disabled{
   opacity: .45 !important;
 }
 
-
-/* ===== SOLICITA??ES DE ACESSO ? FIX BORDAS/TABELA (escopo) ===== */
-.page-solicitacoes-acesso .solicitacoes-surface{
-  border-radius: 18px !important;
-  overflow: hidden !important; /* mata cantos/linhas estranhas */
-  border: 1px solid rgba(15,23,42,.10) !important;
-  box-shadow: 0 12px 28px rgba(15,23,42,.08) !important;
-}
-
-.page-solicitacoes-acesso .solicitacoes-table-wrap{
-  margin: 0 !important;
-}
-
-.page-solicitacoes-acesso table.solicitacoes-table{
-  margin: 0 !important;
-  border-collapse: separate !important;
-  border-spacing: 0 !important;
-}
-
-.page-solicitacoes-acesso table.solicitacoes-table thead th{
-  background: rgba(15,23,42,.04) !important;
-  border-bottom: 1px solid rgba(15,23,42,.10) !important;
-}
-
-.page-solicitacoes-acesso table.solicitacoes-table td,
-.page-solicitacoes-acesso table.solicitacoes-table th{
-  border-color: rgba(15,23,42,.10) !important;
-}
-
-/* remove ?linha final dupla? */
-.page-solicitacoes-acesso table.solicitacoes-table tbody tr:last-child td{
-  border-bottom: 0 !important;
-}
-
-/* Dark mode */
-html[data-theme="dark"] .page-solicitacoes-acesso .solicitacoes-surface,
-body[data-theme="dark"] .page-solicitacoes-acesso .solicitacoes-surface,
-body.dark .page-solicitacoes-acesso .solicitacoes-surface{
-  border: 1px solid rgba(255,255,255,.10) !important;
-  box-shadow: 0 14px 32px rgba(0,0,0,.35) !important;
-}
-
-html[data-theme="dark"] .page-solicitacoes-acesso table.solicitacoes-table thead th,
-body[data-theme="dark"] .page-solicitacoes-acesso table.solicitacoes-table thead th,
-body.dark .page-solicitacoes-acesso table.solicitacoes-table thead th{
-  background: rgba(255,255,255,.06) !important;
-  border-bottom: 1px solid rgba(255,255,255,.10) !important;
-}
-
-html[data-theme="dark"] .page-solicitacoes-acesso table.solicitacoes-table td,
-html[data-theme="dark"] .page-solicitacoes-acesso table.solicitacoes-table th,
-body[data-theme="dark"] .page-solicitacoes-acesso table.solicitacoes-table td,
-body[data-theme="dark"] .page-solicitacoes-acesso table.solicitacoes-table th,
-body.dark .page-solicitacoes-acesso table.solicitacoes-table td,
-body.dark .page-solicitacoes-acesso table.solicitacoes-table th{
-  border-color: rgba(255,255,255,.10) !important;
-}
-
-/* ===========================
-   SOLICITA??ES ? LISTA (FIX BORDAS)
-   =========================== */
-.page-solicitacoes .solicitacoes-surface{
-  border-radius: 18px;           /* acompanha o padr?o enterprise */
-  overflow: hidden;              /* corta quinas da tabela */
-  border: 1px solid rgba(15, 23, 42, .10);
-  box-shadow: 0 18px 45px rgba(2, 6, 23, .08);
-  background: var(--dash-surface, #ffffff);
-}
-
-/* o wrapper do bootstrap pode ?vazar? bordas ? garantimos recorte */
-.page-solicitacoes .solicitacoes-surface > .table-responsive{
-  border-radius: inherit;
-  overflow-x: auto;
-  overflow-y: hidden;
-}
-
-/* tabela sem ?double borders? e com header clean */
-.page-solicitacoes table.dash-table{
-  margin: 0;
-  border-collapse: separate;
-  border-spacing: 0;
-}
-
-/* header com linha inferior ?nica e sem borda extra no topo */
-.page-solicitacoes table.dash-table thead th{
-  background: rgba(148, 163, 184, .10);
-  border-bottom: 1px solid rgba(148, 163, 184, .22);
-  border-top: none !important;
-  padding: 12px 14px;
-  font-size: 12px;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-}
-
-/* corpo da tabela: separadores suaves, sem ?vazar? nos cantos */
-.page-solicitacoes table.dash-table tbody td{
-  border-top: none;
-  border-bottom: 1px solid rgba(148, 163, 184, .18);
-  padding: 12px 14px;
-}
-
-/* ?ltima linha sem ?borda sobrando? */
-.page-solicitacoes table.dash-table tbody tr:last-child td{
-  border-bottom: none;
-}
-
-/* hover sutil (n?o altera outras telas) */
-.page-solicitacoes table.dash-table.table-hover tbody tr:hover{
-  background: rgba(59, 130, 246, .06);
-}
-
-/* garantir que o bot?o da coluna A??es n?o encoste e n?o ?quebre? borda */
-.page-solicitacoes table.dash-table td.text-end .dash-btn{
-  white-space: nowrap;
-}
-
-/* ===========================
-   SOLICITA??ES ? LISTA (POLISH PREMIUM)
-   Escopo: .page-solicitacoes
-   =========================== */
-.page-solicitacoes .dash-surface,
-.page-solicitacoes .solicitacoes-surface{
-  border-radius: 18px !important;
-  overflow: hidden !important;
-  border: 1px solid rgba(15,23,42,.10) !important;
-  box-shadow: 0 18px 45px rgba(2,6,23,.08) !important;
-  background: #ffffff !important;
-}
-
-.page-solicitacoes .table-responsive{
-  border-radius: inherit !important;
-  overflow-x: auto !important;
-  overflow-y: hidden !important;
-}
-
-/* tabela */
-.page-solicitacoes table.dash-table{
-  margin: 0 !important;
-  border-collapse: separate !important;
-  border-spacing: 0 !important;
-}
-
-.page-solicitacoes table.dash-table thead th{
-  background: rgba(15,23,42,.04) !important;
-  border-bottom: 1px solid rgba(15,23,42,.10) !important;
-  font-weight: 900 !important;
-  font-size: 12px !important;
-  letter-spacing: .08em !important;
-  text-transform: uppercase !important;
-  padding: 12px 14px !important;
-}
-
-.page-solicitacoes table.dash-table tbody td{
-  border-bottom: 1px solid rgba(15,23,42,.08) !important;
-  padding: 12px 14px !important;
-}
-
-.page-solicitacoes table.dash-table tbody tr:last-child td{
-  border-bottom: 0 !important;
-}
-
-.page-solicitacoes table.dash-table.table-hover tbody tr:hover{
-  background: rgba(59,130,246,.06) !important;
-}
-
-/* bot?o a??o ?Abrir? n?o quebrar layout */
-.page-solicitacoes td.text-end .dash-btn{
-  white-space: nowrap !important;
-}
-
-/* bot?es do topo mais ?enterprise? */
-.page-solicitacoes .page-actions .btn,
-.page-solicitacoes .btn.btn-sm{
-  border-radius: 12px !important;
-  font-weight: 900 !important;
-  padding: 8px 12px !important;
-}
-
-/* DARK MODE */
-html[data-theme="dark"] .page-solicitacoes .dash-surface,
-html[data-theme="dark"] .page-solicitacoes .solicitacoes-surface,
-body[data-theme="dark"] .page-solicitacoes .dash-surface,
-body[data-theme="dark"] .page-solicitacoes .solicitacoes-surface,
-body.dark .page-solicitacoes .dash-surface,
-body.dark .page-solicitacoes .solicitacoes-surface{
-  background: rgba(15,23,42,.70) !important;
-  border: 1px solid rgba(255,255,255,.10) !important;
-  box-shadow: 0 18px 45px rgba(0,0,0,.35) !important;
-}
-
-html[data-theme="dark"] .page-solicitacoes table.dash-table thead th,
-body[data-theme="dark"] .page-solicitacoes table.dash-table thead th,
-body.dark .page-solicitacoes table.dash-table thead th{
-  background: rgba(255,255,255,.06) !important;
-  border-bottom: 1px solid rgba(255,255,255,.10) !important;
-}
-
-html[data-theme="dark"] .page-solicitacoes table.dash-table tbody td,
-body[data-theme="dark"] .page-solicitacoes table.dash-table tbody td,
-body.dark .page-solicitacoes table.dash-table tbody td{
-  border-bottom: 1px solid rgba(255,255,255,.08) !important;
-}
-
-/* ===========================
-   SOLICITAÇÕES — PREMIUM (TOP-5)
-   escopo: .page-solicitacoes
-   =========================== */
-.page-solicitacoes .solicitacoes-surface{
-  border-radius: 18px !important;
-  overflow: hidden !important; /* corta quinas da tabela */
-  border: 1px solid rgba(15,23,42,.10) !important;
-  box-shadow: 0 18px 45px rgba(2,6,23,.08) !important;
-  background: #ffffff !important;
-  background-clip: padding-box !important;
-}
-
-/* impede “vazamento” do wrapper bootstrap */
-.page-solicitacoes .solicitacoes-surface > .table-responsive{
-  border-radius: inherit !important;
-  overflow-x: auto !important;
-  overflow-y: hidden !important;
-}
-
-/* tabela: sem bordas duplicadas e com header mais “enterprise” */
-.page-solicitacoes .solicitacoes-surface table{
-  border-collapse: separate !important;
-  border-spacing: 0 !important;
-}
-
-.page-solicitacoes .solicitacoes-surface thead th{
-  background: rgba(15,23,42,.04) !important;
-  border-bottom: 1px solid rgba(15,23,42,.12) !important;
-  border-top: none !important;
-  font-weight: 900 !important;
-  font-size: 12px !important;
-  letter-spacing: .08em !important;
-  text-transform: uppercase !important;
-  padding: 12px 14px !important;
-}
-
-.page-solicitacoes .solicitacoes-surface tbody td{
-  border-bottom: 1px solid rgba(15,23,42,.08) !important;
-  padding: 12px 14px !important;
-  vertical-align: middle !important;
-}
-
-.page-solicitacoes .solicitacoes-surface tbody tr:last-child td{
-  border-bottom: none !important;
-}
-
-.page-solicitacoes .solicitacoes-surface .table-hover tbody tr:hover{
-  background: rgba(59,130,246,.06) !important;
-}
-
-/* ações: nunca quebrar linha */
-.page-solicitacoes td:last-child,
-.page-solicitacoes td.text-end{
-  white-space: nowrap !important;
-}
-
-/* remove bordas duplas dentro do card */
-.page-solicitacoes .solicitacoes-surface table,
-.page-solicitacoes .solicitacoes-surface th,
-.page-solicitacoes .solicitacoes-surface td{
-  border-left: none !important;
-  border-right: none !important;
-}
-
-/* arredondamento do header */
-.page-solicitacoes .solicitacoes-surface thead th:first-child{
-  border-top-left-radius: 18px !important;
-}
-.page-solicitacoes .solicitacoes-surface thead th:last-child{
-  border-top-right-radius: 18px !important;
-}
-
-/* botões do topo: mesma pegada premium */
-.page-solicitacoes .btn.btn-sm{
-  border-radius: 12px !important;
-  font-weight: 900 !important;
-  padding: 8px 12px !important;
-}
-
-/* ===== DARK MODE (premium) ===== */
-html[data-theme="dark"] .page-solicitacoes .solicitacoes-surface,
-body[data-theme="dark"] .page-solicitacoes .solicitacoes-surface,
-body.dark .page-solicitacoes .solicitacoes-surface{
-  background: rgba(15,23,42,.70) !important;
-  border: 1px solid rgba(255,255,255,.10) !important;
-  box-shadow: 0 18px 45px rgba(0,0,0,.35) !important;
-}
-
-html[data-theme="dark"] .page-solicitacoes .solicitacoes-surface thead th,
-body[data-theme="dark"] .page-solicitacoes .solicitacoes-surface thead th,
-body.dark .page-solicitacoes .solicitacoes-surface thead th{
-  background: rgba(255,255,255,.06) !important;
-  border-bottom: 1px solid rgba(255,255,255,.12) !important;
-}
-
-html[data-theme="dark"] .page-solicitacoes .solicitacoes-surface tbody td,
-body[data-theme="dark"] .page-solicitacoes .solicitacoes-surface tbody td,
-body.dark .page-solicitacoes .solicitacoes-surface tbody td{
-  border-bottom: 1px solid rgba(255,255,255,.08) !important;
-}
-
-html[data-theme="dark"] .page-solicitacoes .solicitacoes-surface .table-hover tbody tr:hover,
-body[data-theme="dark"] .page-solicitacoes .solicitacoes-surface .table-hover tbody tr:hover,
-body.dark .page-solicitacoes .solicitacoes-surface .table-hover tbody tr:hover{
-  background: rgba(59,130,246,.10) !important;
-}
-
 /* ===========================
    CROSS-BROWSER HARDENING
    (Chrome/Edge/Win) — SAFE
@@ -2466,80 +2155,13 @@ body.dark .page-solicitacoes .solicitacoes-surface .table-hover tbody tr:hover{
 html { scrollbar-gutter: stable; }
 .table-responsive { scrollbar-gutter: stable both-edges; }
 
-/* ===========================
-   SOLICITAÇÕES — LAYOUT RESPONSIVO (TOP-5)
-   Escopo: .page-solicitacoes
-   =========================== */
-
-:root{
-  --ds-page-max: 1480px;
-  --ds-gutter: 24px;
-}
-
 @media (max-width: 576px){
   :root{ --ds-gutter: 16px; }
 }
 
-.page-solicitacoes{
-  width: 100%;
-}
 
-.page-solicitacoes .ds-container{
-  width: 100%;
-  max-width: clamp(980px, 92vw, var(--ds-page-max));
-  margin: 0 auto;
-  padding-left: var(--ds-gutter);
-  padding-right: var(--ds-gutter);
-}
 
-.page-solicitacoes .dash-surface,
-.page-solicitacoes .solicitacoes-surface{
-  width: 100%;
-}
 
-.page-solicitacoes.page-solicitacoes-lista .solicitacoes-surface{
-  border-radius: 18px;
-  overflow: hidden;
-}
-
-.page-solicitacoes.page-solicitacoes-detalhe .solic-detalhe-grid{
-  display: grid;
-  grid-template-columns: minmax(560px, 1.9fr) minmax(360px, 1fr);
-  gap: 18px;
-  align-items: start;
-}
-
-@media (max-width: 1100px){
-  .page-solicitacoes.page-solicitacoes-detalhe .solic-detalhe-grid{
-    grid-template-columns: 1fr;
-  }
-}
-
-.page-solicitacoes.page-solicitacoes-detalhe .solic-detalhe-right .dash-surface,
-.page-solicitacoes.page-solicitacoes-detalhe .solic-detalhe-right{
-  width: 100%;
-}
-
-.page-solicitacoes.page-solicitacoes-detalhe .solic-detalhe-actions{
-  display: flex;
-  gap: 12px;
-}
-
-.page-solicitacoes.page-solicitacoes-detalhe .solic-detalhe-actions > *{
-  flex: 1 1 auto;
-}
-
-@media (max-width: 576px){
-  .page-solicitacoes.page-solicitacoes-detalhe .solic-detalhe-actions{
-    flex-direction: column;
-  }
-}
-
-.page-solicitacoes textarea{
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-}
 
 html{
   scrollbar-gutter: stable both-edges;
@@ -2563,38 +2185,6 @@ html{
   padding-right: var(--ds-page-pad);
 }
 
-/* ===========================
-   SOLICITAÇÕES — LAYOUT RESPONSIVO (TOP-5)
-   Escopo: .page-solicitacoes
-   =========================== */
-.page-solicitacoes{ width: 100%; }
-.page-solicitacoes .solicitacoes-surface{
-  width: 100% !important;
-  max-width: none !important;
-}
-
-/* ===========================
-   SOLICITAÇÃO DETALHE — GRID RESPONSIVO
-   =========================== */
-.page-solicitacao-detalhe .solicitacao-detalhe-grid{
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 18px;
-  align-items: start;
-}
-@media (min-width: 992px){
-  .page-solicitacao-detalhe .solicitacao-detalhe-grid{
-    grid-template-columns: 2fr 1fr;
-  }
-}
-
-.page-solicitacao-detalhe .acoes-decisao{
-  display: grid;
-  gap: 10px;
-}
-.page-solicitacao-detalhe .acoes-decisao .btn{
-  width: 100%;
-}
 
 /* SELECT/OPTION no DARK — evita dropdown branco e texto sumindo */
 html[data-theme="dark"] select.form-select,
@@ -2616,209 +2206,6 @@ body[data-theme="dark"] select.form-control option,
 body.dark select.form-control option{
   background-color: #0b1220 !important;
   color: rgba(255,255,255,.92) !important;
-}
-
-/* ===========================
-   SOLICITAÇÕES — PREMIUM (TOP-5)
-   escopo: .page-solicitacoes
-   =========================== */
-.page-solicitacoes{
-  max-width: 1400px;
-  margin: 0 auto;
-}
-
-.page-solicitacoes .solicitacoes-surface{
-  border-radius: 18px !important;
-  overflow: hidden !important;
-  border: 1px solid rgba(15,23,42,.10) !important;
-  box-shadow: 0 18px 45px rgba(2,6,23,.08) !important;
-  background: #ffffff !important;
-  background-clip: padding-box !important;
-}
-
-.page-solicitacoes .solicitacoes-surface > .table-responsive{
-  border-radius: inherit !important;
-  overflow-x: auto !important;
-  overflow-y: hidden !important;
-}
-
-/* tabela previsível em qualquer browser */
-.page-solicitacoes table.dash-table{
-  width: 100% !important;
-  border-collapse: separate !important;
-  border-spacing: 0 !important;
-  table-layout: fixed !important;
-}
-
-.page-solicitacoes table.dash-table thead th{
-  background: rgba(15,23,42,.04) !important;
-  border-bottom: 1px solid rgba(15,23,42,.12) !important;
-  border-top: none !important;
-  font-weight: 900 !important;
-  font-size: 12px !important;
-  letter-spacing: .08em !important;
-  text-transform: uppercase !important;
-  padding: 12px 14px !important;
-}
-
-.page-solicitacoes table.dash-table tbody td{
-  border-bottom: 1px solid rgba(15,23,42,.08) !important;
-  padding: 12px 14px !important;
-  vertical-align: middle !important;
-  line-height: 1.25 !important;
-}
-
-.page-solicitacoes table.dash-table tbody tr:last-child td{
-  border-bottom: none !important;
-}
-
-.page-solicitacoes .table-hover tbody tr:hover{
-  background: rgba(59,130,246,.06) !important;
-}
-
-.page-solicitacoes td:last-child,
-.page-solicitacoes td.text-end{
-  white-space: nowrap !important;
-}
-
-/* DARK */
-html[data-theme="dark"] .page-solicitacoes .solicitacoes-surface,
-body[data-theme="dark"] .page-solicitacoes .solicitacoes-surface,
-body.dark .page-solicitacoes .solicitacoes-surface{
-  background: rgba(15,23,42,.70) !important;
-  border: 1px solid rgba(255,255,255,.10) !important;
-  box-shadow: 0 18px 45px rgba(0,0,0,.35) !important;
-}
-
-html[data-theme="dark"] .page-solicitacoes table.dash-table thead th,
-body[data-theme="dark"] .page-solicitacoes table.dash-table thead th,
-body.dark .page-solicitacoes table.dash-table thead th{
-  background: rgba(255,255,255,.06) !important;
-  border-bottom: 1px solid rgba(255,255,255,.12) !important;
-}
-
-html[data-theme="dark"] .page-solicitacoes table.dash-table tbody td,
-body[data-theme="dark"] .page-solicitacoes table.dash-table tbody td,
-body.dark .page-solicitacoes table.dash-table tbody td{
-  border-bottom: 1px solid rgba(255,255,255,.08) !important;
-}
-
-html[data-theme="dark"] .page-solicitacoes .table-hover tbody tr:hover,
-body[data-theme="dark"] .page-solicitacoes .table-hover tbody tr:hover,
-body.dark .page-solicitacoes .table-hover tbody tr:hover{
-  background: rgba(59,130,246,.10) !important;
-}
-
-/* =========================================================
-   SOLICITAR ACESSO PUBLIC — PREMIUM
-   escopo: .page-solicitacoes-public
-   ========================================================= */
-.page-solicitacoes-public{
-  color: var(--dash-text, #0f172a);
-}
-.page-solicitacoes-public .dash-surface{
-  border-radius: 18px;
-  border: 1px solid rgba(15,23,42,.10);
-  box-shadow: 0 18px 45px rgba(2,6,23,.08);
-}
-.page-solicitacoes-public label,
-.page-solicitacoes-public .form-label{
-  font-weight: 700;
-  color: rgba(15,23,42,.85);
-}
-.page-solicitacoes-public .form-text{
-  color: rgba(15,23,42,.60);
-}
-.page-solicitacoes-public .text-danger{
-  color: #dc2626 !important;
-}
-.page-solicitacoes-public input,
-.page-solicitacoes-public select,
-.page-solicitacoes-public textarea{
-  height: 40px;
-  border-radius: 12px;
-  border: 1px solid rgba(15,23,42,.14);
-  background: #ffffff;
-  color: rgba(15,23,42,.95);
-}
-.page-solicitacoes-public textarea{
-  min-height: 120px;
-  height: auto;
-}
-.page-solicitacoes-public input::placeholder,
-.page-solicitacoes-public textarea::placeholder{
-  color: rgba(15,23,42,.45);
-}
-.page-solicitacoes-public input:focus-visible,
-.page-solicitacoes-public select:focus-visible,
-.page-solicitacoes-public textarea:focus-visible{
-  outline: 0;
-  box-shadow: 0 0 0 4px rgba(59,130,246,.22);
-  border-color: rgba(59,130,246,.55);
-}
-.page-solicitacoes-public select option{
-  background-color: #0b1220;
-  color: #e5e7eb;
-}
-.page-solicitacoes-public input:-webkit-autofill,
-.page-solicitacoes-public textarea:-webkit-autofill,
-.page-solicitacoes-public select:-webkit-autofill{
-  -webkit-text-fill-color: rgba(15,23,42,.95);
-  box-shadow: 0 0 0px 1000px #ffffff inset;
-  transition: background-color 9999s ease-in-out 0s;
-}
-html[data-theme="dark"] .page-solicitacoes-public,
-body[data-theme="dark"] .page-solicitacoes-public,
-body.dark .page-solicitacoes-public{
-  color: #e5e7eb;
-}
-html[data-theme="dark"] .page-solicitacoes-public .dash-surface,
-body[data-theme="dark"] .page-solicitacoes-public .dash-surface,
-body.dark .page-solicitacoes-public .dash-surface{
-  background: rgba(15,23,42,.70);
-  border: 1px solid rgba(255,255,255,.10);
-  box-shadow: 0 18px 45px rgba(0,0,0,.35);
-}
-html[data-theme="dark"] .page-solicitacoes-public label,
-body[data-theme="dark"] .page-solicitacoes-public label,
-body.dark .page-solicitacoes-public label{
-  color: rgba(255,255,255,.88);
-}
-html[data-theme="dark"] .page-solicitacoes-public .form-text,
-body[data-theme="dark"] .page-solicitacoes-public .form-text,
-body.dark .page-solicitacoes-public .form-text{
-  color: rgba(255,255,255,.65);
-}
-html[data-theme="dark"] .page-solicitacoes-public input,
-html[data-theme="dark"] .page-solicitacoes-public select,
-html[data-theme="dark"] .page-solicitacoes-public textarea,
-body[data-theme="dark"] .page-solicitacoes-public input,
-body[data-theme="dark"] .page-solicitacoes-public select,
-body[data-theme="dark"] .page-solicitacoes-public textarea,
-body.dark .page-solicitacoes-public input,
-body.dark .page-solicitacoes-public select,
-body.dark .page-solicitacoes-public textarea{
-  background: rgba(255,255,255,.08);
-  border: 1px solid rgba(255,255,255,.16);
-  color: rgba(255,255,255,.92);
-}
-html[data-theme="dark"] .page-solicitacoes-public input::placeholder,
-body[data-theme="dark"] .page-solicitacoes-public input::placeholder,
-body.dark .page-solicitacoes-public input::placeholder{
-  color: rgba(255,255,255,.55);
-}
-html[data-theme="dark"] .page-solicitacoes-public select option,
-body[data-theme="dark"] .page-solicitacoes-public select option,
-body.dark .page-solicitacoes-public select option{
-  background-color: rgba(2,6,23,.98);
-  color: rgba(255,255,255,.92);
-}
-html[data-theme="dark"] .page-solicitacoes-public input:-webkit-autofill,
-html[data-theme="dark"] .page-solicitacoes-public textarea:-webkit-autofill,
-body[data-theme="dark"] .page-solicitacoes-public input:-webkit-autofill,
-body[data-theme="dark"] .page-solicitacoes-public textarea:-webkit-autofill{
-  -webkit-text-fill-color: rgba(255,255,255,.92);
-  box-shadow: 0 0 0px 1000px rgba(15,23,42,.70) inset;
 }
 
 /* =========================================================
@@ -3127,403 +2514,188 @@ body[data-theme="dark"] .dash-surface form .form-text{
   color: rgba(255,255,255,.62) !important;
 }
 
-/* compat: classes de página públicas */
-.page-solicitacoes-public .public-form-title,
-.page-solicitacao .public-form-title{
-  font-size: 1.6rem;
-}
-.page-solicitacoes-public .public-success-icon i,
-.page-solicitacao .public-success-icon i{
-  font-size: 2.6rem;
-  color: var(--dash-accent);
-}
-.page-solicitacoes-public .public-form-muted,
-.page-solicitacao .public-form-muted{
-  color: var(--dash-muted);
-}
+
+
+
+
+
+
+
+
+
+
+
+
 
 /* ===========================
-   SOLICITACOES — DETALHE (PREMIUM)
-   escopo: .page-solicitacoes-detalhe
-   =========================== */
-.page-solicitacoes-detalhe .solicitacao-detail-grid{ align-items: start; }
-
-@media (min-width: 992px){
-  .page-solicitacoes-detalhe .solicitacao-actions{
-    position: sticky !important;
-    top: 18px !important;
-    z-index: 5;
-  }
-}
-
-.page-solicitacoes-detalhe .solicitacao-textarea{
-  border-radius: 14px !important;
-  padding: 12px 12px !important;
-  border: 1px solid rgba(15,23,42,.18) !important;
-  background: rgba(255,255,255,.92) !important;
-}
-.page-solicitacoes-detalhe .solicitacao-textarea:focus{
-  outline: none !important;
-  box-shadow: 0 0 0 .2rem rgba(59,130,246,.18) !important;
-  border-color: rgba(59,130,246,.55) !important;
-}
-
-.page-solicitacoes-detalhe .solicitacao-note{
-  border-radius: 14px !important;
-  background: rgba(15,23,42,.03) !important;
-  border: 1px solid rgba(15,23,42,.08) !important;
-}
-
-html[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-textarea,
-body[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-textarea,
-body.dark .page-solicitacoes-detalhe .solicitacao-textarea{
-  background: rgba(2,6,23,.35) !important;
-  border: 1px solid rgba(255,255,255,.14) !important;
-  color: rgba(255,255,255,.92) !important;
-}
-html[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-textarea::placeholder,
-body[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-textarea::placeholder,
-body.dark .page-solicitacoes-detalhe .solicitacao-textarea::placeholder{
-  color: rgba(255,255,255,.55) !important;
-}
-
-/* ===========================
-   SOLICITAÇÕES — RESPONSIVO (SAFE)
-   escopo: .page-solicitacoes
+   SOLICITAES  LAYOUT FIX (FULL WIDTH + RESPONSIVO)
+   Escopo: .page-solicitacoes, .page-solicitacao-detalhe
    =========================== */
 
-.page-solicitacoes__container{
-  width: min(1200px, calc(100% - 48px));
-  margin: 0 auto;
-}
-@media (max-width: 575.98px){
-  .page-solicitacoes__container { width: calc(100% - 24px); }
-}
-
-.page-solicitacoes .solicitacoes-header{
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:12px;
-  flex-wrap:wrap;
+.page-solicitacoes .solicitacoes-shell,
+.page-solicitacao-detalhe .solicitacoes-shell{
+  width: 100% !important;
+  max-width: none !important;         /* mata ilha central */
+  margin: 0 !important;
+  padding-left: clamp(12px, 2vw, 28px) !important;
+  padding-right: clamp(12px, 2vw, 28px) !important;
 }
 
 .page-solicitacoes .solicitacoes-surface{
-  border-radius:18px;
-  overflow:hidden;
-  border:1px solid rgba(15,23,42,.10);
-  box-shadow:0 18px 45px rgba(2,6,23,.08);
-  background:#fff;
-}
-.page-solicitacoes .solicitacoes-surface .table-responsive{ overflow-x:auto; }
-
-.page-solicitacoes--detalhe .solicitacao-grid{
-  display:grid;
-  grid-template-columns: 2fr 1fr;
-  gap:16px;
-  align-items:start;
-}
-@media (max-width: 991.98px){
-  .page-solicitacoes--detalhe .solicitacao-grid{ grid-template-columns: 1fr; }
-}
-
-.page-solicitacoes--detalhe .solicitacao-card{
-  border-radius:18px;
-  border:1px solid rgba(15,23,42,.10);
-  background:#fff;
-  box-shadow:0 18px 45px rgba(2,6,23,.08);
-  padding:16px;
-}
-
-.page-solicitacoes--detalhe .solicitacao-acoes{ display:flex; gap:10px; flex-wrap:wrap; }
-@media (max-width: 575.98px){
-  .page-solicitacoes--detalhe .solicitacao-acoes > *{ width:100%; }
-}
-
-html[data-theme="dark"] .page-solicitacoes .solicitacoes-surface,
-body[data-theme="dark"] .page-solicitacoes .solicitacoes-surface,
-body.dark .page-solicitacoes .solicitacoes-surface{
-  background: rgba(15,23,42,.70);
-  border: 1px solid rgba(255,255,255,.10);
-  box-shadow: 0 18px 45px rgba(0,0,0,.35);
-}
-html[data-theme="dark"] .page-solicitacoes--detalhe .solicitacao-card,
-body[data-theme="dark"] .page-solicitacoes--detalhe .solicitacao-card,
-body.dark .page-solicitacoes--detalhe .solicitacao-card{
-  background: rgba(15,23,42,.70);
-  border: 1px solid rgba(255,255,255,.10);
-  box-shadow: 0 18px 45px rgba(0,0,0,.35);
-}
-
-
-html[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-note,
-body[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-note,
-body.dark .page-solicitacoes-detalhe .solicitacao-note{
-  background: rgba(255,255,255,.06) !important;
-  border: 1px solid rgba(255,255,255,.12) !important;
-}
-
-html[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-textarea:-webkit-autofill,
-body[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-textarea:-webkit-autofill{
-  -webkit-text-fill-color: rgba(255,255,255,.92) !important;
-  transition: background-color 99999s ease-in-out 0s;
-}
-
-.page-solicitacoes-detalhe .solicitacao-actions .dash-btn{
-  border-radius: 14px !important;
-  font-weight: 900 !important;
-}
-
-/* ===========================
-   SOLICITACOES — DETALHE (PREMIUM V2)
-   escopo: .page-solicitacoes-detalhe
-   =========================== */
-.page-solicitacoes-detalhe .solicitacoes-detail-wrap{
-  max-width: 1280px !important;
-  margin: 0 auto !important;
-  padding: 10px 12px !important;
-}
-
-.page-solicitacoes-detalhe .solicitacoes-detail-header{
-  margin: 6px 0 14px 0 !important;
-}
-.page-solicitacoes-detalhe .solicitacoes-title{
-  font-weight: 950 !important;
-  letter-spacing: -0.02em !important;
-}
-
-.page-solicitacoes-detalhe .solicitacao-card,
-.page-solicitacoes-detalhe .solicitacao-actions{
+  width: 100% !important;
   border-radius: 18px !important;
+  overflow: hidden !important;
   border: 1px solid rgba(15,23,42,.10) !important;
   box-shadow: 0 18px 45px rgba(2,6,23,.08) !important;
   background: #fff !important;
-  padding: 16px !important;
 }
 
-.page-solicitacoes-detalhe .solicitacao-kv{
+.page-solicitacoes .solicitacoes-surface > .table-responsive{
+  width: 100% !important;
+  overflow-x: auto !important;
+}
+
+/* DETALHE: grid responsivo de verdade */
+.page-solicitacao-detalhe .solicitacao-grid{
   display: grid !important;
-  grid-template-columns: 1fr 1fr !important;
-  gap: 14px 16px !important;
-}
-.page-solicitacoes-detalhe .solicitacao-kv .kv{
-  min-width: 0 !important;
-}
-.page-solicitacoes-detalhe .solicitacao-kv .kv .k{
-  font-size: 12px !important;
-  font-weight: 900 !important;
-  letter-spacing: .08em !important;
-  text-transform: uppercase !important;
-  color: rgba(15,23,42,.60) !important;
-  margin-bottom: 4px !important;
-}
-.page-solicitacoes-detalhe .solicitacao-kv .kv .v{
-  font-size: 14px !important;
-  color: rgba(15,23,42,.92) !important;
-}
-.page-solicitacoes-detalhe .solicitacao-kv .kv.kv-full{
-  grid-column: 1 / -1 !important;
+  grid-template-columns: 1fr !important; /* mobile */
+  gap: 16px !important;
+  align-items: start !important;
 }
 
-@media (min-width: 992px){
-  .page-solicitacoes-detalhe .solicitacao-actions{
-    position: sticky !important;
-    top: 18px !important;
-    z-index: 5 !important;
+@media (min-width: 1100px){
+  .page-solicitacao-detalhe .solicitacao-grid{
+    grid-template-columns: minmax(520px, 2fr) minmax(360px, 1fr) !important;
   }
 }
 
-.page-solicitacoes-detalhe .solicitacao-textarea{
-  border-radius: 14px !important;
-  padding: 12px 12px !important;
-  border: 1px solid rgba(15,23,42,.18) !important;
-  background: rgba(255,255,255,.92) !important;
-}
-.page-solicitacoes-detalhe .solicitacao-textarea:focus{
-  outline: none !important;
-  box-shadow: 0 0 0 .2rem rgba(59,130,246,.18) !important;
-  border-color: rgba(59,130,246,.55) !important;
+.page-solicitacao-detalhe .solicitacao-col--main,
+.page-solicitacao-detalhe .solicitacao-col--side{
+  min-width: 0 !important; /* evita overflow/ilha */
 }
 
-.page-solicitacoes-detalhe .solicitacao-btn-approve{
-  border-radius: 14px !important;
-  font-weight: 900 !important;
-}
-.page-solicitacoes-detalhe .solicitacao-btn-deny{
-  border-radius: 14px !important;
-  font-weight: 900 !important;
-  background: transparent !important;
-  border: 1px solid rgba(239,68,68,.35) !important;
-  color: rgba(127,29,29,.92) !important;
-}
-.page-solicitacoes-detalhe .solicitacao-btn-deny:hover{
-  background: rgba(239,68,68,.08) !important;
-  border-color: rgba(239,68,68,.55) !important;
+.page-solicitacao-detalhe .solicitacao-col--side{
+  position: sticky !important;
+  top: 16px !important;
 }
 
-html[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-card,
-html[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-actions,
-body[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-card,
-body[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-actions,
-body.dark .page-solicitacoes-detalhe .solicitacao-card,
-body.dark .page-solicitacoes-detalhe .solicitacao-actions{
+/* Dark mode (escopado) */
+html[data-theme="dark"] .page-solicitacoes .solicitacoes-surface,
+body[data-theme="dark"] .page-solicitacoes .solicitacoes-surface,
+body.dark .page-solicitacoes .solicitacoes-surface{
   background: rgba(15,23,42,.70) !important;
   border: 1px solid rgba(255,255,255,.10) !important;
   box-shadow: 0 18px 45px rgba(0,0,0,.35) !important;
 }
 
-html[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-kv .kv .k,
-body[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-kv .kv .k,
-body.dark .page-solicitacoes-detalhe .solicitacao-kv .kv .k{
-  color: rgba(255,255,255,.62) !important;
+/* =========================================================
+   SOLICITAR ACESSO PUBLIC — PREMIUM
+   escopo: .page-solicitacoes-public
+   ========================================================= */
+.page-solicitacoes-public{
+  color: var(--dash-text, #0f172a);
 }
-html[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-kv .kv .v,
-body[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-kv .kv .v,
-body.dark .page-solicitacoes-detalhe .solicitacao-kv .kv .v{
-  color: rgba(255,255,255,.92) !important;
+.page-solicitacoes-public .dash-surface{
+  border-radius: 18px;
+  border: 1px solid rgba(15,23,42,.10);
+  box-shadow: 0 18px 45px rgba(2,6,23,.08);
 }
-
-html[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-textarea,
-body[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-textarea,
-body.dark .page-solicitacoes-detalhe .solicitacao-textarea{
-  background: rgba(2,6,23,.35) !important;
-  border: 1px solid rgba(255,255,255,.14) !important;
-  color: rgba(255,255,255,.92) !important;
+.page-solicitacoes-public label,
+.page-solicitacoes-public .form-label{
+  font-weight: 700;
+  color: rgba(15,23,42,.85);
 }
-html[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-textarea::placeholder,
-body[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-textarea::placeholder,
-body.dark .page-solicitacoes-detalhe .solicitacao-textarea::placeholder{
-  color: rgba(255,255,255,.55) !important;
+.page-solicitacoes-public .form-text{
+  color: rgba(15,23,42,.60);
 }
-
-@media (max-width: 575.98px){
-  .page-solicitacoes-detalhe .solicitacao-kv{
-    grid-template-columns: 1fr !important;
-  }
+.page-solicitacoes-public .text-danger{
+  color: #dc2626 !important;
 }
-
-/* ===========================
-   SOLICITACOES — DETALHE (PREMIUM V3: wide + left)
-   escopo: .page-solicitacoes-detalhe
-   =========================== */
-
-/* 1) Tira a “ilha central”: ancora à esquerda e usa largura útil */
-.page-solicitacoes-detalhe .solicitacoes-detail-wrap{
-  max-width: 1320px !important;   /* largura premium real */
-  width: 100% !important;
-  margin-left: 0 !important;      /* <- NÃO centraliza */
-  margin-right: auto !important;
-  padding: 10px 18px !important;  /* acompanha padrão das telas principais */
+.page-solicitacoes-public input,
+.page-solicitacoes-public select,
+.page-solicitacoes-public textarea{
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid rgba(15,23,42,.14);
+  background: #ffffff;
+  color: rgba(15,23,42,.95);
 }
-
-/* 2) Header acompanha o conteúdo e não fica “no meio do nada” */
-.page-solicitacoes-detalhe .solicitacoes-detail-header{
-  max-width: 1320px !important;
-  margin-left: 0 !important;
-  margin-right: auto !important;
-  padding: 0 18px !important;
+.page-solicitacoes-public textarea{
+  min-height: 120px;
+  height: auto;
 }
-
-/* 3) Grid com respiro e alinhamento de topo */
-.page-solicitacoes-detalhe .solicitacao-detail-grid{
-  align-items: flex-start !important;
+.page-solicitacoes-public input::placeholder,
+.page-solicitacoes-public textarea::placeholder{
+  color: rgba(15,23,42,.45);
 }
-
-/* 4) Cards mais “cheios” (menos cara de caixinha pequena) */
-.page-solicitacoes-detalhe .solicitacao-card{
-  padding: 18px !important;
+.page-solicitacoes-public input:focus-visible,
+.page-solicitacoes-public select:focus-visible,
+.page-solicitacoes-public textarea:focus-visible{
+  outline: 0;
+  box-shadow: 0 0 0 4px rgba(59,130,246,.22);
+  border-color: rgba(59,130,246,.55);
 }
-.page-solicitacoes-detalhe .solicitacao-actions{
-  padding: 16px !important;
+.page-solicitacoes-public select option{
+  background-color: #0b1220;
+  color: #e5e7eb;
 }
-
-/* 5) Sticky só no desktop e com topo consistente */
-@media (min-width: 992px){
-  .page-solicitacoes-detalhe .solicitacao-actions{
-    position: sticky !important;
-    top: 16px !important;
-  }
+.page-solicitacoes-public input:-webkit-autofill,
+.page-solicitacoes-public textarea:-webkit-autofill,
+.page-solicitacoes-public select:-webkit-autofill{
+  -webkit-text-fill-color: rgba(15,23,42,.95);
+  box-shadow: 0 0 0px 1000px #ffffff inset;
+  transition: background-color 9999s ease-in-out 0s;
 }
-
-/* 6) Ajuste fino: botões mais “enterprise” */
-.page-solicitacoes-detalhe .solicitacao-btn-approve,
-.page-solicitacoes-detalhe .solicitacao-btn-deny{
-  height: 42px !important;
-  border-radius: 14px !important;
+html[data-theme="dark"] .page-solicitacoes-public,
+body[data-theme="dark"] .page-solicitacoes-public,
+body.dark .page-solicitacoes-public{
+  color: #e5e7eb;
 }
-
-/* 7) Negar ainda mais premium (menos “alerta”) */
-.page-solicitacoes-detalhe .solicitacao-btn-deny{
-  background: transparent !important;
-  border: 1px solid rgba(239,68,68,.30) !important;
-  color: rgba(127,29,29,.92) !important;
+html[data-theme="dark"] .page-solicitacoes-public .dash-surface,
+body[data-theme="dark"] .page-solicitacoes-public .dash-surface,
+body.dark .page-solicitacoes-public .dash-surface{
+  background: rgba(15,23,42,.70);
+  border: 1px solid rgba(255,255,255,.10);
+  box-shadow: 0 18px 45px rgba(0,0,0,.35);
 }
-.page-solicitacoes-detalhe .solicitacao-btn-deny:hover{
-  background: rgba(239,68,68,.06) !important;
-  border-color: rgba(239,68,68,.45) !important;
+html[data-theme="dark"] .page-solicitacoes-public label,
+body[data-theme="dark"] .page-solicitacoes-public label,
+body.dark .page-solicitacoes-public label{
+  color: rgba(255,255,255,.88);
 }
-
-/* ===========================
-   RESPONSIVE CONTAINERS (GLOBAL)
-   Padrão único de largura por tela
-   =========================== */
-:root{
-  --dash-container-pad: 24px;
-  --dash-container-max: 1240px;   /* forms/detalhes */
-  --dash-container-wide: 1560px;  /* tabelas/listas */
+html[data-theme="dark"] .page-solicitacoes-public .form-text,
+body[data-theme="dark"] .page-solicitacoes-public .form-text,
+body.dark .page-solicitacoes-public .form-text{
+  color: rgba(255,255,255,.65);
 }
-
-.dash-container{
-  width: min(var(--dash-container-max), calc(100% - (var(--dash-container-pad) * 2)));
-  margin-inline: auto;
+html[data-theme="dark"] .page-solicitacoes-public input,
+html[data-theme="dark"] .page-solicitacoes-public select,
+html[data-theme="dark"] .page-solicitacoes-public textarea,
+body[data-theme="dark"] .page-solicitacoes-public input,
+body[data-theme="dark"] .page-solicitacoes-public select,
+body[data-theme="dark"] .page-solicitacoes-public textarea,
+body.dark .page-solicitacoes-public input,
+body.dark .page-solicitacoes-public select,
+body.dark .page-solicitacoes-public textarea{
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.16);
+  color: rgba(255,255,255,.92);
 }
-
-.dash-container--wide{
-  width: min(var(--dash-container-wide), calc(100% - (var(--dash-container-pad) * 2)));
-  margin-inline: auto;
+html[data-theme="dark"] .page-solicitacoes-public input::placeholder,
+body[data-theme="dark"] .page-solicitacoes-public input::placeholder,
+body.dark .page-solicitacoes-public input::placeholder{
+  color: rgba(255,255,255,.55);
 }
-
-@media (max-width: 576px){
-  :root{ --dash-container-pad: 14px; }
+html[data-theme="dark"] .page-solicitacoes-public select option,
+body[data-theme="dark"] .page-solicitacoes-public select option,
+body.dark .page-solicitacoes-public select option{
+  background-color: rgba(2,6,23,.98);
+  color: rgba(255,255,255,.92);
 }
-
-@media (min-width: 1600px){
-  :root{
-    --dash-container-max: 1320px;
-    --dash-container-wide: 1680px;
-  }
-}
-
-.page-solicitacoes{ width: 100%; }
-.page-solicitacoes .solicitacoes-surface{
-  width: 100% !important;
-  max-width: none !important;
-}
-
-/* ===========================
-   SOLICITAÇÕES — DETALHE (RESPONSIVO)
-   =========================== */
-.solicitacao-decisao textarea.form-control{
-  min-height: 160px;
-  resize: vertical;
-}
-
-@media (min-width: 992px){
-  .solicitacao-decisao{
-    position: sticky;
-    top: 18px; /* acompanha scroll sem ficar perdido */
-  }
-}
-
-/* Garantia “Negar” vermelho */
-.dash-btn-danger{
-  background: rgba(225,29,72,.10) !important;
-  border: 1px solid rgba(225,29,72,.45) !important;
-  color: #9f1239 !important;
-}
-body[data-theme="dark"] .dash-btn-danger,
-body.dark .dash-btn-danger{
-  background: rgba(225,29,72,.14) !important;
-  border: 1px solid rgba(225,29,72,.55) !important;
-  color: #fecdd3 !important;
+html[data-theme="dark"] .page-solicitacoes-public input:-webkit-autofill,
+html[data-theme="dark"] .page-solicitacoes-public textarea:-webkit-autofill,
+body[data-theme="dark"] .page-solicitacoes-public input:-webkit-autofill,
+body[data-theme="dark"] .page-solicitacoes-public textarea:-webkit-autofill{
+  -webkit-text-fill-color: rgba(255,255,255,.92);
+  box-shadow: 0 0 0px 1000px rgba(15,23,42,.70) inset;
 }
