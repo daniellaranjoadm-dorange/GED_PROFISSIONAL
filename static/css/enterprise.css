@@ -3011,3 +3011,66 @@ body[data-theme="dark"] .dash-surface form .form-text{
 .page-solicitacao .public-form-muted{
   color: var(--dash-muted);
 }
+
+/* ===========================
+   SOLICITACOES — DETALHE (PREMIUM)
+   escopo: .page-solicitacoes-detalhe
+   =========================== */
+.page-solicitacoes-detalhe .solicitacao-detail-grid{ align-items: start; }
+
+@media (min-width: 992px){
+  .page-solicitacoes-detalhe .solicitacao-actions{
+    position: sticky !important;
+    top: 18px !important;
+    z-index: 5;
+  }
+}
+
+.page-solicitacoes-detalhe .solicitacao-textarea{
+  border-radius: 14px !important;
+  padding: 12px 12px !important;
+  border: 1px solid rgba(15,23,42,.18) !important;
+  background: rgba(255,255,255,.92) !important;
+}
+.page-solicitacoes-detalhe .solicitacao-textarea:focus{
+  outline: none !important;
+  box-shadow: 0 0 0 .2rem rgba(59,130,246,.18) !important;
+  border-color: rgba(59,130,246,.55) !important;
+}
+
+.page-solicitacoes-detalhe .solicitacao-note{
+  border-radius: 14px !important;
+  background: rgba(15,23,42,.03) !important;
+  border: 1px solid rgba(15,23,42,.08) !important;
+}
+
+html[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-textarea,
+body[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-textarea,
+body.dark .page-solicitacoes-detalhe .solicitacao-textarea{
+  background: rgba(2,6,23,.35) !important;
+  border: 1px solid rgba(255,255,255,.14) !important;
+  color: rgba(255,255,255,.92) !important;
+}
+html[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-textarea::placeholder,
+body[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-textarea::placeholder,
+body.dark .page-solicitacoes-detalhe .solicitacao-textarea::placeholder{
+  color: rgba(255,255,255,.55) !important;
+}
+
+html[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-note,
+body[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-note,
+body.dark .page-solicitacoes-detalhe .solicitacao-note{
+  background: rgba(255,255,255,.06) !important;
+  border: 1px solid rgba(255,255,255,.12) !important;
+}
+
+html[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-textarea:-webkit-autofill,
+body[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-textarea:-webkit-autofill{
+  -webkit-text-fill-color: rgba(255,255,255,.92) !important;
+  transition: background-color 99999s ease-in-out 0s;
+}
+
+.page-solicitacoes-detalhe .solicitacao-actions .dash-btn{
+  border-radius: 14px !important;
+  font-weight: 900 !important;
+}
