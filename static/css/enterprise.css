@@ -2145,3 +2145,61 @@ body.page-medicao .medicao-select-opt.is-selected{
 body.page-medicao .medicao-select-opt:disabled{
   opacity: .45 !important;
 }
+
+
+/* ===== SOLICITA??ES DE ACESSO ? FIX BORDAS/TABELA (escopo) ===== */
+.page-solicitacoes-acesso .solicitacoes-surface{
+  border-radius: 18px !important;
+  overflow: hidden !important; /* mata cantos/linhas estranhas */
+  border: 1px solid rgba(15,23,42,.10) !important;
+  box-shadow: 0 12px 28px rgba(15,23,42,.08) !important;
+}
+
+.page-solicitacoes-acesso .solicitacoes-table-wrap{
+  margin: 0 !important;
+}
+
+.page-solicitacoes-acesso table.solicitacoes-table{
+  margin: 0 !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+.page-solicitacoes-acesso table.solicitacoes-table thead th{
+  background: rgba(15,23,42,.04) !important;
+  border-bottom: 1px solid rgba(15,23,42,.10) !important;
+}
+
+.page-solicitacoes-acesso table.solicitacoes-table td,
+.page-solicitacoes-acesso table.solicitacoes-table th{
+  border-color: rgba(15,23,42,.10) !important;
+}
+
+/* remove ?linha final dupla? */
+.page-solicitacoes-acesso table.solicitacoes-table tbody tr:last-child td{
+  border-bottom: 0 !important;
+}
+
+/* Dark mode */
+html[data-theme="dark"] .page-solicitacoes-acesso .solicitacoes-surface,
+body[data-theme="dark"] .page-solicitacoes-acesso .solicitacoes-surface,
+body.dark .page-solicitacoes-acesso .solicitacoes-surface{
+  border: 1px solid rgba(255,255,255,.10) !important;
+  box-shadow: 0 14px 32px rgba(0,0,0,.35) !important;
+}
+
+html[data-theme="dark"] .page-solicitacoes-acesso table.solicitacoes-table thead th,
+body[data-theme="dark"] .page-solicitacoes-acesso table.solicitacoes-table thead th,
+body.dark .page-solicitacoes-acesso table.solicitacoes-table thead th{
+  background: rgba(255,255,255,.06) !important;
+  border-bottom: 1px solid rgba(255,255,255,.10) !important;
+}
+
+html[data-theme="dark"] .page-solicitacoes-acesso table.solicitacoes-table td,
+html[data-theme="dark"] .page-solicitacoes-acesso table.solicitacoes-table th,
+body[data-theme="dark"] .page-solicitacoes-acesso table.solicitacoes-table td,
+body[data-theme="dark"] .page-solicitacoes-acesso table.solicitacoes-table th,
+body.dark .page-solicitacoes-acesso table.solicitacoes-table td,
+body.dark .page-solicitacoes-acesso table.solicitacoes-table th{
+  border-color: rgba(255,255,255,.10) !important;
+}

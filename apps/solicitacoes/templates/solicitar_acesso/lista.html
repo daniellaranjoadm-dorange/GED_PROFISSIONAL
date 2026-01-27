@@ -8,7 +8,7 @@
 {% url 'solicitacoes:listar_solicitacoes' as url_lista %}
 
 {% block content %}
-<div class="container-fluid py-3">
+<div class="container-fluid py-3 page-solicitacoes-acesso">
 
   {# Selo de debug para você confirmar que ESTE template está carregando #}
   {% if debug %}
@@ -41,9 +41,9 @@
     </div>
   </div>
 
-  <div class="dash-surface p-0">
-    <div class="table-responsive">
-      <table class="table table-hover table-sm align-middle dash-table">
+  <div class="dash-surface p-0 solicitacoes-surface">
+    <div class="table-responsive solicitacoes-table-wrap">
+      <table class="table table-hover table-sm align-middle dash-table solicitacoes-table">
         <thead>
           <tr>
             <th style="min-width:200px;">Nome</th>
