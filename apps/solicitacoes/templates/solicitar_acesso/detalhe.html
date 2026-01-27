@@ -23,7 +23,7 @@
       </div>
 
       <div class="row g-3 solicitacao-detail-grid">
-        <div class="col-12 col-lg-8">
+        <div class="col-12 col-lg-9">
           <div class="solicitacoes-surface solicitacao-card">
             <div class="solicitacao-kv">
               <div class="kv">
@@ -110,7 +110,7 @@
           </div>
         </div>
 
-        <div class="col-12 col-lg-4">
+        <div class="col-12 col-lg-3">
           <div class="solicitacoes-surface solicitacao-actions">
             <div class="d-flex align-items-center justify-content-between mb-2">
               <div class="fw-black solicitacao-actions-title">Decisão</div>
@@ -121,7 +121,7 @@
               {% csrf_token %}
 
               <label class="form-label solicitacao-label" for="id_observacao_admin">Observação do administrador</label>
-              <textarea id="id_observacao_admin" name="observacao" class="form-control solicitacao-textarea" rows="6"
+              <textarea id="id_observacao_admin" name="observacao" class="form-control solicitacao-textarea" rows="8"
                         placeholder="Ex.: Acesso liberado para o projeto X.">{{ solicitacao.observacao_admin|default_if_none:"" }}</textarea>
 
               <div class="d-grid gap-2 mt-3">
