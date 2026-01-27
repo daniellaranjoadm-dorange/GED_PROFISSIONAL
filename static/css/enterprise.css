@@ -2699,3 +2699,97 @@ body[data-theme="dark"] .page-solicitacoes-public textarea:-webkit-autofill{
   -webkit-text-fill-color: rgba(255,255,255,.92);
   box-shadow: 0 0 0px 1000px rgba(15,23,42,.70) inset;
 }
+
+/* ===========================
+   DASH CONTAINER UTILITIES
+   =========================== */
+.dash-container{
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.dash-container--wide{
+  max-width: 1400px;
+}
+
+/* ===========================
+   SOLICITACOES — DETALHE (PREMIUM)
+   Escopo: .page-solicitacoes--detalhe
+   =========================== */
+.page-solicitacoes--detalhe .solicitacoes-card{
+  border-radius: 18px;
+  box-shadow: 0 18px 45px rgba(2,6,23,.08);
+  border: 1px solid rgba(15,23,42,.10);
+  background: #ffffff;
+  padding: 16px;
+}
+
+.page-solicitacoes--detalhe .kv-grid{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 18px;
+}
+
+.page-solicitacoes--detalhe .kv-item--span2{
+  grid-column: 1 / -1;
+}
+
+.page-solicitacoes--detalhe .kv-k{
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  opacity: .68;
+  margin-bottom: 4px;
+}
+
+.page-solicitacoes--detalhe .kv-v{
+  font-weight: 800;
+  font-size: 14px;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+@media (max-width: 991.98px){
+  .page-solicitacoes--detalhe .kv-grid{
+    grid-template-columns: 1fr;
+  }
+}
+
+.page-solicitacoes--detalhe textarea{
+  width: 100%;
+  min-height: 180px;
+  resize: vertical;
+}
+
+.page-solicitacoes--detalhe .solicitacoes-actions{
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.page-solicitacoes--detalhe .solicitacoes-actions .dash-btn{
+  flex: 1 1 220px;
+}
+
+@media (max-width: 575.98px){
+  .page-solicitacoes--detalhe .solicitacoes-actions .dash-btn{
+    flex-basis: 100%;
+  }
+}
+
+html[data-theme="dark"] .page-solicitacoes--detalhe .solicitacoes-card,
+body[data-theme="dark"] .page-solicitacoes--detalhe .solicitacoes-card,
+body.dark .page-solicitacoes--detalhe .solicitacoes-card{
+  background: rgba(15,23,42,.70);
+  border: 1px solid rgba(255,255,255,.10);
+  box-shadow: 0 18px 45px rgba(0,0,0,.35);
+}
+
+html[data-theme="dark"] .page-solicitacoes--detalhe .kv-k,
+body[data-theme="dark"] .page-solicitacoes--detalhe .kv-k,
+body.dark .page-solicitacoes--detalhe .kv-k{
+  opacity: .75;
+}

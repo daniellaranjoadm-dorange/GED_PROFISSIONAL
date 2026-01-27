@@ -1,16 +1,18 @@
 {% extends "documentos/base.html" %}
 {% load static %}
 
-{% block title %}Detalhe da Solicitação{% endblock %}
+{% block title %}Detalhe da Solicita&ccedil;&atilde;o{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-3 page-solicitacao-detalhe">
+<div class="container-fluid py-3">
   {% url 'solicitacoes:listar_solicitacoes' as url_lista %}
-  <div class="solicitacoes-shell">
+  <div class="dash-container dash-container--wide page-solicitacoes page-solicitacoes--detalhe">
 
-    <div class="dash-header">
+    <div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-3">
       <div>
-        <h1 class="dash-title">Detalhe da Solicita&ccedil;&atilde;o</h1>
+        <h1 class="dash-title mb-1">
+          <i class="bi bi-clipboard-check me-2"></i> Detalhe da Solicita&ccedil;&atilde;o
+        </h1>
         <div class="dash-subtitle">Revise as informa&ccedil;&otilde;es e aprove ou negue.</div>
       </div>
 
@@ -19,28 +21,28 @@
       </a>
     </div>
 
-    <div class="solicitacao-grid">
-      <div class="solicitacao-col solicitacao-col--main">
-        <div class="dash-surface pad">
-          <div class="solicitacao-kv">
-            <div class="kv">
-              <div class="k">Nome</div>
-              <div class="v fw-bold">{{ solicitacao.nome|default:"-" }}</div>
+    <div class="row g-3 align-items-start solicitacoes-detalhe-grid">
+      <div class="col-12 col-xl-7">
+        <div class="dash-card solicitacoes-card solicitacoes-card--dados">
+          <div class="kv-grid">
+            <div class="kv-item">
+              <div class="kv-k">Nome</div>
+              <div class="kv-v">{{ solicitacao.nome|default:"-" }}</div>
             </div>
 
-            <div class="kv">
-              <div class="k">E-mail</div>
-              <div class="v fw-bold">{{ solicitacao.email|default:"-" }}</div>
+            <div class="kv-item">
+              <div class="kv-k">E-mail</div>
+              <div class="kv-v">{{ solicitacao.email|default:"-" }}</div>
             </div>
 
-            <div class="kv">
-              <div class="k">Setor</div>
-              <div class="v fw-bold">{% if solicitacao.setor %}{{ solicitacao.setor }}{% else %}-{% endif %}</div>
+            <div class="kv-item">
+              <div class="kv-k">Setor</div>
+              <div class="kv-v">{% if solicitacao.setor %}{{ solicitacao.setor }}{% else %}-{% endif %}</div>
             </div>
 
-            <div class="kv">
-              <div class="k">Status</div>
-              <div class="v">
+            <div class="kv-item">
+              <div class="kv-k">Status</div>
+              <div class="kv-v">
                 {% with st=solicitacao.get_status_display|default:solicitacao.status %}
                   {% with stl=st|lower %}
                     <span class="dash-badge
@@ -64,9 +66,9 @@
               </div>
             </div>
 
-            <div class="kv kv-full">
-              <div class="k">Motivo</div>
-              <div class="v">
+            <div class="kv-item kv-item--span2">
+              <div class="kv-k">Motivo</div>
+              <div class="kv-v">
                 {% if solicitacao.motivo %}
                   {{ solicitacao.motivo|linebreaks }}
                 {% elif solicitacao.mensagem %}
@@ -77,9 +79,9 @@
               </div>
             </div>
 
-            <div class="kv">
-              <div class="k">Data da Solicita&ccedil;&atilde;o</div>
-              <div class="v fw-bold">
+            <div class="kv-item">
+              <div class="kv-k">Data da Solicita&ccedil;&atilde;o</div>
+              <div class="kv-v">
                 {% if solicitacao.data_solicitacao %}
                   {{ solicitacao.data_solicitacao|date:"d/m/Y H:i" }}
                 {% elif solicitacao.data %}
@@ -88,9 +90,9 @@
               </div>
             </div>
 
-            <div class="kv">
-              <div class="k">Data da Decis&atilde;o</div>
-              <div class="v fw-bold">
+            <div class="kv-item">
+              <div class="kv-k">Data da Decis&atilde;o</div>
+              <div class="kv-v">
                 {% if solicitacao.data_decisao %}
                   {{ solicitacao.data_decisao|date:"d/m/Y H:i" }}
                 {% else %}-{% endif %}
@@ -98,35 +100,39 @@
             </div>
 
             {% if solicitacao.observacao_admin %}
-            <div class="kv kv-full">
-              <div class="k">Observa&ccedil;&atilde;o (Admin)</div>
-              <div class="v">{{ solicitacao.observacao_admin|linebreaks }}</div>
+            <div class="kv-item kv-item--span2">
+              <div class="kv-k">Observa&ccedil;&atilde;o (Admin)</div>
+              <div class="kv-v">{{ solicitacao.observacao_admin|linebreaks }}</div>
             </div>
             {% endif %}
           </div>
         </div>
       </div>
 
-      <div class="solicitacao-col solicitacao-col--side">
-        <form method="post" class="dash-surface pad solicitacao-decisao">
-          {% csrf_token %}
+      <div class="col-12 col-xl-5">
+        <div class="dash-card solicitacoes-card solicitacoes-card--decisao">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <div class="fw-bold">Decis&atilde;o</div>
+            <span class="dash-badge dash-badge-info"><i class="bi bi-shield-check"></i> Admin</span>
+          </div>
 
-          <div class="mb-3">
+          <form method="post">
+            {% csrf_token %}
             <label class="form-label fw-semibold" for="observacao">Observa&ccedil;&atilde;o do administrador</label>
             <textarea id="observacao" name="observacao" class="form-control" rows="6"
                       placeholder="Ex.: Acesso liberado para o projeto X.">{{ solicitacao.observacao_admin|default_if_none:"" }}</textarea>
-          </div>
 
-          <div class="d-grid gap-2">
-            <button name="acao" value="aprovar" class="dash-btn dash-btn-primary justify-content-center" type="submit">
-              <i class="bi bi-check2-circle"></i> Aprovar
-            </button>
+            <div class="solicitacoes-actions">
+              <button name="acao" value="aprovar" class="dash-btn dash-btn-primary" type="submit">
+                <i class="bi bi-check2-circle"></i> Aprovar
+              </button>
 
-            <button name="acao" value="negar" class="dash-btn dash-btn-danger justify-content-center" type="submit">
-              <i class="bi bi-x-circle"></i> Negar
-            </button>
-          </div>
-        </form>
+              <button name="acao" value="negar" class="dash-btn dash-btn-danger" type="submit">
+                <i class="bi bi-x-circle"></i> Negar
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
 
