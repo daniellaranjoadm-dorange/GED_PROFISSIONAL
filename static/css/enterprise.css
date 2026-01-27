@@ -2790,3 +2790,102 @@ body[data-theme="dark"] .page-lista-documentos table.dataTable tbody tr:nth-chil
 body.dark .page-lista-documentos table.dataTable tbody tr:nth-child(even){
   background: rgba(255,255,255,.03);
 }
+
+/* ===========================
+   PUBLIC FORMS — TOP5 (Solicitar Acesso)
+   Escopo: páginas públicas (dash-surface + body[data-theme])
+   =========================== */
+body[data-theme] .dash-surface form .form-label,
+body[data-theme] .dash-surface form label{
+  color: var(--dash-text, #0f172a) !important;
+  font-weight: 800 !important;
+}
+
+body[data-theme="dark"] .dash-surface form .form-label,
+body[data-theme="dark"] .dash-surface form label{
+  color: rgba(255,255,255,.92) !important;
+}
+
+body[data-theme] .dash-surface form input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+body[data-theme] .dash-surface form select,
+body[data-theme] .dash-surface form textarea{
+  width: 100% !important;
+  border-radius: 12px !important;
+  padding: 10px 12px !important;
+  border: 1px solid rgba(15,23,42,.14) !important;
+  background: rgba(255,255,255,.92) !important;
+  color: #0f172a !important;
+  transition: box-shadow .15s ease, border-color .15s ease, background .15s ease !important;
+}
+
+body[data-theme] .dash-surface form input::placeholder,
+body[data-theme] .dash-surface form textarea::placeholder{
+  color: rgba(15,23,42,.55) !important;
+  opacity: 1 !important;
+}
+
+body[data-theme] .dash-surface form input:focus,
+body[data-theme] .dash-surface form select:focus,
+body[data-theme] .dash-surface form textarea:focus{
+  outline: none !important;
+  border-color: rgba(59,130,246,.65) !important;
+  box-shadow: 0 0 0 4px rgba(59,130,246,.18) !important;
+  background: #fff !important;
+}
+
+body[data-theme="dark"] .dash-surface form input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+body[data-theme="dark"] .dash-surface form select,
+body[data-theme="dark"] .dash-surface form textarea{
+  border: 1px solid rgba(255,255,255,.14) !important;
+  background: rgba(15,23,42,.55) !important;
+  color: rgba(255,255,255,.92) !important;
+}
+
+body[data-theme="dark"] .dash-surface form input::placeholder,
+body[data-theme="dark"] .dash-surface form textarea::placeholder{
+  color: rgba(255,255,255,.55) !important;
+}
+
+body[data-theme="dark"] .dash-surface form select{
+  color-scheme: dark !important;
+}
+body[data-theme="dark"] .dash-surface form select option{
+  background: #0b1220 !important;
+  color: rgba(255,255,255,.92) !important;
+}
+
+body[data-theme] .dash-surface form input:-webkit-autofill,
+body[data-theme] .dash-surface form textarea:-webkit-autofill,
+body[data-theme] .dash-surface form select:-webkit-autofill{
+  -webkit-text-fill-color: #0f172a !important;
+  box-shadow: 0 0 0px 1000px rgba(255,255,255,.92) inset !important;
+  transition: background-color 9999s ease-in-out 0s !important;
+}
+body[data-theme="dark"] .dash-surface form input:-webkit-autofill,
+body[data-theme="dark"] .dash-surface form textarea:-webkit-autofill,
+body[data-theme="dark"] .dash-surface form select:-webkit-autofill{
+  -webkit-text-fill-color: rgba(255,255,255,.92) !important;
+  box-shadow: 0 0 0px 1000px rgba(15,23,42,.55) inset !important;
+}
+
+body[data-theme="dark"] .dash-surface form .text-danger{
+  color: #ff6b6b !important;
+}
+body[data-theme="dark"] .dash-surface form .form-text{
+  color: rgba(255,255,255,.62) !important;
+}
+
+/* compat: classes de página públicas */
+.page-solicitacoes-public .public-form-title,
+.page-solicitacao .public-form-title{
+  font-size: 1.6rem;
+}
+.page-solicitacoes-public .public-success-icon i,
+.page-solicitacao .public-success-icon i{
+  font-size: 2.6rem;
+  color: var(--dash-accent);
+}
+.page-solicitacoes-public .public-form-muted,
+.page-solicitacao .public-form-muted{
+  color: var(--dash-muted);
+}
