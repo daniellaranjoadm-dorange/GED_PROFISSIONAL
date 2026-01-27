@@ -2203,3 +2203,148 @@ body.dark .page-solicitacoes-acesso table.solicitacoes-table td,
 body.dark .page-solicitacoes-acesso table.solicitacoes-table th{
   border-color: rgba(255,255,255,.10) !important;
 }
+
+/* ===========================
+   SOLICITA??ES ? LISTA (FIX BORDAS)
+   =========================== */
+.page-solicitacoes .solicitacoes-surface{
+  border-radius: 18px;           /* acompanha o padr?o enterprise */
+  overflow: hidden;              /* corta quinas da tabela */
+  border: 1px solid rgba(15, 23, 42, .10);
+  box-shadow: 0 18px 45px rgba(2, 6, 23, .08);
+  background: var(--dash-surface, #ffffff);
+}
+
+/* o wrapper do bootstrap pode ?vazar? bordas ? garantimos recorte */
+.page-solicitacoes .solicitacoes-surface > .table-responsive{
+  border-radius: inherit;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* tabela sem ?double borders? e com header clean */
+.page-solicitacoes table.dash-table{
+  margin: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+/* header com linha inferior ?nica e sem borda extra no topo */
+.page-solicitacoes table.dash-table thead th{
+  background: rgba(148, 163, 184, .10);
+  border-bottom: 1px solid rgba(148, 163, 184, .22);
+  border-top: none !important;
+  padding: 12px 14px;
+  font-size: 12px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+/* corpo da tabela: separadores suaves, sem ?vazar? nos cantos */
+.page-solicitacoes table.dash-table tbody td{
+  border-top: none;
+  border-bottom: 1px solid rgba(148, 163, 184, .18);
+  padding: 12px 14px;
+}
+
+/* ?ltima linha sem ?borda sobrando? */
+.page-solicitacoes table.dash-table tbody tr:last-child td{
+  border-bottom: none;
+}
+
+/* hover sutil (n?o altera outras telas) */
+.page-solicitacoes table.dash-table.table-hover tbody tr:hover{
+  background: rgba(59, 130, 246, .06);
+}
+
+/* garantir que o bot?o da coluna A??es n?o encoste e n?o ?quebre? borda */
+.page-solicitacoes table.dash-table td.text-end .dash-btn{
+  white-space: nowrap;
+}
+
+/* ===========================
+   SOLICITA??ES ? LISTA (POLISH PREMIUM)
+   Escopo: .page-solicitacoes
+   =========================== */
+.page-solicitacoes .dash-surface,
+.page-solicitacoes .solicitacoes-surface{
+  border-radius: 18px !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(15,23,42,.10) !important;
+  box-shadow: 0 18px 45px rgba(2,6,23,.08) !important;
+  background: #ffffff !important;
+}
+
+.page-solicitacoes .table-responsive{
+  border-radius: inherit !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+}
+
+/* tabela */
+.page-solicitacoes table.dash-table{
+  margin: 0 !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+.page-solicitacoes table.dash-table thead th{
+  background: rgba(15,23,42,.04) !important;
+  border-bottom: 1px solid rgba(15,23,42,.10) !important;
+  font-weight: 900 !important;
+  font-size: 12px !important;
+  letter-spacing: .08em !important;
+  text-transform: uppercase !important;
+  padding: 12px 14px !important;
+}
+
+.page-solicitacoes table.dash-table tbody td{
+  border-bottom: 1px solid rgba(15,23,42,.08) !important;
+  padding: 12px 14px !important;
+}
+
+.page-solicitacoes table.dash-table tbody tr:last-child td{
+  border-bottom: 0 !important;
+}
+
+.page-solicitacoes table.dash-table.table-hover tbody tr:hover{
+  background: rgba(59,130,246,.06) !important;
+}
+
+/* bot?o a??o ?Abrir? n?o quebrar layout */
+.page-solicitacoes td.text-end .dash-btn{
+  white-space: nowrap !important;
+}
+
+/* bot?es do topo mais ?enterprise? */
+.page-solicitacoes .page-actions .btn,
+.page-solicitacoes .btn.btn-sm{
+  border-radius: 12px !important;
+  font-weight: 900 !important;
+  padding: 8px 12px !important;
+}
+
+/* DARK MODE */
+html[data-theme="dark"] .page-solicitacoes .dash-surface,
+html[data-theme="dark"] .page-solicitacoes .solicitacoes-surface,
+body[data-theme="dark"] .page-solicitacoes .dash-surface,
+body[data-theme="dark"] .page-solicitacoes .solicitacoes-surface,
+body.dark .page-solicitacoes .dash-surface,
+body.dark .page-solicitacoes .solicitacoes-surface{
+  background: rgba(15,23,42,.70) !important;
+  border: 1px solid rgba(255,255,255,.10) !important;
+  box-shadow: 0 18px 45px rgba(0,0,0,.35) !important;
+}
+
+html[data-theme="dark"] .page-solicitacoes table.dash-table thead th,
+body[data-theme="dark"] .page-solicitacoes table.dash-table thead th,
+body.dark .page-solicitacoes table.dash-table thead th{
+  background: rgba(255,255,255,.06) !important;
+  border-bottom: 1px solid rgba(255,255,255,.10) !important;
+}
+
+html[data-theme="dark"] .page-solicitacoes table.dash-table tbody td,
+body[data-theme="dark"] .page-solicitacoes table.dash-table tbody td,
+body.dark .page-solicitacoes table.dash-table tbody td{
+  border-bottom: 1px solid rgba(255,255,255,.08) !important;
+}
