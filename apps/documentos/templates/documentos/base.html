@@ -408,5 +408,92 @@ function setLanguage(lang) {
 </script>
 
 {% block extra_js %}{% endblock %}
+<script>
+(function(){
+  function qs(sel){ return document.querySelector(sel); }
+  function px(n){ return (n == null) ? '-' : Math.round(n) + 'px'; }
+
+  function measure(){
+    const docEl = document.documentElement;
+    const body = document.body;
+
+    const candidates = [
+      ['header/topbar', qs('.topbar') || qs('header') || qs('.navbar')],
+      ['main', qs('main')],
+      ['page-area', qs('.page-area')],
+      ['ds-page', qs('.ds-page')],
+      ['container-fluid', qs('.container-fluid')],
+      ['container', qs('.container')],
+      ['dash-container', qs('.dash-container')],
+      ['content-area', qs('.content-area') || qs('.content')],
+    ].filter(x => x[1]);
+
+    const rows = candidates.map(([name, el]) => ({
+      name,
+      width: Math.round(el.getBoundingClientRect().width),
+      left: Math.round(el.getBoundingClientRect().left),
+      right: Math.round(el.getBoundingClientRect().right),
+      class: (el.className || '').toString().slice(0,120)
+    }));
+
+    console.groupCollapsed('%cLAYOUT WIDTH TRACER', 'background:#111827;color:#ffd28a;padding:2px 6px;border-radius:6px');
+    console.log('location:', location.pathname + location.search);
+    console.log('window.innerWidth:', window.innerWidth, 'docEl.clientWidth:', docEl.clientWidth, 'body.clientWidth:', body.clientWidth);
+    console.table(rows);
+    console.groupEnd();
+
+    let bar = document.getElementById('layout-debug-bar');
+    if(!bar){
+      bar = document.createElement('div');
+      bar.id = 'layout-debug-bar';
+      document.body.appendChild(bar);
+    }
+    const w = (label, el) => el ? px(el.getBoundingClientRect().width) : '-';
+    bar.innerHTML = `
+      <div class="row">
+        <span class="pill"><b>URL</b> <span class="muted">${location.pathname}</span></span>
+        <span class="pill"><b>win</b> ${px(window.innerWidth)}</span>
+        <span class="pill"><b>doc</b> ${px(docEl.clientWidth)}</span>
+        <span class="pill"><b>body</b> ${px(body.clientWidth)}</span>
+        <span class="pill"><b>topbar</b> ${w('topbar', qs('.topbar') || qs('header') || qs('.navbar'))}</span>
+        <span class="pill"><b>main</b> ${w('main', qs('main'))}</span>
+        <span class="pill"><b>.page-area</b> ${w('page-area', qs('.page-area'))}</span>
+        <span class="pill"><b>.container-fluid</b> ${w('container-fluid', qs('.container-fluid'))}</span>
+        <span class="pill"><b>.ds-page</b> ${w('ds-page', qs('.ds-page'))}</span>
+        <span class="pill muted">toggle: Alt+L</span>
+      </div>
+    `;
+  }
+
+  function enable(){
+    document.body.classList.add('debug-layout');
+    localStorage.setItem('debugLayout', '1');
+    measure();
+  }
+  function disable(){
+    document.body.classList.remove('debug-layout');
+    localStorage.removeItem('debugLayout');
+    const bar = document.getElementById('layout-debug-bar');
+    if(bar) bar.remove();
+  }
+  function isEnabled(){
+    return localStorage.getItem('debugLayout') === '1' || new URLSearchParams(location.search).has('debug');
+  }
+
+  window.addEventListener('keydown', function(e){
+    if(e.altKey && (e.key === 'l' || e.key === 'L')){
+      e.preventDefault();
+      if(document.body.classList.contains('debug-layout')) disable();
+      else enable();
+    }
+  });
+
+  window.addEventListener('resize', function(){
+    if(document.body.classList.contains('debug-layout')) measure();
+  });
+
+  if(isEnabled()) enable();
+})();
+</script>
 </body>
 </html>

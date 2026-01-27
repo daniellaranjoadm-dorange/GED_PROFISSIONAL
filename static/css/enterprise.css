@@ -3393,3 +3393,58 @@ body.dark .page-solicitacoes-detalhe .solicitacao-textarea::placeholder{
   background: rgba(239,68,68,.06) !important;
   border-color: rgba(239,68,68,.45) !important;
 }
+
+/* ===========================
+   DEBUG LAYOUT WIDTH TRACER
+   Ativa com: body.debug-layout
+   =========================== */
+body.debug-layout *{
+  outline: 1px dashed rgba(255, 165, 0, 0.18);
+}
+
+body.debug-layout .page-area,
+body.debug-layout main,
+body.debug-layout .container,
+body.debug-layout .container-fluid,
+body.debug-layout .ds-page,
+body.debug-layout .dash-container,
+body.debug-layout .content,
+body.debug-layout .content-area{
+  outline: 2px solid rgba(0, 128, 255, 0.55) !important;
+}
+
+body.debug-layout .topbar,
+body.debug-layout header,
+body.debug-layout .navbar{
+  outline: 2px solid rgba(0, 255, 170, 0.55) !important;
+}
+
+body.debug-layout #layout-debug-bar{
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 99999;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font: 12px/1.35 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  background: rgba(10, 16, 28, 0.92);
+  color: #fff;
+  box-shadow: 0 18px 45px rgba(0,0,0,.35);
+  border: 1px solid rgba(255,255,255,.12);
+  backdrop-filter: blur(8px);
+}
+body.debug-layout #layout-debug-bar b{ color: #ffd28a; }
+body.debug-layout #layout-debug-bar .muted{ opacity: .75; }
+body.debug-layout #layout-debug-bar .row{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  align-items: center;
+}
+body.debug-layout #layout-debug-bar .pill{
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.10);
+}
