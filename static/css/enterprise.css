@@ -2457,6 +2457,128 @@ body.dark .page-solicitacoes .solicitacoes-surface .table-hover tbody tr:hover{
   background: rgba(59,130,246,.10) !important;
 }
 
+/* ===========================
+   CROSS-BROWSER HARDENING
+   (Chrome/Edge/Win) — SAFE
+   =========================== */
+
+/* evita layout shift quando aparece scrollbar (Edge/Chrome) */
+html { scrollbar-gutter: stable; }
+.table-responsive { scrollbar-gutter: stable both-edges; }
+
+/* SELECT/OPTION no DARK — evita dropdown branco e texto sumindo */
+html[data-theme="dark"] select.form-select,
+body[data-theme="dark"] select.form-select,
+body.dark select.form-select,
+html[data-theme="dark"] select.form-control,
+body[data-theme="dark"] select.form-control,
+body.dark select.form-control{
+  background-color: rgba(15,23,42,.72) !important;
+  color: rgba(255,255,255,.92) !important;
+  border: 1px solid rgba(255,255,255,.14) !important;
+}
+
+html[data-theme="dark"] select.form-select option,
+body[data-theme="dark"] select.form-select option,
+body.dark select.form-select option,
+html[data-theme="dark"] select.form-control option,
+body[data-theme="dark"] select.form-control option,
+body.dark select.form-control option{
+  background-color: #0b1220 !important;
+  color: rgba(255,255,255,.92) !important;
+}
+
+/* ===========================
+   SOLICITAÇÕES — PREMIUM (TOP-5)
+   escopo: .page-solicitacoes
+   =========================== */
+.page-solicitacoes{
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.page-solicitacoes .solicitacoes-surface{
+  border-radius: 18px !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(15,23,42,.10) !important;
+  box-shadow: 0 18px 45px rgba(2,6,23,.08) !important;
+  background: #ffffff !important;
+  background-clip: padding-box !important;
+}
+
+.page-solicitacoes .solicitacoes-surface > .table-responsive{
+  border-radius: inherit !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+}
+
+/* tabela previsível em qualquer browser */
+.page-solicitacoes table.dash-table{
+  width: 100% !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  table-layout: fixed !important;
+}
+
+.page-solicitacoes table.dash-table thead th{
+  background: rgba(15,23,42,.04) !important;
+  border-bottom: 1px solid rgba(15,23,42,.12) !important;
+  border-top: none !important;
+  font-weight: 900 !important;
+  font-size: 12px !important;
+  letter-spacing: .08em !important;
+  text-transform: uppercase !important;
+  padding: 12px 14px !important;
+}
+
+.page-solicitacoes table.dash-table tbody td{
+  border-bottom: 1px solid rgba(15,23,42,.08) !important;
+  padding: 12px 14px !important;
+  vertical-align: middle !important;
+  line-height: 1.25 !important;
+}
+
+.page-solicitacoes table.dash-table tbody tr:last-child td{
+  border-bottom: none !important;
+}
+
+.page-solicitacoes .table-hover tbody tr:hover{
+  background: rgba(59,130,246,.06) !important;
+}
+
+.page-solicitacoes td:last-child,
+.page-solicitacoes td.text-end{
+  white-space: nowrap !important;
+}
+
+/* DARK */
+html[data-theme="dark"] .page-solicitacoes .solicitacoes-surface,
+body[data-theme="dark"] .page-solicitacoes .solicitacoes-surface,
+body.dark .page-solicitacoes .solicitacoes-surface{
+  background: rgba(15,23,42,.70) !important;
+  border: 1px solid rgba(255,255,255,.10) !important;
+  box-shadow: 0 18px 45px rgba(0,0,0,.35) !important;
+}
+
+html[data-theme="dark"] .page-solicitacoes table.dash-table thead th,
+body[data-theme="dark"] .page-solicitacoes table.dash-table thead th,
+body.dark .page-solicitacoes table.dash-table thead th{
+  background: rgba(255,255,255,.06) !important;
+  border-bottom: 1px solid rgba(255,255,255,.12) !important;
+}
+
+html[data-theme="dark"] .page-solicitacoes table.dash-table tbody td,
+body[data-theme="dark"] .page-solicitacoes table.dash-table tbody td,
+body.dark .page-solicitacoes table.dash-table tbody td{
+  border-bottom: 1px solid rgba(255,255,255,.08) !important;
+}
+
+html[data-theme="dark"] .page-solicitacoes .table-hover tbody tr:hover,
+body[data-theme="dark"] .page-solicitacoes .table-hover tbody tr:hover,
+body.dark .page-solicitacoes .table-hover tbody tr:hover{
+  background: rgba(59,130,246,.10) !important;
+}
+
 /* =========================================================
    SOLICITAR ACESSO PUBLIC — PREMIUM
    escopo: .page-solicitacoes-public
