@@ -3,7 +3,11 @@
 
 {% block body_attrs %}class="page-medicao"{% endblock %}
 
-{% block title %}Medi&ccedil;&atilde;o &ndash; GED Profissional{% endblock %}
+{% block title %}Medi&ccedil;&atilde;o &ndash; GED Profissional
+
+
+
+{% endblock %}
 
 {% block content %}
 <div class="medicao-page">
@@ -24,62 +28,110 @@
     <form method="get" class="medicao-filtros medicao-form">
         <div>
             <label class="form-label">Projeto</label>
-            <select class="form-select" name="projeto">
+            <select class="form-select medicao-native-select" name="projeto" data-medicao-native="1">
                 <option value="">Todos</option>
                 {% for p in projetos %}
                     <option value="{{ p }}" {% if filtros.projeto == p %}selected{% endif %}>{{ p }}</option>
                 {% endfor %}
             </select>
+<div class="medicao-select" data-medicao-select>
+  <button type="button" class="medicao-select-btn" aria-haspopup="listbox" aria-expanded="false">
+    <span class="medicao-select-value" data-medicao-value>Selecionar</span>
+    <span class="medicao-select-caret" aria-hidden="true"></span>
+  </button>
+  <div class="medicao-select-pop" role="listbox" tabindex="-1"></div>
+</div>
+
         </div>
 
         <div>
             <label class="form-label">Disciplina</label>
-            <select class="form-select" name="disciplina">
+            <select class="form-select medicao-native-select" name="disciplina" data-medicao-native="1">
                 <option value="">Todos</option>
                 {% for d in disciplinas %}
                     <option value="{{ d }}" {% if filtros.disciplina == d %}selected{% endif %}>{{ d }}</option>
                 {% endfor %}
             </select>
+<div class="medicao-select" data-medicao-select>
+  <button type="button" class="medicao-select-btn" aria-haspopup="listbox" aria-expanded="false">
+    <span class="medicao-select-value" data-medicao-value>Selecionar</span>
+    <span class="medicao-select-caret" aria-hidden="true"></span>
+  </button>
+  <div class="medicao-select-pop" role="listbox" tabindex="-1"></div>
+</div>
+
         </div>
 
         <div>
             <label class="form-label">Fase</label>
-            <select class="form-select" name="fase">
+            <select class="form-select medicao-native-select" name="fase" data-medicao-native="1">
                 <option value="">Todos</option>
                 {% for f in fases %}
                     <option value="{{ f }}" {% if filtros.fase == f %}selected{% endif %}>{{ f }}</option>
                 {% endfor %}
             </select>
+<div class="medicao-select" data-medicao-select>
+  <button type="button" class="medicao-select-btn" aria-haspopup="listbox" aria-expanded="false">
+    <span class="medicao-select-value" data-medicao-value>Selecionar</span>
+    <span class="medicao-select-caret" aria-hidden="true"></span>
+  </button>
+  <div class="medicao-select-pop" role="listbox" tabindex="-1"></div>
+</div>
+
         </div>
 
         <div>
             <label class="form-label">Tipo Doc</label>
-            <select class="form-select" name="tipo_doc">
+            <select class="form-select medicao-native-select" name="tipo_doc" data-medicao-native="1">
                 <option value="">Todos</option>
                 {% for t in tipos %}
                     <option value="{{ t }}" {% if filtros.tipo_doc == t %}selected{% endif %}>{{ t }}</option>
                 {% endfor %}
             </select>
+<div class="medicao-select" data-medicao-select>
+  <button type="button" class="medicao-select-btn" aria-haspopup="listbox" aria-expanded="false">
+    <span class="medicao-select-value" data-medicao-value>Selecionar</span>
+    <span class="medicao-select-caret" aria-hidden="true"></span>
+  </button>
+  <div class="medicao-select-pop" role="listbox" tabindex="-1"></div>
+</div>
+
         </div>
 
         <div>
             <label class="form-label">Status Documento</label>
-            <select class="form-select" name="status_documento">
+            <select class="form-select medicao-native-select" name="status_documento" data-medicao-native="1">
                 <option value="">Todos</option>
                 {% for s in status_docs %}
                     <option value="{{ s }}" {% if filtros.status_documento == s %}selected{% endif %}>{{ s }}</option>
                 {% endfor %}
             </select>
+<div class="medicao-select" data-medicao-select>
+  <button type="button" class="medicao-select-btn" aria-haspopup="listbox" aria-expanded="false">
+    <span class="medicao-select-value" data-medicao-value>Selecionar</span>
+    <span class="medicao-select-caret" aria-hidden="true"></span>
+  </button>
+  <div class="medicao-select-pop" role="listbox" tabindex="-1"></div>
+</div>
+
         </div>
 
         <div>
             <label class="form-label">Status Emissão</label>
-            <select class="form-select" name="status_emissao">
+            <select class="form-select medicao-native-select" name="status_emissao" data-medicao-native="1">
                 <option value="">Todos</option>
                 {% for s in status_emissoes %}
                     <option value="{{ s }}" {% if filtros.status_emissao == s %}selected{% endif %}>{{ s }}</option>
                 {% endfor %}
             </select>
+<div class="medicao-select" data-medicao-select>
+  <button type="button" class="medicao-select-btn" aria-haspopup="listbox" aria-expanded="false">
+    <span class="medicao-select-value" data-medicao-value>Selecionar</span>
+    <span class="medicao-select-caret" aria-hidden="true"></span>
+  </button>
+  <div class="medicao-select-pop" role="listbox" tabindex="-1"></div>
+</div>
+
         </div>
 
         <div>
@@ -279,6 +331,15 @@
 
 
 
+
+
+
+
+
+
+
+
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
 (function () {
@@ -286,24 +347,15 @@
     // aceita "US$ 979.00", "USS 979.00", "R$ 1.234,56", etc.
     if (!txt) return 0;
     const s = String(txt).replace(/\s+/g, ' ').trim();
-
-    // pega s? d?gitos, separadores e sinal
     const cleaned = s.replace(/[^\d.,-]/g, '');
-
-    // heur?stica:
-    // - se tiver v?rgula e ponto, assume formato "1.234,56" -> remove pontos e troca v?rgula por ponto
-    // - se s? tiver v?rgula, assume decimal -> troca v?rgula por ponto
-    // - se s? tiver ponto, assume decimal -> mant?m
     let n = cleaned;
     const hasComma = n.indexOf(',') !== -1;
     const hasDot = n.indexOf('.') !== -1;
-
     if (hasComma && hasDot) {
       n = n.replace(/\./g, '').replace(',', '.');
     } else if (hasComma && !hasDot) {
       n = n.replace(',', '.');
     }
-
     const val = Number(n);
     return Number.isFinite(val) ? val : 0;
   }
@@ -318,7 +370,6 @@
     const table = document.querySelector('#medicao-resumo table.medicao-table');
     if (!table) return [];
     const rows = Array.from(table.querySelectorAll('tbody tr'));
-    // remove total geral
     return rows.filter(tr => {
       if (tr.classList.contains('total')) return false;
       const first = tr.querySelector('td');
@@ -333,25 +384,15 @@
     const labels = [];
     const totalsDocs = [];
     const valoresUSD = [];
-
     rows.forEach(tr => {
       const tds = Array.from(tr.querySelectorAll('td'));
       if (tds.length < 5) return;
-
-      // Colunas esperadas pelo seu layout:
-      // 0 Tipo Doc
-      // 1 Total
-      // 2 Emitidos
-      // 3 Nao Recebidos
-      // 4 Valor Emitidos (USD)
       const tipo = (tds[0]?.textContent || '').trim();
       if (!tipo) return;
-
       labels.push(tipo);
       totalsDocs.push(parseIntSafe(tds[1]?.textContent));
       valoresUSD.push(parseMoneyToNumber(tds[4]?.textContent));
     });
-
     return { labels, totalsDocs, valoresUSD };
   }
 
@@ -380,24 +421,14 @@
     const c1 = ensureCanvas('medicaoChartTotais');
     const c2 = ensureCanvas('medicaoChartValoresUSD');
     if (!c1 || !c2) return;
-
     const { labels, totalsDocs, valoresUSD } = extractData();
     if (!labels.length) return;
-
     if (typeof Chart === 'undefined') return;
-
     destroyOldCharts();
 
-    // Totais por Tipo (docs)
     window.__medicaoCharts.totais = new Chart(c1.getContext('2d'), {
       type: 'bar',
-      data: {
-        labels: labels,
-        datasets: [{
-          label: 'Total (docs)',
-          data: totalsDocs
-        }]
-      },
+      data: { labels, datasets: [{ label: 'Total (docs)', data: totalsDocs }] },
       options: {
         responsive: true,
         maintainAspectRatio: false,
@@ -414,29 +445,15 @@
           }
         },
         scales: {
-          x: {
-            grid: { color: MEDICAO_CHART_THEME.grid },
-            ticks: { color: MEDICAO_CHART_THEME.ticks }
-          },
-          y: {
-            beginAtZero: true,
-            grid: { color: MEDICAO_CHART_THEME.grid },
-            ticks: { color: MEDICAO_CHART_THEME.ticks }
-          }
+          x: { grid: { color: MEDICAO_CHART_THEME.grid }, ticks: { color: MEDICAO_CHART_THEME.ticks } },
+          y: { beginAtZero: true, grid: { color: MEDICAO_CHART_THEME.grid }, ticks: { color: MEDICAO_CHART_THEME.ticks } }
         }
       }
     });
 
-    // Valores Emitidos USD por Tipo
     window.__medicaoCharts.valoresUSD = new Chart(c2.getContext('2d'), {
       type: 'bar',
-      data: {
-        labels: labels,
-        datasets: [{
-          label: 'Valor Emitidos (USD)',
-          data: valoresUSD
-        }]
-      },
+      data: { labels, datasets: [{ label: 'Valor Emitidos (USD)', data: valoresUSD }] },
       options: {
         responsive: true,
         maintainAspectRatio: false,
@@ -453,21 +470,107 @@
           }
         },
         scales: {
-          x: {
-            grid: { color: MEDICAO_CHART_THEME.grid },
-            ticks: { color: MEDICAO_CHART_THEME.ticks }
-          },
-          y: {
-            beginAtZero: true,
-            grid: { color: MEDICAO_CHART_THEME.grid },
-            ticks: { color: MEDICAO_CHART_THEME.ticks }
-          }
+          x: { grid: { color: MEDICAO_CHART_THEME.grid }, ticks: { color: MEDICAO_CHART_THEME.ticks } },
+          y: { beginAtZero: true, grid: { color: MEDICAO_CHART_THEME.grid }, ticks: { color: MEDICAO_CHART_THEME.ticks } }
         }
       }
     });
   }
 
-  // roda quando DOM pronto
+  function closeAll(except){
+    document.querySelectorAll('.medicao-select.is-open').forEach(el=>{
+      if(except && el===except) return;
+      el.classList.remove('is-open');
+      const btn = el.querySelector('.medicao-select-btn');
+      if(btn) btn.setAttribute('aria-expanded','false');
+    });
+  }
+
+  function build(select){
+    const wrap = select.nextElementSibling;
+    if(!wrap || !wrap.matches('.medicao-select[data-medicao-select]')) return;
+
+    const btn = wrap.querySelector('.medicao-select-btn');
+    const pop = wrap.querySelector('.medicao-select-pop');
+    const valueEl = wrap.querySelector('[data-medicao-value]');
+
+    pop.innerHTML = '';
+    const opts = Array.from(select.options || []);
+    opts.forEach((o)=>{
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'medicao-select-opt';
+      item.setAttribute('role','option');
+      item.dataset.value = o.value;
+      item.textContent = o.textContent || o.label || '';
+      if(o.disabled) item.disabled = true;
+      if(select.value === o.value) item.classList.add('is-selected');
+      item.addEventListener('click', ()=>{
+        select.value = o.value;
+        pop.querySelectorAll('.medicao-select-opt').forEach(x=>x.classList.remove('is-selected'));
+        item.classList.add('is-selected');
+        valueEl.textContent = item.textContent;
+        closeAll();
+      });
+      pop.appendChild(item);
+    });
+
+    const current = opts.find(o=>o.value===select.value) || opts[0];
+    valueEl.textContent = current ? (current.textContent || current.label || 'Selecionar') : 'Selecionar';
+
+    btn.addEventListener('click', ()=>{
+      const isOpen = wrap.classList.contains('is-open');
+      if(isOpen){
+        wrap.classList.remove('is-open');
+        btn.setAttribute('aria-expanded','false');
+      } else {
+        closeAll(wrap);
+        wrap.classList.add('is-open');
+        btn.setAttribute('aria-expanded','true');
+        setTimeout(()=>pop.focus(), 0);
+      }
+    });
+
+    btn.addEventListener('keydown', (e)=>{
+      if(e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' '){
+        e.preventDefault();
+        btn.click();
+      }
+    });
+
+    pop.addEventListener('keydown', (e)=>{
+      const items = Array.from(pop.querySelectorAll('.medicao-select-opt:not(:disabled)'));
+      const i = items.findIndex(x=>x.classList.contains('is-selected'));
+      if(e.key === 'Escape'){ e.preventDefault(); closeAll(); btn.focus(); return; }
+      if(!items.length) return;
+      if(e.key === 'ArrowDown'){
+        e.preventDefault();
+        const next = items[Math.min(items.length-1, Math.max(0, i+1))];
+        next.click(); next.focus();
+      } else if(e.key === 'ArrowUp'){
+        e.preventDefault();
+        const prev = items[Math.max(0, i-1)];
+        prev.click(); prev.focus();
+      }
+    });
+
+    select.addEventListener('change', ()=>{
+      const opt = opts.find(o=>o.value===select.value);
+      if(opt) valueEl.textContent = opt.textContent || opt.label || '';
+      pop.querySelectorAll('.medicao-select-opt').forEach(x=>{
+        x.classList.toggle('is-selected', x.dataset.value === select.value);
+      });
+    });
+  }
+
+  document.querySelectorAll('select[data-medicao-native="1"]').forEach(sel=>{
+    build(sel);
+  });
+
+  document.addEventListener('click', (e)=>{
+    if(!e.target.closest('.medicao-select')) closeAll();
+  });
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', render);
   } else {
