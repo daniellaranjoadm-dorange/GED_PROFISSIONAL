@@ -5,137 +5,140 @@
 
 {% block content %}
 <div class="container-fluid py-3">
+  {% url 'solicitacoes:listar_solicitacoes' as url_lista %}
   <div class="page-solicitacoes page-solicitacoes-detalhe">
+    <div class="solicitacoes-detail-wrap">
 
-  <div class="dash-header">
-    <div>
-      <h1 class="dash-title">Detalhe da Solicitação</h1>
-      <div class="dash-subtitle">Revise as informações e aprove ou negue.</div>
-    </div>
+      <div class="d-flex align-items-end justify-content-between flex-wrap gap-2 solicitacoes-detail-header">
+        <div>
+          <h1 class="solicitacoes-title mb-1">
+            <i class="bi bi-clipboard-check me-2"></i> Detalhe da Solicitação
+          </h1>
+          <div class="text-muted small">Revise as informações e aprove ou negue.</div>
+        </div>
 
-    <a href="{% url 'solicitacoes:listar_solicitacoes' %}" class="dash-btn btn btn-sm">
-      <i class="bi bi-arrow-left"></i> Voltar
-    </a>
-  </div>
-
-  <div class="row g-3 solicitacao-detail-grid">
-    <div class="col-12 col-lg-8">
-      <div class="solicitacoes-surface dash-surface pad">
-        <div class="row g-3">
-
-      <div class="col-12 col-md-6">
-        <div class="small dash-muted">Nome</div>
-        <div class="fw-semibold">{{ solicitacao.nome|default:"-" }}</div>
+        <a class="dash-btn btn btn-sm solicitacoes-back" href="{{ url_lista|default:'/solicitar/lista/' }}">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
       </div>
 
-      <div class="col-12 col-md-6">
-        <div class="small dash-muted">E-mail</div>
-        <div class="fw-semibold">{{ solicitacao.email|default:"-" }}</div>
-      </div>
+      <div class="row g-3 solicitacao-detail-grid">
+        <div class="col-12 col-lg-8">
+          <div class="solicitacoes-surface solicitacao-card">
+            <div class="solicitacao-kv">
+              <div class="kv">
+                <div class="k">Nome</div>
+                <div class="v fw-bold">{{ solicitacao.nome|default:"-" }}</div>
+              </div>
 
-      <div class="col-12 col-md-6">
-        <div class="small dash-muted">Setor</div>
-        <div class="fw-semibold">{% if solicitacao.setor %}{{ solicitacao.setor }}{% else %}-{% endif %}</div>
-      </div>
+              <div class="kv">
+                <div class="k">E-mail</div>
+                <div class="v fw-bold">{{ solicitacao.email|default:"-" }}</div>
+              </div>
 
-      <div class="col-12 col-md-6">
-        <div class="small dash-muted">Status</div>
-        {% with st=solicitacao.get_status_display|default:solicitacao.status %}
-          {% with stl=st|lower %}
-            <span class="dash-badge
-              {% if 'aprov' in stl %}dash-badge-success
-              {% elif 'neg' in stl %}dash-badge-danger
-              {% elif 'pend' in stl or 'aguard' in stl %}dash-badge-warning
-              {% else %}dash-badge-info{% endif %}">
-              {% if 'aprov' in stl %}
-                <i class="bi bi-check2-circle"></i>
-              {% elif 'neg' in stl %}
-                <i class="bi bi-x-circle"></i>
-              {% elif 'pend' in stl or 'aguard' in stl %}
-                <i class="bi bi-hourglass-split"></i>
-              {% else %}
-                <i class="bi bi-info-circle"></i>
+              <div class="kv">
+                <div class="k">Setor</div>
+                <div class="v fw-bold">{% if solicitacao.setor %}{{ solicitacao.setor }}{% else %}-{% endif %}</div>
+              </div>
+
+              <div class="kv">
+                <div class="k">Status</div>
+                <div class="v">
+                  {% with st=solicitacao.get_status_display|default:solicitacao.status %}
+                    {% with stl=st|lower %}
+                      <span class="dash-badge
+                        {% if 'aprov' in stl %}dash-badge-success
+                        {% elif 'neg' in stl %}dash-badge-danger
+                        {% elif 'pend' in stl or 'aguard' in stl %}dash-badge-warning
+                        {% else %}dash-badge-info{% endif %}">
+                        {% if 'aprov' in stl %}
+                          <i class="bi bi-check2-circle"></i>
+                        {% elif 'neg' in stl %}
+                          <i class="bi bi-x-circle"></i>
+                        {% elif 'pend' in stl or 'aguard' in stl %}
+                          <i class="bi bi-hourglass-split"></i>
+                        {% else %}
+                          <i class="bi bi-info-circle"></i>
+                        {% endif %}
+                        {{ st|default:"-" }}
+                      </span>
+                    {% endwith %}
+                  {% endwith %}
+                </div>
+              </div>
+
+              <div class="kv kv-full">
+                <div class="k">Motivo</div>
+                <div class="v">
+                  {% if solicitacao.motivo %}
+                    {{ solicitacao.motivo|linebreaks }}
+                  {% elif solicitacao.mensagem %}
+                    {{ solicitacao.mensagem|linebreaks }}
+                  {% else %}
+                    <span class="dash-muted">-</span>
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="kv">
+                <div class="k">Data da Solicitação</div>
+                <div class="v fw-bold">
+                  {% if solicitacao.data_solicitacao %}
+                    {{ solicitacao.data_solicitacao|date:"d/m/Y H:i" }}
+                  {% elif solicitacao.data %}
+                    {{ solicitacao.data|date:"d/m/Y H:i" }}
+                  {% else %}-{% endif %}
+                </div>
+              </div>
+
+              <div class="kv">
+                <div class="k">Data da Decisão</div>
+                <div class="v fw-bold">
+                  {% if solicitacao.data_decisao %}
+                    {{ solicitacao.data_decisao|date:"d/m/Y H:i" }}
+                  {% else %}-{% endif %}
+                </div>
+              </div>
+
+              {% if solicitacao.observacao_admin %}
+              <div class="kv kv-full">
+                <div class="k">Observação (Admin)</div>
+                <div class="v">{{ solicitacao.observacao_admin|linebreaks }}</div>
+              </div>
               {% endif %}
-              {{ st|default:"-" }}
-            </span>
-          {% endwith %}
-        {% endwith %}
-      </div>
+            </div>
+          </div>
+        </div>
 
-      <div class="col-12">
-        <div class="small dash-muted">Motivo</div>
-        <div class="dash-surface dash-surface-flat pad solicitacao-note">
-          {% if solicitacao.motivo %}
-            {{ solicitacao.motivo|linebreaks }}
-          {% elif solicitacao.mensagem %}
-            {{ solicitacao.mensagem|linebreaks }}
-          {% else %}
-            <span class="dash-muted">-</span>
-          {% endif %}
+        <div class="col-12 col-lg-4">
+          <div class="solicitacoes-surface solicitacao-actions">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <div class="fw-black solicitacao-actions-title">Decisão</div>
+              <span class="dash-badge dash-badge-info"><i class="bi bi-shield-check"></i> Admin</span>
+            </div>
+
+            <form method="post">
+              {% csrf_token %}
+
+              <label class="form-label solicitacao-label" for="id_observacao_admin">Observação do administrador</label>
+              <textarea id="id_observacao_admin" name="observacao" class="form-control solicitacao-textarea" rows="6"
+                        placeholder="Ex.: Acesso liberado para o projeto X.">{{ solicitacao.observacao_admin|default_if_none:"" }}</textarea>
+
+              <div class="d-grid gap-2 mt-3">
+                <button type="submit" name="acao" value="aprovar" class="dash-btn dash-btn-primary w-100 justify-content-center solicitacao-btn-approve">
+                  <i class="bi bi-check2-circle"></i> Aprovar
+                </button>
+
+                <button type="submit" name="acao" value="negar" class="dash-btn w-100 justify-content-center solicitacao-btn-deny">
+                  <i class="bi bi-x-circle"></i> Negar
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
 
-      <div class="col-12 col-md-6">
-        <div class="small dash-muted">Data da Solicitação</div>
-        <div class="fw-semibold">
-          {% if solicitacao.data_solicitacao %}
-            {{ solicitacao.data_solicitacao|date:"d/m/Y H:i" }}
-          {% elif solicitacao.data %}
-            {{ solicitacao.data|date:"d/m/Y H:i" }}
-          {% else %}-{% endif %}
-        </div>
-      </div>
-
-      <div class="col-12 col-md-6">
-        <div class="small dash-muted">Data da Decisão</div>
-        <div class="fw-semibold">
-          {% if solicitacao.data_decisao %}
-            {{ solicitacao.data_decisao|date:"d/m/Y H:i" }}
-          {% else %}-{% endif %}
-        </div>
-      </div>
-
-      {% if solicitacao.observacao_admin %}
-      <div class="col-12">
-        <div class="small dash-muted">Observação (Admin)</div>
-        <div class="dash-surface dash-surface-flat pad solicitacao-note">
-          {{ solicitacao.observacao_admin|linebreaks }}
-        </div>
-      </div>
-      {% endif %}
-
-        </div>
-      </div>
-    </div>
-
-    <div class="col-12 col-lg-4">
-      <form method="post" class="solicitacoes-surface dash-surface pad solicitacao-actions">
-        {% csrf_token %}
-
-        <div class="d-flex align-items-center justify-content-between mb-2">
-          <div class="fw-black" style="font-weight:900;">Decisão</div>
-          <span class="dash-badge dash-badge-info"><i class="bi bi-shield-check"></i> Admin</span>
-        </div>
-
-        <div class="mb-3">
-          <label class="form-label fw-semibold" for="observacao">Observação do administrador</label>
-          <textarea id="observacao" name="observacao" class="form-control solicitacao-textarea" rows="5"
-                    placeholder="Ex.: Acesso liberado para o projeto X.">{{ solicitacao.observacao_admin|default_if_none:"" }}</textarea>
-        </div>
-
-        <div class="d-grid gap-2">
-          <button name="acao" value="aprovar" class="dash-btn dash-btn-primary w-100 justify-content-center" type="submit">
-            <i class="bi bi-check2-circle"></i> Aprovar
-          </button>
-
-          <button name="acao" value="negar" class="dash-btn dash-btn-danger w-100 justify-content-center" type="submit">
-            <i class="bi bi-x-circle"></i> Negar
-          </button>
-        </div>
-      </form>
     </div>
   </div>
-
-</div>
 </div>
 {% endblock %}

@@ -3074,3 +3074,131 @@ body[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-textarea:-webkit
   border-radius: 14px !important;
   font-weight: 900 !important;
 }
+
+/* ===========================
+   SOLICITACOES — DETALHE (PREMIUM V2)
+   escopo: .page-solicitacoes-detalhe
+   =========================== */
+.page-solicitacoes-detalhe .solicitacoes-detail-wrap{
+  max-width: 1280px !important;
+  margin: 0 auto !important;
+  padding: 10px 12px !important;
+}
+
+.page-solicitacoes-detalhe .solicitacoes-detail-header{
+  margin: 6px 0 14px 0 !important;
+}
+.page-solicitacoes-detalhe .solicitacoes-title{
+  font-weight: 950 !important;
+  letter-spacing: -0.02em !important;
+}
+
+.page-solicitacoes-detalhe .solicitacao-card,
+.page-solicitacoes-detalhe .solicitacao-actions{
+  border-radius: 18px !important;
+  border: 1px solid rgba(15,23,42,.10) !important;
+  box-shadow: 0 18px 45px rgba(2,6,23,.08) !important;
+  background: #fff !important;
+  padding: 16px !important;
+}
+
+.page-solicitacoes-detalhe .solicitacao-kv{
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 14px 16px !important;
+}
+.page-solicitacoes-detalhe .solicitacao-kv .kv{
+  min-width: 0 !important;
+}
+.page-solicitacoes-detalhe .solicitacao-kv .kv .k{
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  letter-spacing: .08em !important;
+  text-transform: uppercase !important;
+  color: rgba(15,23,42,.60) !important;
+  margin-bottom: 4px !important;
+}
+.page-solicitacoes-detalhe .solicitacao-kv .kv .v{
+  font-size: 14px !important;
+  color: rgba(15,23,42,.92) !important;
+}
+.page-solicitacoes-detalhe .solicitacao-kv .kv.kv-full{
+  grid-column: 1 / -1 !important;
+}
+
+@media (min-width: 992px){
+  .page-solicitacoes-detalhe .solicitacao-actions{
+    position: sticky !important;
+    top: 18px !important;
+    z-index: 5 !important;
+  }
+}
+
+.page-solicitacoes-detalhe .solicitacao-textarea{
+  border-radius: 14px !important;
+  padding: 12px 12px !important;
+  border: 1px solid rgba(15,23,42,.18) !important;
+  background: rgba(255,255,255,.92) !important;
+}
+.page-solicitacoes-detalhe .solicitacao-textarea:focus{
+  outline: none !important;
+  box-shadow: 0 0 0 .2rem rgba(59,130,246,.18) !important;
+  border-color: rgba(59,130,246,.55) !important;
+}
+
+.page-solicitacoes-detalhe .solicitacao-btn-approve{
+  border-radius: 14px !important;
+  font-weight: 900 !important;
+}
+.page-solicitacoes-detalhe .solicitacao-btn-deny{
+  border-radius: 14px !important;
+  font-weight: 900 !important;
+  background: transparent !important;
+  border: 1px solid rgba(239,68,68,.35) !important;
+  color: rgba(127,29,29,.92) !important;
+}
+.page-solicitacoes-detalhe .solicitacao-btn-deny:hover{
+  background: rgba(239,68,68,.08) !important;
+  border-color: rgba(239,68,68,.55) !important;
+}
+
+html[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-card,
+html[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-actions,
+body[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-card,
+body[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-actions,
+body.dark .page-solicitacoes-detalhe .solicitacao-card,
+body.dark .page-solicitacoes-detalhe .solicitacao-actions{
+  background: rgba(15,23,42,.70) !important;
+  border: 1px solid rgba(255,255,255,.10) !important;
+  box-shadow: 0 18px 45px rgba(0,0,0,.35) !important;
+}
+
+html[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-kv .kv .k,
+body[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-kv .kv .k,
+body.dark .page-solicitacoes-detalhe .solicitacao-kv .kv .k{
+  color: rgba(255,255,255,.62) !important;
+}
+html[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-kv .kv .v,
+body[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-kv .kv .v,
+body.dark .page-solicitacoes-detalhe .solicitacao-kv .kv .v{
+  color: rgba(255,255,255,.92) !important;
+}
+
+html[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-textarea,
+body[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-textarea,
+body.dark .page-solicitacoes-detalhe .solicitacao-textarea{
+  background: rgba(2,6,23,.35) !important;
+  border: 1px solid rgba(255,255,255,.14) !important;
+  color: rgba(255,255,255,.92) !important;
+}
+html[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-textarea::placeholder,
+body[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-textarea::placeholder,
+body.dark .page-solicitacoes-detalhe .solicitacao-textarea::placeholder{
+  color: rgba(255,255,255,.55) !important;
+}
+
+@media (max-width: 575.98px){
+  .page-solicitacoes-detalhe .solicitacao-kv{
+    grid-template-columns: 1fr !important;
+  }
+}
