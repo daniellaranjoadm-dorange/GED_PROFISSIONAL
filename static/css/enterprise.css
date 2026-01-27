@@ -3462,3 +3462,68 @@ body.dark .page-solicitacoes-detalhe .solicitacao-textarea::placeholder{
   background: rgba(239,68,68,.06) !important;
   border-color: rgba(239,68,68,.45) !important;
 }
+
+/* ===========================
+   RESPONSIVE CONTAINERS (GLOBAL)
+   Padrão único de largura por tela
+   =========================== */
+:root{
+  --dash-container-pad: 24px;
+  --dash-container-max: 1240px;   /* forms/detalhes */
+  --dash-container-wide: 1560px;  /* tabelas/listas */
+}
+
+.dash-container{
+  width: min(var(--dash-container-max), calc(100% - (var(--dash-container-pad) * 2)));
+  margin-inline: auto;
+}
+
+.dash-container--wide{
+  width: min(var(--dash-container-wide), calc(100% - (var(--dash-container-pad) * 2)));
+  margin-inline: auto;
+}
+
+@media (max-width: 576px){
+  :root{ --dash-container-pad: 14px; }
+}
+
+@media (min-width: 1600px){
+  :root{
+    --dash-container-max: 1320px;
+    --dash-container-wide: 1680px;
+  }
+}
+
+.page-solicitacoes{ width: 100%; }
+.page-solicitacoes .solicitacoes-surface{
+  width: 100% !important;
+  max-width: none !important;
+}
+
+/* ===========================
+   SOLICITAÇÕES — DETALHE (RESPONSIVO)
+   =========================== */
+.solicitacao-decisao textarea.form-control{
+  min-height: 160px;
+  resize: vertical;
+}
+
+@media (min-width: 992px){
+  .solicitacao-decisao{
+    position: sticky;
+    top: 18px; /* acompanha scroll sem ficar perdido */
+  }
+}
+
+/* Garantia “Negar” vermelho */
+.dash-btn-danger{
+  background: rgba(225,29,72,.10) !important;
+  border: 1px solid rgba(225,29,72,.45) !important;
+  color: #9f1239 !important;
+}
+body[data-theme="dark"] .dash-btn-danger,
+body.dark .dash-btn-danger{
+  background: rgba(225,29,72,.14) !important;
+  border: 1px solid rgba(225,29,72,.55) !important;
+  color: #fecdd3 !important;
+}
