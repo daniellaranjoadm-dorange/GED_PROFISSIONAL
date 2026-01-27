@@ -3187,6 +3187,159 @@ body.dark .page-solicitacoes-detalhe .solicitacao-textarea::placeholder{
   color: rgba(255,255,255,.55) !important;
 }
 
+/* ===========================
+   LAYOUT DEBUG TRACER (v2)
+   Ativa com ?debug=1 ou Alt+L
+   =========================== */
+#layout-debug-overlay{
+  position: fixed;
+  right: 14px;
+  bottom: 14px;
+  width: 420px;
+  max-width: calc(100vw - 28px);
+  z-index: 99999;
+  border-radius: 14px;
+  border: 1px solid rgba(15,23,42,.18);
+  box-shadow: 0 18px 45px rgba(2,6,23,.22);
+  background: rgba(255,255,255,.92);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+#layout-debug-overlay .ldb-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:10px 12px;
+  border-bottom: 1px solid rgba(15,23,42,.12);
+}
+
+#layout-debug-overlay .ldb-pill{
+  margin-left:auto;
+  font-weight:900;
+  font-size:12px;
+  padding:2px 8px;
+  border-radius:999px;
+  border: 1px solid rgba(15,23,42,.18);
+  background: rgba(15,23,42,.06);
+}
+
+#layout-debug-overlay .ldb-btn{
+  width:28px;
+  height:28px;
+  border-radius:10px;
+  border: 1px solid rgba(15,23,42,.18);
+  background: rgba(15,23,42,.06);
+  cursor:pointer;
+  font-weight:900;
+}
+
+#layout-debug-overlay .ldb-body{
+  padding:10px 12px 12px;
+}
+
+#layout-debug-overlay .ldb-row{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+  padding:4px 0;
+  font-size:12px;
+}
+
+#layout-debug-overlay .ldb-row span{
+  opacity:.75;
+}
+
+#layout-debug-overlay code{
+  font-size:12px;
+  font-weight:800;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  max-width: 280px;
+}
+
+#layout-debug-overlay .ldb-hr{
+  margin:8px 0;
+  border:0;
+  height:1px;
+  background: rgba(15,23,42,.12);
+}
+
+#layout-debug-overlay .ldb-tip{
+  margin-top:8px;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-size:12px;
+  opacity:.75;
+}
+
+html.layout-debug-on .container,
+html.layout-debug-on .container-fluid{
+  outline: 2px dashed rgba(59,130,246,.55) !important;
+  outline-offset: 2px !important;
+}
+
+html.layout-debug-on .page-area,
+html.layout-debug-on main,
+html.layout-debug-on .main,
+html.layout-debug-on .main-content{
+  outline: 2px dashed rgba(16,185,129,.55) !important;
+  outline-offset: 2px !important;
+}
+
+html.layout-debug-on header,
+html.layout-debug-on .topbar,
+html.layout-debug-on .app-topbar,
+html.layout-debug-on .enterprise-topbar{
+  outline: 2px dashed rgba(245,158,11,.60) !important;
+  outline-offset: 2px !important;
+}
+
+html.layout-debug-on .dash-surface,
+html.layout-debug-on .solicitacoes-surface,
+html.layout-debug-on .card,
+html.layout-debug-on .panel{
+  outline: 2px dashed rgba(239,68,68,.45) !important;
+  outline-offset: 2px !important;
+}
+
+html[data-theme="dark"] #layout-debug-overlay,
+body[data-theme="dark"] #layout-debug-overlay,
+body.dark #layout-debug-overlay{
+  background: rgba(15,23,42,.92);
+  border: 1px solid rgba(255,255,255,.14);
+  box-shadow: 0 18px 45px rgba(0,0,0,.55);
+}
+
+html[data-theme="dark"] #layout-debug-overlay .ldb-head,
+body[data-theme="dark"] #layout-debug-overlay .ldb-head,
+body.dark #layout-debug-overlay .ldb-head{
+  border-bottom: 1px solid rgba(255,255,255,.14);
+}
+
+html[data-theme="dark"] #layout-debug-overlay .ldb-pill,
+body[data-theme="dark"] #layout-debug-overlay .ldb-pill,
+body.dark #layout-debug-overlay .ldb-pill{
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+}
+
+html[data-theme="dark"] #layout-debug-overlay .ldb-btn,
+body[data-theme="dark"] #layout-debug-overlay .ldb-btn,
+body.dark #layout-debug-overlay .ldb-btn{
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+}
+
+html[data-theme="dark"] #layout-debug-overlay .ldb-hr,
+body[data-theme="dark"] #layout-debug-overlay .ldb-hr,
+body.dark #layout-debug-overlay .ldb-hr{
+  background: rgba(255,255,255,.14);
+}
+
 html[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-note,
 body[data-theme="dark"] .page-solicitacoes-detalhe .solicitacao-note,
 body.dark .page-solicitacoes-detalhe .solicitacao-note{
@@ -3392,59 +3545,4 @@ body.dark .page-solicitacoes-detalhe .solicitacao-textarea::placeholder{
 .page-solicitacoes-detalhe .solicitacao-btn-deny:hover{
   background: rgba(239,68,68,.06) !important;
   border-color: rgba(239,68,68,.45) !important;
-}
-
-/* ===========================
-   DEBUG LAYOUT WIDTH TRACER
-   Ativa com: body.debug-layout
-   =========================== */
-body.debug-layout *{
-  outline: 1px dashed rgba(255, 165, 0, 0.18);
-}
-
-body.debug-layout .page-area,
-body.debug-layout main,
-body.debug-layout .container,
-body.debug-layout .container-fluid,
-body.debug-layout .ds-page,
-body.debug-layout .dash-container,
-body.debug-layout .content,
-body.debug-layout .content-area{
-  outline: 2px solid rgba(0, 128, 255, 0.55) !important;
-}
-
-body.debug-layout .topbar,
-body.debug-layout header,
-body.debug-layout .navbar{
-  outline: 2px solid rgba(0, 255, 170, 0.55) !important;
-}
-
-body.debug-layout #layout-debug-bar{
-  position: fixed;
-  left: 12px;
-  right: 12px;
-  bottom: 12px;
-  z-index: 99999;
-  padding: 10px 12px;
-  border-radius: 12px;
-  font: 12px/1.35 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  background: rgba(10, 16, 28, 0.92);
-  color: #fff;
-  box-shadow: 0 18px 45px rgba(0,0,0,.35);
-  border: 1px solid rgba(255,255,255,.12);
-  backdrop-filter: blur(8px);
-}
-body.debug-layout #layout-debug-bar b{ color: #ffd28a; }
-body.debug-layout #layout-debug-bar .muted{ opacity: .75; }
-body.debug-layout #layout-debug-bar .row{
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px 14px;
-  align-items: center;
-}
-body.debug-layout #layout-debug-bar .pill{
-  padding: 3px 8px;
-  border-radius: 999px;
-  background: rgba(255,255,255,.08);
-  border: 1px solid rgba(255,255,255,.10);
 }
