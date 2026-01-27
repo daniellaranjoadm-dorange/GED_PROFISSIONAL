@@ -4,6 +4,7 @@
 
 {% block content %}
 <div class="doc-wrapper">
+  <div class="page-revisoes">
   <div class="page-header">
     <div>
       <h2><i class="bi bi-arrow-repeat"></i> Revisões</h2>
@@ -12,10 +13,10 @@
     <div class="text-muted">Total: {{ total|default:0 }}</div>
   </div>
 
-  <div class="card enterprise-card p-3">
+  <div class="dash-surface solicitacoes-surface p-3">
     <div class="table-responsive">
       {% if rows %}
-        <table class="table table-bordered table-sm align-middle w-100">
+        <table class="table table-hover table-sm align-middle w-100">
           <thead>
             <tr>
               <th>Código</th>
@@ -46,6 +47,7 @@
         <div class="alert alert-info">Nenhuma revisão registrada.</div>
       {% endif %}
     </div>
+  </div>
   </div>
 </div>
 <script>

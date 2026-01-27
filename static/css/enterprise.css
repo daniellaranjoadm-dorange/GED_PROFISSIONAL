@@ -2456,3 +2456,337 @@ body[data-theme="dark"] .page-solicitacoes .solicitacoes-surface .table-hover tb
 body.dark .page-solicitacoes .solicitacoes-surface .table-hover tbody tr:hover{
   background: rgba(59,130,246,.10) !important;
 }
+
+/* =========================================================
+   SOLICITAR ACESSO PUBLIC — PREMIUM
+   escopo: .page-solicitacoes-public
+   ========================================================= */
+.page-solicitacoes-public{
+  color: var(--dash-text, #0f172a);
+}
+.page-solicitacoes-public .dash-surface{
+  border-radius: 18px;
+  border: 1px solid rgba(15,23,42,.10);
+  box-shadow: 0 18px 45px rgba(2,6,23,.08);
+}
+.page-solicitacoes-public label,
+.page-solicitacoes-public .form-label{
+  font-weight: 700;
+  color: rgba(15,23,42,.85);
+}
+.page-solicitacoes-public .form-text{
+  color: rgba(15,23,42,.60);
+}
+.page-solicitacoes-public .text-danger{
+  color: #dc2626 !important;
+}
+.page-solicitacoes-public input,
+.page-solicitacoes-public select,
+.page-solicitacoes-public textarea{
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid rgba(15,23,42,.14);
+  background: #ffffff;
+  color: rgba(15,23,42,.95);
+}
+.page-solicitacoes-public textarea{
+  min-height: 120px;
+  height: auto;
+}
+.page-solicitacoes-public input::placeholder,
+.page-solicitacoes-public textarea::placeholder{
+  color: rgba(15,23,42,.45);
+}
+.page-solicitacoes-public input:focus-visible,
+.page-solicitacoes-public select:focus-visible,
+.page-solicitacoes-public textarea:focus-visible{
+  outline: 0;
+  box-shadow: 0 0 0 4px rgba(59,130,246,.22);
+  border-color: rgba(59,130,246,.55);
+}
+.page-solicitacoes-public select option{
+  background-color: #0b1220;
+  color: #e5e7eb;
+}
+.page-solicitacoes-public input:-webkit-autofill,
+.page-solicitacoes-public textarea:-webkit-autofill,
+.page-solicitacoes-public select:-webkit-autofill{
+  -webkit-text-fill-color: rgba(15,23,42,.95);
+  box-shadow: 0 0 0px 1000px #ffffff inset;
+  transition: background-color 9999s ease-in-out 0s;
+}
+html[data-theme="dark"] .page-solicitacoes-public,
+body[data-theme="dark"] .page-solicitacoes-public,
+body.dark .page-solicitacoes-public{
+  color: #e5e7eb;
+}
+html[data-theme="dark"] .page-solicitacoes-public .dash-surface,
+body[data-theme="dark"] .page-solicitacoes-public .dash-surface,
+body.dark .page-solicitacoes-public .dash-surface{
+  background: rgba(15,23,42,.70);
+  border: 1px solid rgba(255,255,255,.10);
+  box-shadow: 0 18px 45px rgba(0,0,0,.35);
+}
+html[data-theme="dark"] .page-solicitacoes-public label,
+body[data-theme="dark"] .page-solicitacoes-public label,
+body.dark .page-solicitacoes-public label{
+  color: rgba(255,255,255,.88);
+}
+html[data-theme="dark"] .page-solicitacoes-public .form-text,
+body[data-theme="dark"] .page-solicitacoes-public .form-text,
+body.dark .page-solicitacoes-public .form-text{
+  color: rgba(255,255,255,.65);
+}
+html[data-theme="dark"] .page-solicitacoes-public input,
+html[data-theme="dark"] .page-solicitacoes-public select,
+html[data-theme="dark"] .page-solicitacoes-public textarea,
+body[data-theme="dark"] .page-solicitacoes-public input,
+body[data-theme="dark"] .page-solicitacoes-public select,
+body[data-theme="dark"] .page-solicitacoes-public textarea,
+body.dark .page-solicitacoes-public input,
+body.dark .page-solicitacoes-public select,
+body.dark .page-solicitacoes-public textarea{
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.16);
+  color: rgba(255,255,255,.92);
+}
+html[data-theme="dark"] .page-solicitacoes-public input::placeholder,
+body[data-theme="dark"] .page-solicitacoes-public input::placeholder,
+body.dark .page-solicitacoes-public input::placeholder{
+  color: rgba(255,255,255,.55);
+}
+html[data-theme="dark"] .page-solicitacoes-public select option,
+body[data-theme="dark"] .page-solicitacoes-public select option,
+body.dark .page-solicitacoes-public select option{
+  background-color: rgba(2,6,23,.98);
+  color: rgba(255,255,255,.92);
+}
+html[data-theme="dark"] .page-solicitacoes-public input:-webkit-autofill,
+html[data-theme="dark"] .page-solicitacoes-public textarea:-webkit-autofill,
+body[data-theme="dark"] .page-solicitacoes-public input:-webkit-autofill,
+body[data-theme="dark"] .page-solicitacoes-public textarea:-webkit-autofill{
+  -webkit-text-fill-color: rgba(255,255,255,.92);
+  box-shadow: 0 0 0px 1000px rgba(15,23,42,.70) inset;
+}
+
+/* =========================================================
+   NOVO DOCUMENTO — PREMIUM
+   escopo: .page-novo-documento
+   ========================================================= */
+.page-novo-documento .form-label{
+  font-weight: 700;
+  color: rgba(15,23,42,.85);
+}
+.page-novo-documento .form-text{
+  color: rgba(15,23,42,.60);
+}
+.page-novo-documento input,
+.page-novo-documento select,
+.page-novo-documento textarea{
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid rgba(15,23,42,.14);
+  background: #ffffff;
+  color: rgba(15,23,42,.95);
+}
+.page-novo-documento textarea{
+  height: auto;
+  min-height: 110px;
+}
+.page-novo-documento input::placeholder,
+.page-novo-documento textarea::placeholder{
+  color: rgba(15,23,42,.45);
+}
+.page-novo-documento input:focus-visible,
+.page-novo-documento select:focus-visible,
+.page-novo-documento textarea:focus-visible{
+  outline: 0;
+  box-shadow: 0 0 0 4px rgba(59,130,246,.22);
+  border-color: rgba(59,130,246,.55);
+}
+.page-novo-documento select option{
+  background-color: #0b1220;
+  color: #e5e7eb;
+}
+.page-novo-documento input:-webkit-autofill,
+.page-novo-documento textarea:-webkit-autofill,
+.page-novo-documento select:-webkit-autofill{
+  -webkit-text-fill-color: rgba(15,23,42,.95);
+  box-shadow: 0 0 0px 1000px #ffffff inset;
+  transition: background-color 9999s ease-in-out 0s;
+}
+.page-novo-documento .upload-dropzone{
+  position: relative;
+}
+.page-novo-documento .ldp-file-input{
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+html[data-theme="dark"] .page-novo-documento .form-label,
+body[data-theme="dark"] .page-novo-documento .form-label,
+body.dark .page-novo-documento .form-label{
+  color: rgba(255,255,255,.88);
+}
+html[data-theme="dark"] .page-novo-documento .form-text,
+body[data-theme="dark"] .page-novo-documento .form-text,
+body.dark .page-novo-documento .form-text{
+  color: rgba(255,255,255,.65);
+}
+html[data-theme="dark"] .page-novo-documento input,
+html[data-theme="dark"] .page-novo-documento select,
+html[data-theme="dark"] .page-novo-documento textarea,
+body[data-theme="dark"] .page-novo-documento input,
+body[data-theme="dark"] .page-novo-documento select,
+body[data-theme="dark"] .page-novo-documento textarea,
+body.dark .page-novo-documento input,
+body.dark .page-novo-documento select,
+body.dark .page-novo-documento textarea{
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.16);
+  color: rgba(255,255,255,.92);
+}
+html[data-theme="dark"] .page-novo-documento input::placeholder,
+body[data-theme="dark"] .page-novo-documento input::placeholder,
+body.dark .page-novo-documento input::placeholder{
+  color: rgba(255,255,255,.55);
+}
+html[data-theme="dark"] .page-novo-documento select option,
+body[data-theme="dark"] .page-novo-documento select option,
+body.dark .page-novo-documento select option{
+  background-color: rgba(2,6,23,.98);
+  color: rgba(255,255,255,.92);
+}
+html[data-theme="dark"] .page-novo-documento input:-webkit-autofill,
+html[data-theme="dark"] .page-novo-documento textarea:-webkit-autofill,
+body[data-theme="dark"] .page-novo-documento input:-webkit-autofill,
+body[data-theme="dark"] .page-novo-documento textarea:-webkit-autofill{
+  -webkit-text-fill-color: rgba(255,255,255,.92);
+  box-shadow: 0 0 0px 1000px rgba(15,23,42,.70) inset;
+}
+
+/* =========================================================
+   REVISOES — PREMIUM
+   escopo: .page-revisoes
+   ========================================================= */
+.page-revisoes .dash-surface{
+  border-radius: 18px;
+  border: 1px solid rgba(15,23,42,.10);
+  box-shadow: 0 18px 45px rgba(2,6,23,.08);
+}
+.page-revisoes table{
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+.page-revisoes thead th{
+  background: rgba(15,23,42,.04);
+  border-bottom: 1px solid rgba(15,23,42,.12);
+  border-top: none;
+  font-weight: 900;
+  font-size: 12px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  padding: 12px 14px;
+}
+.page-revisoes tbody td{
+  border-bottom: 1px solid rgba(15,23,42,.08);
+  padding: 12px 14px;
+  vertical-align: middle;
+}
+.page-revisoes .table-hover tbody tr:hover{
+  background: rgba(59,130,246,.06);
+}
+html[data-theme="dark"] .page-revisoes .dash-surface,
+body[data-theme="dark"] .page-revisoes .dash-surface,
+body.dark .page-revisoes .dash-surface{
+  background: rgba(15,23,42,.70);
+  border: 1px solid rgba(255,255,255,.10);
+  box-shadow: 0 18px 45px rgba(0,0,0,.35);
+}
+html[data-theme="dark"] .page-revisoes thead th,
+body[data-theme="dark"] .page-revisoes thead th,
+body.dark .page-revisoes thead th{
+  background: rgba(255,255,255,.06);
+  border-bottom: 1px solid rgba(255,255,255,.12);
+  color: rgba(255,255,255,.92);
+}
+html[data-theme="dark"] .page-revisoes tbody td,
+body[data-theme="dark"] .page-revisoes tbody td,
+body.dark .page-revisoes tbody td{
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  color: rgba(255,255,255,.90);
+}
+
+/* =========================================================
+   DATATABLES — PREMIUM
+   escopo: .page-lista-documentos
+   ========================================================= */
+.page-lista-documentos .dataTables_wrapper{
+  width: 100%;
+}
+.page-lista-documentos .dataTables_filter input{
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid rgba(15,23,42,.14);
+  background: #ffffff;
+  color: rgba(15,23,42,.92);
+  padding: 0 10px;
+}
+.page-lista-documentos .dataTables_filter input::placeholder{
+  color: rgba(15,23,42,.45);
+}
+.page-lista-documentos .dataTables_filter input:focus-visible{
+  outline: 0;
+  box-shadow: 0 0 0 4px rgba(59,130,246,.22);
+  border-color: rgba(59,130,246,.55);
+}
+.page-lista-documentos .dt-buttons .btn{
+  border-radius: 10px;
+  font-weight: 800;
+  padding: 6px 10px;
+}
+.page-lista-documentos table.dataTable tbody tr:nth-child(even){
+  background: rgba(15,23,42,.02);
+}
+.page-lista-documentos table.dataTable tbody tr:hover{
+  background: rgba(59,130,246,.06);
+}
+.page-lista-documentos .dataTables_paginate .pagination .page-link{
+  border-radius: 10px;
+  margin: 0 2px;
+  border: 1px solid rgba(15,23,42,.12);
+}
+.page-lista-documentos .dataTables_paginate .pagination .page-item.active .page-link{
+  background: rgba(59,130,246,.90);
+  border-color: rgba(59,130,246,.90);
+}
+.page-lista-documentos select option{
+  background-color: #0b1220;
+  color: #e5e7eb;
+}
+.page-lista-documentos input:-webkit-autofill{
+  -webkit-text-fill-color: rgba(15,23,42,.95);
+  box-shadow: 0 0 0px 1000px #ffffff inset;
+  transition: background-color 9999s ease-in-out 0s;
+}
+html[data-theme="dark"] .page-lista-documentos .dataTables_filter input,
+body[data-theme="dark"] .page-lista-documentos .dataTables_filter input,
+body.dark .page-lista-documentos .dataTables_filter input{
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.16);
+  color: rgba(255,255,255,.92);
+}
+html[data-theme="dark"] .page-lista-documentos .dataTables_paginate .pagination .page-link,
+body[data-theme="dark"] .page-lista-documentos .dataTables_paginate .pagination .page-link,
+body.dark .page-lista-documentos .dataTables_paginate .pagination .page-link{
+  border: 1px solid rgba(255,255,255,.12);
+  color: rgba(255,255,255,.90);
+}
+html[data-theme="dark"] .page-lista-documentos table.dataTable tbody tr:nth-child(even),
+body[data-theme="dark"] .page-lista-documentos table.dataTable tbody tr:nth-child(even),
+body.dark .page-lista-documentos table.dataTable tbody tr:nth-child(even){
+  background: rgba(255,255,255,.03);
+}
