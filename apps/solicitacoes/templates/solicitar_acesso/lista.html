@@ -9,7 +9,8 @@
 
 {% block content %}
 <div class="container-fluid py-3">
-  <div class="page-solicitacoes ds-page">
+  <div class="page-solicitacoes">
+  <div class="page-solicitacoes__container">
 
   {# Selo de debug para você confirmar que ESTE template está carregando #}
   {% if debug %}
@@ -20,7 +21,7 @@
     </div>
   {% endif %}
 
-  <div class="dash-header">
+  <div class="dash-header solicitacoes-header">
     <div>
       <h1 class="dash-title">Solicitações de Acesso</h1>
       <div class="dash-subtitle">
@@ -109,6 +110,7 @@
   </div>
   </div>
 
+  </div>
 </div>
 
 {% endblock %}
