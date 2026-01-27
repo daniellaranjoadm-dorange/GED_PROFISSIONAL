@@ -2560,6 +2560,7 @@ def medicao(request):
         {
             "linhas": linhas,
             "resumo": linhas,
+            "page": "medicao",
             "totais": totais,
             "totais_gerais": totais_gerais,
             "total_geral": total_geral,

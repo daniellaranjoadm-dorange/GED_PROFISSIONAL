@@ -321,9 +321,7 @@ body {
 ================================= */
 
 /* evita scroll horizontal */
-html, body, .layout { max-width: 100%; overflow-x: hidden; }
 
-.content, .content-inner { min-width: 0; } /* essencial com flex */
 
 /* MOBILE / TABLET */
 @media (max-width: 991.98px) {
@@ -581,7 +579,6 @@ body[data-theme="light"]{
   --dash-shadow: 0 14px 34px rgba(10,20,40,.12);
 }
 
-.dash-muted{ color: var(--dash-muted) !important; }
 
 /* Header (título + ações) */
 .dash-header{
@@ -616,8 +613,6 @@ body[data-theme="light"]{
   backdrop-filter: blur(8px);
 }
 
-.dash-surface.pad{ padding: 16px; }
-.dash-surface-flat{ box-shadow:none !important; backdrop-filter:none !important; }
 
 /* Botões */
 .dash-btn{
@@ -633,8 +628,6 @@ body[data-theme="light"]{
   align-items:center;
 }
 
-body[data-theme="light"] .dash-btn{ background: rgba(11,18,32,.06); }
-.dash-btn:hover{ filter: brightness(1.06); color: var(--dash-text); }
 
 .dash-btn-primary{
   border-color: rgba(255,177,60,.45);
@@ -658,10 +651,6 @@ body[data-theme="light"] .dash-btn{ background: rgba(11,18,32,.06); }
   border: 1px solid var(--dash-border);
 }
 
-.dash-badge-success{ background: rgba(52,211,153,.16); border-color: rgba(52,211,153,.35); }
-.dash-badge-danger{  background: rgba(251,113,133,.16); border-color: rgba(251,113,133,.35); }
-.dash-badge-warning{ background: rgba(255,177,60,.16); border-color: rgba(255,177,60,.35); }
-.dash-badge-info{    background: rgba(34,211,238,.14); border-color: rgba(34,211,238,.32); }
 
 /* Inputs (somente dentro de .dash-surface) */
 .dash-surface .form-control,
@@ -807,7 +796,6 @@ body[data-theme="light"]{
   --dash-shadow: 0 14px 34px rgba(10,20,40,.12);
 }
 
-.dash-muted{ color: var(--dash-muted) !important; }
 
 /* Header (título + ações) */
 .dash-header{
@@ -842,8 +830,6 @@ body[data-theme="light"]{
   backdrop-filter: blur(8px);
 }
 
-.dash-surface.pad{ padding: 16px; }
-.dash-surface-flat{ box-shadow:none !important; backdrop-filter:none !important; }
 
 /* Botões */
 .dash-btn{
@@ -859,8 +845,6 @@ body[data-theme="light"]{
   align-items:center;
 }
 
-body[data-theme="light"] .dash-btn{ background: rgba(11,18,32,.06); }
-.dash-btn:hover{ filter: brightness(1.06); color: var(--dash-text); }
 
 .dash-btn-primary{
   border-color: rgba(255,177,60,.45);
@@ -884,10 +868,6 @@ body[data-theme="light"] .dash-btn{ background: rgba(11,18,32,.06); }
   border: 1px solid var(--dash-border);
 }
 
-.dash-badge-success{ background: rgba(52,211,153,.16); border-color: rgba(52,211,153,.35); }
-.dash-badge-danger{  background: rgba(251,113,133,.16); border-color: rgba(251,113,133,.35); }
-.dash-badge-warning{ background: rgba(255,177,60,.16); border-color: rgba(255,177,60,.35); }
-.dash-badge-info{    background: rgba(34,211,238,.14); border-color: rgba(34,211,238,.32); }
 
 /* Inputs (somente dentro de .dash-surface) */
 .dash-surface .form-control,
@@ -1142,1608 +1122,936 @@ body.change-form textarea:focus{
 }
 
 /* Filtro (direita) */
-#changelist-filter{
-  border-radius: 18px;
-  border: 1px solid rgba(255,255,255,.10);
-  background: linear-
+/* =========================================================
+   MEDI??O ? BLOCO ?NICO FINAL (FIX DEFINITIVO)
+   Escopo: somente Medi??o
+   Motivo: eliminar conflitos + garantir layout Bootstrap intacto
+========================================================= */
 
-
-
-/* Auto theme: follow OS preference */
-@media (prefers-color-scheme: light){
-  body[data-theme="auto"]{
-    --bg: #f4f6fa;
-    --bg-card: #ffffff;
-    --bg-sidebar: #0C1220;
-
-    /* keep chrome text readable on dark sidebar */
-    --text: #ffffff;
-    --text-soft: #b9c3d6;
-
-    --content-text: #0b1220;
-    --content-muted: rgba(11,18,32,.68);
-
-    --field-bg: #ffffff;
-    --field-text: #0b1220;
-    --field-border: rgba(11,18,32,.16);
-    --field-placeholder: rgba(11,18,32,.50);
-
-    --border: #d0d7e4;
-    --shadow: rgba(0,0,0,.15);
-  }
+body.page-medicao .medicao-page{
+  color: #0f172a !important;
 }
 
-/* ==========================================================
-   THEME FIX — separa cores do CONTEÚDO da SIDEBAR/TOPBAR
-   Corrige sumiço de textos em light/dark/auto
-   ========================================================== */
+/* Se aparecer uma linha colorida (HR/placeholder), matar na Medi??o */
+body.page-medicao hr{ display:none !important; }
 
-/* Conteúdo (não mexe na sidebar/topbar) */
-:root{
-  --content-text: var(--text, #eaf1ff);
-  --content-muted: var(--text-soft, rgba(234,241,255,.72));
-  --content-border: var(--border, rgba(255,255,255,.10));
+/* Cards base (container de filtros / resumo / charts) */
+body.page-medicao .medicao-card{
+  background: #ffffff !important;
+  border: 1px solid rgba(15,23,42,.12) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 10px 28px rgba(15,23,42,.08) !important;
+  padding: 16px !important;
 }
 
-/* Light: conteúdo escuro (sidebar continua escura porque seus links já são #fff) */
-body[data-theme="light"]{
-  --content-text: #0b1220;
-  --content-muted: rgba(11,18,32,.68);
-  --content-border: rgba(11,18,32,.14);
-  color-scheme: light;
+/* DARK */
+html[data-theme="dark"] body.page-medicao .medicao-page,
+body[data-theme="dark"].page-medicao .medicao-page,
+body.dark.page-medicao .medicao-page{
+  color: #e5e7eb !important;
+}
+html[data-theme="dark"] body.page-medicao .medicao-card,
+body[data-theme="dark"].page-medicao .medicao-card,
+body.dark.page-medicao .medicao-card{
+  background: rgba(15,23,42,.45) !important;
+  border-color: rgba(148,163,184,.22) !important;
+  box-shadow: 0 10px 28px rgba(0,0,0,.35) !important;
 }
 
-/* Dark: conteúdo claro */
-body[data-theme="dark"]{
-  --content-text: rgba(234,241,255,.92);
-  --content-muted: rgba(234,241,255,.72);
-  --content-border: rgba(255,255,255,.10);
-  color-scheme: dark;
+/* =======================
+   FILTROS (grid real)
+======================= */
+body.page-medicao form.medicao-filtros{
+  display:grid !important;
+  grid-template-columns: repeat(4, minmax(220px, 1fr)) !important;
+  gap:12px !important;
+  align-items:end !important;
+}
+@media (max-width:1200px){
+  body.page-medicao form.medicao-filtros{ grid-template-columns: repeat(2, minmax(240px, 1fr)) !important; }
+}
+@media (max-width:720px){
+  body.page-medicao form.medicao-filtros{ grid-template-columns: 1fr !important; }
 }
 
-/* Auto: segue sistema */
-body[data-theme="auto"]{
-  --content-text: rgba(234,241,255,.92);
-  --content-muted: rgba(234,241,255,.72);
-  --content-border: rgba(255,255,255,.10);
-  color-scheme: light dark;
+body.page-medicao form.medicao-filtros label{
+  font-weight:700 !important;
+  color: rgba(15,23,42,.78) !important;
 }
-@media (prefers-color-scheme: light){
-  body[data-theme="auto"]{
-    --content-text: #0b1220;
-    --content-muted: rgba(11,18,32,.68);
-    --content-border: rgba(11,18,32,.14);
-  }
+body.page-medicao form.medicao-filtros select,
+body.page-medicao form.medicao-filtros input{
+  width:100% !important;
 }
-
-/* Aplica o “conteúdo padrão” em todas as páginas internas */
-.page-area{
-  color: var(--content-text) !important;
+html[data-theme="dark"] body.page-medicao form.medicao-filtros label,
+body[data-theme="dark"].page-medicao form.medicao-filtros label,
+body.dark.page-medicao form.medicao-filtros label{
+  color: rgba(229,231,235,.82) !important;
 }
 
-/* Corrige utilitários Bootstrap que detonam no tema (sem quebrar sidebar) */
-body[data-theme="dark"] .page-area .text-dark{ color: var(--content-text) !important; }
-body[data-theme="light"] .page-area .text-white{ color: var(--content-text) !important; }
-.page-area .text-muted{ color: var(--content-muted) !important; }
-
-/* Labels e textos de formulário (Novo Documento / Importar LDP) */
-.page-area label,
-.page-area .form-label,
-.page-area .form-check-label,
-.page-area small,
-.page-area .form-text{
-  color: var(--content-text) !important;
-  opacity: 1 !important;
+/* Bot?es: alinhar ? direita e n?o quebrar layout */
+body.page-medicao .medicao-actions{
+  display:flex !important;
+  gap:8px !important;
+  justify-content:flex-end !important;
+  flex-wrap:wrap !important;
+  grid-column:1 / -1 !important;
 }
 
-/* Inputs (só no conteúdo, não pega a topbar) */
-.page-area .form-control,
-.page-area .form-select,
-.page-area textarea,
-.page-area input[type="text"],
-.page-area input[type="email"],
-.page-area input[type="number"],
-.page-area input[type="search"]{
-  color: var(--content-text) !important;
-  border-color: var(--content-border) !important;
+/* =======================
+   KPIs (cards em grid)
+======================= */
+body.page-medicao #medicao-kpis .medicao-kpis{
+  display:grid !important;
+  grid-template-columns: repeat(3, minmax(240px, 1fr)) !important;
+  gap:12px !important;
+  margin-top:14px !important;
+}
+@media (max-width:1200px){
+  body.page-medicao #medicao-kpis .medicao-kpis{ grid-template-columns: repeat(2, minmax(240px, 1fr)) !important; }
+}
+@media (max-width:720px){
+  body.page-medicao #medicao-kpis .medicao-kpis{ grid-template-columns: 1fr !important; }
 }
 
-body[data-theme="dark"] .page-area .form-control,
-body[data-theme="dark"] .page-area .form-select,
-body[data-theme="dark"] .page-area textarea{
-  background: rgba(0,0,0,.18) !important;
+body.page-medicao #medicao-kpis .totais-box{
+  display:flex !important;
+  flex-direction:column !important;
+  justify-content:center !important;
+  background:#f8fafc !important;
+  border:1px solid rgba(15,23,42,.12) !important;
+  border-radius:14px !important;
+  padding:14px 14px 12px !important;
 }
 
-body[data-theme="light"] .page-area .form-control,
-body[data-theme="light"] .page-area .form-select,
-body[data-theme="light"] .page-area textarea{
-  background: rgba(11,18,32,.04) !important;
+html[data-theme="dark"] body.page-medicao #medicao-kpis .totais-box,
+body[data-theme="dark"].page-medicao #medicao-kpis .totais-box,
+body.dark.page-medicao #medicao-kpis .totais-box{
+  background: rgba(15,23,42,.38) !important;
+  border-color: rgba(148,163,184,.22) !important;
 }
 
-/* Placeholders */
-.page-area .form-control::placeholder,
-.page-area textarea::placeholder{
-  color: var(--content-muted) !important;
+body.page-medicao #medicao-kpis .medicao-kpi-label,
+body.page-medicao #medicao-kpis .kpi-label{
+  font-size:12px !important;
+  font-weight:800 !important;
+  letter-spacing:.2px !important;
+  text-transform:uppercase !important;
+  color: rgba(15,23,42,.72) !important;
 }
 
-/* Tabelas (Medição) */
-.page-area table,
-.page-area .table{
-  color: var(--content-text) !important;
-}
-.page-area .table thead th{
-  color: var(--content-muted) !important;
-}
-/* ==========================================================
-   OVERRIDES ROBUSTOS — garante legibilidade em templates antigos
-   (Medição / Upload / Importar LDP) mesmo com classes Bootstrap.
-   ========================================================== */
-
-/* Dark/Auto: impede textos "text-dark" sumirem em fundo escuro */
-body[data-theme="dark"] .page-area .text-dark,
-body[data-theme="dark"] .page-area .text-body,
-body[data-theme="dark"] .page-area .text-black,
-body[data-theme="auto"] .page-area .text-dark,
-body[data-theme="auto"] .page-area .text-body,
-body[data-theme="auto"] .page-area .text-black{
-  color: var(--content-text) !important;
+body.page-medicao #medicao-kpis .medicao-kpi-value,
+body.page-medicao #medicao-kpis .kpi-value{
+  margin-top:6px !important;
+  font-size:20px !important;
+  font-weight:900 !important;
+  color:#0f172a !important;
+  opacity:1 !important;
 }
 
-body[data-theme="dark"] .page-area .text-muted,
-body[data-theme="auto"] .page-area .text-muted{
-  color: var(--content-muted) !important;
+html[data-theme="dark"] body.page-medicao #medicao-kpis .medicao-kpi-label,
+body[data-theme="dark"].page-medicao #medicao-kpis .medicao-kpi-label,
+body.dark.page-medicao #medicao-kpis .medicao-kpi-label,
+html[data-theme="dark"] body.page-medicao #medicao-kpis .kpi-label,
+body[data-theme="dark"].page-medicao #medicao-kpis .kpi-label,
+body.dark.page-medicao #medicao-kpis .kpi-label{
+  color: rgba(229,231,235,.74) !important;
 }
 
-/* Light: impede textos "text-white" sumirem em fundo claro */
-body[data-theme="light"] .page-area .text-white,
-body[data-theme="light"] .page-area .text-light{
-  color: var(--content-text) !important;
-}
-body[data-theme="light"] .page-area .text-muted{
-  color: var(--content-muted) !important;
-}
-
-/* Links do conteúdo */
-.page-area a{ color: var(--accent-blue) !important; }
-.page-area a:hover{ filter: brightness(1.06); }
-
-/* ==========================================================
-   AUTO DE VERDADE — segue o tema do sistema operacional
-   ========================================================== */
-@media (prefers-color-scheme: light){
-  body[data-theme="auto"]{
-    --bg: #f4f6fa;
-    --bg-card: #ffffff;
-    --bg-sidebar: #0C1220;
-
-    --text: #ffffff;
-    --text-soft: #b9c3d6;
-
-    --border: #d0d7e4;
-    --shadow: rgba(0,0,0,.15);
-
-    --content-text: #0b1220;
-    --content-muted: rgba(11,18,32,.68);
-
-    --field-bg: #ffffff;
-    --field-text: #0b1220;
-    --field-border: rgba(11,18,32,.16);
-    --field-placeholder: rgba(11,18,32,.50);
-
-    --dash-border: rgba(10,20,40,.12);
-    --dash-text: #0b1220;
-    --dash-muted: rgba(11,18,32,.68);
-    --dash-surface-1: rgba(255,255,255,.92);
-    --dash-surface-2: rgba(245,248,255,.92);
-    --dash-shadow: 0 14px 34px rgba(10,20,40,.12);
-  }
+html[data-theme="dark"] body.page-medicao #medicao-kpis .medicao-kpi-value,
+body[data-theme="dark"].page-medicao #medicao-kpis .medicao-kpi-value,
+body.dark.page-medicao #medicao-kpis .medicao-kpi-value,
+html[data-theme="dark"] body.page-medicao #medicao-kpis .kpi-value,
+body[data-theme="dark"].page-medicao #medicao-kpis .kpi-value,
+body.dark.page-medicao #medicao-kpis .kpi-value{
+  color:#e5e7eb !important;
 }
 
-/* ==========================================================
-   DJANGO ADMIN — layout e cores (Usuários & Permissões)
-   Corrige: "caixa pequena no meio", linhas brancas, sidebar clara.
-   ========================================================== */
+/* =======================
+   TABELA RESUMO (sem cortar)
+======================= */
+body.page-medicao #medicao-resumo .table-responsive{ overflow-x:auto !important; }
 
-body.change-list #content,
-body.change-form #content,
-body.dashboard #content{
-  max-width: none !important;
-  width: auto !important;
+body.page-medicao #medicao-resumo table.medicao-table{
+  width:100% !important;
+  min-width:980px !important;
+  border-collapse:separate !important;
+  border-spacing:0 !important;
+}
+
+body.page-medicao #medicao-resumo table.medicao-table th{
+  background: rgba(56,189,248,.10) !important;
+  color:#0f172a !important;
+  font-weight:900 !important;
+  font-size:12px !important;
+  padding:10px 12px !important;
+  border-bottom:1px solid rgba(15,23,42,.12) !important;
+  white-space:nowrap !important;
+}
+
+body.page-medicao #medicao-resumo table.medicao-table td{
+  color:#0f172a !important;
+  padding:10px 12px !important;
+  border-bottom:1px solid rgba(15,23,42,.08) !important;
+  white-space:nowrap !important;
+}
+
+html[data-theme="dark"] body.page-medicao #medicao-resumo table.medicao-table th,
+body[data-theme="dark"].page-medicao #medicao-resumo table.medicao-table th,
+body.dark.page-medicao #medicao-resumo table.medicao-table th{
+  background: rgba(56,189,248,.14) !important;
+  color:#e5e7eb !important;
+  border-bottom-color: rgba(148,163,184,.22) !important;
+}
+html[data-theme="dark"] body.page-medicao #medicao-resumo table.medicao-table td,
+body[data-theme="dark"].page-medicao #medicao-resumo table.medicao-table td,
+body.dark.page-medicao #medicao-resumo table.medicao-table td{
+  color:#e5e7eb !important;
+  border-bottom-color: rgba(148,163,184,.16) !important;
+}
+
+body.page-medicao #medicao-resumo table.medicao-table tr.total td{
+  font-weight:900 !important;
+  background: rgba(56,189,248,.10) !important;
+}
+
+*/
+
+body.page-medicao .medicao-card{
+  padding: 18px !important;
+}
+
+body.page-medicao .medicao-title{
+  margin: 0 0 10px 0 !important;
+}
+
+body.page-medicao .medicao-card + #medicao-kpis{
+  margin-top: 14px !important;
+}
+
+body.page-medicao form.medicao-filtros{
+  padding: 2px 2px 6px !important;
+}
+
+body.page-medicao form.medicao-filtros select,
+body.page-medicao form.medicao-filtros input{
+  height: 38px !important;
+  border-radius: 10px !important;
+}
+
+body.page-medicao .medicao-actions{
+  margin-top: 8px !important;
+}
+
+body.page-medicao .medicao-actions .btn{
+  height: 36px !important;
+  border-radius: 10px !important;
+  padding: 0 12px !important;
+  font-weight: 800 !important;
+}
+
+body.page-medicao #medicao-kpis .totais-box{
+  background: #ffffff !important;
+  box-shadow: 0 10px 22px rgba(15,23,42,.08) !important;
+  border: 1px solid rgba(15,23,42,.10) !important;
+  min-height: 82px !important;
+}
+
+html[data-theme="dark"] body.page-medicao #medicao-kpis .totais-box,
+body[data-theme="dark"].page-medicao #medicao-kpis .totais-box,
+body.dark.page-medicao #medicao-kpis .totais-box{
+  background: rgba(15,23,42,.55) !important;
+  box-shadow: 0 10px 22px rgba(0,0,0,.35) !important;
+}
+
+body.page-medicao #medicao-kpis .medicao-kpi-label,
+body.page-medicao #medicao-kpis .kpi-label{
+  font-size: 11px !important;
+  opacity: .92 !important;
+}
+
+body.page-medicao #medicao-kpis .medicao-kpi-value,
+body.page-medicao #medicao-kpis .kpi-value{
+  font-size: 22px !important;
+  line-height: 1.1 !important;
+  letter-spacing: .2px !important;
+}
+
+body.page-medicao #medicao-resumo .medicao-card{
+  padding: 14px 14px 10px !important;
+}
+
+body.page-medicao #medicao-resumo table.medicao-table{
+  border-radius: 12px !important;
+  overflow: hidden !important;
+}
+
+body.page-medicao #medicao-resumo table.medicao-table th{
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 2 !important;
+}
+
+body.page-medicao #medicao-resumo table.medicao-table tr.total td{
+  font-size: 13px !important;
+}
+
+body.page-medicao #medicao-resumo{
+  margin-top: 14px !important;
+}
+
+body.page-medicao #medicao-graficos{
+  margin-top: 16px !important;
+}
+
+/* ===== MEDI??O ? GRAFICOS: remover linhas/artefatos quando n?o h? chart ===== */
+body.page-medicao #medicao-graficos{
+  overflow: hidden !important;
+}
+
+body.page-medicao #medicao-graficos hr{
+  display: none !important;
+  height: 0 !important;
   margin: 0 !important;
-  padding: 18px 24px !important;
+  border: 0 !important;
 }
 
-body.change-list #content-main,
-body.change-form #content-main{
-  float: none !important;
-  width: auto !important;
+body.page-medicao #medicao-graficos .medicao-chart-placeholder{
+  border: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 6px 0 10px 0 !important;
 }
 
-body.change-list #changelist{
-  display: grid;
-  grid-template-columns: 1fr 320px;
-  gap: 16px;
-  align-items: start;
+body.page-medicao #medicao-graficos canvas{
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  display: block !important;
+  width: 100% !important;
+  /* evita canvas ?colapsar? em 1px e parecer uma linha */
+  min-height: 220px !important;
 }
 
-body.change-list #changelist-form{ min-width: 0; }
-body.change-list #changelist-filter{
-  width: auto !important;
+body.page-medicao #medicao-graficos .chart-container,
+body.page-medicao #medicao-graficos .grafico-container,
+body.page-medicao #medicao-graficos .grafico-box,
+body.page-medicao #medicao-graficos .medicao-card{
+  border-top: 0 !important;
+  overflow: hidden !important;
+}
+
+/* ===== MEDI??O ? CHART SLOTS (canvas reais) ===== */
+body.page-medicao #medicao-graficos,
+body.page-medicao .medicao-graficos{
+  overflow: hidden !important;
+}
+
+body.page-medicao #medicao-graficos .medicao-chart-wrap{
+  width: 100% !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  background: rgba(255,255,255,.65) !important;
+  border: 1px solid rgba(15,23,42,.10) !important;
+  box-shadow: 0 10px 22px rgba(15,23,42,.06) !important;
+  padding: 10px 12px !important;
+  margin: 8px 0 14px 0 !important;
+}
+
+html[data-theme="dark"] body.page-medicao #medicao-graficos .medicao-chart-wrap,
+body[data-theme="dark"].page-medicao #medicao-graficos .medicao-chart-wrap,
+body.dark.page-medicao #medicao-graficos .medicao-chart-wrap{
+  background: rgba(15,23,42,.35) !important;
+  border: 1px solid rgba(255,255,255,.10) !important;
+  box-shadow: 0 10px 22px rgba(0,0,0,.30) !important;
+}
+
+body.page-medicao #medicao-graficos canvas.medicao-chart{
+  display: block !important;
+  width: 100% !important;
+  height: 280px !important;  /* evita colapsar em linha */
+  max-height: 280px !important;
+}
+
+body.page-medicao #medicao-graficos .medicao-chart-fallback{
+  font-size: 12px !important;
+  opacity: .75 !important;
+  padding: 8px 2px !important;
+}
+
+/* ===== MEDI??O ? FIX HARD: matar linhas/dividers na ?rea de gr?ficos ===== */
+body.page-medicao #medicao-graficos{
+  overflow: hidden !important;
+}
+
+/* Qualquer separador t?pico */
+body.page-medicao #medicao-graficos hr,
+body.page-medicao #medicao-graficos .hr,
+body.page-medicao #medicao-graficos [role="separator"],
+body.page-medicao #medicao-graficos .divider,
+body.page-medicao #medicao-graficos .separator,
+body.page-medicao #medicao-graficos .line,
+body.page-medicao #medicao-graficos .chart-divider{
+  display: none !important;
+  height: 0 !important;
   margin: 0 !important;
-  position: sticky;
-  top: 14px;
-}
-
-/* Results container */
-body.change-list .results,
-body.change-list .results table,
-body.change-list #result_list{
+  border: 0 !important;
   background: transparent !important;
 }
 
-/* Table header + links */
-body.change-list #result_list thead th,
-body.change-list #result_list thead th a{
-  background: rgba(0,0,0,.14) !important;
-  color: rgba(234,241,255,.78) !important;
-  border-bottom: 1px solid rgba(255,255,255,.10) !important;
+/* Pseudo-elementos s?o fonte comum dessas ?linhas? */
+body.page-medicao #medicao-graficos *::before,
+body.page-medicao #medicao-graficos *::after{
+  background: transparent !important;
+  box-shadow: none !important;
+  border: 0 !important;
+  outline: 0 !important;
 }
-body.change-list #result_list thead th a:hover{
+
+/* Se a linha estiver vindo como border-top em algum container */
+body.page-medicao #medicao-graficos *{
+  border-top-color: transparent !important;
+}
+
+/* Canvas/SVG nunca devem ter borda/outline */
+body.page-medicao #medicao-graficos canvas,
+body.page-medicao #medicao-graficos svg{
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+/* Chart.js size monitor (?s vezes aparece como ?linha? em layouts) */
+body.page-medicao #medicao-graficos .chartjs-size-monitor,
+body.page-medicao #medicao-graficos .chartjs-size-monitor-expand,
+body.page-medicao #medicao-graficos .chartjs-size-monitor-shrink{
+  display: none !important;
+}
+
+/* Mant?m o card do gr?fico com borda neutra (sem borda colorida) */
+body.page-medicao #medicao-graficos .medicao-chart-wrap{
+  border-color: rgba(15,23,42,.10) !important;
+  border-top-color: rgba(15,23,42,.10) !important;
+}
+
+/* ===== MEDI??O ? SUPER RESET VISUAL: ?rea de gr?ficos ===== */
+body.page-medicao #medicao-graficos{
+  position: relative !important;
+  overflow: hidden !important;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+body.page-medicao #medicao-graficos *{
+  background-image: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+  outline: 0 !important;
+}
+
+/* mata qualquer overlay absoluto de 1px */
+body.page-medicao #medicao-graficos *{
+  border: 0 !important;
+}
+body.page-medicao #medicao-graficos *::before,
+body.page-medicao #medicao-graficos *::after{
+  content: none !important;
+  display: none !important;
+  background: transparent !important;
+}
+
+/* garante que canvas/svg n?o mostrem ?resto? */
+body.page-medicao #medicao-graficos canvas,
+body.page-medicao #medicao-graficos svg{
+  border: 0 !important;
+  outline: 0 !important;
+  background: transparent !important;
+}
+
+/* ===== MEDI??O ? DASHBOARD LOOK (premium dark cards) ===== */
+body.page-medicao .medicao-hero{
+  margin: 8px 0 12px 0 !important;
+}
+
+body.page-medicao .medicao-h1{
+  font-weight: 900 !important;
+  letter-spacing: -.2px !important;
+  margin: 0 0 6px 0 !important;
+}
+
+body.page-medicao .medicao-subtitle{
+  opacity: .85 !important;
+  margin: 0 0 10px 0 !important;
+}
+
+/* Card base premium (similar ao dashboard) */
+body.page-medicao .medicao-card--dark{
+  background: linear-gradient(180deg, rgba(15,23,42,.92), rgba(2,6,23,.92)) !important;
+  border: 1px solid rgba(255,255,255,.10) !important;
+  box-shadow: 0 18px 40px rgba(0,0,0,.28) !important;
+  border-radius: 16px !important;
+}
+
+body.page-medicao .medicao-card--dark *{
+  color: rgba(255,255,255,.94);
+}
+
+body.page-medicao .medicao-card--dark label,
+body.page-medicao .medicao-card--dark .label,
+body.page-medicao .medicao-card--dark .muted{
+  color: rgba(255,255,255,.78) !important;
+}
+
+/* Inputs no dark card */
+body.page-medicao .medicao-card--dark select,
+body.page-medicao .medicao-card--dark input{
+  background: rgba(255,255,255,.08) !important;
+  border: 1px solid rgba(255,255,255,.14) !important;
   color: rgba(255,255,255,.92) !important;
 }
 
-/* Table body */
-body.change-list #result_list tbody td,
-body.change-list #result_list tbody th{
-  background: transparent !important;
-  color: rgba(234,241,255,.92) !important;
-  border-bottom: 1px solid rgba(255,255,255,.08) !important;
-}
-body.change-list #result_list tbody tr:nth-child(even){
-  background: rgba(255,255,255,.03) !important;
-}
-body.change-list #result_list tbody tr:hover{
-  background: rgba(255,255,255,.06) !important;
-}
-
-/* Actions/toolbar */
-body.change-list #changelist #toolbar,
-body.change-list #changelist .actions,
-body.change-list #changelist .paginator{
-  background: rgba(0,0,0,.12) !important;
-  border-top: 1px solid rgba(255,255,255,.10) !important;
-  border-bottom: 1px solid rgba(255,255,255,.10) !important;
-  color: rgba(234,241,255,.72) !important;
-}
-
-/* Left nav sidebar */
-#nav-sidebar{
-  background: rgba(0,0,0,.14) !important;
-  border-right: 1px solid rgba(255,255,255,.10) !important;
-}
-#nav-sidebar table,
-#nav-sidebar th,
-#nav-sidebar td{
-  background: transparent !important;
-}
-#nav-sidebar th{
-  background: rgba(0,0,0,.18) !important;
-  color: rgba(234,241,255,.72) !important;
-  border-bottom: 1px solid rgba(255,255,255,.10) !important;
-}
-#nav-sidebar a{ color: rgba(234,241,255,.92) !important; }
-#nav-sidebar a:hover{ filter: brightness(1.08); }
-
-/* Mobile: evita quebrar layout do admin */
-@media (max-width: 991.98px){
-  body.change-list #changelist{
-    grid-template-columns: 1fr;
-  }
-  body.change-list #changelist-filter{
-    position: static;
-  }
-}
-
-/* === DORANGE DS: Importar LDP (opt-in) === */
-/* Opt-in styles for Importar LDP screen */
-.ldp-wrap{ max-width: 1160px; margin: 0 auto; }
-.ldp-surface{ padding: 18px; }
-
-.ldp-dropzone{
-  position: relative;
-  border-radius: var(--dash-radius);
-  border: 2px dashed color-mix(in srgb, var(--dash-border) 80%, transparent);
-  background: color-mix(in srgb, var(--dash-surface-2) 70%, transparent);
-  padding: 16px 18px;
-  transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
-}
-body[data-theme="light"] .ldp-dropzone{ background: rgba(11,18,32,.03); }
-.ldp-dropzone:hover{ border-color: color-mix(in srgb, var(--dash-accent) 55%, var(--dash-border)); }
-.ldp-dropzone.is-dragover{
-  border-color: var(--dash-accent);
-  background: color-mix(in srgb, var(--dash-accent) 12%, transparent);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--dash-accent) 18%, transparent);
-}
-
-/* Dropzones: o input file invisível só pode existir DENTRO do container */
-.ent-root .ldp-dropzone,
-.ent-root .upload-dropzone,
-.ent-root .dropzone,
-.ent-root .dz-area{
-  position: relative;
-}
-
-/* input file invisível: apenas dentro do dropzone */
-.ent-root .ldp-dropzone .ldp-file-input,
-.ent-root .upload-dropzone .ldp-file-input,
-.ent-root .dropzone .ldp-file-input,
-.ent-root .dz-area .ldp-file-input{
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  cursor: pointer;
-}
-
-/* Segurança: se .ldp-file-input aparecer fora de dropzone, NÃO pode cobrir a tela */
-.ent-root .ldp-file-input{
-  position: static !important;
-  inset: auto !important;
-  width: auto !important;
-  height: auto !important;
-  opacity: 1 !important;
-  pointer-events: auto !important;
-}
-
-.ldp-title{ font-weight: 900; display:flex; align-items:center; gap:10px; }
-.ldp-title i{ color: var(--dash-accent); font-size: 1.1rem; }
-.ldp-sub{ color: var(--dash-muted); font-weight: 650; margin-top: 2px; }
-.ldp-meta{ color: var(--dash-muted); font-size: .85rem; margin-top: 6px; }
-
-.ldp-chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top: 10px; }
-.ldp-chip{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--dash-border);
-  background: rgba(0,0,0,.18);
-  max-width: 100%;
-}
-body[data-theme="light"] .ldp-chip{ background: rgba(11,18,32,.05); }
-.ldp-chip-name{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width: 56ch; }
-.ldp-chip-remove{ border:0; background:transparent; padding:0; line-height:1; color: var(--dash-muted); }
-.ldp-chip-remove:hover{ color: var(--dash-text); }
-
-.ldp-actions{ display:flex; justify-content:flex-start; gap:10px; flex-wrap:wrap; margin-top: 14px; }
-
-.ldp-progress{ margin-top: 14px; padding: 14px 16px; border-radius: var(--dash-radius); border: 1px solid var(--dash-border); background: rgba(0,0,0,.08); }
-body[data-theme="light"] .ldp-progress{ background: rgba(11,18,32,.03); }
-
-.ldp-progress-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom: 10px; }
-.ldp-progress-title{ font-weight: 850; }
-.ldp-progress-sub{ color: var(--dash-muted); font-weight: 650; font-size: .9rem; }
-.ldp-percent{ font-variant-numeric: tabular-nums; font-weight: 900; }
-
-.ldp-bar{
-  height: 10px;
-  border-radius: 999px;
-  background: rgba(148,163,184,.22);
-  overflow:hidden;
-}
-.ldp-bar > #progressBar{
-  height: 100%;
-  width: 0%;
-  border-radius: 999px;
-  background: linear-gradient(90deg, color-mix(in srgb, var(--dash-accent) 88%, #fff), var(--dash-accent));
-  transition: width .12s ease;
-}
-
-.ldp-log{ white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
-
-/* === /DORANGE DS: Importar LDP (opt-in) === */
-
-/* === FIX: Legibilidade no tema claro (sidebar + links) === */
-:root[data-theme="light"] .sidebar,
-body.theme-light .sidebar,
-html.light .sidebar,
-body.light .sidebar {
-  color: #0b1220;
-}
-:root[data-theme="light"] .sidebar a,
-body.theme-light .sidebar a,
-html.light .sidebar a,
-body.light .sidebar a,
-:root[data-theme="light"] .sidebar .nav-link,
-body.theme-light .sidebar .nav-link,
-html.light .sidebar .nav-link,
-body.light .sidebar .nav-link {
-  color: #0b1220 !important;
-  opacity: 1 !important;
-  text-shadow: none !important;
-}
-:root[data-theme="light"] .sidebar .nav-link:hover,
-body.theme-light .sidebar .nav-link:hover,
-html.light .sidebar .nav-link:hover,
-body.light .sidebar .nav-link:hover {
-  color: #0b1220 !important;
-  opacity: 1 !important;
-}
-:root[data-theme="light"] .sidebar .muted,
-body.theme-light .sidebar .muted,
-html.light .sidebar .muted,
-body.light .sidebar .muted {
-  color: #334155 !important;
-  opacity: 1 !important;
-}
-
-:root[data-theme="light"] .page-area,
-body.theme-light .page-area,
-html.light .page-area,
-body.light .page-area {
-  color: #0b1220;
-}
-:root[data-theme="light"] .page-area h1,
-:root[data-theme="light"] .page-area h2,
-:root[data-theme="light"] .page-area label,
-body.theme-light .page-area h1,
-body.theme-light .page-area h2,
-body.theme-light .page-area label,
-html.light .page-area h1,
-html.light .page-area h2,
-html.light .page-area label,
-body.light .page-area h1,
-body.light .page-area h2,
-body.light .page-area label {
-  color: #0b1220 !important;
-}
-
-/* ==========================================================
-   FIX THEME LIGHT: sidebar text + tables visibility
-   ========================================================== */
-
-/* Detectores de tema claro (cobre várias implementações) */
-html[data-theme="light"], body[data-theme="light"],
-.theme-light, body.theme-light, body.light, html.light,
-[data-theme="light"]{
-  /* fallback geral para texto legível */
-  --text: #101214;
-  --content-text: #101214;
-  --muted: rgba(16,18,20,.72);
-
-  /* sidebar */
-  --sidebar-text: #0f1216;
-  --sidebar-muted: rgba(15,18,22,.70);
-  --sidebar-link: #0f1216;
-  --sidebar-link-hover: #000;
-}
-
-/* Sidebar: texto do menu, ícones e títulos */
-html[data-theme="light"] .sidebar,
-body[data-theme="light"] .sidebar,
-.theme-light .sidebar,
-body.theme-light .sidebar,
-body.light .sidebar,
-html.light .sidebar,
-[data-theme="light"] .sidebar{
-  color: var(--sidebar-text, #0f1216) !important;
-}
-
-/* Links e textos dentro do menu */
-html[data-theme="light"] .sidebar a,
-body[data-theme="light"] .sidebar a,
-.theme-light .sidebar a,
-body.theme-light .sidebar a,
-body.light .sidebar a,
-html.light .sidebar a,
-[data-theme="light"] .sidebar a{
-  color: var(--sidebar-link, #0f1216) !important;
-}
-
-/* Itens comuns do sidebar (cobre variações de markup) */
-html[data-theme="light"] .sidebar .nav-link,
-html[data-theme="light"] .sidebar .menu-link,
-html[data-theme="light"] .sidebar .sidebar-link,
-html[data-theme="light"] .sidebar .menu-item,
-html[data-theme="light"] .sidebar .nav-item,
-html[data-theme="light"] .sidebar .menu-title,
-html[data-theme="light"] .sidebar .sidebar-title,
-html[data-theme="light"] .sidebar .small,
-html[data-theme="light"] .sidebar .text-muted,
-body[data-theme="light"] .sidebar .nav-link,
-body[data-theme="light"] .sidebar .menu-link,
-body[data-theme="light"] .sidebar .sidebar-link,
-body[data-theme="light"] .sidebar .menu-item,
-body[data-theme="light"] .sidebar .nav-item,
-body[data-theme="light"] .sidebar .menu-title,
-body[data-theme="light"] .sidebar .sidebar-title,
-body[data-theme="light"] .sidebar .small,
-body[data-theme="light"] .sidebar .text-muted,
-.theme-light .sidebar .nav-link,
-.theme-light .sidebar .menu-link,
-.theme-light .sidebar .sidebar-link,
-.theme-light .sidebar .menu-item,
-.theme-light .sidebar .nav-item,
-.theme-light .sidebar .menu-title,
-.theme-light .sidebar .sidebar-title,
-.theme-light .sidebar .small,
-.theme-light .sidebar .text-muted,
-body.theme-light .sidebar .nav-link,
-body.theme-light .sidebar .menu-link,
-body.theme-light .sidebar .sidebar-link,
-body.theme-light .sidebar .menu-item,
-body.theme-light .sidebar .nav-item,
-body.theme-light .sidebar .menu-title,
-body.theme-light .sidebar .sidebar-title,
-body.theme-light .sidebar .small,
-body.theme-light .sidebar .text-muted,
-body.light .sidebar .nav-link,
-body.light .sidebar .menu-link,
-body.light .sidebar .sidebar-link,
-body.light .sidebar .menu-item,
-body.light .sidebar .nav-item,
-body.light .sidebar .menu-title,
-body.light .sidebar .sidebar-title,
-body.light .sidebar .small,
-body.light .sidebar .text-muted,
-html.light .sidebar .nav-link,
-html.light .sidebar .menu-link,
-html.light .sidebar .sidebar-link,
-html.light .sidebar .menu-item,
-html.light .sidebar .nav-item,
-html.light .sidebar .menu-title,
-html.light .sidebar .sidebar-title,
-html.light .sidebar .small,
-html.light .sidebar .text-muted,
-[data-theme="light"] .sidebar .nav-link,
-[data-theme="light"] .sidebar .menu-link,
-[data-theme="light"] .sidebar .sidebar-link,
-[data-theme="light"] .sidebar .menu-item,
-[data-theme="light"] .sidebar .nav-item,
-[data-theme="light"] .sidebar .menu-title,
-[data-theme="light"] .sidebar .sidebar-title,
-[data-theme="light"] .sidebar .small,
-[data-theme="light"] .sidebar .text-muted{
-  color: var(--sidebar-text, #0f1216) !important;
-}
-
-/* Hover/active */
-html[data-theme="light"] .sidebar a:hover,
-body[data-theme="light"] .sidebar a:hover,
-.theme-light .sidebar a:hover,
-body.theme-light .sidebar a:hover,
-body.light .sidebar a:hover,
-html.light .sidebar a:hover,
-[data-theme="light"] .sidebar a:hover{
-  color: var(--sidebar-link-hover, #000) !important;
-}
-
-/* Tabelas / DataTables no light: garantir texto visível */
-html[data-theme="light"] .page-area,
-body[data-theme="light"] .page-area,
-.theme-light .page-area,
-body.theme-light .page-area,
-body.light .page-area,
-html.light .page-area,
-[data-theme="light"] .page-area{
-  color: var(--text, #101214) !important;
-}
-
-html[data-theme="light"] table,
-html[data-theme="light"] .table,
-html[data-theme="light"] th,
-html[data-theme="light"] td,
-body[data-theme="light"] table,
-body[data-theme="light"] .table,
-body[data-theme="light"] th,
-body[data-theme="light"] td,
-.theme-light table,
-.theme-light .table,
-.theme-light th,
-.theme-light td,
-body.theme-light table,
-body.theme-light .table,
-body.theme-light th,
-body.theme-light td,
-body.light table,
-body.light .table,
-body.light th,
-body.light td,
-html.light table,
-html.light .table,
-html.light th,
-html.light td,
-[data-theme="light"] table,
-[data-theme="light"] .table,
-[data-theme="light"] th,
-[data-theme="light"] td{
-  color: var(--text, #101214) !important;
-}
-
-/* Inputs/paginação DataTables */
-html[data-theme="light"] .dataTables_wrapper,
-html[data-theme="light"] .dataTables_wrapper label,
-html[data-theme="light"] .dataTables_wrapper .dataTables_info,
-html[data-theme="light"] .dataTables_wrapper .dataTables_paginate,
-body[data-theme="light"] .dataTables_wrapper,
-body[data-theme="light"] .dataTables_wrapper label,
-body[data-theme="light"] .dataTables_wrapper .dataTables_info,
-body[data-theme="light"] .dataTables_wrapper .dataTables_paginate,
-.theme-light .dataTables_wrapper,
-.theme-light .dataTables_wrapper label,
-.theme-light .dataTables_wrapper .dataTables_info,
-.theme-light .dataTables_wrapper .dataTables_paginate,
-[data-theme="light"] .dataTables_wrapper,
-[data-theme="light"] .dataTables_wrapper label,
-[data-theme="light"] .dataTables_wrapper .dataTables_info,
-[data-theme="light"] .dataTables_wrapper .dataTables_paginate{
-  color: var(--text, #101214) !important;
-}
-
-/* Pills/status: evitar texto branco no light */
-html[data-theme="light"] .status-pill,
-body[data-theme="light"] .status-pill,
-.theme-light .status-pill,
-[data-theme="light"] .status-pill{
-  color: #0f1216 !important;
-}
-
-/* FIX: impedir input[type=file] global invisível cobrindo a tela (cliques abrindo seletor) */
-.ent-root input[type="file"]{
-  position: static !important;
-  inset: auto !important;
-  width: auto !important;
-  height: auto !important;
-  opacity: 1 !important;
-  pointer-events: auto !important;
-}
-
-/* Se existir dropzone, aí sim o input pode ser invisível, mas só dentro do container */
-.ent-root .dropzone,
-.ent-root .dz-area,
-.ent-root .upload-dropzone{
-  position: relative;
-}
-
-.ent-root .dropzone input[type="file"],
-.ent-root .dz-area input[type="file"],
-.ent-root .upload-dropzone input[type="file"]{
-  position: absolute !important;
-  inset: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-  opacity: 0 !important;
-  cursor: pointer;
-}
-
-/* Medicao: garantir contraste nos KPIs */
-.page-area .medicao-kpis .kpi-value{
-  font-weight: 700;
-  opacity: 1;
-  color: inherit;
-}
-
-/* =========================
-   MEDIÇÃO — Legibilidade / Contraste
-   ========================= */
-.page-medicao{
-  color: #111827;
-}
-
-.page-medicao h1,
-.page-medicao h2,
-.page-medicao .page-title,
-.page-medicao .section-title{
-  color: #0b5ed7;
-}
-
-.page-medicao .kpi-label{
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: .2px;
-  color: #374151;
-  opacity: 1 !important;
-}
-
-.page-medicao .kpi-value{
-  font-size: 22px;
-  font-weight: 800;
-  color: #111827;
-  opacity: 1 !important;
-}
-
-.page-medicao .card,
-.page-medicao .kpi-card,
-.page-medicao .filter-card{
-  color: #111827;
-}
-
-.page-medicao table,
-.page-medicao .table{
-  color: #111827;
-}
-
-.page-medicao table thead th,
-.page-medicao .table thead th{
-  color: #111827;
-  font-weight: 700;
-}
-
-.page-medicao table tbody td,
-.page-medicao .table tbody td{
-  color: #111827;
-  font-weight: 500;
-}
-
-.page-medicao .text-muted,
-.page-medicao .muted,
-.page-medicao .subtle{
-  color: #374151 !important;
-  opacity: 1 !important;
-}
-
-body.dark .page-medicao,
-[data-theme="dark"] .page-medicao{
-  color: #e5e7eb;
-}
-
-body.dark .page-medicao .kpi-label,
-[data-theme="dark"] .page-medicao .kpi-label{
-  color: #cbd5e1;
-}
-
-body.dark .page-medicao .kpi-value,
-[data-theme="dark"] .page-medicao .kpi-value{
-  color: #f9fafb;
-}
-
-body.dark .page-medicao table,
-[data-theme="dark"] .page-medicao table,
-body.dark .page-medicao .table,
-[data-theme="dark"] .page-medicao .table{
-  color: #e5e7eb;
-}
-
-body.dark .page-medicao table thead th,
-[data-theme="dark"] .page-medicao table thead th{
-  color: #f9fafb;
-}
-
-/* =========================
-   MEDICAO — CONTRASTE / LEGIBILIDADE
-   ========================= */
-.medicao-page h1,
-.medicao-page h2,
-.medicao-page h3 {
-  color: #0b2239;
-  font-weight: 700;
-}
-
-.medicao-page .text-muted,
-.medicao-page small {
-  color: #4b5563;
-}
-
-/* KPIs */
-.medicao-page .kpi-value,
-.medicao-page .kpi-number,
-.medicao-page .kpi-card .value,
-.medicao-page .card .kpi {
-  color: #0b2239 !important;
-  font-weight: 800 !important;
-  opacity: 1 !important;
-}
-
-.medicao-page .kpi-label,
-.medicao-page .kpi-title,
-.medicao-page .card-title {
-  color: #334155;
-  font-weight: 600;
-  opacity: 1;
-}
-
-/* Tabela */
-.medicao-page table {
-  color: #0f172a;
-}
-
-.medicao-page thead th {
-  color: #0b2239;
-  font-weight: 700;
-}
-
-.medicao-page tbody td {
-  color: #0f172a;
-  font-weight: 500;
-}
-
-/* Inputs/filters */
-.medicao-page label {
-  color: #0b2239;
-  font-weight: 600;
-}
-
-.medicao-page input::placeholder {
-  color: #64748b;
-  opacity: 1;
-}
-
-/* =========================
-   MEDICAO — CONTRASTE / TIPOGRAFIA
-   ========================= */
-.page-medicao,
-.page-medicao * {
-  opacity: 1 !important;
-}
-
-.page-medicao {
-  color: var(--text, var(--text-color, #111827));
-}
-
-.page-medicao h1,
-.page-medicao h2,
-.page-medicao h3,
-.page-medicao .page-title,
-.page-medicao .section-title {
-  color: var(--text-strong, var(--text, #0f172a));
-  opacity: 1 !important;
-}
-
-.page-medicao .text-muted,
-.page-medicao .muted,
-.page-medicao small,
-.page-medicao .helptext {
-  color: var(--text-muted, rgba(17,24,39,.75)) !important;
-  opacity: 1 !important;
-}
-
-/* KPIs (cards) */
-.page-medicao .kpi-card,
-.page-medicao .card,
-.page-medicao .panel {
-  color: var(--text, var(--text-color, #111827));
-}
-
-.page-medicao .kpi-value,
-.page-medicao .kpi-number,
-.page-medicao .stat-value {
-  color: var(--text-strong, var(--text, #0f172a)) !important;
-  font-weight: 800;
-  opacity: 1 !important;
-}
-
-.page-medicao .kpi-label,
-.page-medicao .stat-label {
-  color: var(--text-muted, rgba(17,24,39,.75)) !important;
-  font-weight: 600;
-  opacity: 1 !important;
-}
-
-/* Form controls (select/input) */
-.page-medicao input,
-.page-medicao select,
-.page-medicao textarea {
-  color: var(--text-strong, var(--text, #0f172a)) !important;
-  opacity: 1 !important;
-}
-
-.page-medicao input::placeholder {
-  color: var(--text-muted, rgba(17,24,39,.6)) !important;
-  opacity: 1 !important;
-}
-
-.page-medicao label {
-  color: var(--text-strong, var(--text, #0f172a)) !important;
-  font-weight: 600;
-  opacity: 1 !important;
-}
-
-/* Tabela resumo */
-.page-medicao table,
-.page-medicao .table {
-  color: var(--text-strong, var(--text, #0f172a)) !important;
-}
-
-.page-medicao th {
-  color: var(--text-strong, var(--text, #0f172a)) !important;
-  font-weight: 800;
-}
-
-.page-medicao td {
-  color: var(--text, var(--text-color, #111827)) !important;
-  opacity: 1 !important;
-}
-
-/* =========================
-   MEDICAO - TIPOGRAFIA / CONTRASTE (v2)
-   ========================= */
-.page-medicao {
-  --med-text: var(--ds-text, #111827);
-  --med-muted: var(--ds-text-muted, #4b5563);
-  --med-card: var(--ds-card-bg, #ffffff);
-  --med-border: var(--ds-border, #e5e7eb);
-}
-
-/* KPIs: titulos e valores nao podem ficar "apagados" */
-.page-medicao .kpi-card,
-.page-medicao .kpi,
-.page-medicao .kpi-box,
-.page-medicao .card.kpi,
-.page-medicao .card.kpi-card {
-  background: var(--med-card) !important;
-  border: 1px solid var(--med-border) !important;
-}
-
-.page-medicao .kpi-title,
-.page-medicao .kpi-label,
-.page-medicao .kpi .label,
-.page-medicao .kpi-box .label,
-.page-medicao .card.kpi .label,
-.page-medicao .card.kpi-card .label {
-  color: var(--med-muted) !important;
-  font-weight: 600 !important;
-  opacity: 1 !important;
-}
-
-.page-medicao .kpi-value,
-.page-medicao .kpi-number,
-.page-medicao .kpi .value,
-.page-medicao .kpi-box .value,
-.page-medicao .card.kpi .value,
-.page-medicao .card.kpi-card .value {
-  color: var(--med-text) !important;
-  font-weight: 800 !important;
-  font-size: 1.35rem !important;
-  line-height: 1.15 !important;
-  letter-spacing: 0.2px !important;
-  opacity: 1 !important;
-  font-variant-numeric: tabular-nums !important;
-}
-
-/* Quando os KPIs estao dentro de bootstrap .text-muted ou opacity herdada */
-.page-medicao .kpi-card *,
-.page-medicao .kpi *,
-.page-medicao .kpi-box *,
-.page-medicao .card.kpi *,
-.page-medicao .card.kpi-card * {
-  opacity: 1;
-}
-
-/* Tabela do resumo: aumentar legibilidade geral */
-.page-medicao table,
-.page-medicao .table {
-  color: var(--med-text) !important;
-  font-size: 13.5px !important;
-}
-
-.page-medicao thead th {
-  color: var(--med-text) !important;
-  font-weight: 700 !important;
-  opacity: 1 !important;
-}
-
-.page-medicao tbody td {
-  color: var(--med-text) !important;
-  opacity: 1 !important;
-}
-
-/* Numeros alinhados e "tabular" */
-.page-medicao td:nth-last-child(-n+6),
-.page-medicao th:nth-last-child(-n+6) {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-
-/* Badges nao apagadas */
-.page-medicao .badge,
-.page-medicao .pill,
-.page-medicao .status-badge {
-  font-weight: 700 !important;
-  opacity: 1 !important;
-}
-
-/* Inputs e selects: texto mais forte */
-.page-medicao input,
-.page-medicao select {
-  color: var(--med-text) !important;
-}
-
-/* =========================
-   MEDIÇÃO — CONTRASTE / TIPOGRAFIA (v3 ultra-robusto)
-   ========================= */
-.page-medicao{
-  --m-text:#0f172a;
-  --m-muted:#334155;
-  --m-border:#e2e8f0;
-  --m-bg:#ffffff;
-}
-
-/* Neutraliza “apagado” herdado (text-muted/opacity) */
-.page-medicao,
-.page-medicao *{
-  opacity: 1;
-}
-
-/* Faixa de KPIs (os 6 cards) — pega por padrões comuns de layout */
-.page-medicao .kpi,
-.page-medicao .kpi-card,
-.page-medicao .kpi-box,
-.page-medicao .kpi-grid,
-.page-medicao .cards,
-.page-medicao .cards-row,
-.page-medicao .row,
-.page-medicao .col,
-.page-medicao .card{
-  color: var(--m-text);
-}
-
-/* Cards: fundo e borda consistentes */
-.page-medicao .card{
-  background: var(--m-bg) !important;
-  border: 1px solid var(--m-border) !important;
-}
-
-/* Títulos/labels (inclui bootstrap card-title / small / text-muted) */
-.page-medicao .card .card-title,
-.page-medicao .card .title,
-.page-medicao .card .label,
-.page-medicao .card small,
-.page-medicao .card .text-muted,
-.page-medicao .card [class*="muted"],
-.page-medicao .filters label{
-  color: var(--m-muted) !important;
-  font-weight: 650 !important;
-  opacity: 1 !important;
-}
-
-/* Valores (números grandes): tenta cobrir qualquer markup */
-.page-medicao .card .card-text,
-.page-medicao .card .value,
-.page-medicao .card .valor,
-.page-medicao .card .number,
-.page-medicao .card .kpi-value,
-.page-medicao .card strong,
-.page-medicao .card b{
-  color: var(--m-text) !important;
-  font-weight: 800 !important;
-  opacity: 1 !important;
-  font-variant-numeric: tabular-nums !important;
-}
-
-/* Se o número estiver em h1/h2/h3 dentro do card */
-.page-medicao .card h1,
-.page-medicao .card h2,
-.page-medicao .card h3{
-  color: var(--m-text) !important;
-  font-weight: 850 !important;
-  opacity: 1 !important;
-  font-variant-numeric: tabular-nums !important;
-}
-
-/* Inputs/selects */
-.page-medicao input,
-.page-medicao select{
-  color: var(--m-text) !important;
-}
-
-/* Tabela resumo */
-.page-medicao table,
-.page-medicao .table{
-  color: var(--m-text) !important;
-  font-size: 13.5px !important;
-}
-.page-medicao thead th{
-  color: var(--m-text) !important;
-  font-weight: 750 !important;
-  opacity: 1 !important;
-}
-.page-medicao tbody td{
-  color: var(--m-text) !important;
-  opacity: 1 !important;
-}
-
-/* Números da tabela alinhados à direita (colunas de valores) */
-.page-medicao td,
-.page-medicao th{
-  font-variant-numeric: tabular-nums;
-}
-.page-medicao td:nth-last-child(-n+6),
-.page-medicao th:nth-last-child(-n+6){
-  text-align: right;
-}
-
-/* Botão Exportar (quando desabilitado) manter legível */
-.page-medicao .btn:disabled,
-.page-medicao button:disabled{
-  opacity: .55 !important;
-}
-
-/* KPI labels/values (quando marcados explicitamente) */
-.page-medicao .kpi-label{
-  color: var(--m-muted) !important;
-  font-weight: 650 !important;
-}
-.page-medicao .kpi-value{
-  color: var(--m-text) !important;
-  font-weight: 850 !important;
-  font-size: 1.35rem !important;
-}
-
-.page-medicao .medicao-kpis,
-.page-medicao .medicao-kpis *{
-  opacity: 1 !important;
-  filter: none !important;
-}
-
-.page-medicao .medicao-kpis .card{
-  background: #ffffff !important;
-  border: 1px solid #e2e8f0 !important;
-}
-
-.page-medicao .medicao-kpis .medicao-kpi-label{
-  color: #334155 !important;
-  font-weight: 700 !important;
-  font-size: 12px !important;
-  letter-spacing: .2px !important;
-  opacity: 1 !important;
-}
-
-.page-medicao .medicao-kpis .medicao-kpi-value{
-  color: #0f172a !important;
-  font-weight: 900 !important;
-  font-size: 18px !important;
-  line-height: 1.2 !important;
-  font-variant-numeric: tabular-nums !important;
-  opacity: 1 !important;
-}
-
-/* Se algum trecho ainda vier "muted", forçar dentro dos KPIs */
-.page-medicao .medicao-kpis .text-muted,
-.page-medicao .medicao-kpis [class*="muted"],
-.page-medicao .medicao-kpis [class*="opacity"]{
-  color: #334155 !important;
-  opacity: 1 !important;
-}
-
-/* ===== Medição (tipografia + tabela) ===== */
-.medicao-page{
-}
-
-.medicao-page .kpi-card .kpi-label{
-  font-size: 12px;
-  color: #334155;
-  font-weight: 600;
-}
-.medicao-page .kpi-card .kpi-value{
-  font-size: 18px;
-  color: #0f172a;
-  font-weight: 800;
-  letter-spacing: .2px;
-}
-
-.medicao-page .medicao-table-wrap{
-  width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  border-radius: 12px;
-}
-.medicao-page .medicao-table{
-  width: 100%;
-  min-width: 1100px;
-  border-collapse: separate;
-  border-spacing: 0;
-  table-layout: auto;
-  background: transparent;
-}
-.medicao-page .medicao-table thead{ display: table-header-group; }
-.medicao-page .medicao-table tbody{ display: table-row-group; }
-.medicao-page .medicao-table tfoot{ display: table-footer-group; }
-.medicao-page .medicao-table tr{ display: table-row; }
-.medicao-page .medicao-table th,
-.medicao-page .medicao-table td{
-  display: table-cell;
-  vertical-align: middle;
-}
-
-.medicao-page .medicao-table th{
-  font-size: 12px;
-  font-weight: 800;
-  color: #0f172a;
-  background: #e6f3fb;
-  padding: 10px 12px;
-  white-space: nowrap;
-  border-bottom: 1px solid #cfe7f7;
-}
-.medicao-page .medicao-table td{
-  font-size: 13px;
-  color: #0f172a;
-  padding: 10px 12px;
-  border-bottom: 1px solid #e2e8f0;
-  white-space: nowrap;
-}
-
-.medicao-page .medicao-col-left{ text-align: left; }
-.medicao-page .medicao-col-center{ text-align: center; }
-.medicao-page .medicao-col-right{
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-
-.medicao-page .medicao-total-row td{
-  background: #dff1fb;
-  font-weight: 900;
-  border-top: 2px solid #8fd0f5;
-}
-
-body.dark .medicao-page .kpi-card .kpi-label,
-body.theme-dark .medicao-page .kpi-card .kpi-label,
-[data-theme="dark"] .medicao-page .kpi-card .kpi-label{
-  color: #cbd5e1;
-}
-
-body.dark .medicao-page .kpi-card .kpi-value,
-body.theme-dark .medicao-page .kpi-card .kpi-value,
-[data-theme="dark"] .medicao-page .kpi-card .kpi-value{
-  color: #f1f5f9;
-}
-
-body.dark .medicao-page .medicao-table th,
-body.theme-dark .medicao-page .medicao-table th,
-[data-theme="dark"] .medicao-page .medicao-table th{
-  color: #e2e8f0;
-  background: rgba(56, 189, 248, .14);
-  border-bottom-color: rgba(148, 163, 184, .25);
-}
-
-body.dark .medicao-page .medicao-table td,
-body.theme-dark .medicao-page .medicao-table td,
-[data-theme="dark"] .medicao-page .medicao-table td{
-  color: #e2e8f0;
-  border-bottom-color: rgba(148, 163, 184, .25);
-}
-
-body.dark .medicao-page .medicao-total-row td,
-body.theme-dark .medicao-page .medicao-total-row td,
-[data-theme="dark"] .medicao-page .medicao-total-row td{
-  background: rgba(56, 189, 248, .12);
-  border-top-color: rgba(56, 189, 248, .35);
-}
-
-/* =========================
-   MEDIÇÃO — FIX TIPOGRAFIA / CONTRASTE / TABELA
-   Escopo: somente quando body tiver class="page-medicao"
-   ========================= */
-
-body.page-medicao {
-  /* variáveis locais */
-  --medicao-fg: #0f172a;
-  --medicao-muted: #475569;
-  --medicao-card-bg: #f8fafc;
-  --medicao-card-bd: rgba(15, 23, 42, 0.12);
-}
-
-/* suportar dark theme mesmo sem saber o nome exato: cobrimos os padrões comuns */
-html.dark body.page-medicao,
-body.dark.page-medicao,
-body.theme-dark.page-medicao,
-html[data-theme="dark"] body.page-medicao,
-body[data-theme="dark"].page-medicao {
-  --medicao-fg: #e5e7eb;
-  --medicao-muted: #94a3b8;
-  --medicao-card-bg: rgba(15, 23, 42, 0.45);
-  --medicao-card-bd: rgba(148, 163, 184, 0.22);
-}
-
-/* TÍTULOS / TEXTOS */
-body.page-medicao h1,
-body.page-medicao h2,
-body.page-medicao h3,
-body.page-medicao .page-title,
-body.page-medicao .section-title {
-  color: var(--medicao-fg) !important;
-}
-
-body.page-medicao .page-subtitle,
-body.page-medicao .text-muted,
-body.page-medicao small {
-  color: var(--medicao-muted) !important;
-}
-
-/* KPI CARDS — aqui está o bug principal (números brancos/apagados) */
-body.page-medicao .kpi-card,
-body.page-medicao .kpi-box,
-body.page-medicao .kpi-item,
-body.page-medicao .kpi {
-  background: var(--medicao-card-bg) !important;
-  border: 1px solid var(--medicao-card-bd) !important;
-  border-radius: 12px !important;
-}
-
-body.page-medicao .kpi-title,
-body.page-medicao .kpi-label,
-body.page-medicao .kpi-card .label,
-body.page-medicao .kpi-card .title {
-  color: var(--medicao-muted) !important;
-  font-weight: 700 !important;
-  letter-spacing: .2px;
-}
-
-body.page-medicao .kpi-value,
-body.page-medicao .kpi-number,
-body.page-medicao .kpi-card .value,
-body.page-medicao .kpi-card .number,
-body.page-medicao .kpi-card strong {
-  color: var(--medicao-fg) !important;
-  opacity: 1 !important;
-  filter: none !important;
-  text-shadow: none !important;
+body.page-medicao .medicao-card--dark select:focus,
+body.page-medicao .medicao-card--dark input:focus{
+  outline: 0 !important;
+  box-shadow: 0 0 0 4px rgba(59,130,246,.25) !important;
+  border-color: rgba(59,130,246,.55) !important;
+}
+
+/* Bot?es dentro do card */
+body.page-medicao .medicao-card--dark .medicao-actions .btn{
+  height: 36px !important;
+  border-radius: 10px !important;
+  padding: 0 12px !important;
   font-weight: 800 !important;
 }
 
-/* Se algum estilo global estiver reduzindo opacidade do conteúdo do card */
-body.page-medicao .kpi-card *,
-body.page-medicao .kpi-box *,
-body.page-medicao .kpi-item * {
-  opacity: 1;
+body.page-medicao .medicao-card--dark .btn.btn-outline-secondary{
+  border-color: rgba(255,255,255,.18) !important;
+  color: rgba(255,255,255,.90) !important;
 }
 
-/* TABELA DO RESUMO — evitar “desconfigurar” com mudanças globais */
-body.page-medicao .table,
-body.page-medicao table {
-  color: var(--medicao-fg) !important;
+body.page-medicao .medicao-card--dark .btn.btn-outline-secondary:hover{
+  background: rgba(255,255,255,.08) !important;
 }
 
-body.page-medicao .table thead th,
-body.page-medicao table thead th {
-  font-size: 12px !important;
-  font-weight: 800 !important;
-  color: var(--medicao-fg) !important;
-  vertical-align: middle !important;
-  white-space: nowrap;
-}
-
-body.page-medicao .table tbody td,
-body.page-medicao table tbody td {
-  font-size: 13px !important;
-  vertical-align: middle !important;
-}
-
-body.page-medicao .table th,
-body.page-medicao .table td,
-body.page-medicao table th,
-body.page-medicao table td {
-  padding: 10px 12px !important;
-}
-
-/* garantir que a tabela não estoure e que a sombra/borda fiquem estáveis */
-body.page-medicao .table-responsive,
-body.page-medicao .table-wrap,
-body.page-medicao .table-container {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-/* CARD DOS GRÁFICOS / PLACEHOLDERS */
-body.page-medicao .chart-card,
-body.page-medicao .chart-box,
-body.page-medicao .chart-container {
-  background: var(--medicao-card-bg) !important;
-  border: 1px solid var(--medicao-card-bd) !important;
-  border-radius: 12px !important;
-}
-
-body.page-medicao .chart-card .title,
-body.page-medicao .chart-box .title {
-  color: var(--medicao-fg) !important;
-  font-weight: 800 !important;
-}
-
-body.page-medicao .chart-card .subtitle,
-body.page-medicao .chart-box .subtitle {
-  color: var(--medicao-muted) !important;
-}
-
-/* FIM MEDIÇÃO */
-
-/* =========================
-   MEDIÇÃO — MARTELLO DE CONTRASTE / OPACIDADE / TABELA
-   ========================= */
-
-body.page-medicao #medicao-kpis,
-body.page-medicao #medicao-resumo,
-body.page-medicao #medicao-graficos {
-  opacity: 1 !important;
-  filter: none !important;
-}
-
-body.page-medicao #medicao-kpis * {
-  opacity: 1 !important;
-  filter: none !important;
-}
-
-body.page-medicao #medicao-kpis .card,
+/* KPIs com cara de dashboard */
 body.page-medicao #medicao-kpis .kpi-card,
-body.page-medicao #medicao-kpis .kpi-box,
-body.page-medicao #medicao-kpis .kpi-item {
-  background: rgba(248, 250, 252, 1) !important;
-  border: 1px solid rgba(15, 23, 42, 0.14) !important;
-  border-radius: 12px !important;
+body.page-medicao #medicao-kpis .totais-box{
+  background: linear-gradient(180deg, rgba(15,23,42,.88), rgba(2,6,23,.88)) !important;
+  border: 1px solid rgba(255,255,255,.10) !important;
+  box-shadow: 0 16px 34px rgba(0,0,0,.22) !important;
+  border-radius: 16px !important;
+  min-height: 84px !important;
 }
 
-body.page-medicao #medicao-kpis .card-title,
-body.page-medicao #medicao-kpis .kpi-title,
 body.page-medicao #medicao-kpis .kpi-label,
-body.page-medicao #medicao-kpis .label,
-body.page-medicao #medicao-kpis small {
-  color: #475569 !important;
-  font-weight: 700 !important;
+body.page-medicao #medicao-kpis .medicao-kpi-label{
+  font-size: 11px !important;
+  letter-spacing: .35px !important;
+  text-transform: uppercase !important;
+  opacity: .80 !important;
 }
 
 body.page-medicao #medicao-kpis .kpi-value,
-body.page-medicao #medicao-kpis .kpi-number,
-body.page-medicao #medicao-kpis .value,
-body.page-medicao #medicao-kpis .number,
-body.page-medicao #medicao-kpis strong,
-body.page-medicao #medicao-kpis b {
-  color: #0f172a !important;
+body.page-medicao #medicao-kpis .medicao-kpi-value{
+  font-size: 24px !important;
+  line-height: 1.1 !important;
   font-weight: 900 !important;
-  text-shadow: none !important;
 }
 
-body.page-medicao #medicao-kpis .text-white,
-body.page-medicao #medicao-kpis .text-light,
-body.page-medicao #medicao-kpis .opacity-50,
-body.page-medicao #medicao-kpis .opacity-25,
-body.page-medicao #medicao-kpis .opacity-75 {
-  color: #0f172a !important;
-  opacity: 1 !important;
+/* Tabela (relat?rio) no card dark */
+body.page-medicao #medicao-resumo table.medicao-table{
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  background: rgba(255,255,255,.03) !important;
 }
 
-/* RESUMO — tabela estável e alinhada */
-body.page-medicao #medicao-resumo .table,
-body.page-medicao #medicao-resumo table {
+body.page-medicao #medicao-resumo table.medicao-table th{
+  background: rgba(255,255,255,.06) !important;
+  color: rgba(255,255,255,.92) !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 2 !important;
+}
+
+body.page-medicao #medicao-resumo table.medicao-table td{
+  color: rgba(255,255,255,.90) !important;
+  border-color: rgba(255,255,255,.10) !important;
+}
+
+body.page-medicao #medicao-resumo table.medicao-table tr.total td{
+  background: rgba(255,255,255,.06) !important;
+  font-weight: 900 !important;
+}
+
+/* ===== Charts: cards premium como dashboard ===== */
+body.page-medicao #medicao-graficos{
+  margin-top: 16px !important;
+}
+
+body.page-medicao .medicao-chart-card{
+  background: linear-gradient(180deg, rgba(15,23,42,.92), rgba(2,6,23,.92)) !important;
+  border: 1px solid rgba(255,255,255,.10) !important;
+  box-shadow: 0 18px 40px rgba(0,0,0,.28) !important;
+  border-radius: 16px !important;
+  padding: 12px 14px !important;
+  margin: 10px 0 14px 0 !important;
+}
+
+body.page-medicao .medicao-chart-head{
+  display: flex !important;
+  align-items: baseline !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  margin-bottom: 8px !important;
+}
+
+body.page-medicao .medicao-chart-title{
+  font-weight: 900 !important;
+  letter-spacing: -.1px !important;
+  color: rgba(255,255,255,.94) !important;
+}
+
+body.page-medicao .medicao-chart-meta{
+  font-size: 12px !important;
+  opacity: .70 !important;
+  color: rgba(255,255,255,.85) !important;
+}
+
+body.page-medicao .medicao-chart-body{
+  background: rgba(255,255,255,.03) !important;
+  border: 1px solid rgba(255,255,255,.08) !important;
+  border-radius: 14px !important;
+  padding: 10px !important;
+}
+
+body.page-medicao canvas.medicao-chart{
+  display: block !important;
   width: 100% !important;
-  border-collapse: collapse !important;
-  color: #0f172a !important;
+  height: 100% !important;
+}
+
+/* Espa?amento geral */
+body.page-medicao #medicao-resumo{ margin-top: 14px !important; }
+body.page-medicao #medicao-graficos{ margin-top: 16px !important; }
+
+/* ===== MEDI??O ? FIX CONTRASTE (KPIs + cards dark) ===== */
+body.page-medicao .medicao-card--dark,
+body.page-medicao .medicao-card--dark *{
+  color: rgba(255,255,255,.92) !important;
+}
+
+body.page-medicao .medicao-card--dark .text-muted,
+body.page-medicao .medicao-card--dark small,
+body.page-medicao .medicao-card--dark .small,
+body.page-medicao .medicao-card--dark .form-text{
+  color: rgba(255,255,255,.70) !important;
+}
+
+body.page-medicao #medicao-kpis .kpi-card,
+body.page-medicao #medicao-kpis .totais-box{
+  color: rgba(255,255,255,.92) !important;
+}
+
+body.page-medicao #medicao-kpis .kpi-value,
+body.page-medicao #medicao-kpis .medicao-kpi-value{
+  color: rgba(255,255,255,.96) !important;
+}
+
+/* ===== MEDI??O ? FIX TABELA (remover miolo branco) ===== */
+body.page-medicao #medicao-resumo table.medicao-table{
+  background: rgba(255,255,255,.03) !important;
+}
+
+body.page-medicao #medicao-resumo table.medicao-table thead,
+body.page-medicao #medicao-resumo table.medicao-table tbody,
+body.page-medicao #medicao-resumo table.medicao-table tfoot{
   background: transparent !important;
 }
 
-body.page-medicao #medicao-resumo .table thead th,
-body.page-medicao #medicao-resumo table thead th {
-  font-size: 12px !important;
-  font-weight: 800 !important;
-  color: #0f172a !important;
-  white-space: nowrap !important;
-  padding: 10px 12px !important;
-  vertical-align: middle !important;
+body.page-medicao #medicao-resumo table.medicao-table th{
+  background: rgba(255,255,255,.06) !important;
+  color: rgba(255,255,255,.92) !important;
+  border-color: rgba(255,255,255,.12) !important;
 }
 
-body.page-medicao #medicao-resumo .table tbody td,
-body.page-medicao #medicao-resumo table tbody td {
-  font-size: 13px !important;
-  color: #0f172a !important;
-  padding: 10px 12px !important;
-  vertical-align: middle !important;
+body.page-medicao #medicao-resumo table.medicao-table td{
+  background: transparent !important;
+  color: rgba(255,255,255,.90) !important;
+  border-color: rgba(255,255,255,.10) !important;
 }
 
-body.page-medicao #medicao-resumo .table td:last-child,
-body.page-medicao #medicao-resumo .table th:last-child {
-  padding-right: 16px !important;
+body.page-medicao #medicao-resumo table.medicao-table tr:hover td{
+  background: rgba(255,255,255,.04) !important;
 }
 
-/* se tiver overflow/estouro, garante scroll horizontal */
-body.page-medicao #medicao-resumo .table-responsive,
-body.page-medicao #medicao-resumo .table-wrap,
-body.page-medicao #medicao-resumo .table-container {
-  overflow-x: auto !important;
+/* ===== MEDI??O ? FIX GRAFICOS (card dark + ?linhas? e fundo claro) ===== */
+body.page-medicao .medicao-chart-card{
+  overflow: hidden !important;
 }
 
-/* GRÁFICOS — garantir legibilidade */
-body.page-medicao #medicao-graficos .card,
-body.page-medicao #medicao-graficos .chart-card,
-body.page-medicao #medicao-graficos .chart-box {
-  background: rgba(248, 250, 252, 1) !important;
-  border: 1px solid rgba(15, 23, 42, 0.14) !important;
-  border-radius: 12px !important;
+body.page-medicao .medicao-chart-body{
+  background: rgba(255,255,255,.03) !important;
+  border: 1px solid rgba(255,255,255,.10) !important;
 }
 
-body.page-medicao #medicao-graficos * {
+/* O canvas do Chart.js n?o deve trazer fundo claro; for?a transpar?ncia */
+body.page-medicao .medicao-chart-body canvas{
+  background: transparent !important;
+}
+
+/* Remove qualquer hr/divisor acidental dentro do bloco de gr?ficos */
+body.page-medicao #medicao-graficos hr,
+body.page-medicao #medicao-graficos .divider,
+body.page-medicao #medicao-graficos [role="separator"]{
+  display: none !important;
+  height: 0 !important;
+  border: 0 !important;
+  margin: 0 !important;
+}
+
+/* Se a ?linha? vier como border-top de algum container interno */
+body.page-medicao #medicao-graficos *{
+  border-top-color: transparent !important;
+}
+
+/* t?tulos do gr?fico: garantir contraste */
+body.page-medicao #medicao-graficos,
+body.page-medicao #medicao-graficos *{
+  color: rgba(255,255,255,.92) !important;
+}
+
+body.page-medicao .medicao-chart-meta{
+  color: rgba(255,255,255,.70) !important;
   opacity: 1 !important;
-  color: #0f172a;
+}
+
+/* ===== MEDI??O ? KILL STRIPE: linha laranja/verde na ?rea de gr?ficos ===== */
+body.page-medicao #medicao-graficos{
+  position: relative !important;
+  overflow: hidden !important;
+  background: transparent !important;
+  background-image: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+/* mata qualquer pseudo-elemento que pode estar desenhando ?linha? */
+body.page-medicao #medicao-graficos::before,
+body.page-medicao #medicao-graficos::after{
+  content: none !important;
+  display: none !important;
+}
+
+/* neutraliza bordas/topo/gradientes em QUALQUER filho (onde geralmente nasce essa faixa) */
+body.page-medicao #medicao-graficos *{
+  background-image: none !important;
+  border-top: 0 !important;
+  border-top-color: transparent !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+}
+
+/* remove separadores comuns */
+body.page-medicao #medicao-graficos hr,
+body.page-medicao #medicao-graficos .divider,
+body.page-medicao #medicao-graficos .separator,
+body.page-medicao #medicao-graficos [role="separator"]{
+  display: none !important;
+  height: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+}
+
+/* ===== Fundo dark REAL atr?s dos charts (evita ?cinza claro? aparecendo) ===== */
+body.page-medicao #medicao-graficos .medicao-chart-card{
+  background: linear-gradient(180deg, rgba(15,23,42,.92), rgba(2,6,23,.92)) !important;
+  border: 1px solid rgba(255,255,255,.10) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 18px 40px rgba(0,0,0,.28) !important;
+  overflow: hidden !important;
+}
+
+body.page-medicao #medicao-graficos .medicao-chart-body{
+  background: rgba(255,255,255,.03) !important;
+  border: 1px solid rgba(255,255,255,.10) !important;
+  border-radius: 14px !important;
+}
+
+/* canvas sempre transparente para respeitar o card dark */
+body.page-medicao #medicao-graficos canvas{
+  background: transparent !important;
+  border: 0 !important;
+  outline: 0 !important;
+}
+
+/* ===== MEDI??O ? KILL LAST ORANGE LINE (transi??o resumo -> gr?ficos) ===== */
+
+/* 1) Se houver HR/dividers globais dentro do conte?do da p?gina, mata s? na Medi??o */
+body.page-medicao .page-area hr,
+body.page-medicao .page-area .divider,
+body.page-medicao .page-area .separator,
+body.page-medicao .page-area [role="separator"]{
+  display: none !important;
+  height: 0 !important;
+  border: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+}
+
+/* 2) Zera qualquer border-top ?solto? em elementos logo ap?s o resumo */
+body.page-medicao #medicao-resumo + *{
+  border-top: 0 !important;
+  border-top-color: transparent !important;
+  background-image: none !important;
+}
+
+/* 3) Zera qualquer ?linha? desenhada por pseudo-elementos na ?rea abaixo do resumo */
+body.page-medicao #medicao-resumo + *::before,
+body.page-medicao #medicao-resumo + *::after{
+  content: none !important;
+  display: none !important;
+}
+
+/* 4) Refor?o: nada dentro do bloco de gr?ficos pode ter border-top/background-image */
+body.page-medicao #medicao-graficos,
+body.page-medicao #medicao-graficos *{
+  border-top: 0 !important;
+  border-top-color: transparent !important;
+  background-image: none !important;
+}
+
+body.page-medicao #medicao-graficos::before,
+body.page-medicao #medicao-graficos::after{
+  content: none !important;
+  display: none !important;
 }
 
 /* =========================
-   MEDIÇÃO — PATCH DE GUERRA (contraste + anti-opacidade + tabela estável)
-   ========================= */
+   MEDI??O ? FIX FILTROS DARK
+   (Bootstrap estava vencendo)
+========================= */
 
-body.page-medicao,
-body.page-medicao main,
-body.page-medicao .page-area,
-body.page-medicao .page-area *,
-body.page-medicao .container,
-body.page-medicao .container-fluid,
-body.page-medicao .content,
-body.page-medicao .content * {
+/* Labels/t?tulos dos campos sempre vis?veis */
+body.page-medicao .medicao-card--dark label,
+body.page-medicao .medicao-card--dark .form-label,
+body.page-medicao .medicao-card--dark .field-label,
+body.page-medicao .medicao-card--dark .medicao-label,
+body.page-medicao .medicao-card--dark .medicao-title{
+  color: rgba(255,255,255,.88) !important;
   opacity: 1 !important;
-  filter: none !important;
+  mix-blend-mode: normal !important;
+  text-shadow: none !important;
 }
 
-/* KPIs: números e labels SEMPRE legíveis */
-body.page-medicao .kpi-card,
-body.page-medicao .kpi-box,
-body.page-medicao .kpi-item,
-body.page-medicao .card {
-  background: #f8fafc !important;
-  border: 1px solid rgba(15, 23, 42, 0.14) !important;
-  border-radius: 12px !important;
-}
-
-body.page-medicao .kpi-title,
-body.page-medicao .kpi-label,
-body.page-medicao .card-title,
-body.page-medicao small,
-body.page-medicao label {
-  color: #475569 !important;
-  font-weight: 700 !important;
-}
-
-body.page-medicao .kpi-value,
-body.page-medicao .kpi-number,
-body.page-medicao .value,
-body.page-medicao .number,
-body.page-medicao .metric,
-body.page-medicao strong,
-body.page-medicao b {
-  color: #0f172a !important;
-  font-weight: 900 !important;
-}
-
-/* Mata classes que “embranquecem” texto */
-body.page-medicao .text-white,
-body.page-medicao .text-light,
-body.page-medicao .opacity-25,
-body.page-medicao .opacity-50,
-body.page-medicao .opacity-75 {
-  color: #0f172a !important;
+/* Garante que nada ?apague? label at? hover */
+body.page-medicao .medicao-card--dark label:hover,
+body.page-medicao .medicao-card--dark .form-label:hover{
+  color: rgba(255,255,255,.92) !important;
   opacity: 1 !important;
 }
 
-/* TABELA DO RESUMO: não “desconfigurar” */
-body.page-medicao table {
-  width: 100% !important;
-  border-collapse: collapse !important;
-  table-layout: auto !important;
+/* Inputs/selects do Bootstrap (form-control / form-select) no dark card */
+body.page-medicao .medicao-card--dark .form-control,
+body.page-medicao .medicao-card--dark .form-select,
+body.page-medicao .medicao-card--dark input,
+body.page-medicao .medicao-card--dark select{
+  background-color: rgba(255,255,255,.08) !important;
+  background-image: none !important;
+  border-color: rgba(255,255,255,.16) !important;
+  color: rgba(255,255,255,.92) !important;
+  -webkit-text-fill-color: rgba(255,255,255,.92) !important; /* corrige ?texto some? no Chrome */
 }
 
-body.page-medicao table thead th {
-  font-size: 12px !important;
-  font-weight: 800 !important;
-  color: #0f172a !important;
-  padding: 10px 12px !important;
-  white-space: nowrap !important;
-  vertical-align: middle !important;
+/* Placeholder leg?vel no dark */
+body.page-medicao .medicao-card--dark input::placeholder{
+  color: rgba(255,255,255,.55) !important;
+  opacity: 1 !important;
 }
 
-body.page-medicao table tbody td {
-  font-size: 13px !important;
-  color: #0f172a !important;
-  padding: 10px 12px !important;
-  vertical-align: middle !important;
+/* Foco padr?o enterprise */
+body.page-medicao .medicao-card--dark .form-control:focus,
+body.page-medicao .medicao-card--dark .form-select:focus,
+body.page-medicao .medicao-card--dark input:focus,
+body.page-medicao .medicao-card--dark select:focus{
+  outline: 0 !important;
+  box-shadow: 0 0 0 4px rgba(59,130,246,.22) !important;
+  border-color: rgba(59,130,246,.55) !important;
 }
 
-body.page-medicao .table-responsive,
-body.page-medicao .table-wrap,
-body.page-medicao .table-container {
-  overflow-x: auto !important;
+/* Bot?es no card dark (evita contraste ruim) */
+body.page-medicao .medicao-card--dark .btn{
+  color: rgba(255,255,255,.92) !important;
+}
+body.page-medicao .medicao-card--dark .btn.btn-outline-secondary{
+  border-color: rgba(255,255,255,.18) !important;
+  background: transparent !important;
+}
+body.page-medicao .medicao-card--dark .btn.btn-outline-secondary:hover{
+  background: rgba(255,255,255,.08) !important;
 }
 
-/* Cards dos gráficos: coerentes e legíveis */
-body.page-medicao .chart-card,
-body.page-medicao .chart-box {
-  background: #f8fafc !important;
-  border: 1px solid rgba(15, 23, 42, 0.14) !important;
-  border-radius: 12px !important;
+/* =========================
+   MEDI??O ? KILL ORANGE STRIPE (GARANTIDO)
+   Cobre qualquer ?divider? global na borda superior do bloco de gr?ficos
+========================= */
+
+body.page-medicao #medicao-graficos{
+  position: relative !important;
+  isolation: isolate !important;
 }
 
+/* ?tampa? a faixa onde aparece a linha (pinta por cima) */
+body.page-medicao #medicao-graficos::before{
+  content: "" !important;
+  position: absolute !important;
+  left: -2000px !important;
+  right: -2000px !important;
+  top: -10px !important;
+  height: 14px !important;
+  background: #f3f5f8 !important;  /* cor do fundo da p?gina (light) */
+  z-index: 10 !important;
+  pointer-events: none !important;
+}
+
+/* Se voc? estiver em tema dark, mant?m coerente */
+html[data-theme="dark"] body.page-medicao #medicao-graficos::before,
+body[data-theme="dark"].page-medicao #medicao-graficos::before,
+body.dark.page-medicao #medicao-graficos::before{
+  background: rgba(2,6,23,.92) !important;
+}
+
+/* garante que os cards/gr?ficos fiquem acima do fundo, mas abaixo do ?tampa faixa? s? no topo */
+body.page-medicao #medicao-graficos .medicao-chart-card{
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+/* ===== MEDI??O ? SELECT DROPDOWN DARK (lista aberta) ===== */
+body.page-medicao .medicao-card--dark select,
+body.page-medicao .medicao-card--dark .form-select{
+  color-scheme: dark !important;           /* for?a UI nativa dark (Chrome/Edge) */
+  background-color: rgba(255,255,255,.08) !important;
+  color: rgba(255,255,255,.92) !important;
+  border-color: rgba(255,255,255,.16) !important;
+}
+
+/* tenta for?ar op??es (quando o browser permite) */
+body.page-medicao .medicao-card--dark select option,
+body.page-medicao .medicao-card--dark .form-select option,
+body.page-medicao .medicao-card--dark select optgroup,
+body.page-medicao .medicao-card--dark .form-select optgroup{
+  background-color: rgba(2,6,23,.98) !important;
+  color: rgba(255,255,255,.92) !important;
+}
+
+/* hover/selecionado */
+body.page-medicao .medicao-card--dark select option:checked,
+body.page-medicao .medicao-card--dark .form-select option:checked{
+  background-color: rgba(59,130,246,.35) !important;
+  color: rgba(255,255,255,.95) !important;
+}
