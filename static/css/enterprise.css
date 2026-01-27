@@ -2714,7 +2714,7 @@ body[data-theme="dark"] .page-solicitacoes-public textarea:-webkit-autofill{
 }
 
 /* ===========================
-   SOLICITACOES — DETALHE (PREMIUM)
+   SOLICITACOES  DETALHE (PREMIUM)
    Escopo: .page-solicitacoes--detalhe
    =========================== */
 .page-solicitacoes--detalhe .solicitacoes-card{
@@ -2792,4 +2792,46 @@ html[data-theme="dark"] .page-solicitacoes--detalhe .kv-k,
 body[data-theme="dark"] .page-solicitacoes--detalhe .kv-k,
 body.dark .page-solicitacoes--detalhe .kv-k{
   opacity: .75;
+}
+
+/* IMPORTAR LDP ? PREMIUM (escopado) */
+.page-importar-ldp { width: 100%; }
+.page-importar-ldp .dash-container{ width:100%; margin:0 auto; padding:0 16px; }
+.page-importar-ldp .dash-container--wide{ max-width: 1400px; }
+
+.page-importar-ldp .ldp-card{
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.08);
+}
+
+.page-importar-ldp .ldp-card--upload{ padding: 18px 18px 14px; }
+.page-importar-ldp .ldp-card--history{ padding: 14px 18px; margin-top: 14px; }
+
+.page-importar-ldp .ldp-dropzone{
+  width: 100%;
+  min-height: 140px;
+  border-radius: 12px;
+}
+
+.page-importar-ldp .ldp-actions{
+  display:flex;
+  gap: 12px;
+  align-items:center;
+  justify-content:flex-end;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.page-importar-ldp .ldp-actions .btn{ min-width: 170px; }
+.page-importar-ldp .ldp-actions .btn-primary{ font-weight: 700; }
+
+@media (max-width: 575.98px){
+  .page-importar-ldp .ldp-actions{ justify-content: stretch; }
+  .page-importar-ldp .ldp-actions .btn{ width:100%; min-width:0; }
+}
+
+html[data-theme="dark"] .page-importar-ldp .ldp-card,
+body[data-theme="dark"] .page-importar-ldp .ldp-card,
+body.dark .page-importar-ldp .ldp-card{
+  box-shadow: 0 14px 38px rgba(0,0,0,.35);
 }

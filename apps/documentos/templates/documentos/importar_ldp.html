@@ -6,29 +6,29 @@
 {% block content %}
 
 <style>
-/* Fallback (cache-proof): garante o visual TOP FIVE mesmo se enterprise.css não atualizar */
-.page-area .ldp-wrap{ max-width:1400px; width:100%; margin:0 auto; }
-.page-area .ldp-dropzone{
+/* Fallback (cache-proof): garante o visual TOP FIVE mesmo se enterprise.css n&atilde;o atualizar */
+.page-importar-ldp .ldp-wrap{ max-width:none; width:100%; margin:0; }
+.page-importar-ldp .ldp-dropzone{
   position:relative;
   border-radius:12px;
   border:2px dashed rgba(148,163,184,.45);
   background: rgba(11,18,32,.03);
   padding:16px 18px;
 }
-body[data-theme="dark"] .page-area .ldp-dropzone{ background: rgba(0,0,0,.14); border-color: rgba(148,163,184,.30); }
-.page-area .ldp-dropzone:hover{ border-color: rgba(224,96,0,.55); }
-.page-area .ldp-dropzone.is-dragover{
+body[data-theme="dark"] .page-importar-ldp .ldp-dropzone{ background: rgba(0,0,0,.14); border-color: rgba(148,163,184,.30); }
+.page-importar-ldp .ldp-dropzone:hover{ border-color: rgba(224,96,0,.55); }
+.page-importar-ldp .ldp-dropzone.is-dragover{
   border-color: rgba(224,96,0,1);
   background: rgba(224,96,0,.08);
   box-shadow: 0 0 0 4px rgba(224,96,0,.12);
 }
-.page-area .ldp-title{ font-weight:900; display:flex; align-items:center; gap:10px; }
-.page-area .ldp-title i{ color: var(--dash-accent); font-size: 1.1rem; }
-.page-area .ldp-sub{ color: var(--dash-muted); font-weight:650; margin-top:2px; }
-.page-area .ldp-meta{ color: var(--dash-muted); font-size:.85rem; margin-top:6px; }
+.page-importar-ldp .ldp-title{ font-weight:900; display:flex; align-items:center; gap:10px; }
+.page-importar-ldp .ldp-title i{ color: var(--dash-accent); font-size: 1.1rem; }
+.page-importar-ldp .ldp-sub{ color: var(--dash-muted); font-weight:650; margin-top:2px; }
+.page-importar-ldp .ldp-meta{ color: var(--dash-muted); font-size:.85rem; margin-top:6px; }
 
-.page-area .ldp-chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
-.page-area .ldp-chip{
+.page-importar-ldp .ldp-chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+.page-importar-ldp .ldp-chip{
   display:inline-flex;
   align-items:center;
   gap:8px;
@@ -38,8 +38,8 @@ body[data-theme="dark"] .page-area .ldp-dropzone{ background: rgba(0,0,0,.14); b
   background: rgba(0,0,0,.10);
   max-width: 100%;
 }
-body[data-theme="light"] .page-area .ldp-chip{ background: rgba(11,18,32,.05); }
-.page-area .ldp-chip-name{
+body[data-theme="light"] .page-importar-ldp .ldp-chip{ background: rgba(11,18,32,.05); }
+.page-importar-ldp .ldp-chip-name{
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
@@ -48,7 +48,7 @@ body[data-theme="light"] .page-area .ldp-chip{ background: rgba(11,18,32,.05); }
   align-items:center;
   gap:8px;
 }
-.page-area .ldp-chip-remove{
+.page-importar-ldp .ldp-chip-remove{
   border:0;
   background:transparent;
   padding:0 2px;
@@ -56,38 +56,39 @@ body[data-theme="light"] .page-area .ldp-chip{ background: rgba(11,18,32,.05); }
   color: var(--dash-muted);
   font-size: 1.05rem;
 }
-.page-area .ldp-chip-remove:hover{ color: var(--dash-text); }
+.page-importar-ldp .ldp-chip-remove:hover{ color: var(--dash-text); }
 
-.page-area .ldp-actions{ display:flex; justify-content:flex-start; gap:10px; flex-wrap:wrap; margin-top:14px; }
+.page-importar-ldp .ldp-actions{ display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap; margin-top:14px; }
 
-.page-area .ldp-progress{ margin-top:14px; padding:14px 16px; border-radius:12px; border:1px solid rgba(148,163,184,.18); background: rgba(0,0,0,.06); }
-body[data-theme="light"] .page-area .ldp-progress{ background: rgba(11,18,32,.03); }
-.page-area .ldp-progress-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
-.page-area .ldp-progress-title{ font-weight:850; }
-.page-area .ldp-progress-sub{ color: var(--dash-muted); font-weight:650; font-size:.9rem; }
-.page-area .ldp-percent{ font-variant-numeric: tabular-nums; font-weight:900; }
-.page-area .ldp-bar{ height:10px; border-radius:999px; background: rgba(148,163,184,.22); overflow:hidden; }
-.page-area .ldp-bar > #progressBar{
+.page-importar-ldp .ldp-progress{ margin-top:14px; padding:14px 16px; border-radius:12px; border:1px solid rgba(148,163,184,.18); background: rgba(0,0,0,.06); }
+body[data-theme="light"] .page-importar-ldp .ldp-progress{ background: rgba(11,18,32,.03); }
+.page-importar-ldp .ldp-progress-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
+.page-importar-ldp .ldp-progress-title{ font-weight:850; }
+.page-importar-ldp .ldp-progress-sub{ color: var(--dash-muted); font-weight:650; font-size:.9rem; }
+.page-importar-ldp .ldp-percent{ font-variant-numeric: tabular-nums; font-weight:900; }
+.page-importar-ldp .ldp-bar{ height:10px; border-radius:999px; background: rgba(148,163,184,.22); overflow:hidden; }
+.page-importar-ldp .ldp-bar > #progressBar{
   height:100%;
   width:0%;
   border-radius:999px;
   background: linear-gradient(90deg, rgba(224,96,0,.85), rgba(224,96,0,1));
   transition: width .12s ease;
 }
-.page-area .ldp-log{
+.page-importar-ldp .ldp-log{
   white-space: pre-wrap;
   font-family: ui-monospace, Menlo, Consolas, monospace;
   font-size: .9rem;
 }
 </style>
 
-<div class="ldp-wrap">
+<div class="page-importar-ldp">
+  <div class="dash-container dash-container--wide ldp-wrap">
 
   <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
     <div>
       <h1 class="dash-title"><i class="bi bi-cloud-upload me-2"></i> Importar LDP</h1>
       <div class="dash-subtitle">
-        Selecione a planilha Excel do LDP. O sistema valida revisões, datas e campos automaticamente.
+        Selecione a planilha Excel do LDP. O sistema valida revis&otilde;es, datas e campos automaticamente.
       </div>
     </div>
     <div class="small text-muted d-flex align-items-center gap-2">
@@ -95,16 +96,16 @@ body[data-theme="light"] .page-area .ldp-progress{ background: rgba(11,18,32,.03
     </div>
   </div>
 
-  <div class="dash-surface pad ldp-surface">
+  <div class="dash-card ldp-card ldp-card--upload ldp-surface">
 
     <form method="POST" enctype="multipart/form-data" id="formImport" novalidate>
       {% csrf_token %}
 
       <div class="mb-2 fw-bold">
-        Selecionar Planilha LDP <span class="dash-req">*</span><span class="dash-reqhint">Obrigatório</span>
+        Selecionar Planilha LDP <span class="dash-req">*</span><span class="dash-reqhint">Obrigat&oacute;rio</span>
       </div>
 
-      <div class="ldp-dropzone" id="ldpDropzone" tabindex="0" role="button" aria-label="Área para anexar planilha LDP">
+      <div class="ldp-dropzone" id="ldpDropzone" tabindex="0" role="button" aria-label="&Aacute;rea para anexar planilha LDP">
         <input type="file"
                name="arquivo"
                id="id_arquivo"
@@ -121,24 +122,24 @@ body[data-theme="light"] .page-area .ldp-progress{ background: rgba(11,18,32,.03
       </div>
 
       <div class="ldp-actions">
-        <a href="{% url 'documentos:listar_documentos' %}" class="dash-btn">
+        <a href="{% url 'documentos:listar_documentos' %}" class="dash-btn btn btn-outline-secondary">
           <i class="bi bi-arrow-left"></i> Voltar
         </a>
 
         <button type="button" class="dash-btn" id="btnClearFile" style="display:none;">
-          <i class="bi bi-x-circle"></i> Limpar seleção
+          <i class="bi bi-x-circle"></i> Limpar sele&ccedil;&atilde;o
         </button>
 
-        <button type="submit" class="dash-btn dash-btn-primary" id="btnStartImport">
-          <i class="bi bi-rocket-takeoff"></i> Iniciar Importação
+        <button type="submit" class="dash-btn dash-btn-primary btn btn-primary" id="btnStartImport">
+          <i class="bi bi-rocket-takeoff"></i> Iniciar Importa&ccedil;&atilde;o
         </button>
       </div>
 
-      <!-- Progresso (mantém ids usados pelo script/backend) -->
+      <!-- Progresso (mant&eacute;m ids usados pelo script/backend) -->
       <div class="ldp-progress" id="progressArea" style="display:none;">
         <div class="ldp-progress-head">
           <div>
-            <div class="ldp-progress-title">Importando…</div>
+            <div class="ldp-progress-title">Importando...</div>
             <div class="ldp-progress-sub" id="progressText">Preparando envio da planilha</div>
           </div>
           <div class="ldp-percent" id="progressPercent">0%</div>
@@ -152,20 +153,20 @@ body[data-theme="light"] .page-area .ldp-progress{ background: rgba(11,18,32,.03
 
   </div>
 
-  {# ✅ Mostra resultados se houver importação OU log retornado #}
+  {# OK Mostra resultados se houver importa&ccedil;&atilde;o OU log retornado #}
   {% if arquivo_nome or log %}
     <div class="alert alert-success mt-4 shadow-sm">
       <div class="fw-bold">
         <i class="bi bi-check-circle-fill"></i>
-        Importação concluída{% if arquivo_nome %}: <span class="text-dark">{{ arquivo_nome }}</span>{% endif %}
+        Importa&ccedil;&atilde;o conclu&iacute;da{% if arquivo_nome %}: <span class="text-dark">{{ arquivo_nome }}</span>{% endif %}
       </div>
 
       <div class="mt-2">
-        <strong>Lidas:</strong> {{ total_lidas|default:0 }} &nbsp; • &nbsp;
-        <strong>Criadas:</strong> {{ criadas|default:0 }} &nbsp; • &nbsp;
-        <strong>Atualizadas:</strong> {{ atualizadas|default:0 }} &nbsp; • &nbsp;
-        <strong>Sem mudança:</strong> {{ sem_mudanca|default:0 }} &nbsp; • &nbsp;
-        <strong>Ignoradas:</strong> {{ ignoradas|default:0 }} &nbsp; • &nbsp;
+        <strong>Lidas:</strong> {{ total_lidas|default:0 }} &nbsp; &bull; &nbsp;
+        <strong>Criadas:</strong> {{ criadas|default:0 }} &nbsp; &bull; &nbsp;
+        <strong>Atualizadas:</strong> {{ atualizadas|default:0 }} &nbsp; &bull; &nbsp;
+        <strong>Sem mudan&ccedil;a:</strong> {{ sem_mudanca|default:0 }} &nbsp; &bull; &nbsp;
+        <strong>Ignoradas:</strong> {{ ignoradas|default:0 }} &nbsp; &bull; &nbsp;
         <strong>Erros:</strong> {{ total_erros|default:0 }}
       </div>
 
@@ -178,25 +179,26 @@ body[data-theme="light"] .page-area .ldp-progress{ background: rgba(11,18,32,.03
       {% endif %}
     </div>
 
-    <h5 class="text-info mt-3"><i class="bi bi-journal-text"></i> Log de Importação</h5>
+    <h5 class="text-info mt-3"><i class="bi bi-journal-text"></i> Log de Importa&ccedil;&atilde;o</h5>
     <div class="dash-surface pad ldp-log">{{ log|default:"" }}</div>
   {% endif %}
 
-  <h4 class="text-info mt-4"><i class="bi bi-clock-history"></i> Histórico de Importações</h4>
+  <div class="dash-card ldp-card ldp-card--history">
+  <h4 class="text-info mt-0"><i class="bi bi-clock-history"></i> Hist&oacute;rico de Importa&ccedil;&otilde;es</h4>
 
   {% for h in historico %}
     <div class="dash-surface pad mb-2">
       <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-        <div class="fw-bold">{{ h.arquivo_nome|default:"—" }}</div>
+        <div class="fw-bold">{{ h.arquivo_nome|default:"&mdash;" }}</div>
         <div class="text-muted small">
-          {% if h.criado_em %}{{ h.criado_em|date:"d/m/Y H:i" }}{% else %}—{% endif %}
+          {% if h.criado_em %}{{ h.criado_em|date:"d/m/Y H:i" }}{% else %}&mdash;{% endif %}
         </div>
       </div>
       <div class="mt-1">
-        ✔ Sucesso: <strong>{{ h.total_sucesso|default:0 }}</strong> &nbsp; • &nbsp;
-        ❌ Erros: <strong>{{ h.total_erros|default:0 }}</strong>
+        &#10004; Sucesso: <strong>{{ h.total_sucesso|default:0 }}</strong> &nbsp; &bull; &nbsp;
+        &#10060; Erros: <strong>{{ h.total_erros|default:0 }}</strong>
         {% if h.log_url %}
-          &nbsp; • &nbsp;
+          &nbsp; &bull; &nbsp;
           <a href="{{ h.log_url }}" target="_blank" class="btn btn-sm btn-outline-secondary ms-1">
             <i class="bi bi-download"></i> Log
           </a>
@@ -204,9 +206,11 @@ body[data-theme="light"] .page-area .ldp-progress{ background: rgba(11,18,32,.03
       </div>
     </div>
   {% empty %}
-    <p class="text-muted">Ainda não há importações registradas.</p>
+    <p class="text-muted">Ainda n&atilde;o h&aacute; importa&ccedil;&otilde;es registradas.</p>
   {% endfor %}
+</div>
 
+  </div>
 </div>
 
 <script>
@@ -290,7 +294,7 @@ body[data-theme="light"] .page-area .ldp-progress{ background: rgba(11,18,32,.03
   // Progresso elegante (sem mudar backend): mostra UI antes do submit
   form.addEventListener('submit', (e) => {
     if(form.dataset.submitting === '1') return;
-    // validação nativa do browser
+    // valida&ccedil;&atilde;o nativa do browser
     if(!input.files || !input.files.length) return;
 
     form.dataset.submitting = '1';
@@ -303,7 +307,7 @@ body[data-theme="light"] .page-area .ldp-progress{ background: rgba(11,18,32,.03
       if(progressBar) progressBar.style.width = width + '%';
       if(progressPct) progressPct.textContent = width + '%';
       if(progressText){
-        progressText.textContent = (width < 40) ? 'Enviando planilha…' : (width < 75) ? 'Processando dados…' : 'Finalizando…';
+        progressText.textContent = (width < 40) ? 'Enviando planilha...' : (width < 75) ? 'Processando dados...' : 'Finalizando...';
       }
     };
     tick();
