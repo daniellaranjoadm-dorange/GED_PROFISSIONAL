@@ -2348,3 +2348,111 @@ body[data-theme="dark"] .page-solicitacoes table.dash-table tbody td,
 body.dark .page-solicitacoes table.dash-table tbody td{
   border-bottom: 1px solid rgba(255,255,255,.08) !important;
 }
+
+/* ===========================
+   SOLICITAÇÕES — PREMIUM (TOP-5)
+   escopo: .page-solicitacoes
+   =========================== */
+.page-solicitacoes .solicitacoes-surface{
+  border-radius: 18px !important;
+  overflow: hidden !important; /* corta quinas da tabela */
+  border: 1px solid rgba(15,23,42,.10) !important;
+  box-shadow: 0 18px 45px rgba(2,6,23,.08) !important;
+  background: #ffffff !important;
+  background-clip: padding-box !important;
+}
+
+/* impede “vazamento” do wrapper bootstrap */
+.page-solicitacoes .solicitacoes-surface > .table-responsive{
+  border-radius: inherit !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+}
+
+/* tabela: sem bordas duplicadas e com header mais “enterprise” */
+.page-solicitacoes .solicitacoes-surface table{
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+.page-solicitacoes .solicitacoes-surface thead th{
+  background: rgba(15,23,42,.04) !important;
+  border-bottom: 1px solid rgba(15,23,42,.12) !important;
+  border-top: none !important;
+  font-weight: 900 !important;
+  font-size: 12px !important;
+  letter-spacing: .08em !important;
+  text-transform: uppercase !important;
+  padding: 12px 14px !important;
+}
+
+.page-solicitacoes .solicitacoes-surface tbody td{
+  border-bottom: 1px solid rgba(15,23,42,.08) !important;
+  padding: 12px 14px !important;
+  vertical-align: middle !important;
+}
+
+.page-solicitacoes .solicitacoes-surface tbody tr:last-child td{
+  border-bottom: none !important;
+}
+
+.page-solicitacoes .solicitacoes-surface .table-hover tbody tr:hover{
+  background: rgba(59,130,246,.06) !important;
+}
+
+/* ações: nunca quebrar linha */
+.page-solicitacoes td:last-child,
+.page-solicitacoes td.text-end{
+  white-space: nowrap !important;
+}
+
+/* remove bordas duplas dentro do card */
+.page-solicitacoes .solicitacoes-surface table,
+.page-solicitacoes .solicitacoes-surface th,
+.page-solicitacoes .solicitacoes-surface td{
+  border-left: none !important;
+  border-right: none !important;
+}
+
+/* arredondamento do header */
+.page-solicitacoes .solicitacoes-surface thead th:first-child{
+  border-top-left-radius: 18px !important;
+}
+.page-solicitacoes .solicitacoes-surface thead th:last-child{
+  border-top-right-radius: 18px !important;
+}
+
+/* botões do topo: mesma pegada premium */
+.page-solicitacoes .btn.btn-sm{
+  border-radius: 12px !important;
+  font-weight: 900 !important;
+  padding: 8px 12px !important;
+}
+
+/* ===== DARK MODE (premium) ===== */
+html[data-theme="dark"] .page-solicitacoes .solicitacoes-surface,
+body[data-theme="dark"] .page-solicitacoes .solicitacoes-surface,
+body.dark .page-solicitacoes .solicitacoes-surface{
+  background: rgba(15,23,42,.70) !important;
+  border: 1px solid rgba(255,255,255,.10) !important;
+  box-shadow: 0 18px 45px rgba(0,0,0,.35) !important;
+}
+
+html[data-theme="dark"] .page-solicitacoes .solicitacoes-surface thead th,
+body[data-theme="dark"] .page-solicitacoes .solicitacoes-surface thead th,
+body.dark .page-solicitacoes .solicitacoes-surface thead th{
+  background: rgba(255,255,255,.06) !important;
+  border-bottom: 1px solid rgba(255,255,255,.12) !important;
+}
+
+html[data-theme="dark"] .page-solicitacoes .solicitacoes-surface tbody td,
+body[data-theme="dark"] .page-solicitacoes .solicitacoes-surface tbody td,
+body.dark .page-solicitacoes .solicitacoes-surface tbody td{
+  border-bottom: 1px solid rgba(255,255,255,.08) !important;
+}
+
+html[data-theme="dark"] .page-solicitacoes .solicitacoes-surface .table-hover tbody tr:hover,
+body[data-theme="dark"] .page-solicitacoes .solicitacoes-surface .table-hover tbody tr:hover,
+body.dark .page-solicitacoes .solicitacoes-surface .table-hover tbody tr:hover{
+  background: rgba(59,130,246,.10) !important;
+}
