@@ -2545,6 +2545,57 @@ html{
   scrollbar-gutter: stable both-edges;
 }
 
+/* ===========================
+   DS PAGE CONTAINER (RESPONSIVO)
+   =========================== */
+:root{
+  --ds-page-max: 1440px;
+  --ds-page-pad: 24px;
+}
+@media (max-width: 768px){
+  :root{ --ds-page-pad: 16px; }
+}
+.ds-page{
+  width: 100%;
+  max-width: var(--ds-page-max);
+  margin: 0 auto;
+  padding-left: var(--ds-page-pad);
+  padding-right: var(--ds-page-pad);
+}
+
+/* ===========================
+   SOLICITAÇÕES — LAYOUT RESPONSIVO (TOP-5)
+   Escopo: .page-solicitacoes
+   =========================== */
+.page-solicitacoes{ width: 100%; }
+.page-solicitacoes .solicitacoes-surface{
+  width: 100% !important;
+  max-width: none !important;
+}
+
+/* ===========================
+   SOLICITAÇÃO DETALHE — GRID RESPONSIVO
+   =========================== */
+.page-solicitacao-detalhe .solicitacao-detalhe-grid{
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 18px;
+  align-items: start;
+}
+@media (min-width: 992px){
+  .page-solicitacao-detalhe .solicitacao-detalhe-grid{
+    grid-template-columns: 2fr 1fr;
+  }
+}
+
+.page-solicitacao-detalhe .acoes-decisao{
+  display: grid;
+  gap: 10px;
+}
+.page-solicitacao-detalhe .acoes-decisao .btn{
+  width: 100%;
+}
+
 /* SELECT/OPTION no DARK — evita dropdown branco e texto sumindo */
 html[data-theme="dark"] select.form-select,
 body[data-theme="dark"] select.form-select,
