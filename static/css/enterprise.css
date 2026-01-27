@@ -2466,6 +2466,85 @@ body.dark .page-solicitacoes .solicitacoes-surface .table-hover tbody tr:hover{
 html { scrollbar-gutter: stable; }
 .table-responsive { scrollbar-gutter: stable both-edges; }
 
+/* ===========================
+   SOLICITAÇÕES — LAYOUT RESPONSIVO (TOP-5)
+   Escopo: .page-solicitacoes
+   =========================== */
+
+:root{
+  --ds-page-max: 1480px;
+  --ds-gutter: 24px;
+}
+
+@media (max-width: 576px){
+  :root{ --ds-gutter: 16px; }
+}
+
+.page-solicitacoes{
+  width: 100%;
+}
+
+.page-solicitacoes .ds-container{
+  width: 100%;
+  max-width: clamp(980px, 92vw, var(--ds-page-max));
+  margin: 0 auto;
+  padding-left: var(--ds-gutter);
+  padding-right: var(--ds-gutter);
+}
+
+.page-solicitacoes .dash-surface,
+.page-solicitacoes .solicitacoes-surface{
+  width: 100%;
+}
+
+.page-solicitacoes.page-solicitacoes-lista .solicitacoes-surface{
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.page-solicitacoes.page-solicitacoes-detalhe .solic-detalhe-grid{
+  display: grid;
+  grid-template-columns: minmax(560px, 1.9fr) minmax(360px, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+@media (max-width: 1100px){
+  .page-solicitacoes.page-solicitacoes-detalhe .solic-detalhe-grid{
+    grid-template-columns: 1fr;
+  }
+}
+
+.page-solicitacoes.page-solicitacoes-detalhe .solic-detalhe-right .dash-surface,
+.page-solicitacoes.page-solicitacoes-detalhe .solic-detalhe-right{
+  width: 100%;
+}
+
+.page-solicitacoes.page-solicitacoes-detalhe .solic-detalhe-actions{
+  display: flex;
+  gap: 12px;
+}
+
+.page-solicitacoes.page-solicitacoes-detalhe .solic-detalhe-actions > *{
+  flex: 1 1 auto;
+}
+
+@media (max-width: 576px){
+  .page-solicitacoes.page-solicitacoes-detalhe .solic-detalhe-actions{
+    flex-direction: column;
+  }
+}
+
+.page-solicitacoes textarea{
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+html{
+  scrollbar-gutter: stable both-edges;
+}
+
 /* SELECT/OPTION no DARK — evita dropdown branco e texto sumindo */
 html[data-theme="dark"] select.form-select,
 body[data-theme="dark"] select.form-select,

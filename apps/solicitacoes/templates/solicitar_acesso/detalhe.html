@@ -7,6 +7,7 @@
 <div class="container-fluid py-3">
   {% url 'solicitacoes:listar_solicitacoes' as url_lista %}
   <div class="page-solicitacoes page-solicitacoes-detalhe">
+    <div class="ds-container">
     <div class="solicitacoes-detail-wrap">
 
       <div class="d-flex align-items-end justify-content-between flex-wrap gap-2 solicitacoes-detail-header">
@@ -22,8 +23,8 @@
         </a>
       </div>
 
-      <div class="row g-3 solicitacao-detail-grid">
-        <div class="col-12 col-lg-9">
+      <div class="solic-detalhe-grid">
+        <div class="solic-detalhe-left">
           <div class="solicitacoes-surface solicitacao-card">
             <div class="solicitacao-kv">
               <div class="kv">
@@ -110,7 +111,7 @@
           </div>
         </div>
 
-        <div class="col-12 col-lg-3">
+        <div class="solic-detalhe-right">
           <div class="solicitacoes-surface solicitacao-actions">
             <div class="d-flex align-items-center justify-content-between mb-2">
               <div class="fw-black solicitacao-actions-title">Decisão</div>
@@ -124,7 +125,7 @@
               <textarea id="id_observacao_admin" name="observacao" class="form-control solicitacao-textarea" rows="8"
                         placeholder="Ex.: Acesso liberado para o projeto X.">{{ solicitacao.observacao_admin|default_if_none:"" }}</textarea>
 
-              <div class="d-grid gap-2 mt-3">
+              <div class="solic-detalhe-actions mt-3">
                 <button type="submit" name="acao" value="aprovar" class="dash-btn dash-btn-primary w-100 justify-content-center solicitacao-btn-approve">
                   <i class="bi bi-check2-circle"></i> Aprovar
                 </button>
@@ -138,6 +139,7 @@
         </div>
       </div>
 
+    </div>
     </div>
   </div>
 </div>
