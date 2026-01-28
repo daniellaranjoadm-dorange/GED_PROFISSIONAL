@@ -4,16 +4,18 @@
 {% block title %}Novo Documento{% endblock %}
 
 {% block content %}
-<div class="doc-wrapper">
+<div class="page-upload-doc">
+
+<div class="dash-container dash-container--wide">
 
 <style>
-/* Fallback: garante o visual premium mesmo se enterprise.css não atualizar (cache/caminho). */
-.doc-wrapper .page-area .dash-actions{ display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap; }
-.doc-wrapper .page-area .dash-input-lg{ padding: 12px 14px !important; font-size: 1.02rem !important; }
-.doc-wrapper .page-area .dash-req{ color: var(--dash-accent); font-weight: 900; margin-left: 2px; }
-.doc-wrapper .page-area .dash-reqhint{ color: var(--dash-muted); font-size: .78rem; margin-left: 6px; font-weight: 700; }
+/* Fallback: garante o visual premium mesmo se enterprise.css n&#227;o atualizar (cache/caminho). */
+.page-upload-doc .dash-actions{ display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap; }
+.page-upload-doc .dash-input-lg{ padding: 12px 14px !important; font-size: 1.02rem !important; }
+.page-upload-doc .dash-req{ color: var(--dash-accent); font-weight: 900; margin-left: 2px; }
+.page-upload-doc .dash-reqhint{ color: var(--dash-muted); font-size: .78rem; margin-left: 6px; font-weight: 700; }
 
-.doc-wrapper .page-area .ldp-dropzone{
+.page-upload-doc .ldp-dropzone{
   position: relative;
   border-radius: var(--dash-radius);
   border: 2px dashed rgba(148,163,184,.45);
@@ -21,59 +23,59 @@
   padding: 14px 16px;
   transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
 }
-body[data-theme="dark"] .doc-wrapper .page-area .ldp-dropzone{ background: rgba(0,0,0,.14); border-color: rgba(148,163,184,.30); }
-.doc-wrapper .page-area .ldp-dropzone:hover{ border-color: rgba(224,96,0,.55); }
-.doc-wrapper .page-area .ldp-dropzone.is-dragover{
+body[data-theme="dark"] .page-upload-doc .ldp-dropzone{ background: rgba(0,0,0,.14); border-color: rgba(148,163,184,.30); }
+.page-upload-doc .ldp-dropzone:hover{ border-color: rgba(224,96,0,.55); }
+.page-upload-doc .ldp-dropzone.is-dragover{
   border-color: rgba(224,96,0,1);
   background: rgba(224,96,0,.08);
   box-shadow: 0 0 0 4px rgba(224,96,0,.12);
 }
 
-.doc-wrapper .page-area .ldp-title{ font-weight: 900; color: var(--dash-text); display:flex; align-items:center; gap:10px; }
-.doc-wrapper .page-area .ldp-title i{ color: var(--dash-accent); font-size: 1.1rem; }
-.doc-wrapper .page-area .ldp-sub{ color: var(--dash-muted); font-weight: 650; margin-top: 2px; }
-.doc-wrapper .page-area .ldp-meta{ color: var(--dash-muted); font-size: .85rem; margin-top: 6px; }
+.page-upload-doc .ldp-title{ font-weight: 900; color: var(--dash-text); display:flex; align-items:center; gap:10px; }
+.page-upload-doc .ldp-title i{ color: var(--dash-accent); font-size: 1.1rem; }
+.page-upload-doc .ldp-sub{ color: var(--dash-muted); font-weight: 650; margin-top: 2px; }
+.page-upload-doc .ldp-meta{ color: var(--dash-muted); font-size: .85rem; margin-top: 6px; }
 
-.doc-wrapper .page-area .ldp-chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top: 10px; }
-.doc-wrapper .page-area .ldp-chip{
+.page-upload-doc .ldp-chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top: 10px; }
+.page-upload-doc .ldp-chip{
   display:inline-flex; align-items:center; gap:8px;
   padding: 6px 10px; border-radius: 999px;
   border: 1px solid rgba(148,163,184,.28);
   background: rgba(0,0,0,.10);
   max-width: 100%;
 }
-body[data-theme="light"] .doc-wrapper .page-area .ldp-chip{ background: rgba(11,18,32,.05); }
-.doc-wrapper .page-area .ldp-chip-name{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width: 42ch; }
-.doc-wrapper .page-area .ldp-chip-remove{ border:0; background:transparent; padding:0; line-height:1; color: var(--dash-muted); }
-.doc-wrapper .page-area .ldp-chip-remove:hover{ color: var(--dash-text); }
+body[data-theme="light"] .page-upload-doc .ldp-chip{ background: rgba(11,18,32,.05); }
+.page-upload-doc .ldp-chip-name{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width: 42ch; }
+.page-upload-doc .ldp-chip-remove{ border:0; background:transparent; padding:0; line-height:1; color: var(--dash-muted); }
+.page-upload-doc .ldp-chip-remove:hover{ color: var(--dash-text); }
 
 /* Validation (se Django/Bootstrap aplicar classes) */
-.doc-wrapper .page-area .is-invalid{ border-color:#ef4444 !important; box-shadow: 0 0 0 .2rem rgba(239,68,68,.14) !important; }
-.doc-wrapper .page-area .is-valid{ border-color:#22c55e !important; box-shadow: 0 0 0 .2rem rgba(34,197,94,.14) !important; }
-.doc-wrapper .page-area .invalid-feedback,
-.doc-wrapper .page-area .errorlist{ color:#ef4444 !important; font-weight: 650; font-size: .9rem; margin-top: 6px; }
-.doc-wrapper .page-area .errorlist{ list-style:none; padding-left:0; margin: 6px 0 0; }
+.page-upload-doc .is-invalid{ border-color:#ef4444 !important; box-shadow: 0 0 0 .2rem rgba(239,68,68,.14) !important; }
+.page-upload-doc .is-valid{ border-color:#22c55e !important; box-shadow: 0 0 0 .2rem rgba(34,197,94,.14) !important; }
+.page-upload-doc .invalid-feedback,
+.page-upload-doc .errorlist{ color:#ef4444 !important; font-weight: 650; font-size: .9rem; margin-top: 6px; }
+.page-upload-doc .errorlist{ list-style:none; padding-left:0; margin: 6px 0 0; }
 </style>
 
 <div class="page-novo-documento">
 
-<div class="d-flex align-items-start justify-content-between gap-3 mb-3">
+<div class="upload-header d-flex align-items-start justify-content-between flex-wrap gap-2 mb-3">
   <div>
-    <h2 class="dash-title">
+    <h1 class="dash-title mb-1">
       <i class="bi bi-file-earmark-plus me-2"></i> Novo Documento
-    </h2>
+    </h1>
     <div class="dash-subtitle">
-      Cadastre um novo documento no GED com os metadados básicos e anexe o(s) arquivo(s).
+      Cadastre um novo documento no GED com os metadados b&#225;sicos e anexe o(s) arquivo(s).
     </div>
   </div>
   <div class="dash-actions">
-    <a href="{% url 'documentos:listar_documentos' %}" class="dash-btn">
+    <a href="{% url 'documentos:listar_documentos' %}" class="dash-btn btn btn-sm btn-outline-secondary">
       <i class="bi bi-arrow-left"></i> Voltar
     </a>
   </div>
 </div>
 
-<div class="dash-surface pad">
+<div class="dash-card upload-card">
 
   {% if erro %}
     <div class="alert alert-danger d-flex align-items-center gap-2 mb-3" role="alert">
@@ -85,9 +87,8 @@ body[data-theme="light"] .doc-wrapper .page-area .ldp-chip{ background: rgba(11,
   <form method="POST" enctype="multipart/form-data" action="{% url 'documentos:upload_documento' %}">
     {% csrf_token %}
 
-    <div class="row g-3">
-
-      <div class="col-md-4">
+    <div class="upload-grid upload-grid--3">
+      <div class="upload-field">
         <label class="form-label">Projeto:</label>
         <select name="projeto" class="form-select">
           <option value="">(sem projeto)</option>
@@ -97,32 +98,34 @@ body[data-theme="light"] .doc-wrapper .page-area .ldp-chip{ background: rgba(11,
             </option>
           {% endfor %}
         </select>
-        <div class="form-text">Se não selecionar, o sistema pode usar um projeto padrão (se configurado na view).</div>
+        <div class="form-text">Se n&atilde;o selecionar, o sistema pode usar um projeto padr&atilde;o (se configurado na view).</div>
       </div>
 
-      <div class="col-md-4">
+      <div class="upload-field">
         <label class="form-label">Disciplina:</label>
         <input type="text" name="disciplina" class="form-control"
-               placeholder="Ex: CIVIL, ELÉTRICA..."
+               placeholder="Ex: CIVIL, EL&Eacute;TRICA..."
                value="{{ request.POST.disciplina|default:'' }}">
       </div>
 
-      <div class="col-md-4">
+      <div class="upload-field">
         <label class="form-label">Tipo Documento:</label>
         <input type="text" name="tipo_doc" class="form-control"
                placeholder="Ex: DESENHO, MEMORIAL..."
                value="{{ request.POST.tipo_doc|default:'' }}">
       </div>
+    </div>
 
-      <div class="col-md-4">
+    <div class="upload-grid upload-grid--3">
+      <div class="upload-field">
         <label class="form-label">Fase:</label>
         <input type="text" name="fase" class="form-control"
                placeholder="Ex: IFC, As Built..."
                value="{{ request.POST.fase|default:'' }}">
       </div>
 
-      <div class="col-md-2">
-        <label class="form-label">Revisão:</label>
+      <div class="upload-field">
+        <label class="form-label">Revis&atilde;o:</label>
         <select name="revisao" class="form-select">
           <option value="">(vazia)</option>
           <option value="0" {% if request.POST.revisao == "0" %}selected{% endif %}>0</option>
@@ -132,41 +135,44 @@ body[data-theme="light"] .doc-wrapper .page-area .ldp-chip{ background: rgba(11,
         </select>
       </div>
 
-      <div class="col-md-6">
-        <label class="form-label">Código <span class="dash-req">*</span><span class="dash-reqhint">Obrigatório</span></label>
+      <div class="upload-field">
+        <label class="form-label">C&oacute;digo <span class="dash-req">*</span><span class="dash-reqhint">Obrigat&oacute;rio</span></label>
         <input type="text" name="codigo" class="form-control" required
                placeholder="Ex: I-CR-4880.00-1200-000-CZ1-001"
                value="{{ request.POST.codigo|default:'' }}">
       </div>
+    </div>
 
-      <div class="col-12">
-        <label class="form-label">Título <span class="dash-req">*</span><span class="dash-reqhint">Obrigatório</span></label>
+    <div class="upload-grid upload-grid--1">
+      <div class="upload-field">
+        <label class="form-label">T&iacute;tulo <span class="dash-req">*</span><span class="dash-reqhint">Obrigat&oacute;rio</span></label>
         <input type="text" name="titulo" class="form-control dash-input-lg" required
                placeholder="Ex: COMMISSIONING PLAN"
                value="{{ request.POST.titulo|default:'' }}">
       </div>
+    </div>
 
-      <div class="col-12">
-        <label class="form-label">Arquivo(s) <span class="dash-req">*</span><span class="dash-reqhint">Obrigatório</span></label>
+    <div class="upload-grid upload-grid--1">
+      <div class="upload-field">
+        <label class="form-label">Arquivo(s) <span class="dash-req">*</span><span class="dash-reqhint">Obrigat&oacute;rio</span></label>
 
-        <div class="upload-dropzone ldp-dropzone" id="dzArquivos" tabindex="0" role="button" aria-label="Área para anexar arquivos">
+        <div class="upload-dropzone ldp-dropzone" id="dzArquivos" tabindex="0" role="button" aria-label="&Aacute;rea para anexar arquivos">
           <input type="file" name="arquivos" id="id_arquivos" class="ldp-file-input" required multiple>
 
           <div class="ldp-title"><i class="bi bi-cloud-arrow-up"></i> Arraste e solte aqui</div>
           <div class="ldp-sub">ou clique para selecionar arquivos</div>
-          <div class="ldp-meta">Dica: você pode selecionar mais de um arquivo (Ctrl/Shift).</div>
+          <div class="ldp-meta">Dica: voc&ecirc; pode selecionar mais de um arquivo (Ctrl/Shift).</div>
 
           <div class="ldp-chips" id="fileChips"></div>
           <div class="small text-muted mt-2" id="fileEmpty">Nenhum arquivo selecionado.</div>
         </div>
 
-        <div class="form-text">Se sua view aceitar só 1 arquivo, remova o <code>multiple</code>.</div>
+        <div class="form-text">Se sua view aceitar s&oacute; 1 arquivo, remova o <code>multiple</code>.</div>
       </div>
-
     </div>
 
-    <div class="dash-actions mt-4">
-      <button type="submit" class="dash-btn dash-btn-primary">
+    <div class="upload-actions">
+      <button type="submit" class="dash-btn dash-btn-primary btn btn-primary">
         <i class="bi bi-send"></i> Enviar Documento
       </button>
     </div>
@@ -240,7 +246,7 @@ body[data-theme="light"] .doc-wrapper .page-area .ldp-chip{ background: rgba(11,
   dz.addEventListener('drop', (e) => {
     e.preventDefault();
     dz.classList.remove('is-dragover');
-    const dropped = Array.from(e.dataTransfer?.files || []);
+    const dropped = Array.from(e.dataTransfer&Ocirc;.files || []);
     if(!dropped.length) return;
     const current = Array.from(input.files || []);
     setFiles(mergeFiles(current, dropped));
