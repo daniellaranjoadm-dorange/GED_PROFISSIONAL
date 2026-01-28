@@ -3247,3 +3247,89 @@ body.change-list #changelist-filter{
     padding-right:16px !important;
   }
 }
+
+/* === ADMIN CHANGE-LIST WIDE (tema + django admin) === */
+
+/* 1) Quebra qualquer container do tema (Jazzmin/AdminLTE e afins) */
+body.change-list .container,
+body.change-list .container-fluid,
+body.change-list .content-wrapper,
+body.change-list .content,
+body.change-list .content > .container,
+body.change-list .content > .container-fluid,
+body.change-list #container,
+body.change-list #content,
+body.change-list #content-main{
+  width:100% !important;
+  max-width:none !important;
+  margin-left:0 !important;
+  margin-right:0 !important;
+}
+
+/* padding lateral “enterprise” sem centralizar */
+body.change-list .content-wrapper,
+body.change-list #content{
+  padding-left:24px !important;
+  padding-right:24px !important;
+  box-sizing:border-box !important;
+}
+
+/* 2) O “miolo” do changelist em flex (tabela + filtro) */
+body.change-list #changelist{
+  width:100% !important;
+  max-width:1800px !important;   /* pode subir p/ 2000 se quiser */
+  margin:0 auto !important;
+
+  display:flex !important;
+  gap:16px !important;
+  align-items:flex-start !important;
+}
+
+/* 3) Tabela cresce (remove floats e larguras fixas) */
+body.change-list #changelist-form{
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  width:auto !important;
+  max-width:none !important;
+  float:none !important;
+}
+
+/* garante que a tabela não fica “presa” */
+body.change-list .results,
+body.change-list .results table{
+  width:100% !important;
+  max-width:none !important;
+}
+
+/* 4) Filtro à direita sticky */
+body.change-list #changelist-filter{
+  flex: 0 0 340px !important;
+  width:340px !important;
+  float:none !important;
+  margin:0 !important;
+
+  position:sticky !important;
+  top:16px !important;
+  max-height: calc(100vh - 32px);
+  overflow:auto;
+  border-radius:16px;
+}
+
+/* 5) Mobile: empilha */
+@media (max-width: 1100px){
+  body.change-list #changelist{
+    flex-direction:column !important;
+    max-width:none !important;
+  }
+  body.change-list #changelist-filter{
+    width:100% !important;
+    flex: 0 0 auto !important;
+    position:static !important;
+    max-height:none;
+  }
+  body.change-list .content-wrapper,
+  body.change-list #content{
+    padding-left:16px !important;
+    padding-right:16px !important;
+  }
+}
