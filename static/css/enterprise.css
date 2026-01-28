@@ -2805,8 +2805,8 @@ body.dark .page-solicitacoes--detalhe .kv-k{
 /* IMPORTAR LDP - LAYOUT WIDE (escopado) */
 .page-importar-ldp { width:100%; }
 .page-importar-ldp .dash-container { width:100%; margin:0 auto; padding:0 24px; }
-.page-importar-ldp .dash-container--wide { max-width: 1480px; }
-@media (max-width: 575.98px){ .page-importar-ldp .dash-container{ padding:0 12px; } }
+.page-importar-ldp .dash-container--wide { max-width: 1680px; }
+@media (max-width: 575.98px){ .page-importar-ldp .dash-container{ padding:0 14px; } }
 
 .page-importar-ldp .dash-card,
 .page-importar-ldp form,
@@ -2829,8 +2829,8 @@ body.dark .page-solicitacoes--detalhe .kv-k{
 /* NOVO DOCUMENTO - LAYOUT WIDE (escopado) */
 .page-upload-doc { width:100%; }
 .page-upload-doc .dash-container{ width:100%; margin:0 auto; padding:0 24px; }
-.page-upload-doc .dash-container--wide{ max-width: 1480px; }
-@media (max-width: 575.98px){ .page-upload-doc .dash-container{ padding:0 12px; } }
+.page-upload-doc .dash-container--wide{ max-width: 1680px; }
+@media (max-width: 575.98px){ .page-upload-doc .dash-container{ padding:0 14px; } }
 
 .page-upload-doc .dash-card{ width:100%; max-width:none !important; }
 
@@ -2879,62 +2879,6 @@ body.dark .page-solicitacoes--detalhe .kv-k{
   .page-upload-doc .upload-actions .btn{ width:100%; min-width:0; }
 }
 
-/* NOVO DOCUMENTO / UPLOAD — WIDTH MATCH (escopado) */
-.page-upload-documento { width: 100%; }
-
-/* replica o container “certo” da Lista */
-.page-upload-documento .dash-container { width: 100%; margin: 0 auto; padding: 0 16px; }
-.page-upload-documento .dash-container--wide { max-width: none; }  /* Lista de Documentos não usa max-width */
-
-/* mata limitadores comuns do Bootstrap só aqui */
-.page-upload-documento .container,
-.page-upload-documento .container-sm,
-.page-upload-documento .container-md,
-.page-upload-documento .container-lg,
-.page-upload-documento .container-xl,
-.page-upload-documento .container-xxl {
-  max-width: none !important;
-  width: 100% !important;
-  padding-left: 0 !important;
-  padding-right: 0 !important;
-}
-
-/* garante que o card/form não herdem max-width */
-.page-upload-documento .upload-card,
-.page-upload-documento .dash-card,
-.page-upload-documento form {
-  width: 100%;
-  max-width: none !important;
-}
-
-/* se existir wrapper interno tipo "upload-wrap" / "form-wrap" / "page-content" nesta página */
-.page-upload-documento .upload-wrap,
-.page-upload-documento .form-wrap,
-.page-upload-documento .page-content,
-.page-upload-documento .content,
-.page-upload-documento .content-wrapper {
-  width: 100%;
-  max-width: none !important;
-}
-
-/* Dropzone full */
-.page-upload-documento .dropzone,
-.page-upload-documento .upload-area,
-.page-upload-documento .ldp-dropzone,
-.page-upload-documento .file-drop,
-.page-upload-documento .dz-clickable {
-  width: 100%;
-  max-width: none !important;
-}
-
-/* Botão submit premium */
-.page-upload-documento .btn[type="submit"].dash-btn-primary { min-width: 220px; }
-
-/* Dark: manter contraste do card/inputs (sem afetar outras telas) */
-html[data-theme="dark"] .page-upload-documento .upload-card{
-  background: rgba(255,255,255,.06);
-  border: 1px solid rgba(255,255,255,.10);
-}
 
 /* ==========================================================
    DJANGO ADMIN — CHANGE LIST WIDE (escopado)
@@ -3183,6 +3127,17 @@ body.change-list::before{
   box-shadow:0 10px 30px rgba(0,0,0,.35);
 }
 
+/* Badge não pode cobrir header nem bloquear clique */
+.admin-css-badge, #adminCssBadge, .admin-css-loaded,
+body.change-list::before{
+  position: fixed !important;
+  top: 10px !important;
+  left: 10px !important;
+  z-index: 99999 !important;
+  pointer-events: none !important;
+  max-width: calc(100vw - 20px) !important;
+}
+
 /* IMPORTAR LDP — FULL WIDTH (escopado) */
 .page-importar-ldp .dash-container--full{ max-width:none !important; }
 .page-importar-ldp .ldp-wrap{ max-width:none !important; width:100%; }
@@ -3196,46 +3151,28 @@ body.change-list::before{
   max-width:none !important;
 }
 
-/* NOVO DOCUMENTO (UPLOAD) — FULL WIDTH (escopado) */
-.page-upload-doc{ width:100%; }
-.page-upload-doc .dash-container--full{ max-width:none !important; }
-.page-upload-doc .upload-card{
-  width:100% !important;
-  max-width:none !important;
-  border-radius:16px;
-  box-shadow:0 10px 30px rgba(0,0,0,.08);
-}
-.page-upload-doc .upload-card .form-control,
-.page-upload-doc .upload-card select,
-.page-upload-doc .upload-card input{
-  width:100%;
-}
-.page-upload-doc .upload-dropzone{
-  width:100% !important;
-  max-width:none !important;
-  min-height:140px;
-  border-radius:12px;
-}
-.page-upload-doc .upload-actions{
-  display:flex;
-  gap:12px;
-  flex-wrap:wrap;
-  justify-content:flex-end;
-}
-@media (max-width: 575.98px){
-  .page-upload-doc .upload-actions .btn{ width:100%; }
-}
-
-/* NOVO DOCUMENTO — FULL WIDTH (escopado) */
+/* NOVO DOCUMENTO (UPLOAD) — WIDE (escopado) */
 .page-upload-documento{ width:100%; }
-.page-upload-documento .dash-container{ width:100%; }
-.page-upload-documento .dash-container--wide{ width:100%; }
-.page-upload-documento .dash-container--full{ width:100%; max-width:none !important; }
+.page-upload-documento .dash-container{
+  width:100%;
+  margin:0 auto;
+  padding:0 24px;
+}
+.page-upload-documento .dash-container--wide{ max-width: 1680px; }
 
+/* derruba travas comuns de largura dentro do card/form */
+.page-upload-documento form,
 .page-upload-documento .dash-card,
-.page-upload-documento form{
+.page-upload-documento .card,
+.page-upload-documento .container,
+.page-upload-documento .container-sm,
+.page-upload-documento .container-md{
   width:100%;
   max-width:none !important;
+}
+
+@media (max-width: 575.98px){
+  .page-upload-documento .dash-container{ padding:0 14px; }
 }
 
 /* ADMIN — CONTAS/USUARIO changelist full-width (escopado) */
@@ -3283,4 +3220,100 @@ body.app-contas.model-usuario.change-list .results{
     width: 100%;
     position: static;
   }
+}
+
+/* =========================================================
+   ADMIN — CONTAS/USUARIOS — CHANGE LIST (FULL WIDTH + GRID)
+   Escopo: somente /admin/contas/usuario/ (changelist)
+   ========================================================= */
+
+body.app-contas.model-usuario.change-list #container,
+body.app-contas.model-usuario.change-list #content,
+body.app-contas.model-usuario.change-list .content,
+body.app-contas.model-usuario.change-list #content-main {
+  max-width: none !important;
+  width: 100% !important;
+}
+
+body.app-contas.model-usuario.change-list #content {
+  padding-left: 18px !important;
+  padding-right: 18px !important;
+}
+
+body.app-contas.model-usuario.change-list #content-main {
+  float: none !important;
+}
+
+body.app-contas.model-usuario.change-list #changelist {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 340px !important;
+  gap: 16px !important;
+  align-items: start !important;
+}
+
+/* tabela não pode estourar */
+body.app-contas.model-usuario.change-list #changelist-form { min-width: 0 !important; }
+body.app-contas.model-usuario.change-list .results { overflow-x: auto !important; }
+body.app-contas.model-usuario.change-list #result_list { width: 100% !important; }
+
+/* filtro na coluna direita, “colado” ao topo do miolo */
+body.app-contas.model-usuario.change-list #changelist-filter {
+  width: 340px !important;
+  float: none !important;
+  position: sticky !important;
+  top: 16px !important;
+  align-self: start !important;
+}
+
+/* responsivo: filtro vai pra baixo */
+@media (max-width: 1200px){
+  body.app-contas.model-usuario.change-list #changelist {
+    grid-template-columns: 1fr !important;
+  }
+  body.app-contas.model-usuario.change-list #changelist-filter {
+    width: 100% !important;
+    position: static !important;
+  }
+}
+
+/* fallback seguro para qualquer change-list */
+body.change-list #content,
+body.change-list #content-main {
+  max-width: none !important;
+}
+
+/* ADMIN — FULL WIDTH (sem travas) */
+#container, #content{
+  max-width:none !important;
+  width:100% !important;
+}
+#content{
+  margin:0 !important;
+  padding: 0 24px !important;
+  box-sizing: border-box;
+}
+#content-main{
+  float:none !important;
+  width:100% !important;
+}
+
+/* CHANGE LIST — garante tabela ocupando a largura */
+.change-list #changelist,
+.change-list #changelist-form,
+.change-list #result_list{
+  width:100% !important;
+  max-width:none !important;
+}
+
+/* Banner vermelho — não pode capturar clique */
+#admin-css-custom-carregado,
+.admin-css-custom-carregado,
+.admin-css-toast,
+#adminCssToast{
+  pointer-events:none !important;
+  user-select:none !important;
 }
