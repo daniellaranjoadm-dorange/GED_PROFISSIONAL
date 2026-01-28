@@ -1,328 +1,202 @@
-﻿{% extends "documentos/base.html" %}
+{% extends "documentos/base.html" %}
 {% load static %}
 
-{% block title %}Medição – GED Profissional{% endblock %}
+{% block body_attrs %}class="page-medicao"{% endblock %}
+
+{% block title %}Medi&ccedil;&atilde;o &ndash; GED Profissional
+
+
+
+{% endblock %}
 
 {% block content %}
-
+<div class="medicao-page">
 <div class="doc-wrapper page-medicao">
 
-<style>
-/* ============================
-   MEDIÇÃO – PREMIUM v2.2
-   (CSS 100% escopado em .doc-wrapper.page-medicao)
-   ============================ */
-
-.doc-wrapper.page-medicao{
-  --gap: clamp(12px, 1.2vw, 18px);
-  --radius: 14px;
-  --radius-lg: 18px;
-
-  --accent: var(--accent-blue, #38bdf8);
-  --ink: var(--text, #0f172a);
-  --muted: rgba(15, 23, 42, .66);
-
-  --card-bg: var(--card-bg, rgba(255,255,255,.86));
-  --card-bg-2: rgba(255,255,255,.78);
-  --border: rgba(15, 23, 42, .12);
-  --shadow: 0 16px 38px rgba(2, 6, 23, .10);
-  --shadow-soft: 0 10px 24px rgba(2, 6, 23, .08);
-}
-
-/* Header da página */
-.doc-wrapper.page-medicao .page-header{
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap: var(--gap);
-  margin-bottom: var(--gap);
-}
-
-.doc-wrapper.page-medicao .medicao-title{
-  margin: 0;
-  font-size: clamp(26px, 2.2vw, 34px);
-  line-height: 1.12;
-  letter-spacing: -0.02em;
-  color: var(--accent);
-  text-shadow: none;
-}
-
-.doc-wrapper.page-medicao .page-subtitle{
-  margin-top: 6px;
-  color: var(--muted);
-  font-size: .95rem;
-}
-
-/* Cards / KPIs */
-.doc-wrapper.page-medicao .totais-box{
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-soft);
-  padding: 14px 16px;
-  min-height: 74px;
-}
-
-.doc-wrapper.page-medicao .totais-box .label,
-.doc-wrapper.page-medicao .totais-box small,
-.doc-wrapper.page-medicao .totais-box .kpi-label{
-  color: var(--muted);
-  font-size: .82rem;
-  font-weight: 600;
-  letter-spacing: .02em;
-  text-transform: none;
-}
-
-.doc-wrapper.page-medicao .totais-box .valor,
-.doc-wrapper.page-medicao .totais-box .kpi-value{
-  margin-top: 4px;
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: var(--ink);
-  font-variant-numeric: tabular-nums;
-}
-
-/* Botão export (mais corporativo e consistente) */
-.doc-wrapper.page-medicao .btn-exportar{
-  border-radius: 999px;
-  padding: 10px 14px;
-  border: 1px solid rgba(224,96,0,.35);
-  background: rgba(224,96,0,.10);
-  color: var(--ink);
-  box-shadow: 0 10px 22px rgba(2, 6, 23, .08);
-  transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
-  opacity: 1;
-}
-
-.doc-wrapper.page-medicao .btn-exportar:hover{
-  transform: translateY(-1px);
-  background: rgba(224,96,0,.16);
-  box-shadow: 0 16px 32px rgba(2, 6, 23, .12);
-}
-
-.doc-wrapper.page-medicao .btn-exportar[disabled],
-.doc-wrapper.page-medicao .btn-exportar.disabled{
-  opacity: .55;
-  cursor: not-allowed;
-  filter: grayscale(.2);
-}
-
-/* Tabela */
-.doc-wrapper.page-medicao .medicao-card{
-  background: var(--card-bg-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow);
-  padding: 12px;
-}
-
-.doc-wrapper.page-medicao .charts-grid{
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-.doc-wrapper.page-medicao .chart-card{
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 14px;
-  box-shadow: 0 8px 24px rgba(2,6,23,0.08);
-  padding: 16px;
-  min-height: 120px;
-}
-
-.doc-wrapper.page-medicao .chart-card h6{
-  font-weight: 700;
-  color: #0f172a;
-  margin-bottom: 8px;
-}
-
-.doc-wrapper.page-medicao .chart-card p{
-  color: #475569;
-  margin-bottom: 0;
-}
-
-.doc-wrapper.page-medicao .chart-img{
-  width: 100%;
-  height: auto;
-  display: block;
-  border-radius: 12px;
-  background: #ffffff;
-}
-
-.doc-wrapper.page-medicao .table-finance{
-  width: 100%;
-  table-layout: fixed;
-  border-collapse: separate;
-  border-spacing: 0;
-  overflow: hidden;
-  border-radius: 12px;
-}
-
-.doc-wrapper.page-medicao .table-finance th,
-.doc-wrapper.page-medicao .table-finance td{
-  padding: 10px 12px;
-  font-size: 13px;
-}
-
-.doc-wrapper.page-medicao .table-finance thead th{
-  background: rgba(2, 132, 199, 0.10);
-  color: #0f172a;
-  font-weight: 700;
-  letter-spacing: .02em;
-  padding: 10px 12px;
-  border-bottom: 1px solid #cbd5e1;
-  white-space: nowrap;
-  font-size: 12px;
-  text-transform: none;
-}
-
-.doc-wrapper.page-medicao .table-finance tbody td{
-  border-bottom: 1px solid rgba(203,213,225,.55);
-  color: rgba(15,23,42,.88);
-  font-variant-numeric: tabular-nums;
-}
-
-.doc-wrapper.page-medicao .table-finance .t-left{ text-align: left; }
-.doc-wrapper.page-medicao .table-finance .t-right{ text-align: right; font-variant-numeric: tabular-nums; }
-
-.doc-wrapper.page-medicao .table-finance col.c-tipo { width: 12%; }
-.doc-wrapper.page-medicao .table-finance col.c-total { width: 6%; }
-.doc-wrapper.page-medicao .table-finance col.c-emitidos { width: 7%; }
-.doc-wrapper.page-medicao .table-finance col.c-naorec { width: 10%; }
-.doc-wrapper.page-medicao .table-finance col.c-usd-e,
-.doc-wrapper.page-medicao .table-finance col.c-brl-e,
-.doc-wrapper.page-medicao .table-finance col.c-usd-nr,
-.doc-wrapper.page-medicao .table-finance col.c-brl-nr { width: 16%; }
-
-/* zebra discreta + hover corporativo (sem scale) */
-.doc-wrapper.page-medicao .table-finance tbody tr:nth-child(even){
-  background: rgba(2, 6, 23, .02);
-}
-.doc-wrapper.page-medicao .table-finance tbody tr:hover{
-  background: rgba(56,189,248,.08);
-}
-
-.doc-wrapper.page-medicao .table-finance tfoot .row-total td{
-  background: rgba(2, 132, 199, 0.14);
-  color: #0f172a;
-  font-weight: 800;
-  padding: 10px 12px;
-  border-top: 2px solid rgba(2,132,199,.35);
-  border-bottom: 0;
-  vertical-align: middle;
-}
-.doc-wrapper.page-medicao .table-finance tfoot .row-total td:first-child{
-  border-bottom-left-radius: 10px;
-}
-.doc-wrapper.page-medicao .table-finance tfoot .row-total td:last-child{
-  border-bottom-right-radius: 10px;
-}
-
-/* badges de cor (mantém sua intenção sem neon gritante) */
-.doc-wrapper.page-medicao .valor-usd{ color:#0ea5e9; font-weight:800; }
-.doc-wrapper.page-medicao .valor-brl{ color:#16a34a; font-weight:800; }
-.doc-wrapper.page-medicao .valor-nr { color:#dc2626; font-weight:800; }
-
-.doc-wrapper.page-medicao hr, .doc-wrapper.page-medicao .divider, .doc-wrapper.page-medicao .medicao-divider{
-  display:none !important;
-}
-.doc-wrapper.page-medicao::before,
-.doc-wrapper.page-medicao::after{
-  content: none !important;
-  display: none !important;
-}
-.doc-wrapper.page-medicao .page-area::before,
-.doc-wrapper.page-medicao .page-area::after,
-.doc-wrapper.page-medicao .content::before,
-.doc-wrapper.page-medicao .content::after,
-.doc-wrapper.page-medicao main::before,
-.doc-wrapper.page-medicao main::after,
-.doc-wrapper.page-medicao .container::before,
-.doc-wrapper.page-medicao .container::after{
-  content: none !important;
-  display: none !important;
-  border: 0 !important;
-  outline: 0 !important;
-  box-shadow: none !important;
-}
-.doc-wrapper.page-medicao{
-  border-bottom: 0 !important;
-  outline: 0 !important;
-}
-.doc-wrapper.page-medicao .page-area,
-.doc-wrapper.page-medicao .content,
-.doc-wrapper.page-medicao main,
-.doc-wrapper.page-medicao .container{
-  border-bottom: 0 !important;
-  outline: 0 !important;
-}
-.doc-wrapper.page-medicao .divider,
-.doc-wrapper.page-medicao .separator,
-.doc-wrapper.page-medicao .footer-line{
-  display: none !important;
-}
-
-/* Responsivo */
-@media (max-width: 992px){
-  .doc-wrapper.page-medicao .page-header{ flex-direction: column; align-items: stretch; }
-  .doc-wrapper.page-medicao .btn-exportar{ align-self: flex-start; }
-  .doc-wrapper.page-medicao .table-finance{ font-size: .86rem; }
-  .doc-wrapper.page-medicao .charts-grid{ grid-template-columns: 1fr; }
-}
-</style>
-
-
-
 <div class="page-header">
-    <div>
-        <h1 class="medicao-title fw-bold">
-            <i class="bi bi-cash-coin me-2"></i>Medição – Relatório Financeiro
-        </h1>
-        <div class="page-subtitle">
+    <div class="medicao-hero">
+        <h1 class="medicao-h1">
+            <i class="bi bi-cash-coin me-2"></i>Medi&ccedil;&atilde;o &ndash; Relat&oacute;rio Financeiro</h1>
+        <div class="medicao-subtitle">
             Acompanhe os totais por tipo de documento e exporte os resultados.
         </div>
     </div>
 </div>
 
 
+<div class="medicao-card medicao-card--dark mb-4">
+    <form method="get" class="medicao-filtros medicao-form">
+        <div>
+            <label class="form-label">Projeto</label>
+            <select class="form-select medicao-native-select" name="projeto" data-medicao-native="1">
+                <option value="">Todos</option>
+                {% for p in projetos %}
+                    <option value="{{ p }}" {% if filtros.projeto == p %}selected{% endif %}>{{ p }}</option>
+                {% endfor %}
+            </select>
+<div class="medicao-select" data-medicao-select>
+  <button type="button" class="medicao-select-btn" aria-haspopup="listbox" aria-expanded="false">
+    <span class="medicao-select-value" data-medicao-value>Selecionar</span>
+    <span class="medicao-select-caret" aria-hidden="true"></span>
+  </button>
+  <div class="medicao-select-pop" role="listbox" tabindex="-1"></div>
+</div>
+
+        </div>
+
+        <div>
+            <label class="form-label">Disciplina</label>
+            <select class="form-select medicao-native-select" name="disciplina" data-medicao-native="1">
+                <option value="">Todos</option>
+                {% for d in disciplinas %}
+                    <option value="{{ d }}" {% if filtros.disciplina == d %}selected{% endif %}>{{ d }}</option>
+                {% endfor %}
+            </select>
+<div class="medicao-select" data-medicao-select>
+  <button type="button" class="medicao-select-btn" aria-haspopup="listbox" aria-expanded="false">
+    <span class="medicao-select-value" data-medicao-value>Selecionar</span>
+    <span class="medicao-select-caret" aria-hidden="true"></span>
+  </button>
+  <div class="medicao-select-pop" role="listbox" tabindex="-1"></div>
+</div>
+
+        </div>
+
+        <div>
+            <label class="form-label">Fase</label>
+            <select class="form-select medicao-native-select" name="fase" data-medicao-native="1">
+                <option value="">Todos</option>
+                {% for f in fases %}
+                    <option value="{{ f }}" {% if filtros.fase == f %}selected{% endif %}>{{ f }}</option>
+                {% endfor %}
+            </select>
+<div class="medicao-select" data-medicao-select>
+  <button type="button" class="medicao-select-btn" aria-haspopup="listbox" aria-expanded="false">
+    <span class="medicao-select-value" data-medicao-value>Selecionar</span>
+    <span class="medicao-select-caret" aria-hidden="true"></span>
+  </button>
+  <div class="medicao-select-pop" role="listbox" tabindex="-1"></div>
+</div>
+
+        </div>
+
+        <div>
+            <label class="form-label">Tipo Doc</label>
+            <select class="form-select medicao-native-select" name="tipo_doc" data-medicao-native="1">
+                <option value="">Todos</option>
+                {% for t in tipos %}
+                    <option value="{{ t }}" {% if filtros.tipo_doc == t %}selected{% endif %}>{{ t }}</option>
+                {% endfor %}
+            </select>
+<div class="medicao-select" data-medicao-select>
+  <button type="button" class="medicao-select-btn" aria-haspopup="listbox" aria-expanded="false">
+    <span class="medicao-select-value" data-medicao-value>Selecionar</span>
+    <span class="medicao-select-caret" aria-hidden="true"></span>
+  </button>
+  <div class="medicao-select-pop" role="listbox" tabindex="-1"></div>
+</div>
+
+        </div>
+
+        <div>
+            <label class="form-label">Status Documento</label>
+            <select class="form-select medicao-native-select" name="status_documento" data-medicao-native="1">
+                <option value="">Todos</option>
+                {% for s in status_docs %}
+                    <option value="{{ s }}" {% if filtros.status_documento == s %}selected{% endif %}>{{ s }}</option>
+                {% endfor %}
+            </select>
+<div class="medicao-select" data-medicao-select>
+  <button type="button" class="medicao-select-btn" aria-haspopup="listbox" aria-expanded="false">
+    <span class="medicao-select-value" data-medicao-value>Selecionar</span>
+    <span class="medicao-select-caret" aria-hidden="true"></span>
+  </button>
+  <div class="medicao-select-pop" role="listbox" tabindex="-1"></div>
+</div>
+
+        </div>
+
+        <div>
+            <label class="form-label">Status Emissão</label>
+            <select class="form-select medicao-native-select" name="status_emissao" data-medicao-native="1">
+                <option value="">Todos</option>
+                {% for s in status_emissoes %}
+                    <option value="{{ s }}" {% if filtros.status_emissao == s %}selected{% endif %}>{{ s }}</option>
+                {% endfor %}
+            </select>
+<div class="medicao-select" data-medicao-select>
+  <button type="button" class="medicao-select-btn" aria-haspopup="listbox" aria-expanded="false">
+    <span class="medicao-select-value" data-medicao-value>Selecionar</span>
+    <span class="medicao-select-caret" aria-hidden="true"></span>
+  </button>
+  <div class="medicao-select-pop" role="listbox" tabindex="-1"></div>
+</div>
+
+        </div>
+
+        <div>
+            <label class="form-label">Busca</label>
+            <input type="text" class="form-control" name="q" value="{{ filtros.q }}" placeholder="Codigo, titulo ou parte do codigo">
+        </div>
+
+        <div class="medicao-actions">
+            <button type="submit" class="btn btn-primary btn-sm">Aplicar filtros</button>
+            <a href="{% url 'documentos:medicao' %}" class="btn btn-outline-secondary btn-sm">Limpar</a>
+            <a href="{% url 'documentos:exportar_medicao_excel' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" class="btn btn-outline-secondary btn-sm btn-exportar">
+                <i class="bi bi-file-earmark-excel"></i> Exportar Excel
+            </a>
+        </div>
+    </form>
+</div>
+
+
 <!-- ============================
      KPIs
 ============================ -->
-<div class="row g-3 mb-4">
-    <div class="col-md-4">
-        <div class="totais-box">
-            <h5 class="fw-bold mb-1">Taxa de câmbio fixa</h5>
-            <p class="valor-brl mb-0">R$ 5,7642</p>
-        </div>
+<div id="medicao-kpis" class="medicao-kpis">
+<div class="medicao-kpis mb-4">
+    <div class="totais-box kpi-card medicao-kpi medicao-kpi-card">
+        <div class="medicao-kpi-label kpi-label">Total Docs</div>
+        <div class="medicao-kpi-value kpi-value">{{ total_docs|default:0 }}</div>
     </div>
-
-    <div class="col-md-4">
-        <div class="totais-box">
-            <h5 class="fw-bold mb-1">Valor por documento</h5>
-            <p class="valor-usd mb-0">US$ {{ VALOR_MEDICAO_USD|floatformat:2 }}</p>
-        </div>
+    <div class="totais-box kpi-card medicao-kpi medicao-kpi-card">
+        <div class="medicao-kpi-label kpi-label">Emitidos</div>
+        <div class="medicao-kpi-value kpi-value">{{ emitidos_total|default:0 }}</div>
     </div>
-
-    <div class="col-md-4 text-md-end">
-        <a href="{% url 'documentos:exportar_medicao_excel' %}" class="btn btn-primary btn-exportar px-4 py-2">
-            <i class="bi bi-file-earmark-excel"></i> Exportar Excel
-        </a>
+    <div class="totais-box kpi-card medicao-kpi medicao-kpi-card">
+        <div class="medicao-kpi-label kpi-label">Não Recebidos</div>
+        <div class="medicao-kpi-value kpi-value">{{ nao_recebidos_total|default:0 }}</div>
+    </div>
+    <div class="totais-box kpi-card medicao-kpi medicao-kpi-card">
+        <div class="medicao-kpi-label kpi-label">Total USD</div>
+        <div class="medicao-kpi-value kpi-value">US$ {{ total_usd|default:"0,00" }}</div>
+    </div>
+    <div class="totais-box kpi-card medicao-kpi medicao-kpi-card">
+        <div class="medicao-kpi-label kpi-label">Total BRL</div>
+        <div class="medicao-kpi-value kpi-value">R$ {{ total_brl|default:"0,00" }}</div>
+    </div>
+    <div class="totais-box kpi-card medicao-kpi medicao-kpi-card">
+        <div class="medicao-kpi-label kpi-label">Ticket médio USD</div>
+        <div class="medicao-kpi-value kpi-value">US$ {{ ticket_medio_usd|default:"0,00" }}</div>
     </div>
 </div>
+</div>
+
+
 
 
 <!-- ============================
      TABELA PRINCIPAL
 ============================ -->
-<div class="medicao-card">
+<div id="medicao-resumo">
+<div class="medicao-card medicao-card--dark">
 
     <h4 class="medicao-title mb-3">
         <i class="bi bi-ui-checks-grid"></i> Resumo Financeiro por Tipo de Documento
     </h4>
 
-    <div class="table-responsive">
-        <table class="table table-sm table-hover align-middle mb-0 table-finance">
+    <div class="table-responsive medicao-table-wrap">
+        <table class="table medicao-table table-finance">
             <colgroup>
                 <col class="c-tipo">
                 <col class="c-total">
@@ -335,119 +209,374 @@
             </colgroup>
             <thead>
                 <tr>
-                    <th>Tipo Doc</th>
-                    <th>Total</th>
-                    <th>Emitidos</th>
-                    <th>Não Recebidos</th>
-                    <th>Valor Emitidos (USD)</th>
-                    <th>Valor Emitidos (BRL)</th>
-                    <th>Valor Não Recebidos (USD)</th>
-                    <th>Valor Não Recebidos (BRL)</th>
+                    <th class="medicao-col-left">Tipo Doc</th>
+                    <th class="medicao-col-center">Total</th>
+                    <th class="medicao-col-center">Emitidos</th>
+                    <th class="medicao-col-center">Não Recebidos</th>
+                    <th class="medicao-col-right">Valor Emitidos (USD)</th>
+                    <th class="medicao-col-right">Valor Emitidos (BRL)</th>
+                    <th class="medicao-col-right">Valor Não Recebidos (USD)</th>
+                    <th class="medicao-col-right">Valor Não Recebidos (BRL)</th>
                 </tr>
             </thead>
 
             <tbody>
-                {% for r in rows %}
+                {% for r in resumo %}
                 <tr>
-                    <td class="t-left fw-semibold">{{ r.tipo|default:"—" }}</td>
-                    <td class="t-right">{{ r.total|default:0 }}</td>
-                    <td class="t-right">{{ r.emitidos|default:0 }}</td>
-                    <td class="t-right">{{ r.nao_recebidos|default:0 }}</td>
-                    <td class="t-right">US$ {{ r.valor_emitidos_usd|default:0|floatformat:2 }}</td>
-                    <td class="t-right">R$ {{ r.valor_emitidos_brl|default:0|floatformat:2 }}</td>
-                    <td class="t-right">US$ {{ r.valor_nao_recebidos_usd|default:0|floatformat:2 }}</td>
-                    <td class="t-right">R$ {{ r.valor_nao_recebidos_brl|default:0|floatformat:2 }}</td>
+                    <td class="t-left medicao-col-left fw-bold text-info">{{ r.tipo_doc|default:"-" }}</td>
+                    <td class="t-right medicao-col-center">{{ r.total|default:0 }}</td>
+                    <td class="t-right medicao-col-center">{{ r.emitidos|default:0 }}</td>
+                    <td class="t-right medicao-col-center">{{ r.nao_recebidos|default:0 }}</td>
+                    <td class="t-right medicao-col-right">US$ {{ r.valor_emitidos_usd|default:0 }}</td>
+                    <td class="t-right medicao-col-right">R$ {{ r.valor_emitidos_brl|default:0 }}</td>
+                    <td class="t-right medicao-col-right">US$ {{ r.valor_nr_usd|default:0 }}</td>
+                    <td class="t-right medicao-col-right">R$ {{ r.valor_nr_brl|default:0 }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
 
             <tfoot>
-                <tr class="row-total">
-                    <td class="t-left">Total Geral</td>
-                    <td class="t-right">{{ total_geral.total|default:0 }}</td>
-                    <td class="t-right">{{ total_geral.emitidos|default:0 }}</td>
-                    <td class="t-right">{{ total_geral.nao_recebidos|default:0 }}</td>
-                    <td class="t-right">US$ {{ total_geral.valor_emitidos_usd|default:0|floatformat:2 }}</td>
-                    <td class="t-right">R$ {{ total_geral.valor_emitidos_brl|default:0|floatformat:2 }}</td>
-                    <td class="t-right">US$ {{ total_geral.valor_nao_recebidos_usd|default:0|floatformat:2 }}</td>
-                    <td class="t-right">R$ {{ total_geral.valor_nao_recebidos_brl|default:0|floatformat:2 }}</td>
+                <tr class="row-total medicao-total-row total">
+                    <td class="t-left medicao-col-left">Total Geral</td>
+                    <td class="t-right medicao-col-center">{{ total_geral.total|default:0 }}</td>
+                    <td class="t-right medicao-col-center">{{ total_geral.emitidos|default:0 }}</td>
+                    <td class="t-right medicao-col-center">{{ total_geral.nao_recebidos|default:0 }}</td>
+                    <td class="t-right medicao-col-right">US$ {{ total_geral.valor_emitidos_usd|default:0 }}</td>
+                    <td class="t-right medicao-col-right">R$ {{ total_geral.valor_emitidos_brl|default:0 }}</td>
+                    <td class="t-right medicao-col-right">US$ {{ total_geral.valor_nao_recebidos_usd|default:0 }}</td>
+                    <td class="t-right medicao-col-right">R$ {{ total_geral.valor_nao_recebidos_brl|default:0 }}</td>
                 </tr>
             </tfoot>
 
         </table>
     </div>
 </div>
+</div>
+
 
 
 
 <!-- ============================
      GRÁFICOS
 ============================ -->
+
+<div id="medicao-graficos" class="medicao-graficos">
 <h4 class="medicao-title mt-5 mb-4">
-    <i class="bi bi-bar-chart"></i> Gráficos da Medição
+    <i class="bi bi-bar-chart"></i> Gr&aacute;ficos da Medi&ccedil;&atilde;o
 </h4>
 
-{% if has_chart_data %}
-<div class="charts-grid mb-5">
-    <div class="chart-card">
-        <h6>Totais por Tipo de Documento</h6>
-        <canvas id="chartMedicaoTotais" height="120"></canvas>
+{% if tem_dados_medicao %}
+<div class="medicao-charts mb-5">
+    <div class="medicao-chart-card">
+      <div class="medicao-chart-head">
+        <div class="medicao-chart-title">Totais por Tipo de Documento</div>
+        <div class="medicao-chart-meta">Gerado a partir do resumo</div>
+      </div>
+      <div class="medicao-chart-body" style="height:280px;">
+        {% if chart1_url %}
+        <img src="{{ chart1_url }}" alt="Totais por Tipo de Documento" class="chart-img">
+        {% else %}
+        <canvas id="medicaoChartTotais" class="medicao-chart"></canvas>
+        {% endif %}
+      </div>
     </div>
 
-    <div class="chart-card">
-        <h6>Valores Emitidos por Tipo (USD)</h6>
-        <canvas id="chartMedicaoUsd" height="120"></canvas>
+    <div class="medicao-chart-card">
+      <div class="medicao-chart-head">
+        <div class="medicao-chart-title">Valores Emitidos por Tipo (USD)</div>
+        <div class="medicao-chart-meta">Gerado a partir do resumo</div>
+      </div>
+      <div class="medicao-chart-body" style="height:280px;">
+        {% if chart2_url %}
+        <img src="{{ chart2_url }}" alt="Valores Emitidos por Tipo (USD)" class="chart-img">
+        {% else %}
+        <canvas id="medicaoChartValoresUSD" class="medicao-chart"></canvas>
+        {% endif %}
+      </div>
     </div>
 </div>
-
-{{ chart_labels_totais|json_script:"chart-labels-totais" }}
-{{ chart_values_totais|json_script:"chart-values-totais" }}
-{{ chart_labels_usd|json_script:"chart-labels-usd" }}
-{{ chart_values_usd|json_script:"chart-values-usd" }}
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-(() => {
-  if (!window.Chart) return;
-  const labelsTotais = JSON.parse(document.getElementById("chart-labels-totais").textContent);
-  const valuesTotais = JSON.parse(document.getElementById("chart-values-totais").textContent);
-  const labelsUsd = JSON.parse(document.getElementById("chart-labels-usd").textContent);
-  const valuesUsd = JSON.parse(document.getElementById("chart-values-usd").textContent);
-
-  const totalsEl = document.getElementById("chartMedicaoTotais");
-  if (totalsEl) {
-    new Chart(totalsEl, {
-      type: "bar",
-      data: { labels: labelsTotais, datasets: [{ label: "Total", data: valuesTotais, backgroundColor: "rgba(37,99,235,.6)" }] },
-      options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
-    });
-  }
-
-  const usdEl = document.getElementById("chartMedicaoUsd");
-  if (usdEl) {
-    new Chart(usdEl, {
-      type: "bar",
-      data: { labels: labelsUsd, datasets: [{ label: "USD", data: valuesUsd, backgroundColor: "rgba(14,165,233,.6)" }] },
-      options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
-    });
-  }
-})();
-</script>
 {% else %}
-<div class="charts-grid mb-5">
-    <div class="chart-card">
-        <h6>Distribuição por Disciplina</h6>
-        <p>Sem dados suficientes para exibir.</p>
+<div class="medicao-charts mb-5">
+    <div class="medicao-chart-card">
+      <div class="medicao-chart-head">
+        <div class="medicao-chart-title">Distribui&ccedil;&atilde;o por Disciplina</div>
+        <div class="medicao-chart-meta">Gerado a partir do resumo</div>
+      </div>
+      <div class="medicao-chart-body" style="height:280px;">
+        <div class="medicao-chart-fallback">Os gr&aacute;ficos ser&atilde;o exibidos quando houver dados suficientes.</div>
+      </div>
     </div>
 
-    <div class="chart-card">
-        <h6>Status Geral</h6>
-        <p>Sem dados suficientes para exibir.</p>
+    <div class="medicao-chart-card">
+      <div class="medicao-chart-head">
+        <div class="medicao-chart-title">Status Geral</div>
+        <div class="medicao-chart-meta">Gerado a partir do resumo</div>
+      </div>
+      <div class="medicao-chart-body" style="height:280px;">
+        <div class="medicao-chart-fallback">Os gr&aacute;ficos ser&atilde;o exibidos quando houver dados suficientes.</div>
+      </div>
     </div>
 </div>
 {% endif %}
 
-
 </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+  function parseMoneyToNumber(txt) {
+    // aceita "US$ 979.00", "USS 979.00", "R$ 1.234,56", etc.
+    if (!txt) return 0;
+    const s = String(txt).replace(/\s+/g, ' ').trim();
+    const cleaned = s.replace(/[^\d.,-]/g, '');
+    let n = cleaned;
+    const hasComma = n.indexOf(',') !== -1;
+    const hasDot = n.indexOf('.') !== -1;
+    if (hasComma && hasDot) {
+      n = n.replace(/\./g, '').replace(',', '.');
+    } else if (hasComma && !hasDot) {
+      n = n.replace(',', '.');
+    }
+    const val = Number(n);
+    return Number.isFinite(val) ? val : 0;
+  }
+
+  function parseIntSafe(txt) {
+    if (!txt) return 0;
+    const m = String(txt).match(/-?\d+/);
+    return m ? parseInt(m[0], 10) : 0;
+  }
+
+  function getResumoRows() {
+    const table = document.querySelector('#medicao-resumo table.medicao-table');
+    if (!table) return [];
+    const rows = Array.from(table.querySelectorAll('tbody tr'));
+    return rows.filter(tr => {
+      if (tr.classList.contains('total')) return false;
+      const first = tr.querySelector('td');
+      if (!first) return false;
+      const t = first.textContent.trim().toLowerCase();
+      return t !== 'total geral' && t !== 'total';
+    });
+  }
+
+  function extractData() {
+    const rows = getResumoRows();
+    const labels = [];
+    const totalsDocs = [];
+    const valoresUSD = [];
+    rows.forEach(tr => {
+      const tds = Array.from(tr.querySelectorAll('td'));
+      if (tds.length < 5) return;
+      const tipo = (tds[0]?.textContent || '').trim();
+      if (!tipo) return;
+      labels.push(tipo);
+      totalsDocs.push(parseIntSafe(tds[1]?.textContent));
+      valoresUSD.push(parseMoneyToNumber(tds[4]?.textContent));
+    });
+    return { labels, totalsDocs, valoresUSD };
+  }
+
+  function ensureCanvas(id) {
+    const el = document.getElementById(id);
+    return el && el.getContext ? el : null;
+  }
+
+  function destroyOldCharts() {
+    if (window.__medicaoCharts) {
+      Object.values(window.__medicaoCharts).forEach(ch => {
+        try { ch.destroy(); } catch(e) {}
+      });
+    }
+    window.__medicaoCharts = {};
+  }
+
+  const MEDICAO_CHART_THEME = {
+    grid: 'rgba(255,255,255,.08)',
+    ticks: 'rgba(255,255,255,.78)',
+    tooltipBg: 'rgba(2,6,23,.92)',
+    tooltipBorder: 'rgba(255,255,255,.12)'
+  };
+
+  function render() {
+    const c1 = ensureCanvas('medicaoChartTotais');
+    const c2 = ensureCanvas('medicaoChartValoresUSD');
+    if (!c1 || !c2) return;
+    const { labels, totalsDocs, valoresUSD } = extractData();
+    if (!labels.length) return;
+    if (typeof Chart === 'undefined') return;
+    destroyOldCharts();
+
+    window.__medicaoCharts.totais = new Chart(c1.getContext('2d'), {
+      type: 'bar',
+      data: { labels, datasets: [{ label: 'Total (docs)', data: totalsDocs }] },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            enabled: true,
+            backgroundColor: MEDICAO_CHART_THEME.tooltipBg,
+            borderColor: MEDICAO_CHART_THEME.tooltipBorder,
+            borderWidth: 1,
+            titleColor: 'rgba(255,255,255,.92)',
+            bodyColor: 'rgba(255,255,255,.85)',
+            displayColors: false
+          }
+        },
+        scales: {
+          x: { grid: { color: MEDICAO_CHART_THEME.grid }, ticks: { color: MEDICAO_CHART_THEME.ticks } },
+          y: { beginAtZero: true, grid: { color: MEDICAO_CHART_THEME.grid }, ticks: { color: MEDICAO_CHART_THEME.ticks } }
+        }
+      }
+    });
+
+    window.__medicaoCharts.valoresUSD = new Chart(c2.getContext('2d'), {
+      type: 'bar',
+      data: { labels, datasets: [{ label: 'Valor Emitidos (USD)', data: valoresUSD }] },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            enabled: true,
+            backgroundColor: MEDICAO_CHART_THEME.tooltipBg,
+            borderColor: MEDICAO_CHART_THEME.tooltipBorder,
+            borderWidth: 1,
+            titleColor: 'rgba(255,255,255,.92)',
+            bodyColor: 'rgba(255,255,255,.85)',
+            displayColors: false
+          }
+        },
+        scales: {
+          x: { grid: { color: MEDICAO_CHART_THEME.grid }, ticks: { color: MEDICAO_CHART_THEME.ticks } },
+          y: { beginAtZero: true, grid: { color: MEDICAO_CHART_THEME.grid }, ticks: { color: MEDICAO_CHART_THEME.ticks } }
+        }
+      }
+    });
+  }
+
+  function closeAll(except){
+    document.querySelectorAll('.medicao-select.is-open').forEach(el=>{
+      if(except && el===except) return;
+      el.classList.remove('is-open');
+      const btn = el.querySelector('.medicao-select-btn');
+      if(btn) btn.setAttribute('aria-expanded','false');
+    });
+  }
+
+  function build(select){
+    const wrap = select.nextElementSibling;
+    if(!wrap || !wrap.matches('.medicao-select[data-medicao-select]')) return;
+
+    const btn = wrap.querySelector('.medicao-select-btn');
+    const pop = wrap.querySelector('.medicao-select-pop');
+    const valueEl = wrap.querySelector('[data-medicao-value]');
+
+    pop.innerHTML = '';
+    const opts = Array.from(select.options || []);
+    opts.forEach((o)=>{
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'medicao-select-opt';
+      item.setAttribute('role','option');
+      item.dataset.value = o.value;
+      item.textContent = o.textContent || o.label || '';
+      if(o.disabled) item.disabled = true;
+      if(select.value === o.value) item.classList.add('is-selected');
+      item.addEventListener('click', ()=>{
+        select.value = o.value;
+        pop.querySelectorAll('.medicao-select-opt').forEach(x=>x.classList.remove('is-selected'));
+        item.classList.add('is-selected');
+        valueEl.textContent = item.textContent;
+        closeAll();
+      });
+      pop.appendChild(item);
+    });
+
+    const current = opts.find(o=>o.value===select.value) || opts[0];
+    valueEl.textContent = current ? (current.textContent || current.label || 'Selecionar') : 'Selecionar';
+
+    btn.addEventListener('click', ()=>{
+      const isOpen = wrap.classList.contains('is-open');
+      if(isOpen){
+        wrap.classList.remove('is-open');
+        btn.setAttribute('aria-expanded','false');
+      } else {
+        closeAll(wrap);
+        wrap.classList.add('is-open');
+        btn.setAttribute('aria-expanded','true');
+        setTimeout(()=>pop.focus(), 0);
+      }
+    });
+
+    btn.addEventListener('keydown', (e)=>{
+      if(e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' '){
+        e.preventDefault();
+        btn.click();
+      }
+    });
+
+    pop.addEventListener('keydown', (e)=>{
+      const items = Array.from(pop.querySelectorAll('.medicao-select-opt:not(:disabled)'));
+      const i = items.findIndex(x=>x.classList.contains('is-selected'));
+      if(e.key === 'Escape'){ e.preventDefault(); closeAll(); btn.focus(); return; }
+      if(!items.length) return;
+      if(e.key === 'ArrowDown'){
+        e.preventDefault();
+        const next = items[Math.min(items.length-1, Math.max(0, i+1))];
+        next.click(); next.focus();
+      } else if(e.key === 'ArrowUp'){
+        e.preventDefault();
+        const prev = items[Math.max(0, i-1)];
+        prev.click(); prev.focus();
+      }
+    });
+
+    select.addEventListener('change', ()=>{
+      const opt = opts.find(o=>o.value===select.value);
+      if(opt) valueEl.textContent = opt.textContent || opt.label || '';
+      pop.querySelectorAll('.medicao-select-opt').forEach(x=>{
+        x.classList.toggle('is-selected', x.dataset.value === select.value);
+      });
+    });
+  }
+
+  document.querySelectorAll('select[data-medicao-native="1"]').forEach(sel=>{
+    build(sel);
+  });
+
+  document.addEventListener('click', (e)=>{
+    if(!e.target.closest('.medicao-select')) closeAll();
+  });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', render);
+  } else {
+    render();
+  }
+})();
+</script>
 
 {% endblock %}

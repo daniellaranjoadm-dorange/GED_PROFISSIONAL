@@ -11,6 +11,7 @@ urlpatterns = [
     path("", views.listar_documentos, name="home"),
     path("documentos/", views.listar_documentos, name="listar_documentos"),
     path("upload/", views.upload_documento, name="upload_documento"),
+    path("revisoes/", views.revisoes, name="revisoes"),
 
     # ============================
     # DETALHES / EDIÇÃO

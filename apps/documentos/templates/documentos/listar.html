@@ -1,4 +1,5 @@
 {% extends "documentos/base.html" %}
+{% block body_attrs %} data-force-reload-on-show="1"{% endblock %}
 {% block title %}📁 Lista de Documentos · D’OR@NGE Enterprise{% endblock %}
 
 {% block extra_head %}
@@ -161,6 +162,7 @@
 
 {% block content %}
 <div class="doc-wrapper">
+<div class="page-lista-documentos">
 <div class="page-header">
   <h2><i class="bi bi-folder2-open"></i> Lista de Documentos</h2>
 
@@ -255,6 +257,7 @@
           <th>Rev</th>
           <th>Disciplina</th>
           <th>Título</th>
+          <th>Versões</th>
           <th>Status Documento</th>
           <th>Status Emissão</th>
           <th>GRDT</th>
@@ -278,11 +281,49 @@
           <td>{{ doc.revisao }}</td>
           <td>{{ doc.disciplina }}</td>
           <td>{{ doc.titulo }}</td>
+          <td class="text-nowrap">
+            {{ doc.versoes_count|default:0 }}
+            {% if doc.versoes_count %}
+              <a href="{% url 'documentos:historico' doc.codigo %}" class="btn btn-outline-primary btn-sm ms-2">Histórico</a>
+            {% endif %}
+          </td>
           <td>{% if doc.status_documento %}<span class="badge badge-status badge-doc">{{ doc.status_documento }}</span>{% else %}—{% endif %}</td>
           <td>{% if doc.status_emissao %}<span class="badge badge-status badge-emissao">{{ doc.status_emissao }}</span>{% else %}—{% endif %}</td>
-          <td>{{ doc.grdt_cliente|default:"—" }}</td>
-          <td>{{ doc.resposta_cliente|default:"—" }}</td>
-          <td>{% if doc.data_emissao_grdt %}{{ doc.data_emissao_grdt|date:"d/m/Y" }}{% else %}—{% endif %}</td>
+          <td>{% firstof doc.num_grdt doc.numero_grdt doc.grdt doc.n_grdt doc.grdt_cliente "—" %}</td>
+          <td>{% firstof doc.num_pcf doc.numero_pcf doc.pcf doc.n_pcf doc.resposta_cliente "—" %}</td>
+          <td>
+            {% with dt=doc.data_emissao_tp %}
+              {% if dt %}
+                {{ dt|date:"d/m/Y" }}
+              {% else %}
+                {% with dt2=doc.data_emissao_tp_doc %}
+                  {% if dt2 %}
+                    {{ dt2|date:"d/m/Y" }}
+                  {% else %}
+                    {% with dt3=doc.data_emissao_grdt %}
+                      {% if dt3 %}
+                        {{ dt3|date:"d/m/Y" }}
+                      {% else %}
+                        {% with dt4=doc.data_emissao %}
+                          {% if dt4 %}
+                            {{ dt4|date:"d/m/Y" }}
+                          {% else %}
+                            {% with dt5=doc.data %}
+                              {% if dt5 %}
+                                {{ dt5|date:"d/m/Y" }}
+                              {% else %}
+                                —
+                              {% endif %}
+                            {% endwith %}
+                          {% endif %}
+                        {% endwith %}
+                      {% endif %}
+                    {% endwith %}
+                  {% endif %}
+                {% endwith %}
+              {% endif %}
+            {% endwith %}
+          </td>
           <td>
             {% if doc.arquivos.all|length > 0 %}
               <a href="{% url 'documentos:detalhes_documento' doc.id %}" class="btn btn-sm btn-primary btn-premium">Abrir</a>
@@ -303,6 +344,7 @@
     {% endif %}
 
   </div>
+</div>
 </div>
 </div>
 {% endblock %}
@@ -348,5 +390,23 @@ $(document).ready(function(){
     document.querySelectorAll(".selectItem").forEach(c=>c.checked = e.target.checked);
   });
 });
+</script>
+<script>
+(function () {
+  function cameFromBFCache(ev) {
+    if (ev && ev.persisted) return true;
+    try {
+      var nav = performance.getEntriesByType && performance.getEntriesByType("navigation");
+      if (nav && nav.length && nav[0].type === "back_forward") return true;
+    } catch (e) {}
+    return false;
+  }
+
+  window.addEventListener("pageshow", function (ev) {
+    if (cameFromBFCache(ev)) {
+      window.location.reload();
+    }
+  });
+})();
 </script>
 {% endblock %}

@@ -8,7 +8,8 @@
 {% url 'solicitacoes:listar_solicitacoes' as url_lista %}
 
 {% block content %}
-<div class="container-fluid py-3">
+<div class="container-fluid py-3 page-solicitacoes">
+  <div class="solicitacoes-shell">
 
   {# Selo de debug para você confirmar que ESTE template está carregando #}
   {% if debug %}
@@ -19,7 +20,7 @@
     </div>
   {% endif %}
 
-  <div class="dash-header">
+  <div class="dash-header solicitacoes-header">
     <div>
       <h1 class="dash-title">Solicitações de Acesso</h1>
       <div class="dash-subtitle">
@@ -31,19 +32,19 @@
     </div>
 
     <div class="d-flex gap-2 flex-wrap">
-      <a class="dash-btn dash-btn-primary" href="{{ url_nova_solicitacao|default:'/solicitar/' }}">
+      <a class="dash-btn dash-btn-primary btn btn-sm" href="{{ url_nova_solicitacao|default:'/solicitar/' }}">
         <i class="bi bi-plus-circle"></i> Nova solicitação
       </a>
 
-      <a class="dash-btn" href="{{ url_lista|default:'/solicitar/lista/' }}">
+      <a class="dash-btn btn btn-sm" href="{{ url_lista|default:'/solicitar/lista/' }}">
         <i class="bi bi-arrow-clockwise"></i> Atualizar
       </a>
     </div>
   </div>
 
-  <div class="dash-surface p-0">
-    <div class="table-responsive">
-      <table class="table table-hover table-sm align-middle dash-table">
+  <div class="dash-surface p-0 solicitacoes-surface">
+    <div class="table-responsive solicitacoes-table-wrap">
+      <table class="table table-hover table-sm align-middle dash-table solicitacoes-table">
         <thead>
           <tr>
             <th style="min-width:200px;">Nome</th>
@@ -107,4 +108,5 @@
   </div>
 
 </div>
+
 {% endblock %}

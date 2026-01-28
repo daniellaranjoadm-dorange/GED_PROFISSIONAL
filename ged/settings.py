@@ -215,6 +215,16 @@ STORAGES = {
     },
 }
 
+# Staticfiles storage: padr?o em DEV, manifest em PROD
+if DEBUG:
+    STORAGES["staticfiles"] = {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    }
+else:
+    STORAGES["staticfiles"] = {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    }
+
 R2_BUCKET_NAME = os.environ.get("R2_BUCKET_NAME") or os.environ.get("AWS_STORAGE_BUCKET_NAME")
 R2_ENDPOINT_URL = os.environ.get("R2_ENDPOINT_URL") or os.environ.get("AWS_S3_ENDPOINT_URL")
 R2_ACCESS_KEY_ID = os.environ.get("R2_ACCESS_KEY_ID") or os.environ.get("AWS_ACCESS_KEY_ID")

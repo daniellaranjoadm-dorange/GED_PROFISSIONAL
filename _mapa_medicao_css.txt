@@ -1,0 +1,708 @@
+﻿
+LineNumber Line                                                                                       
+---------- ----                                                                                       
+      1269 /* Tabelas (Medição) */                                                                    
+      1279    (Medição / Upload / Importar LDP) mesmo com classes Bootstrap.                          
+      1821 /* Medicao: garantir contraste nos KPIs */                                                 
+      1822 .page-area .medicao-kpis .kpi-value{                                                       
+      1829    MEDIÇÃO — Legibilidade / Contraste                                                      
+      1831 .page-medicao{                                                                             
+      1835 .page-medicao h1,                                                                          
+      1836 .page-medicao h2,                                                                          
+      1837 .page-medicao .page-title,                                                                 
+      1838 .page-medicao .section-title{                                                              
+      1842 .page-medicao .kpi-label{                                                                  
+      1850 .page-medicao .kpi-value{                                                                  
+      1857 .page-medicao .card,                                                                       
+      1858 .page-medicao .kpi-card,                                                                   
+      1859 .page-medicao .filter-card{                                                                
+      1863 .page-medicao table,                                                                       
+      1864 .page-medicao .table{                                                                      
+      1868 .page-medicao table thead th,                                                              
+      1869 .page-medicao .table thead th{                                                             
+      1874 .page-medicao table tbody td,                                                              
+      1875 .page-medicao .table tbody td{                                                             
+      1880 .page-medicao .text-muted,                                                                 
+      1881 .page-medicao .muted,                                                                      
+      1882 .page-medicao .subtle{                                                                     
+      1887 body.dark .page-medicao,                                                                   
+      1888 [data-theme="dark"] .page-medicao{                                                         
+      1892 body.dark .page-medicao .kpi-label,                                                        
+      1893 [data-theme="dark"] .page-medicao .kpi-label{                                              
+      1897 body.dark .page-medicao .kpi-value,                                                        
+      1898 [data-theme="dark"] .page-medicao .kpi-value{                                              
+      1902 body.dark .page-medicao table,                                                             
+      1903 [data-theme="dark"] .page-medicao table,                                                   
+      1904 body.dark .page-medicao .table,                                                            
+      1905 [data-theme="dark"] .page-medicao .table{                                                  
+      1909 body.dark .page-medicao table thead th,                                                    
+      1910 [data-theme="dark"] .page-medicao table thead th{                                          
+      1915    MEDICAO — CONTRASTE / LEGIBILIDADE                                                      
+      1917 .medicao-page h1,                                                                          
+      1918 .medicao-page h2,                                                                          
+      1919 .medicao-page h3 {                                                                         
+      1924 .medicao-page .text-muted,                                                                 
+      1925 .medicao-page small {                                                                      
+      1930 .medicao-page .kpi-value,                                                                  
+      1931 .medicao-page .kpi-number,                                                                 
+      1932 .medicao-page .kpi-card .value,                                                            
+      1933 .medicao-page .card .kpi {                                                                 
+      1939 .medicao-page .kpi-label,                                                                  
+      1940 .medicao-page .kpi-title,                                                                  
+      1941 .medicao-page .card-title {                                                                
+      1948 .medicao-page table {                                                                      
+      1952 .medicao-page thead th {                                                                   
+      1957 .medicao-page tbody td {                                                                   
+      1963 .medicao-page label {                                                                      
+      1968 .medicao-page input::placeholder {                                                         
+      1974    MEDICAO — CONTRASTE / TIPOGRAFIA                                                        
+      1976 .page-medicao,                                                                             
+      1977 .page-medicao * {                                                                          
+      1981 .page-medicao {                                                                            
+      1985 .page-medicao h1,                                                                          
+      1986 .page-medicao h2,                                                                          
+      1987 .page-medicao h3,                                                                          
+      1988 .page-medicao .page-title,                                                                 
+      1989 .page-medicao .section-title {                                                             
+      1994 .page-medicao .text-muted,                                                                 
+      1995 .page-medicao .muted,                                                                      
+      1996 .page-medicao small,                                                                       
+      1997 .page-medicao .helptext {                                                                  
+      2003 .page-medicao .kpi-card,                                                                   
+      2004 .page-medicao .card,                                                                       
+      2005 .page-medicao .panel {                                                                     
+      2009 .page-medicao .kpi-value,                                                                  
+      2010 .page-medicao .kpi-number,                                                                 
+      2011 .page-medicao .stat-value {                                                                
+      2017 .page-medicao .kpi-label,                                                                  
+      2018 .page-medicao .stat-label {                                                                
+      2025 .page-medicao input,                                                                       
+      2026 .page-medicao select,                                                                      
+      2027 .page-medicao textarea {                                                                   
+      2032 .page-medicao input::placeholder {                                                         
+      2037 .page-medicao label {                                                                      
+      2044 .page-medicao table,                                                                       
+      2045 .page-medicao .table {                                                                     
+      2049 .page-medicao th {                                                                         
+      2054 .page-medicao td {                                                                         
+      2060    MEDICAO - TIPOGRAFIA / CONTRASTE (v2)                                                   
+      2062 .page-medicao {                                                                            
+      2070 .page-medicao .kpi-card,                                                                   
+      2071 .page-medicao .kpi,                                                                        
+      2072 .page-medicao .kpi-box,                                                                    
+      2073 .page-medicao .card.kpi,                                                                   
+      2074 .page-medicao .card.kpi-card {                                                             
+      2079 .page-medicao .kpi-title,                                                                  
+      2080 .page-medicao .kpi-label,                                                                  
+      2081 .page-medicao .kpi .label,                                                                 
+      2082 .page-medicao .kpi-box .label,                                                             
+      2083 .page-medicao .card.kpi .label,                                                            
+      2084 .page-medicao .card.kpi-card .label {                                                      
+      2090 .page-medicao .kpi-value,                                                                  
+      2091 .page-medicao .kpi-number,                                                                 
+      2092 .page-medicao .kpi .value,                                                                 
+      2093 .page-medicao .kpi-box .value,                                                             
+      2094 .page-medicao .card.kpi .value,                                                            
+      2095 .page-medicao .card.kpi-card .value {                                                      
+      2106 .page-medicao .kpi-card *,                                                                 
+      2107 .page-medicao .kpi *,                                                                      
+      2108 .page-medicao .kpi-box *,                                                                  
+      2109 .page-medicao .card.kpi *,                                                                 
+      2110 .page-medicao .card.kpi-card * {                                                           
+      2115 .page-medicao table,                                                                       
+      2116 .page-medicao .table {                                                                     
+      2121 .page-medicao thead th {                                                                   
+      2127 .page-medicao tbody td {                                                                   
+      2133 .page-medicao td:nth-last-child(-n+6),                                                     
+      2134 .page-medicao th:nth-last-child(-n+6) {                                                    
+      2140 .page-medicao .badge,                                                                      
+      2141 .page-medicao .pill,                                                                       
+      2142 .page-medicao .status-badge {                                                              
+      2148 .page-medicao input,                                                                       
+      2149 .page-medicao select {                                                                     
+      2154    MEDIÇÃO — CONTRASTE / TIPOGRAFIA (v3 ultra-robusto)                                     
+      2156 .page-medicao{                                                                             
+      2164 .page-medicao,                                                                             
+      2165 .page-medicao *{                                                                           
+      2170 .page-medicao .kpi,                                                                        
+      2171 .page-medicao .kpi-card,                                                                   
+      2172 .page-medicao .kpi-box,                                                                    
+      2173 .page-medicao .kpi-grid,                                                                   
+      2174 .page-medicao .cards,                                                                      
+      2175 .page-medicao .cards-row{                                                                  
+      2180 .page-medicao .card{                                                                       
+      2186 .page-medicao .card .card-title,                                                           
+      2187 .page-medicao .card .title,                                                                
+      2188 .page-medicao .card .label,                                                                
+      2189 .page-medicao .card small,                                                                 
+      2190 .page-medicao .card .text-muted,                                                           
+      2191 .page-medicao .card [class*="muted"],                                                      
+      2192 .page-medicao .filters label{                                                              
+      2199 .page-medicao .card .card-text,                                                            
+      2200 .page-medicao .card .value,                                                                
+      2201 .page-medicao .card .valor,                                                                
+      2202 .page-medicao .card .number,                                                               
+      2203 .page-medicao .card .kpi-value,                                                            
+      2204 .page-medicao .card strong,                                                                
+      2205 .page-medicao .card b{                                                                     
+      2213 .page-medicao .card h1,                                                                    
+      2214 .page-medicao .card h2,                                                                    
+      2215 .page-medicao .card h3{                                                                    
+      2223 .page-medicao input,                                                                       
+      2224 .page-medicao select{                                                                      
+      2229 .page-medicao table,                                                                       
+      2230 .page-medicao .table{                                                                      
+      2234 .page-medicao thead th{                                                                    
+      2239 .page-medicao tbody td{                                                                    
+      2245 .page-medicao td,                                                                          
+      2246 .page-medicao th{                                                                          
+      2249 .page-medicao td:nth-last-child(-n+6),                                                     
+      2250 .page-medicao th:nth-last-child(-n+6){                                                     
+      2255 .page-medicao .btn:disabled,                                                               
+      2256 .page-medicao button:disabled{                                                             
+      2261 .page-medicao .kpi-label{                                                                  
+      2265 .page-medicao .kpi-value{                                                                  
+      2271 .page-medicao .medicao-kpis,                                                               
+      2272 .page-medicao .medicao-kpis *{                                                             
+      2277 .page-medicao .medicao-kpis .card{                                                         
+      2282 .page-medicao .medicao-kpis .medicao-kpi-label{                                            
+      2290 .page-medicao .medicao-kpis .medicao-kpi-value{                                            
+      2300 .page-medicao .medicao-kpis .text-muted,                                                   
+      2301 .page-medicao .medicao-kpis [class*="muted"],                                              
+      2302 .page-medicao .medicao-kpis [class*="opacity"]{                                            
+      2307 /* ===== Medição (tipografia + tabela) ===== */                                            
+      2308 .medicao-page{                                                                             
+      2311 .medicao-page .kpi-card .kpi-label{                                                        
+      2316 .medicao-page .kpi-card .kpi-value{                                                        
+      2323 .medicao-page .medicao-table-wrap{                                                         
+      2329 .medicao-page .medicao-table{                                                              
+      2337 .medicao-page .medicao-table thead{ display: table-header-group; }                         
+      2338 .medicao-page .medicao-table tbody{ display: table-row-group; }                            
+      2339 .medicao-page .medicao-table tfoot{ display: table-footer-group; }                         
+      2340 .medicao-page .medicao-table tr{ display: table-row; }                                     
+      2341 .medicao-page .medicao-table th,                                                           
+      2342 .medicao-page .medicao-table td{                                                           
+      2347 .medicao-page .medicao-table th{                                                           
+      2356 .medicao-page .medicao-table td{                                                           
+      2364 .medicao-page .medicao-col-left{ text-align: left; }                                       
+      2365 .medicao-page .medicao-col-center{ text-align: center; }                                   
+      2366 .medicao-page .medicao-col-right{                                                          
+      2371 .medicao-page .medicao-total-row td{                                                       
+      2377 body.dark .medicao-page .kpi-card .kpi-label,                                              
+      2378 body.theme-dark .medicao-page .kpi-card .kpi-label,                                        
+      2379 [data-theme="dark"] .medicao-page .kpi-card .kpi-label{                                    
+      2383 body.dark .medicao-page .kpi-card .kpi-value,                                              
+      2384 body.theme-dark .medicao-page .kpi-card .kpi-value,                                        
+      2385 [data-theme="dark"] .medicao-page .kpi-card .kpi-value{                                    
+      2389 body.dark .medicao-page .medicao-table th,                                                 
+      2390 body.theme-dark .medicao-page .medicao-table th,                                           
+      2391 [data-theme="dark"] .medicao-page .medicao-table th{                                       
+      2397 body.dark .medicao-page .medicao-table td,                                                 
+      2398 body.theme-dark .medicao-page .medicao-table td,                                           
+      2399 [data-theme="dark"] .medicao-page .medicao-table td{                                       
+      2404 body.dark .medicao-page .medicao-total-row td,                                             
+      2405 body.theme-dark .medicao-page .medicao-total-row td,                                       
+      2406 [data-theme="dark"] .medicao-page .medicao-total-row td{                                   
+      2412    MEDIÇÃO — FIX TIPOGRAFIA / CONTRASTE / TABELA                                           
+      2413    Escopo: somente quando body tiver class="page-medicao"                                  
+      2416 body.page-medicao {                                                                        
+      2418   --medicao-fg: #0f172a;                                                                   
+      2419   --medicao-muted: #475569;                                                                
+      2420   --medicao-card-bg: #f8fafc;                                                              
+      2421   --medicao-card-bd: rgba(15, 23, 42, 0.12);                                               
+      2425 html.dark body.page-medicao,                                                               
+      2426 body.dark.page-medicao,                                                                    
+      2427 body.theme-dark.page-medicao,                                                              
+      2428 html[data-theme="dark"] body.page-medicao,                                                 
+      2429 body[data-theme="dark"].page-medicao {                                                     
+      2430   --medicao-fg: #e5e7eb;                                                                   
+      2431   --medicao-muted: #94a3b8;                                                                
+      2432   --medicao-card-bg: rgba(15, 23, 42, 0.45);                                               
+      2433   --medicao-card-bd: rgba(148, 163, 184, 0.22);                                            
+      2437 body.page-medicao h1,                                                                      
+      2438 body.page-medicao h2,                                                                      
+      2439 body.page-medicao h3,                                                                      
+      2440 body.page-medicao .page-title,                                                             
+      2441 body.page-medicao .section-title {                                                         
+      2442   color: var(--medicao-fg) !important;                                                     
+      2445 body.page-medicao .page-subtitle,                                                          
+      2446 body.page-medicao .text-muted,                                                             
+      2447 body.page-medicao small {                                                                  
+      2448   color: var(--medicao-muted) !important;                                                  
+      2452 body.page-medicao .kpi-card,                                                               
+      2453 body.page-medicao .kpi-box,                                                                
+      2454 body.page-medicao .kpi-item,                                                               
+      2455 body.page-medicao .kpi {                                                                   
+      2456   background: var(--medicao-card-bg) !important;                                           
+      2457   border: 1px solid var(--medicao-card-bd) !important;                                     
+      2461 body.page-medicao .kpi-title,                                                              
+      2462 body.page-medicao .kpi-label,                                                              
+      2463 body.page-medicao .kpi-card .label,                                                        
+      2464 body.page-medicao .kpi-card .title {                                                       
+      2465   color: var(--medicao-muted) !important;                                                  
+      2470 body.page-medicao .kpi-value,                                                              
+      2471 body.page-medicao .kpi-number,                                                             
+      2472 body.page-medicao .kpi-card .value,                                                        
+      2473 body.page-medicao .kpi-card .number,                                                       
+      2474 body.page-medicao .kpi-card strong {                                                       
+      2475   color: var(--medicao-fg) !important;                                                     
+      2483 body.page-medicao .kpi-card *,                                                             
+      2484 body.page-medicao .kpi-box *,                                                              
+      2485 body.page-medicao .kpi-item * {                                                            
+      2490 body.page-medicao .table,                                                                  
+      2491 body.page-medicao table {                                                                  
+      2492   color: var(--medicao-fg) !important;                                                     
+      2495 body.page-medicao .table thead th,                                                         
+      2496 body.page-medicao table thead th {                                                         
+      2499   color: var(--medicao-fg) !important;                                                     
+      2504 body.page-medicao .table tbody td,                                                         
+      2505 body.page-medicao table tbody td {                                                         
+      2510 body.page-medicao .table th,                                                               
+      2511 body.page-medicao .table td,                                                               
+      2512 body.page-medicao table th,                                                                
+      2513 body.page-medicao table td {                                                               
+      2518 body.page-medicao .table-responsive,                                                       
+      2519 body.page-medicao .table-wrap,                                                             
+      2520 body.page-medicao .table-container {                                                       
+      2526 body.page-medicao .chart-card,                                                             
+      2527 body.page-medicao .chart-box,                                                              
+      2528 body.page-medicao .chart-container {                                                       
+      2529   background: var(--medicao-card-bg) !important;                                           
+      2530   border: 1px solid var(--medicao-card-bd) !important;                                     
+      2534 body.page-medicao .chart-card .title,                                                      
+      2535 body.page-medicao .chart-box .title {                                                      
+      2536   color: var(--medicao-fg) !important;                                                     
+      2540 body.page-medicao .chart-card .subtitle,                                                   
+      2541 body.page-medicao .chart-box .subtitle {                                                   
+      2542   color: var(--medicao-muted) !important;                                                  
+      2545 /* FIM MEDIÇÃO */                                                                          
+      2548    MEDIÇÃO — MARTELLO DE CONTRASTE / OPACIDADE / TABELA                                    
+      2551 body.page-medicao #medicao-kpis,                                                           
+      2552 body.page-medicao #medicao-resumo,                                                         
+      2553 body.page-medicao #medicao-graficos {                                                      
+      2558 body.page-medicao #medicao-kpis * {                                                        
+      2563 body.page-medicao #medicao-kpis .card,                                                     
+      2564 body.page-medicao #medicao-kpis .kpi-card,                                                 
+      2565 body.page-medicao #medicao-kpis .kpi-box,                                                  
+      2566 body.page-medicao #medicao-kpis .kpi-item {                                                
+      2572 body.page-medicao #medicao-kpis .card-title,                                               
+      2573 body.page-medicao #medicao-kpis .kpi-title,                                                
+      2574 body.page-medicao #medicao-kpis .kpi-label,                                                
+      2575 body.page-medicao #medicao-kpis .label,                                                    
+      2576 body.page-medicao #medicao-kpis small {                                                    
+      2581 body.page-medicao #medicao-kpis .kpi-value,                                                
+      2582 body.page-medicao #medicao-kpis .kpi-number,                                               
+      2583 body.page-medicao #medicao-kpis .value,                                                    
+      2584 body.page-medicao #medicao-kpis .number,                                                   
+      2585 body.page-medicao #medicao-kpis strong,                                                    
+      2586 body.page-medicao #medicao-kpis b {                                                        
+      2592 body.page-medicao #medicao-kpis .text-white,                                               
+      2593 body.page-medicao #medicao-kpis .text-light,                                               
+      2594 body.page-medicao #medicao-kpis .opacity-50,                                               
+      2595 body.page-medicao #medicao-kpis .opacity-25,                                               
+      2596 body.page-medicao #medicao-kpis .opacity-75 {                                              
+      2602 body.page-medicao #medicao-resumo .table,                                                  
+      2603 body.page-medicao #medicao-resumo table {                                                  
+      2610 body.page-medicao #medicao-resumo .table thead th,                                         
+      2611 body.page-medicao #medicao-resumo table thead th {                                         
+      2620 body.page-medicao #medicao-resumo .table tbody td,                                         
+      2621 body.page-medicao #medicao-resumo table tbody td {                                         
+      2628 body.page-medicao #medicao-resumo .table td:last-child,                                    
+      2629 body.page-medicao #medicao-resumo .table th:last-child {                                   
+      2634 body.page-medicao #medicao-resumo .table-responsive,                                       
+      2635 body.page-medicao #medicao-resumo .table-wrap,                                             
+      2636 body.page-medicao #medicao-resumo .table-container {                                       
+      2641 body.page-medicao #medicao-graficos .card,                                                 
+      2642 body.page-medicao #medicao-graficos .chart-card,                                           
+      2643 body.page-medicao #medicao-graficos .chart-box {                                           
+      2649 body.page-medicao #medicao-graficos * {                                                    
+      2655    MEDIÇÃO — PATCH DE GUERRA (contraste + anti-opacidade + tabela estável)                 
+      2658 body.page-medicao,                                                                         
+      2659 body.page-medicao main,                                                                    
+      2660 body.page-medicao .page-area,                                                              
+      2661 body.page-medicao .page-area *,                                                            
+      2662 body.page-medicao .container,                                                              
+      2663 body.page-medicao .container-fluid,                                                        
+      2664 body.page-medicao .content,                                                                
+      2665 body.page-medicao .content * {                                                             
+      2671 body.page-medicao .kpi-card,                                                               
+      2672 body.page-medicao .kpi-box,                                                                
+      2673 body.page-medicao .kpi-item,                                                               
+      2674 body.page-medicao .card {                                                                  
+      2680 body.page-medicao .kpi-title,                                                              
+      2681 body.page-medicao .kpi-label,                                                              
+      2682 body.page-medicao .card-title,                                                             
+      2683 body.page-medicao small,                                                                   
+      2684 body.page-medicao label {                                                                  
+      2689 body.page-medicao .kpi-value,                                                              
+      2690 body.page-medicao .kpi-number,                                                             
+      2691 body.page-medicao .value,                                                                  
+      2692 body.page-medicao .number,                                                                 
+      2693 body.page-medicao .metric,                                                                 
+      2694 body.page-medicao strong,                                                                  
+      2695 body.page-medicao b {                                                                      
+      2701 body.page-medicao .text-white,                                                             
+      2702 body.page-medicao .text-light,                                                             
+      2703 body.page-medicao .opacity-25,                                                             
+      2704 body.page-medicao .opacity-50,                                                             
+      2705 body.page-medicao .opacity-75 {                                                            
+      2711 body.page-medicao table {                                                                  
+      2717 body.page-medicao table thead th {                                                         
+      2726 body.page-medicao table tbody td {                                                         
+      2733 body.page-medicao .table-responsive,                                                       
+      2734 body.page-medicao .table-wrap,                                                             
+      2735 body.page-medicao .table-container {                                                       
+      2740 body.page-medicao .chart-card,                                                             
+      2741 body.page-medicao .chart-box {                                                             
+      2748    MEDIÇÃO (escopado)                                                                      
+      2751 .medicao-page .medicao-kpis{                                                               
+      2759   .medicao-page .medicao-kpis{ grid-template-columns: repeat(2, minmax(240px, 1fr)); }     
+      2762   .medicao-page .medicao-kpis{ grid-template-columns: 1fr; }                               
+      2765 .medicao-page .medicao-kpi{                                                                
+      2773 .medicao-page .medicao-kpi-label{                                                          
+      2781 .medicao-page .medicao-kpi-value{                                                          
+      2790 .medicao-page .medicao-kpi-value *{                                                        
+      2796 [data-theme="dark"] .medicao-page .medicao-kpi,                                            
+      2797 .theme-dark .medicao-page .medicao-kpi,                                                    
+      2798 body.dark .medicao-page .medicao-kpi{                                                      
+      2803 [data-theme="dark"] .medicao-page .medicao-kpi-label,                                      
+      2804 .theme-dark .medicao-page .medicao-kpi-label,                                              
+      2805 body.dark .medicao-page .medicao-kpi-label{                                                
+      2809 [data-theme="dark"] .medicao-page .medicao-kpi-value,                                      
+      2810 .theme-dark .medicao-page .medicao-kpi-value,                                              
+      2811 body.dark .medicao-page .medicao-kpi-value{                                                
+      2816 .medicao-page .medicao-table{                                                              
+      2824 .medicao-page .medicao-table th{                                                           
+      2835 .medicao-page .medicao-table td{                                                           
+      2844 .medicao-page .medicao-table tr:last-child td{                                             
+      2848 .medicao-page .medicao-table tr.total,                                                     
+      2849 .medicao-page .medicao-table tr.total td{                                                  
+      2855 [data-theme="dark"] .medicao-page .medicao-table th,                                       
+      2856 .theme-dark .medicao-page .medicao-table th,                                               
+      2857 body.dark .medicao-page .medicao-table th{                                                 
+      2863 [data-theme="dark"] .medicao-page .medicao-table td,                                       
+      2864 .theme-dark .medicao-page .medicao-table td,                                               
+      2865 body.dark .medicao-page .medicao-table td{                                                 
+      2871    MEDIÇÃO — FIX TIPOGRAFIA/CONTRASTE (NÍVEL 2)                                            
+      2874 body.page-medicao .medicao-page,                                                           
+      2875 .medicao-page {                                                                            
+      2880 body.page-medicao .medicao-page .medicao-kpi-card,                                         
+      2881 .medicao-page .medicao-kpi-card {                                                          
+      2887 body.page-medicao .medicao-page .medicao-kpi-label,                                        
+      2888 .medicao-page .medicao-kpi-label {                                                         
+      2895 body.page-medicao .medicao-page .medicao-kpi-value,                                        
+      2896 .medicao-page .medicao-kpi-value {                                                         
+      2906 body.page-medicao .medicao-page .medicao-kpi-card * {                                      
+      2911 body.page-medicao .medicao-page .medicao-table-wrap,                                       
+      2912 .medicao-page .medicao-table-wrap {                                                        
+      2918 body.page-medicao .medicao-page .medicao-table,                                            
+      2919 .medicao-page .medicao-table {                                                             
+      2926 body.page-medicao .medicao-page .medicao-table th,                                         
+      2927 .medicao-page .medicao-table th {                                                          
+      2937 body.page-medicao .medicao-page .medicao-table td,                                         
+      2938 .medicao-page .medicao-table td {                                                          
+      2946 body.page-medicao .medicao-page .medicao-table tr:last-child td,                           
+      2947 .medicao-page .medicao-table tr:last-child td {                                            
+      2952 body.page-medicao .medicao-page .medicao-table td.num,                                     
+      2953 .medicao-page .medicao-table td.num {                                                      
+      2959 body.page-medicao .medicao-page #medicao-graficos p,                                       
+      2960 .medicao-page #medicao-graficos p {                                                        
+      2965 body.theme-dark.page-medicao .medicao-page,                                                
+      2966 html[data-theme="dark"] body.page-medicao .medicao-page,                                   
+      2967 body.dark.page-medicao .medicao-page {                                                     
+      2971 body.theme-dark.page-medicao .medicao-kpi-card,                                            
+      2972 html[data-theme="dark"] body.page-medicao .medicao-kpi-card,                               
+      2973 body.dark.page-medicao .medicao-kpi-card {                                                 
+      2978 body.theme-dark.page-medicao .medicao-kpi-label,                                           
+      2979 html[data-theme="dark"] body.page-medicao .medicao-kpi-label,                              
+      2980 body.dark.page-medicao .medicao-kpi-label {                                                
+      2984 body.theme-dark.page-medicao .medicao-kpi-value,                                           
+      2985 html[data-theme="dark"] body.page-medicao .medicao-kpi-value,                              
+      2986 body.dark.page-medicao .medicao-kpi-value {                                                
+      2990 body.theme-dark.page-medicao .medicao-table th,                                            
+      2991 html[data-theme="dark"] body.page-medicao .medicao-table th,                               
+      2992 body.dark.page-medicao .medicao-table th {                                                 
+      2998 body.theme-dark.page-medicao .medicao-table td,                                            
+      2999 html[data-theme="dark"] body.page-medicao .medicao-table td,                               
+      3000 body.dark.page-medicao .medicao-table td {                                                 
+      3008    Escopo: .medicao-page (n?o depende de body class)                                       
+      3010 .medicao-page{                                                                             
+      3017 .medicao-page .medicao-kpis{                                                               
+      3024   .medicao-page .medicao-kpis{ grid-template-columns: 1fr; }                               
+      3027 .medicao-page .kpi-card{                                                                   
+      3036 .medicao-page .kpi-label{                                                                  
+      3045 .medicao-page .kpi-value{                                                                  
+      3055 .medicao-page .medicao-table-wrap{                                                         
+      3061 .medicao-page .medicao-table{                                                              
+      3071 .medicao-page .medicao-table th,                                                           
+      3072 .medicao-page .medicao-table td{                                                           
+      3080 .medicao-page .medicao-table th{                                                           
+      3085 .medicao-page .medicao-table td{                                                           
+      3089 .medicao-page .medicao-table tr:last-child td{                                             
+      3094 .medicao-page .medicao-table .row-total td,                                                
+      3095 .medicao-page .medicao-table tfoot td{                                                     
+      3100 .medicao-page .medicao-charts{                                                             
+      3107   .medicao-page .medicao-charts{ grid-template-columns: 1fr; }                             
+      3110 .medicao-page .medicao-chart-card{                                                         
+      3118 .medicao-page .medicao-chart-card h4,                                                      
+      3119 .medicao-page .medicao-chart-card h5,                                                      
+      3120 .medicao-page .medicao-chart-card p{                                                       
+      3129    Escopo: somente quando body tem class="page-medicao"                                    
+      3132 body.page-medicao{                                                                         
+      3133   --medicao-fg: #0f172a;                                                                   
+      3134   --medicao-muted: #475569;                                                                
+      3135   --medicao-card-bg: #ffffff;                                                              
+      3136   --medicao-card-bd: rgba(15,23,42,.12);                                                   
+      3139 html.dark body.page-medicao,                                                               
+      3140 body.dark.page-medicao,                                                                    
+      3141 body.theme-dark.page-medicao,                                                              
+      3142 html[data-theme="dark"] body.page-medicao,                                                 
+      3143 body[data-theme="dark"].page-medicao{                                                      
+      3144   --medicao-fg: #e5e7eb;                                                                   
+      3145   --medicao-muted: #94a3b8;                                                                
+      3146   --medicao-card-bg: rgba(15,23,42,.45);                                                   
+      3147   --medicao-card-bd: rgba(148,163,184,.22);                                                
+      3151 body.page-medicao #medicao-kpis .medicao-kpi-card,                                         
+      3152 body.page-medicao #medicao-kpis .totais-box{                                               
+      3153   background: var(--medicao-card-bg) !important;                                           
+      3154   border: 1px solid var(--medicao-card-bd) !important;                                     
+      3157 /* Labels e valores (classes reais do medicao.html) */                                     
+      3158 body.page-medicao #medicao-kpis .medicao-kpi-label{                                        
+      3159   color: var(--medicao-muted) !important;                                                  
+      3163 body.page-medicao #medicao-kpis .medicao-kpi-value{                                        
+      3164   color: var(--medicao-fg) !important;                                                     
+      3170 body.page-medicao #medicao-kpis .text-white,                                               
+      3171 body.page-medicao #medicao-kpis .text-light{                                               
+      3172   color: var(--medicao-fg) !important;                                                     
+      3176 body.page-medicao #medicao-resumo .medicao-table th,                                       
+      3177 body.page-medicao #medicao-resumo .medicao-table td{                                       
+      3178   color: var(--medicao-fg) !important;                                                     
+      3182 body.page-medicao #medicao-resumo .medicao-table th{                                       
+      3187 body.page-medicao #medicao-resumo .medicao-total-row td,                                   
+      3188 body.page-medicao #medicao-resumo .row-total td{                                           
+      3189   color: var(--medicao-fg) !important;                                                     
+      3196    Escopo: .medicao-page (funciona mesmo se body_attrs falhar)                             
+      3197    + body.page-medicao (quando existir)                                                    
+      3200 body.page-medicao, .medicao-page{                                                          
+      3208 html.dark body.page-medicao,                                                               
+      3209 body.dark.page-medicao,                                                                    
+      3210 body.theme-dark.page-medicao,                                                              
+      3211 html[data-theme="dark"] body.page-medicao,                                                 
+      3212 body[data-theme="dark"].page-medicao,                                                      
+      3213 html.dark .medicao-page,                                                                   
+      3214 body.dark .medicao-page,                                                                   
+      3215 body.theme-dark .medicao-page,                                                             
+      3216 html[data-theme="dark"] .medicao-page,                                                     
+      3217 body[data-theme="dark"] .medicao-page{                                                     
+      3226 body.page-medicao .medicao-page,                                                           
+      3227 .medicao-page{                                                                             
+      3230 body.page-medicao .medicao-page .text-muted,                                               
+      3231 .medicao-page .text-muted,                                                                 
+      3232 body.page-medicao .medicao-page small,                                                     
+      3233 .medicao-page small{                                                                       
+      3239 body.page-medicao .medicao-filtros,                                                        
+      3240 .medicao-page .medicao-filtros{                                                            
+      3248   body.page-medicao .medicao-filtros,                                                      
+      3249   .medicao-page .medicao-filtros{                                                          
+      3254   body.page-medicao .medicao-filtros,                                                      
+      3255   .medicao-page .medicao-filtros{                                                          
+      3260 body.page-medicao .medicao-actions,                                                        
+      3261 .medicao-page .medicao-actions{                                                            
+      3270 body.page-medicao #medicao-kpis .medicao-kpis,                                             
+      3271 .medicao-page #medicao-kpis .medicao-kpis{                                                 
+      3278   body.page-medicao #medicao-kpis .medicao-kpis,                                           
+      3279   .medicao-page #medicao-kpis .medicao-kpis{                                               
+      3284   body.page-medicao #medicao-kpis .medicao-kpis,                                           
+      3285   .medicao-page #medicao-kpis .medicao-kpis{                                               
+      3291 body.page-medicao #medicao-kpis .medicao-kpi-card,                                         
+      3292 body.page-medicao #medicao-kpis .totais-box,                                               
+      3293 .medicao-page #medicao-kpis .medicao-kpi-card,                                             
+      3294 .medicao-page #medicao-kpis .totais-box{                                                   
+      3302 body.page-medicao #medicao-kpis .medicao-kpi-label,                                        
+      3303 .medicao-page #medicao-kpis .medicao-kpi-label{                                            
+      3311 body.page-medicao #medicao-kpis .medicao-kpi-value,                                        
+      3312 .medicao-page #medicao-kpis .medicao-kpi-value{                                            
+      3321 body.page-medicao #medicao-resumo .medicao-table-wrap,                                     
+      3322 .medicao-page #medicao-resumo .medicao-table-wrap{                                         
+      3326 body.page-medicao #medicao-resumo .medicao-table,                                          
+      3327 .medicao-page #medicao-resumo .medicao-table{                                              
+      3338 body.page-medicao #medicao-resumo .medicao-table th,                                       
+      3339 body.page-medicao #medicao-resumo .medicao-table td,                                       
+      3340 .medicao-page #medicao-resumo .medicao-table th,                                           
+      3341 .medicao-page #medicao-resumo .medicao-table td{                                           
+      3348 body.page-medicao #medicao-resumo .medicao-table thead th,                                 
+      3349 .medicao-page #medicao-resumo .medicao-table thead th{                                     
+      3355 body.page-medicao #medicao-resumo .medicao-total-row td,                                   
+      3356 body.page-medicao #medicao-resumo .row-total td,                                           
+      3357 .medicao-page #medicao-resumo .medicao-total-row td,                                       
+      3358 .medicao-page #medicao-resumo .row-total td{                                               
+      3363 body.page-medicao #medicao-graficos .medicao-chart-card,                                   
+      3364 .medicao-page #medicao-graficos .medicao-chart-card{                                       
+      3373    Escopo: .medicao-page (funciona mesmo se body_class falhar)                             
+      3374    + body.page-medicao (quando existir)                                                    
+      3377 body.page-medicao, .medicao-page{                                                          
+      3385 html.dark body.page-medicao,                                                               
+      3386 body.dark.page-medicao,                                                                    
+      3387 body.theme-dark.page-medicao,                                                              
+      3388 html[data-theme="dark"] body.page-medicao,                                                 
+      3389 body[data-theme="dark"].page-medicao,                                                      
+      3390 html.dark .medicao-page,                                                                   
+      3391 body.dark .medicao-page,                                                                   
+      3392 body.theme-dark .medicao-page,                                                             
+      3393 html[data-theme="dark"] .medicao-page,                                                     
+      3394 body[data-theme="dark"] .medicao-page{                                                     
+      3402 body.page-medicao .medicao-page,                                                           
+      3403 .medicao-page{                                                                             
+      3407 body.page-medicao .medicao-page .text-muted,                                               
+      3408 .medicao-page .text-muted,                                                                 
+      3409 body.page-medicao .medicao-page small,                                                     
+      3410 .medicao-page small{                                                                       
+      3416 body.page-medicao .medicao-filtros,                                                        
+      3417 .medicao-page .medicao-filtros{                                                            
+      3425   body.page-medicao .medicao-filtros,                                                      
+      3426   .medicao-page .medicao-filtros{                                                          
+      3432   body.page-medicao .medicao-filtros,                                                      
+      3433   .medicao-page .medicao-filtros{                                                          
+      3438 body.page-medicao .medicao-actions,                                                        
+      3439 .medicao-page .medicao-actions{                                                            
+      3448 body.page-medicao #medicao-kpis .medicao-kpis,                                             
+      3449 .medicao-page #medicao-kpis .medicao-kpis{                                                 
+      3456   body.page-medicao #medicao-kpis .medicao-kpis,                                           
+      3457   .medicao-page #medicao-kpis .medicao-kpis{                                               
+      3463   body.page-medicao #medicao-kpis .medicao-kpis,                                           
+      3464   .medicao-page #medicao-kpis .medicao-kpis{                                               
+      3470 body.page-medicao #medicao-kpis .medicao-kpi-card,                                         
+      3471 body.page-medicao #medicao-kpis .totais-box,                                               
+      3472 .medicao-page #medicao-kpis .medicao-kpi-card,                                             
+      3473 .medicao-page #medicao-kpis .totais-box{                                                   
+      3481 body.page-medicao #medicao-kpis .medicao-kpi-label,                                        
+      3482 .medicao-page #medicao-kpis .medicao-kpi-label{                                            
+      3490 body.page-medicao #medicao-kpis .medicao-kpi-value,                                        
+      3491 .medicao-page #medicao-kpis .medicao-kpi-value{                                            
+      3500 body.page-medicao #medicao-resumo .medicao-table-wrap,                                     
+      3501 .medicao-page #medicao-resumo .medicao-table-wrap{                                         
+      3505 body.page-medicao #medicao-resumo .medicao-table,                                          
+      3506 .medicao-page #medicao-resumo .medicao-table{                                              
+      3517 body.page-medicao #medicao-resumo .medicao-table th,                                       
+      3518 body.page-medicao #medicao-resumo .medicao-table td,                                       
+      3519 .medicao-page #medicao-resumo .medicao-table th,                                           
+      3520 .medicao-page #medicao-resumo .medicao-table td{                                           
+      3527 body.page-medicao #medicao-resumo .medicao-table thead th,                                 
+      3528 .medicao-page #medicao-resumo .medicao-table thead th{                                     
+      3534 body.page-medicao #medicao-resumo .medicao-total-row td,                                   
+      3535 body.page-medicao #medicao-resumo .row-total td,                                           
+      3536 .medicao-page #medicao-resumo .medicao-total-row td,                                       
+      3537 .medicao-page #medicao-resumo .row-total td{                                               
+      3542 body.page-medicao #medicao-graficos .medicao-chart-card,                                   
+      3543 .medicao-page #medicao-graficos .medicao-chart-card{                                       
+      3551    MEDI??O ? OVERRIDE FINAL (SEM body.page-medicao)                                        
+      3552    Usa somente .medicao-page / .doc-wrapper.page-medicao e IDs do template                 
+      3555 .medicao-page,                                                                             
+      3556 .doc-wrapper.page-medicao{                                                                 
+      3563 html[data-theme="dark"] .medicao-page,                                                     
+      3564 body[data-theme="dark"] .medicao-page,                                                     
+      3565 html.dark .medicao-page,                                                                   
+      3566 body.dark .medicao-page,                                                                   
+      3567 html[data-theme="dark"] .doc-wrapper.page-medicao,                                         
+      3568 body[data-theme="dark"] .doc-wrapper.page-medicao{                                         
+      3575 .medicao-page * ,                                                                          
+      3576 .doc-wrapper.page-medicao *{                                                               
+      3580 .medicao-page .text-muted,                                                                 
+      3581 .medicao-page small,                                                                       
+      3582 .doc-wrapper.page-medicao .text-muted,                                                     
+      3583 .doc-wrapper.page-medicao small{                                                           
+      3590 .medicao-page .medicao-filtros{                                                            
+      3597   .medicao-page .medicao-filtros{ grid-template-columns: repeat(2, minmax(220px, 1fr)) !...
+      3600   .medicao-page .medicao-filtros{ grid-template-columns: 1fr !important; }                 
+      3603 .medicao-page .medicao-actions{                                                            
+      3613 #medicao-kpis .medicao-kpis{                                                               
+      3619   #medicao-kpis .medicao-kpis{ grid-template-columns: repeat(2, minmax(220px, 1fr)) !imp...
+      3622   #medicao-kpis .medicao-kpis{ grid-template-columns: 1fr !important; }                    
+      3625 #medicao-kpis .medicao-kpi-card,                                                           
+      3626 #medicao-kpis .totais-box{                                                                 
+      3634 #medicao-kpis .medicao-kpi-label{                                                          
+      3641 #medicao-kpis .medicao-kpi-value{                                                          
+      3649 #medicao-kpis .text-white,                                                                 
+      3650 #medicao-kpis .text-light{                                                                 
+      3657 #medicao-resumo .medicao-table-wrap{                                                       
+      3661 #medicao-resumo .medicao-table{                                                            
+      3672 #medicao-resumo .medicao-table th,                                                         
+      3673 #medicao-resumo .medicao-table td{                                                         
+      3679 #medicao-resumo .medicao-table thead th{                                                   
+      3685 #medicao-resumo .medicao-total-row td,                                                     
+      3686 #medicao-resumo .row-total td,                                                             
+      3687 #medicao-resumo tr.total td{                                                               
+      3694 #medicao-graficos .medicao-charts{                                                         
+      3700   #medicao-graficos .medicao-charts{ grid-template-columns: 1fr !important; }              
+      3703 #medicao-graficos .medicao-chart-card{                                                     
+      3710 #medicao-graficos .medicao-chart-card h6,                                                  
+      3711 #medicao-graficos .medicao-chart-card p{                                                   
+      3715 /* === MEDICAO OVERRIDE FINAL ? MARKER v110 (NAO REMOVER) === */                           
+      3716 .medicao-page { outline: 4px solid rgba(255,0,0,.35) !important; outline-offset: -2px !i...
+      3717 #medicao-kpis { outline: 3px dashed rgba(0,128,255,.35) !important; }                      
+      3720 #medicao-kpis::before{                                                                     
+      3733 .medicao-page .medicao-filtros{                                                            
+      3740   .medicao-page .medicao-filtros{ grid-template-columns: repeat(2, minmax(220px, 1fr)) !...
+      3743   .medicao-page .medicao-filtros{ grid-template-columns: 1fr !important; }                 
+      3745 .medicao-page .medicao-actions{                                                            
+      3753 #medicao-kpis .medicao-kpis{                                                               
+      3759   #medicao-kpis .medicao-kpis{ grid-template-columns: repeat(2, minmax(220px, 1fr)) !imp...
+      3762   #medicao-kpis .medicao-kpis{ grid-template-columns: 1fr !important; }                    
+      3764 #medicao-kpis .medicao-kpi-card,                                                           
+      3765 #medicao-kpis .totais-box{                                                                 
+      3772 #medicao-kpis .medicao-kpi-label{                                                          
+      3778 #medicao-kpis .medicao-kpi-value{                                                          
+      3784 #medicao-kpis .text-white,                                                                 
+      3785 #medicao-kpis .text-light{                                                                 
+      3788 #medicao-kpis *{ opacity: 1 !important; }                                                  
+      3791 #medicao-resumo .medicao-table-wrap{ overflow-x: auto !important; }                        
+      3792 #medicao-resumo .medicao-table{                                                            
+      3802 #medicao-resumo .medicao-table th,                                                         
+      3803 #medicao-resumo .medicao-table td{                                                         
+      3808 #medicao-resumo .medicao-table thead th{                                                   
+      3813 #medicao-resumo .medicao-total-row td,                                                     
+      3814 #medicao-resumo .row-total td,                                                             
+      3815 #medicao-resumo tr.total td{ font-weight: 900 !important; }                                
+      3821    Escopo: somente body.page-medicao (n?o afeta outras telas)                              
+      3823 body.page-medicao .medicao-page{                                                           
+      3828 body.page-medicao hr,                                                                      
+      3829 body.page-medicao .page-area hr{                                                           
+      3835 body.page-medicao *::before,                                                               
+      3836 body.page-medicao *::after{                                                                
+      3841 body.page-medicao .medicao-card{                                                           
+      3849 body.page-medicao .medicao-filtros{                                                        
+      3856 body.page-medicao .medicao-filtros label{                                                  
+      3862 body.page-medicao .medicao-filtros input,                                                  
+      3863 body.page-medicao .medicao-filtros select{                                                 
+      3871 body.page-medicao .medicao-actions{                                                        
+      3878 body.page-medicao .medicao-actions .btn{                                                   
+      3885   body.page-medicao .medicao-filtros{ grid-template-columns: repeat(2, minmax(220px, 1fr...
+      3888   body.page-medicao .medicao-filtros{ grid-template-columns: 1fr !important; }             
+      3892 body.page-medicao #medicao-kpis{                                                           
+      3895 body.page-medicao .medicao-kpis{                                                           
+      3901 body.page-medicao .medicao-kpi-card,                                                       
+      3902 body.page-medicao .medicao-kpi{                                                            
+      3910 body.page-medicao .medicao-kpi-label,                                                      
+      3911 body.page-medicao .kpi-label{                                                              
+      3919 body.page-medicao .medicao-kpi-value,                                                      
+      3920 body.page-medicao .kpi-value{                                                              
+      3928   body.page-medicao .medicao-kpis{ grid-template-columns: repeat(2, minmax(240px, 1fr)) ...
+      3931   body.page-medicao .medicao-kpis{ grid-template-columns: 1fr !important; }                
+      3935 body.page-medicao #medicao-resumo .medicao-card{                                           
+      3939 body.page-medicao .medicao-table-wrap{                                                     
+      3944 body.page-medicao .medicao-table{                                                          
+      3951 body.page-medicao .medicao-table thead th{                                                 
+      3961 body.page-medicao .medicao-table tbody td{                                                 
+      3970 body.page-medicao .medicao-table tr.total td,                                              
+      3971 body.page-medicao .medicao-total-row td{                                                   
+      3977 html[data-theme="dark"] body.page-medicao .medicao-card{                                   
+      3981 html[data-theme="dark"] body.page-medicao .medicao-kpi-card,                               
+      3982 html[data-theme="dark"] body.page-medicao .medicao-kpi{                                    
+      3986 html[data-theme="dark"] body.page-medicao .medicao-kpi-label,                              
+      3987 html[data-theme="dark"] body.page-medicao .kpi-label{                                      
+      3990 html[data-theme="dark"] body.page-medicao .medicao-kpi-value,                              
+      3991 html[data-theme="dark"] body.page-medicao .kpi-value{                                      
+      3994 html[data-theme="dark"] body.page-medicao .medicao-table thead th{                         
+      3999 html[data-theme="dark"] body.page-medicao .medicao-table tbody td{                         
+
+

@@ -1,0 +1,71 @@
+{% extends "documentos/base.html" %}
+{% block body_attrs %} data-force-reload-on-show="1"{% endblock %}
+{% block title %}Revisões{% endblock %}
+
+{% block content %}
+<div class="doc-wrapper">
+  <div class="page-revisoes">
+  <div class="page-header">
+    <div>
+      <h2><i class="bi bi-arrow-repeat"></i> Revisões</h2>
+      <div class="text-muted">Histórico de versões (últimas revisões registradas)</div>
+    </div>
+    <div class="text-muted">Total: {{ total|default:0 }}</div>
+  </div>
+
+  <div class="dash-surface solicitacoes-surface p-3">
+    <div class="table-responsive">
+      {% if rows %}
+        <table class="table table-hover table-sm align-middle w-100">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Rev Atual</th>
+              <th>Versões</th>
+              <th>Projeto</th>
+              <th>Disciplina</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in rows %}
+              <tr>
+                <td><strong>{{ row.codigo }}</strong></td>
+                <td>{{ row.rev_atual }}</td>
+                <td>{{ row.versoes_count }}</td>
+                <td>{% if row.projeto_nome %}{{ row.projeto_nome }}{% else %}—{% endif %}</td>
+                <td>{% if row.disciplina %}{{ row.disciplina }}{% else %}—{% endif %}</td>
+                <td class="text-nowrap">
+                  <a class="btn btn-outline-primary btn-sm" href="{% url 'documentos:historico' row.codigo %}">Histórico</a>
+                  <a class="btn btn-outline-secondary btn-sm" href="{% url 'documentos:detalhes_documento' row.doc_id %}">Detalhes</a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <div class="alert alert-info">Nenhuma revisão registrada.</div>
+      {% endif %}
+    </div>
+  </div>
+  </div>
+</div>
+<script>
+(function () {
+  function cameFromBFCache(ev) {
+    if (ev && ev.persisted) return true;
+    try {
+      var nav = performance.getEntriesByType && performance.getEntriesByType("navigation");
+      if (nav && nav.length && nav[0].type === "back_forward") return true;
+    } catch (e) {}
+    return false;
+  }
+
+  window.addEventListener("pageshow", function (ev) {
+    if (cameFromBFCache(ev)) {
+      window.location.reload();
+    }
+  });
+})();
+</script>
+{% endblock %}

@@ -9,6 +9,8 @@ import logging
 import os
 import hashlib
 import re
+from django.apps import apps
+from django.urls import reverse
 from django.db import transaction
 from django.contrib import messages
 from django.shortcuts import render, redirect
@@ -26,9 +28,10 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group
 from django.core.files.storage import default_storage
 from django.core.paginator import Paginator
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, Q, Sum, OuterRef, Subquery
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.cache import never_cache
 from django.utils import timezone
 from django.conf import settings
 
@@ -840,9 +843,10 @@ def painel_workflow_exportar_excel(request):
 # =====================================================================
 # 📁 LISTA DE DOCUMENTOS – com filtros funcionando 100%
 # =====================================================================
+@never_cache
 def listar_documentos(request):
     # Base: só documentos ativos e não deletados
-    documentos = Documento.objects.filter(ativo=True, deletado_em__isnull=True)
+    base_qs = Documento.objects.filter(ativo=True, deletado_em__isnull=True)
 
     # ---- Filtros vindos da barra superior ----
     projeto_filtro        = request.GET.get("projeto", "") or ""
@@ -851,7 +855,18 @@ def listar_documentos(request):
     status_emissao_filtro = request.GET.get("status_emissao", "") or ""
     busca                 = request.GET.get("busca", "") or ""
 
-    # Aplica filtros
+    latest_pk = (
+        base_qs.filter(codigo=OuterRef("codigo"))
+        .order_by("-criado_em", "-id")
+        .values("pk")[:1]
+    )
+    documentos = (
+        base_qs.filter(pk=Subquery(latest_pk))
+        .select_related("projeto")
+        .annotate(versoes_count=Count("versoes__numero_revisao", distinct=True))
+    )
+
+    # Aplica filtros sobre o conjunto "atual" por código
     if projeto_filtro:
         documentos = documentos.filter(projeto__nome__icontains=projeto_filtro)
 
@@ -870,6 +885,8 @@ def listar_documentos(request):
             Q(codigo__icontains=busca) |
             Q(titulo__icontains=busca)
         )
+
+    documentos = documentos.order_by("codigo")
 
     # ---- Combos dos selects (usados no template listar.html) ----
     projetos = (
@@ -919,10 +936,66 @@ def listar_documentos(request):
 
     return render(request, "documentos/listar.html", context)
 
+
+@never_cache
+def revisoes(request):
+    base_qs = (
+        Documento.objects.filter(ativo=True, deletado_em__isnull=True)
+        .exclude(revisao__isnull=True)
+        .exclude(revisao__exact="")
+    )
+
+    latest_pk = (
+        base_qs.filter(codigo=OuterRef("codigo"))
+        .order_by("-criado_em", "-id")
+        .values("pk")[:1]
+    )
+
+    versoes_count = (
+        DocumentoVersao.objects.filter(documento__codigo=OuterRef("codigo"))
+        .values("documento__codigo")
+        .annotate(c=Count("numero_revisao", distinct=True))
+        .values("c")[:1]
+    )
+
+    documentos = (
+        base_qs.filter(pk=Subquery(latest_pk))
+        .select_related("projeto")
+        .annotate(versoes_count=Subquery(versoes_count))
+        .filter(versoes_count__gt=0)
+        .order_by("-criado_em", "codigo")
+    )
+
+    rows = []
+    for doc in documentos:
+        rows.append(
+            {
+                "codigo": doc.codigo,
+                "rev_atual": (str(getattr(doc, "revisao", "") or "").strip() or "—"),
+                "versoes_count": doc.versoes_count or 0,
+                "projeto_nome": getattr(getattr(doc, "projeto", None), "nome", "") or "",
+                "disciplina": getattr(doc, "disciplina", "") or "",
+                "doc_id": doc.id,
+            }
+        )
+
+    return render(
+        request,
+        "documentos/revisoes.html",
+        {
+            "rows": rows,
+            "total": len(rows),
+        },
+    )
+
 # ==============================
 # Revisões permitidas no sistema
 # ==============================
 REVISOES_VALIDAS = ["0"] + [chr(i) for i in range(ord("A"), ord("Z")+1)]
+
+
+def _documento_atual_por_codigo(qs_base, codigo):
+    return qs_base.filter(codigo=codigo).order_by("-criado_em", "-id").first()
 
 # =================================================================
 # DETALHE DO DOCUMENTO
@@ -985,16 +1058,60 @@ def detalhes_documento(request, documento_id):
 
 @login_required
 def historico(request, codigo):
-    documentos = Documento.objects.filter(codigo=codigo).order_by("-revisao")
-    versoes = (
-        DocumentoVersao.objects.filter(documento__codigo=codigo)
-        .select_related("documento", "criado_por")
-        .order_by("-criado_em")
-    )
+    base = Documento.objects.filter(codigo=codigo, ativo=True, deletado_em__isnull=True)
+    documento = _documento_atual_por_codigo(base, codigo)
+    if not documento:
+        raise Http404("Documento não encontrado")
+
+    versoes = DocumentoVersao.objects.filter(documento__codigo=codigo).select_related(
+        "criado_por"
+    ).order_by("-criado_em", "-id")
+
+    versoes_resumo = []
+    versoes_por_numero = {}
+    for v in versoes:
+        numero = (
+            str(getattr(v, "numero_revisao", None) or getattr(v, "revisao", "") or "")
+            .strip()
+        )
+        if not numero:
+            numero = "-"
+
+        entry = versoes_por_numero.get(numero)
+        if not entry:
+            entry = {
+                "numero_revisao": numero,
+                "criado_em": getattr(v, "criado_em", None),
+                "criado_por": getattr(v, "criado_por", None),
+                "status_revisao": getattr(v, "status_revisao", "") or "",
+                "arquivos": [],
+            }
+            versoes_por_numero[numero] = entry
+            versoes_resumo.append(entry)
+
+        arquivo = getattr(v, "arquivo", None)
+        if arquivo:
+            try:
+                url = arquivo.url
+            except Exception:
+                url = ""
+            nome = getattr(v, "nome_original", "") or os.path.basename(
+                getattr(arquivo, "name", "") or ""
+            )
+            entry["arquivos"].append(
+                {
+                    "nome": nome or "arquivo",
+                    "url": url,
+                }
+            )
+
     return render(
         request,
         "documentos/historico.html",
-        {"documentos": documentos, "versoes": versoes, "codigo": codigo},
+        {
+            "documento": documento,
+            "versoes_resumo": versoes_resumo,
+        },
     )
 
 
@@ -1252,6 +1369,54 @@ def upload_documento(request):
 # EDITAR DOCUMENTO
 # =================================================================
 
+def _set_if_exists(obj, field, value):
+    if value is None:
+        return
+    if hasattr(obj, field):
+        setattr(obj, field, value)
+
+
+def _parse_date(value):
+    if not value:
+        return None
+    value = str(value).strip()
+    try:
+        if len(value) == 10 and value[4] == "-" and value[7] == "-":
+            return datetime.strptime(value, "%Y-%m-%d").date()
+        if len(value) == 10 and value[2] == "/" and value[5] == "/":
+            return datetime.strptime(value, "%d/%m/%Y").date()
+    except Exception:
+        return None
+    return None
+
+
+def _first_post_value(request, keys):
+    for key in keys:
+        val = request.POST.get(key)
+        if val is None:
+            continue
+        val = str(val).strip()
+        if val != "":
+            return val
+    return None
+
+
+def _first_attr_value(obj, fields):
+    for field in fields:
+        if hasattr(obj, field):
+            val = getattr(obj, field)
+            if val not in (None, ""):
+                return val
+    return None
+
+
+def _format_date(value):
+    if isinstance(value, datetime):
+        return value.strftime("%d/%m/%Y")
+    if isinstance(value, date):
+        return value.strftime("%d/%m/%Y")
+    return str(value) if value else ""
+
 @login_required
 @has_perm("documento.editar")
 def editar_documento(request, documento_id):
@@ -1286,26 +1451,73 @@ def editar_documento(request, documento_id):
                       or "")
         documento.status_documento = status_doc
         documento.status_emissao = request.POST.get("status_emissao") or ""
-        documento.grdt_cliente = request.POST.get("grdt_cliente") or ""
-        documento.resposta_cliente = request.POST.get("resposta_cliente") or ""
         documento.ged_interna = request.POST.get("ged_interna") or ""
         documento.revisao = revisao
 
-        data_emissao_grdt = request.POST.get("data_emissao_grdt") or ""
-        if data_emissao_grdt:
-            try:
-                documento.data_emissao_grdt = datetime.strptime(
-                    data_emissao_grdt, "%Y-%m-%d"
-                ).date()
-            except ValueError:
-                messages.error(request, "Data de emissão GRDT inválida.")
-                return redirect("documentos:editar_documento", documento_id=documento.id)
-        else:
-            documento.data_emissao_grdt = None
+        grdt_val = _first_post_value(
+            request,
+            ["num_grdt", "numero_grdt", "grdt", "n_grdt", "grdt_cliente"],
+        )
+        pcf_val = _first_post_value(
+            request,
+            ["num_pcf", "numero_pcf", "pcf", "n_pcf", "resposta_cliente"],
+        )
+        dt_raw = _first_post_value(
+            request,
+            [
+                "data_emissao_tp",
+                "data_emissao_tp_doc",
+                "data_emissao_grdt",
+                "data_emissao",
+                "data",
+            ],
+        )
+        dt_val = _parse_date(dt_raw)
+
+        _set_if_exists(documento, "num_grdt", grdt_val)
+        _set_if_exists(documento, "numero_grdt", grdt_val)
+        _set_if_exists(documento, "grdt", grdt_val)
+        _set_if_exists(documento, "n_grdt", grdt_val)
+        _set_if_exists(documento, "grdt_cliente", grdt_val)
+
+        _set_if_exists(documento, "num_pcf", pcf_val)
+        _set_if_exists(documento, "numero_pcf", pcf_val)
+        _set_if_exists(documento, "pcf", pcf_val)
+        _set_if_exists(documento, "n_pcf", pcf_val)
+        _set_if_exists(documento, "resposta_cliente", pcf_val)
+
+        _set_if_exists(documento, "data_emissao_tp", dt_val)
+        _set_if_exists(documento, "data_emissao_tp_doc", dt_val)
+        _set_if_exists(documento, "data_emissao_grdt", dt_val)
+        _set_if_exists(documento, "data_emissao", dt_val)
+        _set_if_exists(documento, "data", dt_val)
 
         documento.save()
+        documento.refresh_from_db()
 
-        messages.success(request, "Documento atualizado.")
+        grdt_saved = _first_attr_value(
+            documento,
+            ["num_grdt", "numero_grdt", "grdt", "n_grdt", "grdt_cliente"],
+        )
+        pcf_saved = _first_attr_value(
+            documento,
+            ["num_pcf", "numero_pcf", "pcf", "n_pcf", "resposta_cliente"],
+        )
+        dt_saved = _first_attr_value(
+            documento,
+            [
+                "data_emissao_tp",
+                "data_emissao_tp_doc",
+                "data_emissao_grdt",
+                "data_emissao",
+                "data",
+            ],
+        )
+
+        messages.success(
+            request,
+            f"Salvo: GRDT={grdt_saved or '—'} PCF={pcf_saved or '—'} DATA={_format_date(dt_saved) or '—'}",
+        )
         return redirect("documentos:detalhes_documento", documento_id=documento.id)
 
     projetos = Projeto.objects.filter(ativo=True).order_by("nome")
@@ -1323,6 +1535,41 @@ def editar_documento(request, documento_id):
 # NOVA REVISÃO (WORKFLOW)
 # =================================================================
 
+def _reset_campos_emissao(doc):
+    """
+    Zera campos que NÃO podem ser herdados ao criar nova revisão.
+    Feito com hasattr para suportar variações de nomes no model.
+    """
+    for fname in [
+        "status_emissao",
+        "status_emissao_tp",
+        "status_emissao_cliente",
+        "grdt_cliente",
+        "resposta_cliente",
+    ]:
+        if hasattr(doc, fname):
+            setattr(doc, fname, "")
+
+    for fname in [
+        "num_grdt", "numero_grdt", "grdt", "n_grdt",
+        "num_pcf", "numero_pcf", "pcf", "n_pcf",
+    ]:
+        if hasattr(doc, fname):
+            setattr(doc, fname, "")
+
+    for fname in [
+        "data_emissao_tp",
+        "data_emissao_tp_doc",
+        "data_emissao",
+        "data_emissao_grdt",
+        "data",
+    ]:
+        if hasattr(doc, fname):
+            setattr(doc, fname, None)
+
+    return doc
+
+
 @login_required
 @has_perm("documento.revisar")
 def nova_revisao(request, documento_id):
@@ -1332,34 +1579,62 @@ def nova_revisao(request, documento_id):
     nova_rev = REVISOES_VALIDAS[idx + 1] if idx + 1 < len(REVISOES_VALIDAS) else "A"
 
     if request.method == "POST":
-        arquivo = request.FILES.get("arquivo")
+        arquivos = request.FILES.getlist("arquivo") or request.FILES.getlist("arquivos")
         observacao = request.POST.get("observacao", "")
 
-        if not arquivo:
-            messages.error(request, "Envie o arquivo da nova revisão.")
+        if not arquivos:
+            messages.error(request, "Envie ao menos 1 arquivo da nova revisão.")
             return redirect("documentos:detalhes_documento", documento_id=documento.id)
 
-        try:
-            DocumentoVersao.objects.create(
-                documento=documento,
-                numero_revisao=nova_rev,
-                arquivo=arquivo,  # chama storage aqui (R2/S3)
-                criado_por=request.user,
-                observacao=observacao,
-                status_revisao="REVISAO",
-            )
-        except Exception:
-            logger.exception("Falha ao salvar nova revisão no storage (R2/S3)")
-            messages.error(
-                request,
-                "Falha ao enviar o arquivo da nova revisão (storage/R2 Unauthorized). "
-                "A revisão do documento NÃO foi alterada."
-            )
-            return redirect("documentos:detalhes_documento", documento_id=documento.id)
+        with transaction.atomic():
+            documento = Documento.objects.select_for_update().get(pk=documento_id)
 
-        documento.revisao = nova_rev
-        documento.status_documento = "Em Revisão"
-        documento.save(update_fields=["revisao", "status_documento"])
+            for arquivo in arquivos:
+                try:
+                    DocumentoVersao.objects.create(
+                        documento=documento,
+                        numero_revisao=nova_rev,
+                        arquivo=arquivo,  # chama storage aqui (R2/S3)
+                        criado_por=request.user,
+                        observacao=observacao,
+                        status_revisao="REVISAO",
+                    )
+                except Exception:
+                    logger.exception("Falha ao salvar nova revisão no storage (R2/S3)")
+                    messages.error(
+                        request,
+                        "Falha ao enviar o arquivo da nova revisão (storage/R2 Unauthorized). "
+                        "A revisão do documento NÃO foi alterada."
+                    )
+                    return redirect("documentos:detalhes_documento", documento_id=documento.id)
+
+            documento.revisao = nova_rev
+            documento.status_documento = "Em Revisão"
+            _reset_campos_emissao(documento)
+            update_fields = ["revisao", "status_documento"]
+            for fname in [
+                "status_emissao",
+                "status_emissao_tp",
+                "status_emissao_cliente",
+                "grdt_cliente",
+                "resposta_cliente",
+                "num_grdt",
+                "numero_grdt",
+                "grdt",
+                "n_grdt",
+                "num_pcf",
+                "numero_pcf",
+                "pcf",
+                "n_pcf",
+                "data_emissao_tp",
+                "data_emissao_tp_doc",
+                "data_emissao",
+                "data_emissao_grdt",
+                "data",
+            ]:
+                if hasattr(documento, fname):
+                    update_fields.append(fname)
+            documento.save(update_fields=update_fields)
 
         registrar_workflow(documento, "Nova Revisão", "Criado", request)
 
@@ -2012,6 +2287,37 @@ def importar_ldp_legacy(request):
 # MEDIÇÃO / EXPORTAÇÃO MEDIÇÃO
 # =================================================================
 
+def _aplicar_filtros_medicao(qs, request):
+    filtros = {
+        "projeto": (request.GET.get("projeto") or "").strip(),
+        "disciplina": (request.GET.get("disciplina") or "").strip(),
+        "fase": (request.GET.get("fase") or "").strip(),
+        "tipo_doc": (request.GET.get("tipo_doc") or "").strip(),
+        "status_documento": (request.GET.get("status_documento") or "").strip(),
+        "status_emissao": (request.GET.get("status_emissao") or "").strip(),
+        "q": (request.GET.get("q") or "").strip(),
+    }
+
+    if filtros["projeto"]:
+        qs = qs.filter(projeto__nome__icontains=filtros["projeto"])
+    if filtros["disciplina"]:
+        qs = qs.filter(disciplina__icontains=filtros["disciplina"])
+    if filtros["fase"]:
+        qs = qs.filter(fase__icontains=filtros["fase"])
+    if filtros["tipo_doc"]:
+        qs = qs.filter(tipo_doc__icontains=filtros["tipo_doc"])
+    if filtros["status_documento"]:
+        qs = qs.filter(status_documento__icontains=filtros["status_documento"])
+    if filtros["status_emissao"]:
+        qs = qs.filter(status_emissao__icontains=filtros["status_emissao"])
+    if filtros["q"]:
+        qs = qs.filter(
+            Q(codigo__icontains=filtros["q"]) | Q(titulo__icontains=filtros["q"])
+        )
+
+    return qs, filtros
+
+
 def _calcular_medicao_queryset(docs_qs):
     med_raw = docs_qs.values("tipo_doc").annotate(
         total=Count("id"),
@@ -2038,24 +2344,21 @@ def _calcular_medicao_queryset(docs_qs):
 
         linhas.append(
             {
-                "tipo": tipo,
                 "tipo_doc": tipo,
-                "total": int(m["total"] or 0),
-                "emitidos": int(emit or 0),
-                "nao_recebidos": int(nr or 0),
-                "valor_emitidos_usd": v_emit_usd,
-                "valor_nao_recebidos_usd": v_nr_usd,
-                "valor_emitidos_brl": v_emit_brl,
-                "valor_nao_recebidos_brl": v_nr_brl,
-                "valor_nr_usd": v_nr_usd,
-                "valor_nr_brl": v_nr_brl,
+                "total": m["total"],
+                "emitidos": emit,
+                "nao_recebidos": nr,
+                "valor_emitidos_usd": f"{v_emit_usd:,.2f}",
+                "valor_nr_usd": f"{v_nr_usd:,.2f}",
+                "valor_emitidos_brl": f"{v_emit_brl:,.2f}",
+                "valor_nr_brl": f"{v_nr_brl:,.2f}",
             }
         )
 
     totais = {
         "total_docs": sum(m["total"] for m in med_raw),
-        "total_usd": total_usd,
-        "total_brl": total_brl,
+        "total_usd": f"{total_usd:,.2f}",
+        "total_brl": f"{total_brl:,.2f}",
     }
 
     return linhas, totais
@@ -2063,11 +2366,8 @@ def _calcular_medicao_queryset(docs_qs):
 
 @login_required
 def medicao(request):
-    docs = Documento.objects.filter(ativo=True)
-
-    projeto = request.GET.get("projeto") or ""
-    if projeto:
-        docs = docs.filter(projeto__nome__icontains=projeto)
+    base_qs = Documento.objects.filter(ativo=True).select_related("projeto")
+    docs, filtros = _aplicar_filtros_medicao(base_qs, request)
 
     linhas, totais = _calcular_medicao_queryset(docs)
 
@@ -2093,18 +2393,22 @@ def medicao(request):
     nao_recebidos = sum(int(m.get("nao_recebidos") or 0) for m in linhas)
 
     total_emit_usd = sum(_to_decimal(m.get("valor_emitidos_usd")) for m in linhas)
-    total_nr_usd = sum(_to_decimal(m.get("valor_nao_recebidos_usd")) for m in linhas)
+    total_nr_usd = sum(_to_decimal(m.get("valor_nr_usd")) for m in linhas)
     total_emit_brl = sum(_to_decimal(m.get("valor_emitidos_brl")) for m in linhas)
-    total_nr_brl = sum(_to_decimal(m.get("valor_nao_recebidos_brl")) for m in linhas)
+    total_nr_brl = sum(_to_decimal(m.get("valor_nr_brl")) for m in linhas)
+
+    total_usd = total_emit_usd + total_nr_usd
+    total_brl = total_emit_brl + total_nr_brl
+    ticket_medio_usd = (total_usd / emitidos) if emitidos > 0 else Decimal("0")
 
     totais_gerais = {
         "total": total_count,
         "emitidos": emitidos,
         "nao_recebidos": nao_recebidos,
-        "valor_emitidos_usd": total_emit_usd,
-        "valor_emitidos_brl": total_emit_brl,
-        "valor_nao_recebidos_usd": total_nr_usd,
-        "valor_nao_recebidos_brl": total_nr_brl,
+        "valor_emitidos_usd": f"{total_emit_usd:,.2f}",
+        "valor_emitidos_brl": f"{total_emit_brl:,.2f}",
+        "valor_nao_recebidos_usd": f"{total_nr_usd:,.2f}",
+        "valor_nao_recebidos_brl": f"{total_nr_brl:,.2f}",
     }
 
     total_geral = totais_gerais
@@ -2247,54 +2551,86 @@ def medicao(request):
             charts_ok = False
 
     tem_dados_medicao = bool(linhas) and (
-        total_count > 0
-        or total_emit_usd > 0
-        or total_emit_brl > 0
-        or total_nr_usd > 0
-        or total_nr_brl > 0
+        total_count > 0 or total_emit_usd > 0 or total_emit_brl > 0
     )
-
-    chart_labels_totais = labels_totais
-    chart_values_totais = [int(v) for v in values_totais]
-    chart_labels_usd = labels_usd
-    chart_values_usd = [float(v) for v in values_usd]
-    has_chart_data = charts_have_data
-
-    base_qs = Documento.objects.filter(ativo=True).select_related("projeto")
 
     return render(
         request,
         "documentos/medicao.html",
         {
             "linhas": linhas,
-            "rows": linhas,
             "resumo": linhas,
+            "page": "medicao",
             "totais": totais,
             "totais_gerais": totais_gerais,
             "total_geral": total_geral,
+            "total_docs": total_count,
+            "emitidos_total": emitidos,
+            "nao_recebidos_total": nao_recebidos,
+            "total_usd": f"{total_usd:,.2f}",
+            "total_brl": f"{total_brl:,.2f}",
+            "ticket_medio_usd": f"{ticket_medio_usd:,.2f}",
             "tem_dados_medicao": tem_dados_medicao,
-            "has_chart_data": has_chart_data,
-            "chart_labels_totais": chart_labels_totais,
-            "chart_values_totais": chart_values_totais,
-            "chart_labels_usd": chart_labels_usd,
-            "chart_values_usd": chart_values_usd,
             "charts_ok": charts_ok,
             "chart1_url": chart1_url,
             "chart2_url": chart2_url,
-            "VALOR_MEDICAO_USD": VALOR_MEDICAO_USD,
-            "projetos": base_qs.values_list("projeto__nome", flat=True).distinct(),
-            "projeto_selecionado": projeto,
+            "filtros": filtros,
+            "projetos": (
+                Documento.objects.filter(ativo=True)
+                .values_list("projeto__nome", flat=True)
+                .exclude(projeto__nome__isnull=True)
+                .exclude(projeto__nome__exact="")
+                .distinct()
+                .order_by("projeto__nome")
+            ),
+            "disciplinas": (
+                Documento.objects.filter(ativo=True)
+                .values_list("disciplina", flat=True)
+                .exclude(disciplina__isnull=True)
+                .exclude(disciplina__exact="")
+                .distinct()
+                .order_by("disciplina")
+            ),
+            "fases": (
+                Documento.objects.filter(ativo=True)
+                .values_list("fase", flat=True)
+                .exclude(fase__isnull=True)
+                .exclude(fase__exact="")
+                .distinct()
+                .order_by("fase")
+            ),
+            "tipos": (
+                Documento.objects.filter(ativo=True)
+                .values_list("tipo_doc", flat=True)
+                .exclude(tipo_doc__isnull=True)
+                .exclude(tipo_doc__exact="")
+                .distinct()
+                .order_by("tipo_doc")
+            ),
+            "status_docs": (
+                Documento.objects.filter(ativo=True)
+                .values_list("status_documento", flat=True)
+                .exclude(status_documento__isnull=True)
+                .exclude(status_documento__exact="")
+                .distinct()
+                .order_by("status_documento")
+            ),
+            "status_emissoes": (
+                Documento.objects.filter(ativo=True)
+                .values_list("status_emissao", flat=True)
+                .exclude(status_emissao__isnull=True)
+                .exclude(status_emissao__exact="")
+                .distinct()
+                .order_by("status_emissao")
+            ),
         },
     )
 
 
 @login_required
 def exportar_medicao_excel(request):
-    docs = Documento.objects.filter(ativo=True)
-
-    projeto = request.GET.get("projeto") or ""
-    if projeto:
-        docs = docs.filter(projeto__nome__icontains=projeto)
+    base_qs = Documento.objects.filter(ativo=True).select_related("projeto")
+    docs, _filtros = _aplicar_filtros_medicao(base_qs, request)
 
     linhas, totais = _calcular_medicao_queryset(docs)
 
