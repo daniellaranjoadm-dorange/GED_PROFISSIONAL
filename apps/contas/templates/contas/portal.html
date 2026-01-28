@@ -1,7 +1,10 @@
 {% extends "documentos/base.html" %}
 {% load static %}
 
-{% block title %}D?OR@NGE ? GED Enterprise Naval{% endblock %}
+{% block title %}D&rsquo;OR@NGE &mdash; GED Enterprise Naval{% endblock %}
+
+{% block body_attrs %}class="portal-landing"{% endblock %}
+{% block topbar %}{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -9,7 +12,7 @@
 /*  RESET & GLOBAL                                                     */
 /* =================================================================== */
 
-*{
+body.portal-landing *{
     margin:0;
     padding:0;
     box-sizing:border-box;
@@ -17,7 +20,7 @@
 }
 
 /* BACKGROUND PREMIUM */
-body{
+body.portal-landing{
     min-height:100vh;
     color:#e2e8f0;
     background:
@@ -30,12 +33,12 @@ body{
 }
 
 /* trava scroll quando modal abrir */
-body.modal-open{
+body.portal-landing.modal-open{
     overflow:hidden;
 }
 
 /* blueprint naval */
-body::before{
+body.portal-landing::before{
     content:"";
     position:fixed;
     inset:0;
@@ -49,7 +52,7 @@ body::before{
 }
 
 /* Luz ambiente */
-body::after{
+body.portal-landing::after{
     content:"";
     position:fixed;
     inset:-40%;
@@ -946,7 +949,7 @@ footer span{
 <!-- ======================================================================== -->
 <section class="beneficios-section">
     <div class="beneficios-container">
-        <h2 class="beneficios-title">Por que Empresas Escolhem o GED Enterprise?</h2>
+        <h2 class="beneficios-title">Por que Empresas Escolhem o GED Enterprise&#63;</h2>
         <p class="beneficios-sub">Automação, rastreabilidade e controle total da documentação naval e industrial.</p>
 
         <div class="beneficios-grid">
@@ -1059,7 +1062,7 @@ footer span{
     <section class="benefits-section">
         <!-- LADO ESQUERDO: BENEFÍCIOS -->
         <div>
-            <div class="benefit-kicker">POR QUE O GED ENTERPRISE NAVAL?</div>
+            <div class="benefit-kicker">POR QUE O GED ENTERPRISE NAVAL&#63;</div>
             <h3 class="benefit-title">
                 Menos planilhas, <span>mais engenharia</span> e decisões em tempo real.
             </h3>
@@ -1166,11 +1169,11 @@ footer span{
        controls
        playsinline
        preload="metadata">
-    <source src="https://SEU-CDN/videos/apresentacao_final.mp4" type="video/mp4">
+    <source src="https://www.dorange.com.br/static/videos/apresentacao_final.mp4" type="video/mp4">
     Seu navegador não suporta vídeos.
 </video>
           <div id="videoFallback" style="display:none; margin-top:10px;">
-            <a href="https://SEU-CDN/videos/apresentacao_final.mp4" target="_blank" rel="noopener" class="btn btn-outline-light btn-sm">Baixar / abrir vídeo em nova aba</a>
+            <a href="https://www.dorange.com.br/static/videos/apresentacao_final.mp4" target="_blank" rel="noopener" class="btn btn-outline-light btn-sm">Baixar / abrir vídeo em nova aba</a>
             <div style="font-size:12px; opacity:.85; margin-top:6px;">Se o vídeo não carregar, o navegador pode estar bloqueando o formato ou o arquivo não está sendo servido como arquivo estático.</div>
           </div>
 
