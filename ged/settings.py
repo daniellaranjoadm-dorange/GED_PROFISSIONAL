@@ -189,11 +189,14 @@ LOCALE_PATHS = [BASE_DIR / "locale"]
 # ======================
 
 STATIC_URL = "/static/"
-STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
+
+if (BASE_DIR / "static").exists():
+    STATICFILES_DIRS = [BASE_DIR / "static"]
 
 WHITENOISE_MANIFEST_STRICT = False
-WHITENOISE_USE_FINDERS = True
+WHITENOISE_USE_FINDERS = True  # TODO: remover depois que o deploy estabilizar
 
 # ======================
 # MEDIA
@@ -214,16 +217,6 @@ STORAGES = {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
     },
 }
-
-# Staticfiles storage: padr?o em DEV, manifest em PROD
-if DEBUG:
-    STORAGES["staticfiles"] = {
-        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
-    }
-else:
-    STORAGES["staticfiles"] = {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-    }
 
 R2_BUCKET_NAME = os.environ.get("R2_BUCKET_NAME") or os.environ.get("AWS_STORAGE_BUCKET_NAME")
 R2_ENDPOINT_URL = os.environ.get("R2_ENDPOINT_URL") or os.environ.get("AWS_S3_ENDPOINT_URL")
