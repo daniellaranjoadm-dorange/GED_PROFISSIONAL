@@ -3077,3 +3077,84 @@ body.django-admin.change-list .results table { table-layout: auto; }
     max-height: none;
   }
 }
+
+/* =========================================
+   ADMIN — CHANGELIST WIDE (V3) — ESCOPADO
+   ========================================= */
+body.change-list #container,
+body.change-list #content,
+body.change-list .content {
+  max-width: none !important;
+  width: 100% !important;
+}
+
+/* remove centralização/margens herdadas */
+body.change-list #content {
+  margin: 0 !important;
+  padding-left: 24px !important;
+  padding-right: 24px !important;
+}
+
+/* garante que o miolo não fique preso em float/width antigo */
+body.change-list #content-main {
+  float: none !important;
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+}
+
+/* o bloco inteiro do changelist deve ser wide */
+body.change-list #changelist {
+  width: 100% !important;
+  max-width: 1600px;       /* aumenta a largura útil */
+  margin: 0 auto !important;
+  padding: 0 !important;
+
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 300px; /* tabela cresce, filtro fixo */
+  gap: 16px;
+  align-items: start;
+}
+
+/* tabela ocupa o máximo possível */
+body.change-list #changelist-form,
+body.change-list .results,
+body.change-list .results table {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+/* filtro menor e sem “roubar tela” */
+body.change-list #changelist-filter {
+  float: none !important;
+  width: 300px !important;
+  margin: 0 !important;
+
+  position: sticky;
+  top: 16px;
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+}
+
+/* botão add user e ferramentas não devem empurrar layout */
+body.change-list .object-tools {
+  float: none !important;
+  justify-self: end;
+}
+
+/* responsivo: empilha filtro */
+@media (max-width: 1100px) {
+  body.change-list #changelist {
+    grid-template-columns: 1fr;
+    max-width: none;
+  }
+  body.change-list #changelist-filter {
+    width: 100% !important;
+    position: static;
+    max-height: none;
+  }
+  body.change-list #content {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+}
