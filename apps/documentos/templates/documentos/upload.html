@@ -4,18 +4,18 @@
 {% block title %}Novo Documento{% endblock %}
 
 {% block content %}
-<div class="page-upload-doc">
+<div class="page-upload-documento page-upload-doc page-novo-documento">
 
-<div class="dash-container dash-container--wide">
+<div class="doc-wrapper">
 
 <style>
 /* Fallback: garante o visual premium mesmo se enterprise.css n&#227;o atualizar (cache/caminho). */
-.page-upload-doc .dash-actions{ display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap; }
-.page-upload-doc .dash-input-lg{ padding: 12px 14px !important; font-size: 1.02rem !important; }
-.page-upload-doc .dash-req{ color: var(--dash-accent); font-weight: 900; margin-left: 2px; }
-.page-upload-doc .dash-reqhint{ color: var(--dash-muted); font-size: .78rem; margin-left: 6px; font-weight: 700; }
+.page-upload-documento .dash-actions{ display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap; }
+.page-upload-documento .dash-input-lg{ padding: 12px 14px !important; font-size: 1.02rem !important; }
+.page-upload-documento .dash-req{ color: var(--dash-accent); font-weight: 900; margin-left: 2px; }
+.page-upload-documento .dash-reqhint{ color: var(--dash-muted); font-size: .78rem; margin-left: 6px; font-weight: 700; }
 
-.page-upload-doc .ldp-dropzone{
+.page-upload-documento .ldp-dropzone{
   position: relative;
   border-radius: var(--dash-radius);
   border: 2px dashed rgba(148,163,184,.45);
@@ -23,56 +23,46 @@
   padding: 14px 16px;
   transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
 }
-body[data-theme="dark"] .page-upload-doc .ldp-dropzone{ background: rgba(0,0,0,.14); border-color: rgba(148,163,184,.30); }
-.page-upload-doc .ldp-dropzone:hover{ border-color: rgba(224,96,0,.55); }
-.page-upload-doc .ldp-dropzone.is-dragover{
+body[data-theme="dark"] .page-upload-documento .ldp-dropzone{ background: rgba(0,0,0,.14); border-color: rgba(148,163,184,.30); }
+.page-upload-documento .ldp-dropzone:hover{ border-color: rgba(224,96,0,.55); }
+.page-upload-documento .ldp-dropzone.is-dragover{
   border-color: rgba(224,96,0,1);
   background: rgba(224,96,0,.08);
   box-shadow: 0 0 0 4px rgba(224,96,0,.12);
 }
 
-.page-upload-doc .ldp-title{ font-weight: 900; color: var(--dash-text); display:flex; align-items:center; gap:10px; }
-.page-upload-doc .ldp-title i{ color: var(--dash-accent); font-size: 1.1rem; }
-.page-upload-doc .ldp-sub{ color: var(--dash-muted); font-weight: 650; margin-top: 2px; }
-.page-upload-doc .ldp-meta{ color: var(--dash-muted); font-size: .85rem; margin-top: 6px; }
+.page-upload-documento .ldp-title{ font-weight: 900; color: var(--dash-text); display:flex; align-items:center; gap:10px; }
+.page-upload-documento .ldp-title i{ color: var(--dash-accent); font-size: 1.1rem; }
+.page-upload-documento .ldp-sub{ color: var(--dash-muted); font-weight: 650; margin-top: 2px; }
+.page-upload-documento .ldp-meta{ color: var(--dash-muted); font-size: .85rem; margin-top: 6px; }
 
-.page-upload-doc .ldp-chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top: 10px; }
-.page-upload-doc .ldp-chip{
+.page-upload-documento .ldp-chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top: 10px; }
+.page-upload-documento .ldp-chip{
   display:inline-flex; align-items:center; gap:8px;
   padding: 6px 10px; border-radius: 999px;
   border: 1px solid rgba(148,163,184,.28);
   background: rgba(0,0,0,.10);
   max-width: 100%;
 }
-body[data-theme="light"] .page-upload-doc .ldp-chip{ background: rgba(11,18,32,.05); }
-.page-upload-doc .ldp-chip-name{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width: 42ch; }
-.page-upload-doc .ldp-chip-remove{ border:0; background:transparent; padding:0; line-height:1; color: var(--dash-muted); }
-.page-upload-doc .ldp-chip-remove:hover{ color: var(--dash-text); }
+body[data-theme="light"] .page-upload-documento .ldp-chip{ background: rgba(11,18,32,.05); }
+.page-upload-documento .ldp-chip-name{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width: 42ch; }
+.page-upload-documento .ldp-chip-remove{ border:0; background:transparent; padding:0; line-height:1; color: var(--dash-muted); }
+.page-upload-documento .ldp-chip-remove:hover{ color: var(--dash-text); }
 
 /* Validation (se Django/Bootstrap aplicar classes) */
-.page-upload-doc .is-invalid{ border-color:#ef4444 !important; box-shadow: 0 0 0 .2rem rgba(239,68,68,.14) !important; }
-.page-upload-doc .is-valid{ border-color:#22c55e !important; box-shadow: 0 0 0 .2rem rgba(34,197,94,.14) !important; }
-.page-upload-doc .invalid-feedback,
-.page-upload-doc .errorlist{ color:#ef4444 !important; font-weight: 650; font-size: .9rem; margin-top: 6px; }
-.page-upload-doc .errorlist{ list-style:none; padding-left:0; margin: 6px 0 0; }
+.page-upload-documento .is-invalid{ border-color:#ef4444 !important; box-shadow: 0 0 0 .2rem rgba(239,68,68,.14) !important; }
+.page-upload-documento .is-valid{ border-color:#22c55e !important; box-shadow: 0 0 0 .2rem rgba(34,197,94,.14) !important; }
+.page-upload-documento .invalid-feedback,
+.page-upload-documento .errorlist{ color:#ef4444 !important; font-weight: 650; font-size: .9rem; margin-top: 6px; }
+.page-upload-documento .errorlist{ list-style:none; padding-left:0; margin: 6px 0 0; }
 </style>
 
-<div class="page-novo-documento">
-
-<div class="upload-header d-flex align-items-start justify-content-between flex-wrap gap-2 mb-3">
+<div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-3">
   <div>
-    <h1 class="dash-title mb-1">
-      <i class="bi bi-file-earmark-plus me-2"></i> Novo Documento
-    </h1>
-    <div class="dash-subtitle">
-      Cadastre um novo documento no GED com os metadados b&#225;sicos e anexe o(s) arquivo(s).
-    </div>
+    <h1 class="dash-title mb-1"><i class="bi bi-file-earmark-plus me-2"></i> Novo Documento</h1>
+    <div class="dash-subtitle">Cadastre um novo documento no GED com os metadados b&#225;sicos e anexe o(s) arquivo(s).</div>
   </div>
-  <div class="dash-actions">
-    <a href="{% url 'documentos:listar_documentos' %}" class="dash-btn btn btn-sm btn-outline-secondary">
-      <i class="bi bi-arrow-left"></i> Voltar
-    </a>
-  </div>
+  <a class="dash-btn btn btn-sm" href="{% url 'documentos:listar_documentos' %}"><i class="bi bi-arrow-left"></i> Voltar</a>
 </div>
 
 <div class="dash-card upload-card">

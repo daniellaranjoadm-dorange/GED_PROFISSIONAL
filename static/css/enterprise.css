@@ -2870,3 +2870,150 @@ body.dark .page-solicitacoes--detalhe .kv-k{
 @media (max-width: 575.98px){
   .page-upload-doc .upload-actions .btn{ width:100%; min-width:0; }
 }
+
+/* NOVO DOCUMENTO / UPLOAD — WIDTH MATCH (escopado) */
+.page-upload-documento { width: 100%; }
+
+/* replica o container “certo” da Lista */
+.page-upload-documento .dash-container { width: 100%; margin: 0 auto; padding: 0 16px; }
+.page-upload-documento .dash-container--wide { max-width: none; }  /* Lista de Documentos não usa max-width */
+
+/* mata limitadores comuns do Bootstrap só aqui */
+.page-upload-documento .container,
+.page-upload-documento .container-sm,
+.page-upload-documento .container-md,
+.page-upload-documento .container-lg,
+.page-upload-documento .container-xl,
+.page-upload-documento .container-xxl {
+  max-width: none !important;
+  width: 100% !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* garante que o card/form não herdem max-width */
+.page-upload-documento .upload-card,
+.page-upload-documento .dash-card,
+.page-upload-documento form {
+  width: 100%;
+  max-width: none !important;
+}
+
+/* se existir wrapper interno tipo "upload-wrap" / "form-wrap" / "page-content" nesta página */
+.page-upload-documento .upload-wrap,
+.page-upload-documento .form-wrap,
+.page-upload-documento .page-content,
+.page-upload-documento .content,
+.page-upload-documento .content-wrapper {
+  width: 100%;
+  max-width: none !important;
+}
+
+/* Dropzone full */
+.page-upload-documento .dropzone,
+.page-upload-documento .upload-area,
+.page-upload-documento .ldp-dropzone,
+.page-upload-documento .file-drop,
+.page-upload-documento .dz-clickable {
+  width: 100%;
+  max-width: none !important;
+}
+
+/* Botão submit premium */
+.page-upload-documento .btn[type="submit"].dash-btn-primary { min-width: 220px; }
+
+/* Dark: manter contraste do card/inputs (sem afetar outras telas) */
+html[data-theme="dark"] .page-upload-documento .upload-card{
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.10);
+}
+
+/* ==========================================================
+   DJANGO ADMIN — CHANGE LIST WIDE (escopado)
+   Escopo: body.django-admin.change-list — NÃO afeta o site
+   ========================================================== */
+body.django-admin.change-list #container,
+body.django-admin.change-list #content{
+  width: 100%;
+  max-width: none;
+}
+
+body.django-admin.change-list #content{
+  padding-left: 18px;
+  padding-right: 18px;
+}
+
+body.django-admin.change-list #content > h1,
+body.django-admin.change-list #content-main,
+body.django-admin.change-list #changelist{
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Remove "fumacê" no miolo */
+body.django-admin.change-list #content,
+body.django-admin.change-list #content-main,
+body.django-admin.change-list .module,
+body.django-admin.change-list .results{
+  backdrop-filter: none !important;
+}
+
+/* Layout do changelist: main + filter */
+body.django-admin.change-list #changelist{
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 16px;
+  align-items: start;
+}
+
+body.django-admin.change-list #content-main{
+  width: 100%;
+  min-width: 0;
+}
+
+/* Sidebar filtro menor e sticky */
+body.django-admin.change-list #changelist-filter{
+  width: 300px;
+  max-width: 300px;
+  position: sticky;
+  top: 12px;
+  align-self: start;
+}
+
+/* Responsivo: filter vira bloco em cima */
+@media (max-width: 992px){
+  body.django-admin.change-list #changelist{
+    grid-template-columns: 1fr;
+  }
+  body.django-admin.change-list #changelist-filter{
+    width: 100%;
+    max-width: none;
+    position: static;
+  }
+}
+
+/* Tabela ocupa 100% e melhora legibilidade */
+body.django-admin.change-list #result_list,
+body.django-admin.change-list .results,
+body.django-admin.change-list .results table{
+  width: 100% !important;
+  max-width: none !important;
+}
+
+body.django-admin.change-list #result_list th,
+body.django-admin.change-list #result_list td{
+  padding: 10px 12px;
+  white-space: nowrap;
+}
+
+body.django-admin.change-list #result_list thead th{
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+/* Reduz scroll horizontal artificial do wrapper */
+body.django-admin.change-list .results{
+  overflow-x: auto;
+}
