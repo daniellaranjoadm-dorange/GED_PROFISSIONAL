@@ -42,41 +42,10 @@
       <div class="sidebar-brand">
         <img src="{% static 'documentos/logo_dorange.png' %}" class="sidebar-logo" alt="">
         <div>
-          <div class="sidebar-brand-title">D’OR@NGE</div>
-          <div class="sidebar-brand-sub">Document Management</div>
+          <div class="sidebar-brand-title">D?OR@NGE</div>
         </div>
       </div>
 
-      <!-- IDIOMA -->
-      <div class="language-switcher mt-2 mb-3">
-        <label class="small fw-semibold mb-1 d-block">Idioma</label>
-        <div class="d-flex gap-2">
-          <a href="#" onclick="setLanguage('pt-br'); return false;">
-            <img src="{% static 'flags/br.svg' %}" class="flag-icon" alt="PT-BR">
-          </a>
-          <a href="#" onclick="setLanguage('en'); return false;">
-            <img src="{% static 'flags/us.svg' %}" class="flag-icon" alt="EN">
-          </a>
-        </div>
-      </div>
-
-      <form id="lang-form" action="{{ url_set_language|default:'/set-language/' }}" method="post" style="display:none;">
-        {% csrf_token %}
-        <input type="hidden" id="lang-input" name="language">
-      </form>
-
-      <!-- TEMA -->
-      <div class="theme-switcher mt-1 mb-4">
-        <label class="small fw-semibold mb-1 d-block">Tema</label>
-        <div class="btn-group w-100">
-          <button type="button" class="btn btn-sm btn-outline-secondary theme-btn" data-theme="light">🌞</button>
-          <button type="button" class="btn btn-sm btn-outline-secondary theme-btn" data-theme="dark">🌙</button>
-          <button type="button" class="btn btn-sm btn-outline-secondary theme-btn" data-theme="auto">🌓</button>
-        </div>
-      </div>
-
-      <!-- MENUS -->
-      <div class="sidebar-section-title">Documentos</div>
       <ul class="sidebar-nav">
         <li>
           <a class="sidebar-link" href="{{ url_listar_documentos|default:'/documentos/documentos/' }}">
@@ -85,7 +54,7 @@
         </li>
         <li>
           <a class="sidebar-link" href="{% url 'documentos:revisoes' %}">
-            <i class="bi bi-arrow-repeat"></i> Revisões
+            <i class="bi bi-arrow-repeat"></i> Revis?es
           </a>
         </li>
         <li>
@@ -98,10 +67,6 @@
             <i class="bi bi-cloud-upload"></i> Importar LDP
           </a>
         </li>
-      </ul>
-
-      <div class="sidebar-section-title">Operações</div>
-      <ul class="sidebar-nav">
         <li>
           <a class="sidebar-link" href="/dashboard/">
             <i class="bi bi-graph-up-arrow"></i> Dashboard GED
@@ -114,31 +79,27 @@
         </li>
         <li>
           <a class="sidebar-link" href="{{ url_medicao|default:'#' }}">
-            <i class="bi bi-cash-coin"></i> Medição
+            <i class="bi bi-cash-coin"></i> Medi??o
           </a>
         </li>
 
-        {# Solicitações: só mostra para staff e só se a URL existir #}
         {% if user.is_authenticated and user.is_staff and url_solicitacoes %}
         <li>
           <a class="sidebar-link" href="{{ url_solicitacoes }}">
-            <i class="bi bi-people"></i> Solicitações de Acesso
+            <i class="bi bi-people"></i> Solicita??es de Acesso
           </a>
         </li>
         {% endif %}
-      </ul>
 
-      {% if user.is_authenticated and user.is_superuser %}
-      <div class="sidebar-section-title">Administração</div>
-      <ul class="sidebar-nav">
+        {% if user.is_authenticated and user.is_superuser %}
         <li>
           <a class="sidebar-link" href="{{ url_usuarios_permissoes|default:'/admin/contas/usuario/' }}">
-            <i class="bi bi-gear"></i> Usuários &amp; Permissões
+            <i class="bi bi-gear"></i> Usu?rios &amp; Permiss?es
           </a>
         </li>
         <li>
           <a class="sidebar-link" href="{{ url_minhas_configuracoes|default:'/contas/minhas-configuracoes/' }}">
-            <i class="bi bi-person-gear"></i> Minhas Configurações
+            <i class="bi bi-person-gear"></i> Minhas Configura??es
           </a>
         </li>
         <li>
@@ -146,8 +107,8 @@
             <i class="bi bi-trash3"></i> Lixeira
           </a>
         </li>
+        {% endif %}
       </ul>
-      {% endif %}
 
       {% if user.is_authenticated %}
       <form method="post" action="{{ url_logout|default:'/logout/' }}">
@@ -158,11 +119,11 @@
       </form>
       {% endif %}
 
-      <div class="sidebar-footer">© {% now "Y" %} — D’OR@NGE Enterprise</div>
+      <div class="sidebar-footer">? {% now "Y" %} ? D?OR@NGE Enterprise</div>
 
     </div>
   </aside>
-  {% endblock %}
+{% endblock %}
 
   <!-- CONTEÚDO -->
   <main class="content">
@@ -245,7 +206,7 @@ function setLanguage(lang) {
 </script>
 
 <script>
-/* Temas (preferência: light/dark/auto; aplicado: light/dark) */
+/* Preferência de cor (light/dark/auto; aplicado: light/dark) */
 (function () {
   const root = document.documentElement;
   const body = document.body;

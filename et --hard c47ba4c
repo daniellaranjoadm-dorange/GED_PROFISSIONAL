@@ -1,0 +1,15 @@
+[33ma017def[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{0}: commit: FIX: portal antigo apenas no / e remove duplicacao de layout
+[33mc47ba4c[m HEAD@{1}: commit: PORTAL: move video to CDN
+[33m2da0b34[m HEAD@{2}: commit: trigger deploy
+[33m86b4864[m HEAD@{3}: commit (merge): MERGE: aplicar ajustes do backup (medicao + views)
+[33m88f59ef[m[33m ([m[1;32mbackup/rollback_before_head1[m[33m)[m HEAD@{4}: checkout: moving from backup/checkpoint_antes_fix_medicao_typo to main
+[33m6b9ae3e[m[33m ([m[1;32mbackup/checkpoint_antes_fix_medicao_typo[m[33m)[m HEAD@{5}: commit: UI: ajustes de largura (Importar LDP / Novo Documento) + Admin full-width
+[33m8de1ff5[m HEAD@{6}: commit: UI: full width opt-in (Importar LDP + Novo Documento) + admin contas usuario changelist layout
+[33m73d213b[m HEAD@{7}: commit: ADMIN: changelist wide real (grid no #content + filtro sticky)
+[33m9147d25[m HEAD@{8}: commit: ADMIN: changelist wide (remove container max-width + flex layout)
+[33mc7335ab[m HEAD@{9}: commit: ADMIN: changelist wide flex (tabela full + filtro sticky)
+[33m2374291[m HEAD@{10}: commit: ADMIN: changelist wide v3 (remove ilha central)
+[33m1ac7f35[m HEAD@{11}: commit: ADMIN: changelist wide + grid filter responsivo
+[33m3167a10[m HEAD@{12}: commit: ADMIN: changelist wide + filter sticky + table full-width
+[33mc0e8df3[m HEAD@{13}: commit: UI: importar-ldp + novo documento wide/responsivo (escopado)
+[33m1f75d7b[m HEAD@{14}: commit: SNAPSHOT: estado atual do projeto
