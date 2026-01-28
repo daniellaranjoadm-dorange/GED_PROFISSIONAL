@@ -1,0 +1,374 @@
+﻿{% load static %}
+{# URLs resolvidas com "as" para N&Atilde;O quebrar se algo estiver fora do ar/namespace #}
+{% url 'set_language' as url_set_language %}
+{% url 'logout' as url_logout %}
+
+{% url 'documentos:listar_documentos' as url_listar_documentos %}
+{% url 'documentos:upload_documento' as url_upload_documento %}
+{% url 'documentos:importar_ldp' as url_importar_ldp %}
+{% url 'documentos:painel_workflow' as url_painel_workflow %}
+{% url 'documentos:medicao' as url_medicao %}
+{% url 'documentos:lixeira' as url_lixeira %}
+
+{% url 'contas:minhas_configuracoes' as url_minhas_configuracoes %}
+{% url 'contas:usuarios_permissoes' as url_usuarios_permissoes %}
+
+{% url 'solicitacoes:listar_solicitacoes' as url_solicitacoes %}
+
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE|default:'pt-br' }}" data-theme="light" data-theme-pref="auto">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}GED D’OR@NGE{% endblock %}</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="{% static 'css/enterprise.css' %}?v=1100">
+
+  {% block extra_head %}{% endblock %}
+</head>
+
+<body data-theme="light" data-theme-pref="auto" {% block body_attrs %}{% endblock %}>
+<div class="layout">
+
+  {# Permite ocultar sidebar em páginas específicas (login/portal) sem quebrar o resto #}
+  {% block sidebar %}
+  <!-- SIDEBAR -->
+  <aside class="sidebar" style="z-index:999 !important;">
+    <div class="sidebar-inner">
+
+      <!-- LOGO -->
+      <div class="sidebar-brand">
+        <img src="{% static 'documentos/logo_dorange.png' %}" class="sidebar-logo" alt="">
+        <div>
+          <div class="sidebar-brand-title">D?OR@NGE</div>
+        </div>
+      </div>
+
+      <ul class="sidebar-nav">
+        <li>
+          <a class="sidebar-link" href="{{ url_listar_documentos|default:'/documentos/documentos/' }}">
+            <i class="bi bi-table"></i> Lista de Documentos
+          </a>
+        </li>
+        <li>
+          <a class="sidebar-link" href="{% url 'documentos:revisoes' %}">
+            <i class="bi bi-arrow-repeat"></i> Revis?es
+          </a>
+        </li>
+        <li>
+          <a class="sidebar-link" href="{{ url_upload_documento|default:'#' }}">
+            <i class="bi bi-file-earmark-plus"></i> Novo Documento
+          </a>
+        </li>
+        <li>
+          <a class="sidebar-link" href="{{ url_importar_ldp|default:'#' }}">
+            <i class="bi bi-cloud-upload"></i> Importar LDP
+          </a>
+        </li>
+        <li>
+          <a class="sidebar-link" href="/dashboard/">
+            <i class="bi bi-graph-up-arrow"></i> Dashboard GED
+          </a>
+        </li>
+        <li>
+          <a class="sidebar-link" href="{{ url_painel_workflow|default:'#' }}">
+            <i class="bi bi-diagram-3"></i> Workflow
+          </a>
+        </li>
+        <li>
+          <a class="sidebar-link" href="{{ url_medicao|default:'#' }}">
+            <i class="bi bi-cash-coin"></i> Medi??o
+          </a>
+        </li>
+
+        {% if user.is_authenticated and user.is_staff and url_solicitacoes %}
+        <li>
+          <a class="sidebar-link" href="{{ url_solicitacoes }}">
+            <i class="bi bi-people"></i> Solicita??es de Acesso
+          </a>
+        </li>
+        {% endif %}
+
+        {% if user.is_authenticated and user.is_superuser %}
+        <li>
+          <a class="sidebar-link" href="{{ url_usuarios_permissoes|default:'/admin/contas/usuario/' }}">
+            <i class="bi bi-gear"></i> Usu?rios &amp; Permiss?es
+          </a>
+        </li>
+        <li>
+          <a class="sidebar-link" href="{{ url_minhas_configuracoes|default:'/contas/minhas-configuracoes/' }}">
+            <i class="bi bi-person-gear"></i> Minhas Configura??es
+          </a>
+        </li>
+        <li>
+          <a class="sidebar-link" href="{{ url_lixeira|default:'/documentos/lixeira/' }}">
+            <i class="bi bi-trash3"></i> Lixeira
+          </a>
+        </li>
+        {% endif %}
+      </ul>
+
+      {% if user.is_authenticated %}
+      <form method="post" action="{{ url_logout|default:'/logout/' }}">
+        {% csrf_token %}
+        <button class="btn btn-outline-secondary btn-pill logout-btn w-100">
+          <i class="bi bi-box-arrow-right"></i> Logout
+        </button>
+      </form>
+      {% endif %}
+
+      <div class="sidebar-footer">? {% now "Y" %} ? D?OR@NGE Enterprise</div>
+
+    </div>
+  </aside>
+{% endblock %}
+
+  <!-- CONTEÚDO -->
+  <main class="content">
+    <div class="content-inner">
+
+      {# Permite substituir/ocultar topbar em páginas específicas #}
+      {% block topbar %}
+      <!-- TOPBAR -->
+      <div class="topbar-enterprise">
+        <button type="button" class="btn btn-sm btn-outline-secondary sidebar-toggle me-2" aria-label="Menu">
+          <i class="bi bi-list"></i>
+        </button>
+
+        <div class="topbar-left">
+          <div class="topbar-title">D’OR@NGE PLATFORM · GED ENTERPRISE</div>
+          <div class="topbar-sub">Controle documental • Workflow • Medição financeira</div>
+        </div>
+
+        <div class="topbar-center">
+          <form method="get" action="{{ url_listar_documentos|default:'/documentos/documentos/' }}" class="topbar-search">
+            <i class="bi bi-search search-icon"></i>
+            <input type="text" name="busca" placeholder="Buscar por código, título ou parte..."
+                   value="{{ request.GET.busca|default:'' }}">
+            <button class="btn-search" type="submit">Buscar</button>
+          </form>
+        </div>
+
+        <div class="topbar-right">
+          {% if user.is_authenticated %}
+          <div class="topbar-user">
+            <div class="avatar-circle">
+              {% with user.username|default:'U' as uname %}{{ uname|first|upper }}{% endwith %}
+            </div>
+            <div>
+              <div class="topbar-user-name">{{ user.get_full_name|default:user.username }}</div>
+              <div class="topbar-user-role">
+                {% if user.is_superuser %}Master Admin{% else %}Usuário GED{% endif %}
+              </div>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endblock %}
+
+      <!-- ALERTAS -->
+      {% if messages %}
+      <div id="alert-container">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+          {{ message }}
+          <button class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- PAGE CONTENT -->
+      <div class="page-area">
+        {% block content %}{% endblock %}
+      </div>
+
+    </div> {# ✅ FECHA content-inner (isso estava faltando) #}
+  </main>
+
+</div>
+
+<!-- SCRIPTS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+/* Troca idioma */
+function setLanguage(lang) {
+  const input = document.getElementById('lang-input');
+  const form = document.getElementById('lang-form');
+  if (!input || !form) return;
+  input.value = lang;
+  form.submit();
+}
+</script>
+
+<script>
+/* Preferência de cor (light/dark/auto; aplicado: light/dark) */
+(function () {
+  const root = document.documentElement;
+  const body = document.body;
+  const buttons = document.querySelectorAll('.theme-btn');
+  const mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+
+  function resolve(pref) {
+    if (pref === 'auto') return (mq && mq.matches) ? 'dark' : 'light';
+    return pref;
+  }
+
+  function setActive(pref) {
+    buttons.forEach(b => b.classList.toggle('active', b.dataset.theme === pref));
+  }
+
+  function apply(pref) {
+    const theme = resolve(pref);
+
+    // aplica tema real
+    root.setAttribute('data-theme', theme);
+    body.setAttribute('data-theme', theme);
+
+    // guarda preferência (auto/light/dark)
+    root.setAttribute('data-theme-pref', pref);
+    body.setAttribute('data-theme-pref', pref);
+
+    localStorage.setItem('tema_ged', pref);
+    setActive(pref);
+  }
+
+  buttons.forEach(btn => btn.addEventListener('click', () => apply(btn.dataset.theme)));
+
+  apply(localStorage.getItem('tema_ged') || 'auto');
+
+  // Se o usuário estiver em AUTO e o sistema mudar (claro/escuro), atualiza.
+  if (mq) {
+    const handler = () => {
+      const pref = localStorage.getItem('tema_ged') || 'auto';
+      if (pref === 'auto') apply('auto');
+    };
+    if (mq.addEventListener) mq.addEventListener('change', handler);
+    else if (mq.addListener) mq.addListener(handler);
+  }
+})();
+</script>
+
+<script>
+/* Sidebar toggle (mobile) */
+(function () {
+  const btn = document.querySelector(".sidebar-toggle");
+  const sidebar = document.querySelector(".sidebar");
+
+  if (!btn || !sidebar) return;
+
+  btn.addEventListener("click", () => {
+    document.body.classList.toggle("sidebar-open");
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!document.body.classList.contains("sidebar-open")) return;
+    if (sidebar.contains(e.target) || btn.contains(e.target)) return;
+    document.body.classList.remove("sidebar-open");
+  });
+})();
+</script>
+
+<script>
+/* Marca o item ativo da sidebar (funciona também em /detalhe/<id>/) */
+(function () {
+  const current = window.location.pathname;
+  let bestLink = null;
+  let bestLen = -1;
+
+  document.querySelectorAll('.sidebar-link').forEach(link => {
+    const rawHref = link.getAttribute('href') || '';
+    if (!rawHref || rawHref === '#' || rawHref.startsWith('#')) return;
+
+    let path = '';
+    try {
+      path = new URL(rawHref, window.location.origin).pathname;
+    } catch (e) {
+      return;
+    }
+
+    if (!path || path === "/") return;
+
+    const isExact = (current === path);
+    const isPrefix = (current.startsWith(path) && path.length > 1);
+
+    if ((isExact || isPrefix) && path.length > bestLen) {
+      bestLink = link;
+      bestLen = path.length;
+    }
+  });
+
+  if (bestLink) bestLink.classList.add('active');
+})();
+</script>
+
+<script>
+/* Ajusta a rota de busca da topbar de acordo com a tela */
+(function () {
+  const path = window.location.pathname;
+
+  const URL_DOCS = "{{ url_listar_documentos|default:'/documentos/documentos/' }}";
+  const URL_MEDICAO = "{{ url_medicao|default:'' }}";
+  const URL_WORKFLOW = "{{ url_painel_workflow|default:'' }}";
+  const URL_SOLICITACOES = "{{ url_solicitacoes|default:'' }}";
+
+  let action = URL_DOCS || "/";
+
+  if (path.includes("/documentos/medicao") && URL_MEDICAO) action = URL_MEDICAO;
+  else if ((path.includes("/documentos/painel-workflow") || path.includes("/workflow")) && URL_WORKFLOW) action = URL_WORKFLOW;
+  else if (path.startsWith("/solicitar/") && URL_SOLICITACOES) action = URL_SOLICITACOES;
+  else if (path.startsWith("/dashboard/")) action = "/dashboard/";
+  else if (path.startsWith("/documentos/")) action = URL_DOCS;
+
+  const form = document.querySelector(".topbar-search");
+  if (form && action) form.setAttribute("action", action);
+})();
+</script>
+
+<script>
+(function () {
+  function isBFCacheRestore(ev) {
+    if (ev && ev.persisted) return true;
+    try {
+      if (performance && performance.getEntriesByType) {
+        var nav = performance.getEntriesByType("navigation");
+        if (nav && nav.length && nav[0].type === "back_forward") return true;
+      }
+    } catch (e) {}
+    return false;
+  }
+
+  window.addEventListener("pageshow", function (ev) {
+    var body = document.body;
+    if (!body) return;
+
+    if (body.dataset && body.dataset.forceReloadOnShow === "1") {
+      if (isBFCacheRestore(ev)) {
+        try {
+          if (window.jQuery && jQuery.fn && jQuery.fn.dataTable) {
+            var tbl = jQuery(".dataTable").first();
+            if (tbl.length && jQuery.fn.dataTable.isDataTable(tbl)) {
+              var dt = tbl.DataTable();
+              if (dt && dt.ajax && typeof dt.ajax.reload === "function") {
+                dt.ajax.reload(null, false);
+                return;
+              }
+            }
+          }
+        } catch (e) {}
+
+        window.location.reload();
+      }
+    }
+  });
+})();
+</script>
+
+{% block extra_js %}{% endblock %}
+
+</body>
+</html>
