@@ -6,7 +6,7 @@
 {% block content %}
 <div class="page-upload-documento page-upload-doc page-novo-documento">
 
-<div class="doc-wrapper">
+<div class="dash-container dash-container--wide dash-container--full">
 
 <style>
 /* Fallback: garante o visual premium mesmo se enterprise.css n&#227;o atualizar (cache/caminho). */
@@ -62,7 +62,6 @@ body[data-theme="light"] .page-upload-documento .ldp-chip{ background: rgba(11,1
     <h1 class="dash-title mb-1"><i class="bi bi-file-earmark-plus me-2"></i> Novo Documento</h1>
     <div class="dash-subtitle">Cadastre um novo documento no GED com os metadados b&#225;sicos e anexe o(s) arquivo(s).</div>
   </div>
-  <a class="dash-btn btn btn-sm" href="{% url 'documentos:listar_documentos' %}"><i class="bi bi-arrow-left"></i> Voltar</a>
 </div>
 
 <div class="dash-card upload-card">
@@ -162,6 +161,9 @@ body[data-theme="light"] .page-upload-documento .ldp-chip{ background: rgba(11,1
     </div>
 
     <div class="upload-actions">
+      <a class="dash-btn btn btn-outline-secondary" href="{% url 'documentos:listar_documentos' %}">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
       <button type="submit" class="dash-btn dash-btn-primary btn btn-primary">
         <i class="bi bi-send"></i> Enviar Documento
       </button>

@@ -2713,6 +2713,14 @@ body[data-theme="dark"] .page-solicitacoes-public textarea:-webkit-autofill{
   max-width: 1400px;
 }
 
+/* DASH CONTAINER UTILITIES (EXTENSÃO) */
+.dash-container--full{ max-width: none !important; }
+.dash-container--full .dash-card,
+.dash-container--full form{
+  max-width: none !important;
+  width: 100%;
+}
+
 /* ===========================
    SOLICITACOES  DETALHE (PREMIUM)
    Escopo: .page-solicitacoes--detalhe
@@ -3175,255 +3183,104 @@ body.change-list::before{
   box-shadow:0 10px 30px rgba(0,0,0,.35);
 }
 
-/* === ADMIN CHANGE-LIST WIDE (definitivo, por #content) === */
-
-body.change-list #container,
-body.change-list #content,
-body.change-list #content-main,
-body.change-list .container,
-body.change-list .container-fluid,
-body.change-list .main,
-body.change-list .content,
-body.change-list .content-wrapper,
-body.change-list .app-content,
-body.change-list .main-content {
-  max-width: none !important;
-  width: 100% !important;
-}
-
-body.change-list #content{
-  /* cria a malha principal da página */
-  display: grid !important;
-  grid-template-columns: minmax(0, 1fr) 360px !important;
-  gap: 16px !important;
-  align-items: start !important;
-
-  /* sem “ilha” central */
-  margin: 0 !important;
-  padding-left: 24px !important;
-  padding-right: 24px !important;
-  box-sizing: border-box !important;
-}
-
-/* Título / breadcrumbs / toolbar ocupam 100% */
-body.change-list #content > h1,
-body.change-list #content > .breadcrumbs,
-body.change-list #content #toolbar,
-body.change-list #content .object-tools,
-body.change-list #content .actions {
-  grid-column: 1 / -1 !important;
-  width: 100% !important;
-  max-width: none !important;
-}
-
-/* Coluna da tabela (esquerda) */
-body.change-list #content #changelist,
-body.change-list #content #changelist-form,
-body.change-list #content #content-main {
-  grid-column: 1 !important;
-  min-width: 0 !important;
-  width: 100% !important;
-  max-width: none !important;
-  float: none !important;
-}
-
-/* Tabela sempre 100% */
-body.change-list #content .results,
-body.change-list #content .results table,
-body.change-list #content #result_list {
-  width: 100% !important;
-  max-width: none !important;
-}
-
-/* Coluna do filtro (direita) — aceita #changelist-filter OU #content-related (varia por tema) */
-body.change-list #content #changelist-filter,
-body.change-list #content #content-related {
-  grid-column: 2 !important;
-  width: 360px !important;
-  max-width: 360px !important;
-  margin: 0 !important;
-  float: none !important;
-
-  position: sticky !important;
-  top: 16px !important;
-  max-height: calc(100vh - 32px);
-  overflow: auto;
-
-  border-radius: 16px;
-}
-
-/* Responsivo: empilha */
-@media (max-width: 1100px){
-  body.change-list #content{
-    grid-template-columns: 1fr !important;
-    padding-left: 16px !important;
-    padding-right: 16px !important;
-  }
-  body.change-list #content #changelist-filter,
-  body.change-list #content #content-related{
-    grid-column: 1 !important;
-    width: 100% !important;
-    max-width: none !important;
-    position: static !important;
-    max-height: none;
-  }
-}
-
-/* === ADMIN CHANGE-LIST WIDE (FLEX) === */
-body.change-list #container,
-body.change-list #content,
-body.change-list .content,
-body.change-list #content-main{
-  width:100% !important;
-  max-width:none !important;
-  float:none !important;
-  margin:0 !important;
-}
-
-body.change-list #content{
-  padding-left:24px !important;
-  padding-right:24px !important;
-}
-
-/* principal: formulário/tabela + filtro lado a lado */
-body.change-list #changelist{
-  width:100% !important;
-  max-width:1700px !important;
-  margin:0 auto !important;
-
-  display:flex !important;
-  gap:16px !important;
-  align-items:flex-start !important;
-}
-
-/* tabela cresce */
-body.change-list #changelist-form{
-  flex: 1 1 auto !important;
-  min-width: 0 !important;
-  width:auto !important;
-  max-width:none !important;
-}
-
-/* garante tabela wide */
-body.change-list .results,
-body.change-list .results table{
+/* IMPORTAR LDP — FULL WIDTH (escopado) */
+.page-importar-ldp .dash-container--full{ max-width:none !important; }
+.page-importar-ldp .ldp-wrap{ max-width:none !important; width:100%; }
+.page-importar-ldp .ldp-wrap,
+.page-importar-ldp .ldp-card,
+.page-importar-ldp form,
+.page-importar-ldp .ldp-dropzone,
+.page-importar-ldp .upload-area,
+.page-importar-ldp .dropzone{
   width:100% !important;
   max-width:none !important;
 }
 
-/* filtro fixo à direita */
-body.change-list #changelist-filter{
-  flex: 0 0 320px !important;
-  width:320px !important;
-  margin:0 !important;
-  float:none !important;
-
-  position:sticky !important;
-  top:16px !important;
-  max-height: calc(100vh - 32px);
-  overflow:auto;
-}
-
-/* responsivo: empilha filtro */
-@media (max-width: 1100px){
-  body.change-list #changelist{
-    flex-direction:column !important;
-    max-width:none !important;
-  }
-  body.change-list #changelist-filter{
-    width:100% !important;
-    flex: 0 0 auto !important;
-    position:static !important;
-    max-height:none;
-  }
-  body.change-list #content{
-    padding-left:16px !important;
-    padding-right:16px !important;
-  }
-}
-
-/* === ADMIN CHANGE-LIST WIDE (tema + django admin) === */
-
-/* 1) Quebra qualquer container do tema (Jazzmin/AdminLTE e afins) */
-body.change-list .container,
-body.change-list .container-fluid,
-body.change-list .content-wrapper,
-body.change-list .content,
-body.change-list .content > .container,
-body.change-list .content > .container-fluid,
-body.change-list #container,
-body.change-list #content,
-body.change-list #content-main{
+/* NOVO DOCUMENTO (UPLOAD) — FULL WIDTH (escopado) */
+.page-upload-doc{ width:100%; }
+.page-upload-doc .dash-container--full{ max-width:none !important; }
+.page-upload-doc .upload-card{
   width:100% !important;
   max-width:none !important;
-  margin-left:0 !important;
-  margin-right:0 !important;
-}
-
-/* padding lateral “enterprise” sem centralizar */
-body.change-list .content-wrapper,
-body.change-list #content{
-  padding-left:24px !important;
-  padding-right:24px !important;
-  box-sizing:border-box !important;
-}
-
-/* 2) O “miolo” do changelist em flex (tabela + filtro) */
-body.change-list #changelist{
-  width:100% !important;
-  max-width:1800px !important;   /* pode subir p/ 2000 se quiser */
-  margin:0 auto !important;
-
-  display:flex !important;
-  gap:16px !important;
-  align-items:flex-start !important;
-}
-
-/* 3) Tabela cresce (remove floats e larguras fixas) */
-body.change-list #changelist-form{
-  flex: 1 1 auto !important;
-  min-width: 0 !important;
-  width:auto !important;
-  max-width:none !important;
-  float:none !important;
-}
-
-/* garante que a tabela não fica “presa” */
-body.change-list .results,
-body.change-list .results table{
-  width:100% !important;
-  max-width:none !important;
-}
-
-/* 4) Filtro à direita sticky */
-body.change-list #changelist-filter{
-  flex: 0 0 340px !important;
-  width:340px !important;
-  float:none !important;
-  margin:0 !important;
-
-  position:sticky !important;
-  top:16px !important;
-  max-height: calc(100vh - 32px);
-  overflow:auto;
   border-radius:16px;
+  box-shadow:0 10px 30px rgba(0,0,0,.08);
+}
+.page-upload-doc .upload-card .form-control,
+.page-upload-doc .upload-card select,
+.page-upload-doc .upload-card input{
+  width:100%;
+}
+.page-upload-doc .upload-dropzone{
+  width:100% !important;
+  max-width:none !important;
+  min-height:140px;
+  border-radius:12px;
+}
+.page-upload-doc .upload-actions{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+@media (max-width: 575.98px){
+  .page-upload-doc .upload-actions .btn{ width:100%; }
 }
 
-/* 5) Mobile: empilha */
+/* NOVO DOCUMENTO — FULL WIDTH (escopado) */
+.page-upload-documento{ width:100%; }
+.page-upload-documento .dash-container{ width:100%; }
+.page-upload-documento .dash-container--wide{ width:100%; }
+.page-upload-documento .dash-container--full{ width:100%; max-width:none !important; }
+
+.page-upload-documento .dash-card,
+.page-upload-documento form{
+  width:100%;
+  max-width:none !important;
+}
+
+/* ADMIN — CONTAS/USUARIO changelist full-width (escopado) */
+body.app-contas.model-usuario.change-list #content,
+body.app-contas.model-usuario.change-list #container,
+body.app-contas.model-usuario.change-list .content{
+  max-width: none !important;
+  width: 100% !important;
+}
+
+body.app-contas.model-usuario.change-list #changelist{
+  width: 100% !important;
+  max-width: none !important;
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 16px;
+  align-items: start;
+}
+
+body.app-contas.model-usuario.change-list #changelist-form{
+  min-width: 0;
+}
+
+body.app-contas.model-usuario.change-list #changelist-filter{
+  width: 280px;
+  position: sticky;
+  top: 16px;
+}
+
+body.app-contas.model-usuario.change-list .results,
+body.app-contas.model-usuario.change-list #result_list{
+  width: 100%;
+  max-width: none;
+}
+
+body.app-contas.model-usuario.change-list .results{
+  overflow-x: auto;
+}
+
 @media (max-width: 1100px){
-  body.change-list #changelist{
-    flex-direction:column !important;
-    max-width:none !important;
+  body.app-contas.model-usuario.change-list #changelist{
+    grid-template-columns: 1fr;
   }
-  body.change-list #changelist-filter{
-    width:100% !important;
-    flex: 0 0 auto !important;
-    position:static !important;
-    max-height:none;
-  }
-  body.change-list .content-wrapper,
-  body.change-list #content{
-    padding-left:16px !important;
-    padding-right:16px !important;
+  body.app-contas.model-usuario.change-list #changelist-filter{
+    width: 100%;
+    position: static;
   }
 }
