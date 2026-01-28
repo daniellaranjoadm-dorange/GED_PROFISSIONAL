@@ -3158,3 +3158,92 @@ body.change-list .object-tools {
     padding-right: 16px !important;
   }
 }
+
+/* === PROVA DE CARGA DO CSS (REMOVER DEPOIS) === */
+body.change-list::before{
+  content:"ADMIN CSS CUSTOM CARREGADO ✅";
+  position:fixed;
+  top:10px;
+  left:10px;
+  z-index:999999;
+  background:#ff2d2d;
+  color:#fff;
+  padding:10px 14px;
+  border-radius:10px;
+  font-weight:800;
+  letter-spacing:.3px;
+  box-shadow:0 10px 30px rgba(0,0,0,.35);
+}
+
+/* === ADMIN CHANGE-LIST WIDE (FLEX) === */
+body.change-list #container,
+body.change-list #content,
+body.change-list .content,
+body.change-list #content-main{
+  width:100% !important;
+  max-width:none !important;
+  float:none !important;
+  margin:0 !important;
+}
+
+body.change-list #content{
+  padding-left:24px !important;
+  padding-right:24px !important;
+}
+
+/* principal: formulário/tabela + filtro lado a lado */
+body.change-list #changelist{
+  width:100% !important;
+  max-width:1700px !important;
+  margin:0 auto !important;
+
+  display:flex !important;
+  gap:16px !important;
+  align-items:flex-start !important;
+}
+
+/* tabela cresce */
+body.change-list #changelist-form{
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  width:auto !important;
+  max-width:none !important;
+}
+
+/* garante tabela wide */
+body.change-list .results,
+body.change-list .results table{
+  width:100% !important;
+  max-width:none !important;
+}
+
+/* filtro fixo à direita */
+body.change-list #changelist-filter{
+  flex: 0 0 320px !important;
+  width:320px !important;
+  margin:0 !important;
+  float:none !important;
+
+  position:sticky !important;
+  top:16px !important;
+  max-height: calc(100vh - 32px);
+  overflow:auto;
+}
+
+/* responsivo: empilha filtro */
+@media (max-width: 1100px){
+  body.change-list #changelist{
+    flex-direction:column !important;
+    max-width:none !important;
+  }
+  body.change-list #changelist-filter{
+    width:100% !important;
+    flex: 0 0 auto !important;
+    position:static !important;
+    max-height:none;
+  }
+  body.change-list #content{
+    padding-left:16px !important;
+    padding-right:16px !important;
+  }
+}
