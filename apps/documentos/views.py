@@ -1845,7 +1845,6 @@ import re
 from django.db import transaction
 from django.contrib import messages
 from django.shortcuts import render, redirect
-from django.apps import apps
 
 try:
     from openpyxl import load_workbook

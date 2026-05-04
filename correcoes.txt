@@ -1,0 +1,57 @@
+﻿Correções por bloco (resumo objetivo)
+
+1) Instalador de dependências
+- Remover install_if_missing("asyncio") (módulo padrão).
+- Considerar usar requirements.txt e avisar se pip falhar.
+
+2) Imports e utilidades
+- Evitar sobrescrever builtin: renomear def format(...) para format_money(...).
+
+3) Decorador safe_async
+- Opcional: re-raise em ambiente dev; pelo menos logar update/context para diagnóstico.
+
+4) BrowserDriver.__init__ / open/close
+- Corrigir typo: device_pixe_ratio -> device_pixel_ratio (e ajustar uso em translate_coord).
+- Garantir foco no navegador antes de ctrl+w (risco de fechar janela errada).
+
+5) fetch()
+- JS incorreto: fetch().then((err,data)=>"") não existe.
+- Sugestão: usar fetch(url).then(()=>"") ou simplesmente location.href = url.
+- Tratar timeout e falha de queue.get com retorno claro.
+
+6) fetch_coord() / fetch_text()
+- Adicionar checagem de null no JS antes de getBoundingClientRect().
+- Tratar querySelector inexistente para evitar exceção.
+
+7) exist()
+- Escapar aspas simples no selector ou usar JSON.stringify para segurança.
+
+8) click() com texto=True
+- Usar index recebido (não fixar index=0).
+
+9) message_handler
+- Proteger update.channel_post.entities quando None.
+
+10) handlers setstake/setstake2/setstake3
+- Mensagem de usage correta para cada comando.
+
+11) bet_actions() (captura de dados)
+- Verificar None antes de usar dados2["Odd"], Nescanteios_Asiaticos, Nescanteios_Atual.
+- Proteger regex: se re.search retornar None.
+
+12) bet_actions() (dados4 Ref)
+- Bug: dentro do segundo try usa dados2.get("Ref") em vez de dados4.get("Ref").
+
+13) bet_actions() (odd)
+- Se odd inválida, evitar float(odd) no retorno final.
+
+14) get_balance()
+- Não mascarar erro com balance=1000; retornar None e tratar no fluxo.
+
+15) Selectors com espaço
+- Remover espaço final de '.bs-Balance_Value '.
+
+16) Segurança
+- Remover TOKEN hardcoded; usar apenas variável de ambiente.
+
+Arquivo gerado em C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\correcoes.txt

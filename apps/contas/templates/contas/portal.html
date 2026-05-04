@@ -5,8 +5,6 @@
 
 {% block body_attrs %} class="portal-landing" {% endblock %}
 {% block topbar %}{% endblock %}
-{% block sidebar %}{% endblock %}
-
 {% block extra_head %}
 <style>
 /* =================================================================== */
@@ -1188,15 +1186,19 @@ footer span{
 
 {% block extra_js %}
 <script>
+const videoEl = document.getElementById('videoApresentacao');
+const videoFallbackEl = document.getElementById('videoFallback');
+
+if (videoEl) {
+  videoEl.addEventListener('error', () => {
+    if (videoFallbackEl) videoFallbackEl.style.display = 'block';
+  });
+}
+
 function abrirVideo(){
     const modal = document.getElementById('modalVideo');
-    const video = document.getElementById('videoApresentacao');
-  const fallback = document.getElementById('videoFallback');
-  if (video) {
-    video.addEventListener('error', () => {
-      if (fallback) fallback.style.display = 'block';
-    });
-  }
+    const video = videoEl;
+    const fallback = videoFallbackEl;
 
     if(modal){
         modal.style.display = 'flex';
@@ -1213,13 +1215,7 @@ function abrirVideo(){
 
 function fecharVideo(){
     const modal = document.getElementById('modalVideo');
-    const video = document.getElementById('videoApresentacao');
-  const fallback = document.getElementById('videoFallback');
-  if (video) {
-    video.addEventListener('error', () => {
-      if (fallback) fallback.style.display = 'block';
-    });
-  }
+    const video = videoEl;
 
     if(video){
         video.pause();

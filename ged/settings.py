@@ -196,7 +196,7 @@ if (BASE_DIR / "static").exists():
     STATICFILES_DIRS = [BASE_DIR / "static"]
 
 WHITENOISE_MANIFEST_STRICT = False
-WHITENOISE_USE_FINDERS = True  # TODO: remover depois que o deploy estabilizar
+WHITENOISE_USE_FINDERS = True
 
 # ======================
 # MEDIA

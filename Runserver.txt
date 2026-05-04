@@ -1,0 +1,10 @@
+cd "C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL"
+.\venv\Scripts\Activate
+
+.\.venv\Scripts\Activate
+
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+
+python manage.py runserver 8000
+
+python manage.py runserver 127.0.0.1:8000
