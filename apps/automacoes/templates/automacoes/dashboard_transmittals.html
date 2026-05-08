@@ -1,0 +1,206 @@
+{% extends "documentos/base.html" %}
+
+{% block title %}Dashboard Transmittals{% endblock %}
+
+{% block content %}
+<div class="ds-page">
+
+  <div class="ds-pagehead">
+    <div>
+      <h1 class="ds-title">📦 Dashboard Transmittals KM</h1>
+      <p class="ds-subtitle">
+        Indicadores operacionais dos transmittals importados para o GED.
+      </p>
+    </div>
+
+    <div class="d-flex gap-2">
+      <a href="{% url 'automacoes:transmittals_km' %}" class="btn btn-primary">
+        Ver Registros
+      </a>
+
+      <a href="{% url 'automacoes:painel' %}" class="btn btn-secondary">
+        Voltar
+      </a>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <small class="text-muted">Registros</small>
+          <h2>{{ total_registros }}</h2>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <small class="text-muted">Transmittals</small>
+          <h2>{{ total_transmittals }}</h2>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <small class="text-muted">Status OK</small>
+          <h2 class="text-success">{{ total_ok }}</h2>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <small class="text-muted">PDFs válidos</small>
+          <h2 class="text-primary">{{ total_pdf }}</h2>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="row g-4 mb-4">
+
+    <div class="col-lg-6">
+      <div class="ds-surface p-4 h-100">
+        <h4 class="mb-3">Top Pastas</h4>
+
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>Pasta</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {% for item in por_pasta %}
+              <tr>
+                <td>{{ item.pasta|default:"—" }}</td>
+                <td>{{ item.total }}</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="2" class="text-center text-muted">
+                  Sem dados.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="ds-surface p-4 h-100">
+        <h4 class="mb-3">Top Emissões</h4>
+
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>Emissão</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {% for item in por_emissao %}
+              <tr>
+                <td>{{ item.emissao|default:"—" }}</td>
+                <td>{{ item.total }}</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="2" class="text-center text-muted">
+                  Sem dados.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="row g-4">
+
+    <div class="col-lg-7">
+      <div class="ds-surface p-4 h-100">
+
+        <h4 class="mb-3">Top Transmittals</h4>
+
+        <div class="table-responsive">
+          <table class="table table-striped table-hover">
+            <thead>
+              <tr>
+                <th>Transmittal</th>
+                <th>Total Docs</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {% for item in top_transmittals %}
+              <tr>
+                <td>{{ item.transmittal_numero }}</td>
+                <td>{{ item.total }}</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="2" class="text-center text-muted">
+                  Sem registros.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+
+          </table>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="ds-surface p-4 h-100">
+
+        <h4 class="mb-3">Últimos Importados</h4>
+
+        <div class="list-group">
+          {% for item in ultimos %}
+          <a href="{% url 'automacoes:transmittals_km' %}?q={{ item.documento }}"
+             class="list-group-item list-group-item-action">
+
+            <div class="fw-bold">
+              {{ item.documento }}
+            </div>
+
+            <small class="text-muted">
+              {{ item.transmittal_numero }} · {{ item.emissao }}
+            </small>
+
+          </a>
+          {% empty %}
+          <div class="text-muted">
+            Sem registros.
+          </div>
+          {% endfor %}
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

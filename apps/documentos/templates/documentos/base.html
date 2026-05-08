@@ -72,6 +72,43 @@
             <i class="bi bi-graph-up-arrow"></i> Dashboard GED
           </a>
         </li>
+
+        <li>
+          <a class="sidebar-link" href="{% url 'automacoes:painel' %}">
+            <i class="bi bi-robot"></i> Automações
+          </a>
+        </li>
+
+        <li class="ms-3">
+          <a class="sidebar-link" href="{% url 'automacoes:dashboard_pcfs' %}">
+            <i class="bi bi-graph-up"></i> Dashboard PCFs
+          </a>
+        </li>
+
+        <li class="ms-3">
+          <a class="sidebar-link" href="{% url 'automacoes:pcfs_timeline' %}">
+            <i class="bi bi-table"></i> Timeline PCFs
+          </a>
+        </li>
+
+        <li class="ms-3">
+          <a class="sidebar-link" href="{% url 'automacoes:lista_ld' %}">
+            <i class="bi bi-folder2-open"></i> Lista LD
+          </a>
+        </li>
+
+        <li class="ms-3">
+          <a class="sidebar-link" href="{% url 'automacoes:transmittals_km' %}">
+            <i class="bi bi-box-seam"></i> Transmittals KM
+          </a>
+        </li>
+
+        <li class="ms-3">
+          <a class="sidebar-link" href="{% url 'automacoes:dashboard_transmittals' %}">
+            <i class="bi bi-bar-chart"></i> Dashboard Transmittals
+          </a>
+        </li>
+
         <li>
           <a class="sidebar-link" href="{{ url_painel_workflow|default:'#' }}">
             <i class="bi bi-diagram-3"></i> Workflow

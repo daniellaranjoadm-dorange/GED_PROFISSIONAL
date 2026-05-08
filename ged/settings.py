@@ -90,6 +90,7 @@ INSTALLED_APPS = [
     "apps.contas",
     "apps.solicitacoes",
     "apps.dashboard",
+    "apps.automacoes",
 ]
 
 # ======================

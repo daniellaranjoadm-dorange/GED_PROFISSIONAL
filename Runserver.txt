@@ -8,3 +8,86 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 python manage.py runserver 8000
 
 python manage.py runserver 127.0.0.1:8000
+
+
+# =========================================
+# D'OR@NGE PLATFORM - UPDATE LISTA LD
+# =========================================
+
+# ATIVAR VENV
+venv\Scripts\activate
+
+# IR PARA O PROJETO
+cd C:\GED\DORANGE_PLATFORM
+
+# BACKUP DOS ARQUIVOS ATUAIS
+copy apps\automacoes\views.py apps\automacoes\views_backup.py
+copy apps\automacoes\urls.py apps\automacoes\urls_backup.py
+copy templates\automacoes\lista_ld.html templates\automacoes\lista_ld_backup.html
+
+# COPIAR NOVOS ARQUIVOS
+copy C:\Downloads\views.py apps\automacoes\views.py
+copy C:\Downloads\urls.py apps\automacoes\urls.py
+copy C:\Downloads\lista_ld.html templates\automacoes\lista_ld.html
+
+# LIMPAR CACHE PYTHON
+for /d /r . %d in (__pycache__) do @if exist "%d" rd /s /q "%d"
+
+# VALIDAR DJANGO
+python manage.py check
+
+# MIGRATIONS (caso necessário futuramente)
+python manage.py makemigrations
+python manage.py migrate
+
+# COLETAR ESTÁTICOS
+python manage.py collectstatic --noinput
+
+# RODAR SERVIDOR
+python manage.py runserver
+
+# =========================================
+# CONFIGURAR CAMINHO BASE LD
+# =========================================
+# adicionar no settings.py:
+
+LD_BASE_PATH = r"C:\CAMINHO\RAIZ"
+
+# EXEMPLO:
+# LD_BASE_PATH = r"\\SERVIDOR\ENGDOC"
+# OU:
+# LD_BASE_PATH = r"D:\PROJETOS\ENGDOC"
+
+# A raiz deve conter:
+# 1 - DOCS EMISSÃO ENGEDOC
+# 9 - PCFs Transpetro
+# 10 - Engenharia
+
+# =========================================
+# TESTES IMPORTANTES
+# =========================================
+
+# 1. TESTAR FILTRO ORIGEM
+# - LD
+# - LD Marenova
+
+# 2. TESTAR FILTRO ÚLTIMAS REVISÕES
+
+# 3. TESTAR KPIs
+# - Recebidos
+# - Aprovados
+# - Emitidos GRD
+# - Com PCF
+# - Sem PCF
+
+# 4. TESTAR EXPORT EXCEL
+# - filtros
+# - links
+# - caminhos
+
+# 5. TESTAR ABERTURA
+# - Documento
+# - GRD
+# - PCF
+# - Resposta
+# - GRD Resposta

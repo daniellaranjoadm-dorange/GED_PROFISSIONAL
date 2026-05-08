@@ -1,0 +1,150 @@
+{% extends "documentos/base.html" %}
+{% load static %}
+
+{% block title %}D'ORANGE — Automações GED{% endblock %}
+
+{% block content %}
+<div class="ds-page">
+  <div class="ds-pagehead">
+    <div>
+      <h1 class="ds-title">🤖 Painel de Automações</h1>
+      <p class="ds-subtitle">Rotinas corporativas integradas ao GED Enterprise.</p>
+    </div>
+  </div>
+
+  <div class="ds-surface p-4">
+
+    {% if messages %}
+      <div class="mb-4">
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <div id="loading-alert" class="alert alert-info shadow-sm mb-4 d-none">
+      ⏳ Automação em execução. Aguarde o processamento finalizar. Não feche esta janela.
+    </div>
+
+    <div class="row g-4">
+
+      <div class="col-xl-6 col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body p-4">
+            <div class="d-flex align-items-center gap-3 mb-3">
+              <div class="fs-2">📄</div>
+              <div>
+                <h4 class="mb-0">Atualização LD</h4>
+                <small class="text-muted">Atualização crítica da Lista de Documentos</small>
+              </div>
+            </div>
+            <p class="text-muted">Sincroniza dados documentais, links, revisões, PCFs, GRDs e medição.</p>
+            <span class="badge bg-warning text-dark mb-3">Automação crítica</span>
+            <form method="post" action="{% url 'automacoes:atualizar_ld' %}" class="auto-form">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-primary executar-btn">
+                Executar Atualização LD
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-6 col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body p-4">
+            <div class="d-flex align-items-center gap-3 mb-3">
+              <div class="fs-2">📊</div>
+              <div>
+                <h4 class="mb-0">Timeline PCFs</h4>
+                <small class="text-muted">Consolidação de comentários e revisões</small>
+              </div>
+            </div>
+            <p class="text-muted">Gera e atualiza a timeline das PCFs recebidas e respondidas.</p>
+            <span class="badge bg-success mb-3">Integrada</span>
+            <form method="post" action="{% url 'automacoes:timeline_pcfs' %}" class="auto-form">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-success executar-btn">
+                Gerar Timeline PCFs
+              </button>
+            </form>
+
+            <a href="{% url 'automacoes:pcfs_timeline' %}"
+               class="btn btn-outline-secondary mt-2">
+              Ver registros importados
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-6 col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body p-4">
+            <div class="d-flex align-items-center gap-3 mb-3">
+              <div class="fs-2">📦</div>
+              <div>
+                <h4 class="mb-0">Transmittal KM</h4>
+                <small class="text-muted">Parser PDF de transmittals</small>
+              </div>
+            </div>
+            <p class="text-muted">Lê PDFs KM e gera planilha consolidada para acompanhamento documental.</p>
+            <span class="badge bg-info text-dark mb-3">Parser PDF</span>
+            <form method="post" action="{% url 'automacoes:transmittal_km' %}" class="auto-form">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-info executar-btn">
+                Consolidar Transmittals KM
+              </button>
+            </form>
+
+            <a href="{% url 'automacoes:transmittals_km' %}"
+               class="btn btn-outline-secondary mt-2">
+              Ver registros importados
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-6 col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body p-4">
+            <div class="d-flex align-items-center gap-3 mb-3">
+              <div class="fs-2">🧩</div>
+              <div>
+                <h4 class="mb-0">GRD GHENOVA</h4>
+                <small class="text-muted">Consolidação de GRDs 7K e 14K</small>
+              </div>
+            </div>
+            <p class="text-muted">Processa PDFs de GRD e gera planilhas consolidadas por empreendimento.</p>
+            <span class="badge bg-secondary mb-3">Engenharia</span>
+            <form method="post" action="{% url 'automacoes:grd_ghenova' %}" class="auto-form">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-secondary executar-btn">
+                Consolidar GRDs GHENOVA
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll(".auto-form").forEach(form => {
+  form.addEventListener("submit", function () {
+    const alertBox = document.getElementById("loading-alert");
+    if (alertBox) alertBox.classList.remove("d-none");
+
+    const button = form.querySelector(".executar-btn");
+    if (button) {
+      button.disabled = true;
+      button.innerText = "⏳ Processando...";
+    }
+  });
+});
+</script>
+{% endblock %}

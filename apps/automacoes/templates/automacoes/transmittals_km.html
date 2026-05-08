@@ -1,0 +1,138 @@
+{% extends "documentos/base.html" %}
+
+{% block title %}Transmittals KM{% endblock %}
+
+{% block extra_head %}
+<style>
+  .tr-page { max-width: none !important; width: 100% !important; }
+  .tr-card { border-radius: 14px; border: 1px solid rgba(148, 163, 184, .22); }
+  .tr-code { font-size: 1.05rem; letter-spacing: -0.01em; }
+  .tr-title { font-size: 1rem; line-height: 1.35; }
+  .tr-label { font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; color: #64748b; }
+  .tr-value { font-weight: 600; word-break: break-word; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ds-page tr-page">
+  <div class="ds-pagehead">
+    <div>
+      <h1 class="ds-title">📦 Transmittals KM</h1>
+      <p class="ds-subtitle">Dados importados para o banco do GED.</p>
+    </div>
+
+    <a href="{% url 'automacoes:painel' %}" class="btn btn-secondary">
+      Voltar
+    </a>
+  </div>
+
+  <div class="ds-surface p-4">
+    <form method="get" class="mb-4">
+      <div class="row g-2">
+        <div class="col-md-10">
+          <input type="text"
+                 name="q"
+                 value="{{ busca }}"
+                 class="form-control"
+                 placeholder="Buscar por documento, título ou transmittal...">
+        </div>
+
+        <div class="col-md-2">
+          <button class="btn btn-primary w-100">
+            Buscar
+          </button>
+        </div>
+      </div>
+    </form>
+
+    <div class="row g-3">
+      {% for item in registros %}
+      <div class="col-12">
+        <div class="card tr-card border-0 shadow-sm">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+              <div>
+                <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                  <div class="fw-bold tr-code">{{ item.documento }}</div>
+
+                  {% if item.transmittal_numero %}
+                  <span class="badge bg-dark">{{ item.transmittal_numero }}</span>
+                  {% endif %}
+                </div>
+
+                <div class="text-muted small mb-2">{{ item.pasta }}</div>
+                <div class="tr-title">{{ item.titulo }}</div>
+              </div>
+
+              <div class="d-flex flex-wrap gap-1 justify-content-end">
+                {% if item.status_parse %}
+                  {% if "OK" in item.status_parse|upper %}
+                    <span class="badge bg-success">{{ item.status_parse }}</span>
+                  {% else %}
+                    <span class="badge bg-warning text-dark">{{ item.status_parse }}</span>
+                  {% endif %}
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+              <div class="col-md-3">
+                <div class="tr-label">Emissão</div>
+                <div class="tr-value">{{ item.emissao|default:"—" }}</div>
+              </div>
+
+              <div class="col-md-3">
+                <div class="tr-label">Propósito</div>
+                <div class="tr-value">{{ item.proposito_emissao|default:"—" }}</div>
+              </div>
+
+              <div class="col-md-3">
+                <div class="tr-label">Data Envio</div>
+                <div class="tr-value">{{ item.data_envio|default:"—" }}</div>
+              </div>
+
+              <div class="col-md-3">
+                <div class="tr-label">PDF</div>
+                <div class="tr-value">
+                  {% if item.arquivo_pdf %}
+                    Disponível
+                  {% else %}
+                    —
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            {% if item.observacao_parse %}
+            <div class="alert alert-light border small mb-3">
+              {{ item.observacao_parse }}
+            </div>
+            {% endif %}
+
+            <div class="d-flex flex-wrap gap-2">
+              {% if item.arquivo_pdf %}
+              <a href="{% url 'automacoes:abrir_pdf_transmittal_km' item.id %}"
+                 target="_blank"
+                 class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-file-earmark-pdf"></i>
+                Abrir PDF
+              </a>
+              {% endif %}
+
+              <button class="btn btn-dark btn-sm" type="button">
+                <i class="bi bi-eye"></i>
+                Detalhes
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% empty %}
+      <div class="col-12">
+        <div class="alert alert-secondary">Nenhum registro encontrado.</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

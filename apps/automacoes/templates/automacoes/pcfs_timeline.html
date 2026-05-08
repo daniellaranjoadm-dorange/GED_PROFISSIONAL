@@ -1,0 +1,224 @@
+{% extends "documentos/base.html" %}
+
+{% block title %}Timeline PCFs{% endblock %}
+
+{% block extra_head %}
+<style>
+  .pcf-page { max-width: none !important; width: 100% !important; }
+  .pcf-card { border-radius: 14px; border: 1px solid rgba(148, 163, 184, .22); }
+  .pcf-code { font-size: 1.05rem; letter-spacing: -0.01em; }
+  .pcf-title { font-size: 1rem; line-height: 1.35; }
+  .pcf-label { font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; color: #64748b; }
+  .pcf-value { font-weight: 600; word-break: break-word; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ds-page pcf-page">
+  <div class="ds-pagehead">
+    <div>
+      <h1 class="ds-title">📊 Timeline PCFs</h1>
+      <p class="ds-subtitle">Dados importados para o banco do GED. A planilha da rede permanece como backup.</p>
+    </div>
+    <a href="{% url 'automacoes:painel' %}" class="btn btn-secondary">
+      Voltar
+    </a>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <small class="text-muted">Total de PCFs</small>
+          <h3 class="mb-0">{{ total }}</h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <small class="text-muted">Com comentários abertos</small>
+          <h3 class="mb-0">{{ total_open }}</h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <small class="text-muted">Sem status final</small>
+          <h3 class="mb-0">{{ total_sem_status }}</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ds-surface p-4">
+    <form method="get" class="mb-3">
+      <div class="row g-2">
+        <div class="col-md-4">
+          <input type="text" name="q" value="{{ busca }}" class="form-control"
+                 placeholder="Buscar por documento, PCF, link ou título...">
+        </div>
+
+        <div class="col-md-3">
+          <select name="tipo" class="form-select">
+            <option value="">Todos os tipos</option>
+            {% for t in tipos %}
+              <option value="{{ t }}" {% if tipo == t %}selected{% endif %}>{{ t }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-3">
+          <input type="text" name="status" value="{{ status }}" class="form-control"
+                 placeholder="Filtrar status final...">
+        </div>
+
+        <div class="col-md-2">
+          <div class="form-check mt-2">
+            <input class="form-check-input"
+                   type="checkbox"
+                   name="somente_open"
+                   value="1"
+                   {% if somente_open %}checked{% endif %}>
+            <label class="form-check-label">Apenas Open Comments</label>
+          </div>
+        </div>
+
+        <div class="col-md-1">
+          <button class="btn btn-primary w-100">Buscar</button>
+        </div>
+
+        <div class="col-md-1">
+          <a href="{% url 'automacoes:pcfs_timeline' %}" class="btn btn-outline-secondary w-100">
+            Limpar
+          </a>
+        </div>
+      </div>
+    </form>
+
+    <div class="d-flex justify-content-end gap-2 mb-3">
+      <a href="{% url 'automacoes:exportar_pcfs_timeline_excel' %}?q={{ busca }}&tipo={{ tipo }}&status={{ status }}{% if somente_open %}&somente_open=1{% endif %}"
+         class="btn btn-success">
+        Exportar Excel filtrado
+      </a>
+    </div>
+
+    <div class="row g-3">
+      {% for item in registros %}
+      <div class="col-12">
+        <div class="card pcf-card border-0 shadow-sm">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+              <div>
+                <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                  <div class="fw-bold pcf-code">{{ item.numero_documento }}</div>
+                  <span class="badge bg-dark">Rev {{ item.revisao_pcf }}</span>
+                  <span class="badge bg-secondary">{{ item.tipo }}</span>
+                </div>
+
+                <div class="text-muted small mb-2">{{ item.numero_pcf }}</div>
+                <div class="pcf-title">{{ item.titulo }}</div>
+              </div>
+
+              <div class="d-flex flex-wrap gap-1 justify-content-end">
+                {% if item.open_comments > 0 %}
+                  <span class="badge bg-warning text-dark">Open {{ item.open_comments }}</span>
+                {% else %}
+                  <span class="badge bg-success">Open 0</span>
+                {% endif %}
+
+                {% if item.status_final %}
+                  {% if "NOT" in item.status_final|upper %}
+                    <span class="badge bg-danger">{{ item.status_final }}</span>
+                  {% elif "RELEASED" in item.status_final|upper %}
+                    <span class="badge bg-success">{{ item.status_final }}</span>
+                  {% else %}
+                    <span class="badge bg-secondary">{{ item.status_final }}</span>
+                  {% endif %}
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+              <div class="col-md-3">
+                <div class="pcf-label">PCF Link</div>
+                <div class="pcf-value">{{ item.pcf_link|default:"—" }}</div>
+              </div>
+              <div class="col-md-3">
+                <div class="pcf-label">Data Recebimento</div>
+                <div class="pcf-value">{{ item.data_recebimento|default:"—" }}</div>
+              </div>
+              <div class="col-md-3">
+                <div class="pcf-label">Comentários</div>
+                <div class="pcf-value">{{ item.qtd_comentarios }}</div>
+              </div>
+              <div class="col-md-3">
+                <div class="pcf-label">Arquivo</div>
+                <div class="pcf-value">
+                  {% if item.caminho %}
+                    Disponível
+                  {% else %}
+                    —
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2">
+              {% if item.caminho %}
+              <a href="{% url 'automacoes:abrir_arquivo_pcf' item.id %}"
+                 target="_blank"
+                 class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-folder2-open"></i>
+                Abrir PCF
+              </a>
+              {% endif %}
+
+              <button class="btn btn-dark btn-sm" type="button">
+                <i class="bi bi-eye"></i>
+                Detalhes
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% empty %}
+      <div class="col-12">
+        <div class="alert alert-secondary">Nenhum registro encontrado.</div>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <nav class="mt-4">
+      <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+          <a class="page-link"
+             href="?page={{ page_obj.previous_page_number }}&q={{ busca }}&tipo={{ tipo }}&status={{ status }}{% if somente_open %}&somente_open=1{% endif %}">
+            Anterior
+          </a>
+        </li>
+        {% endif %}
+
+        <li class="page-item active">
+          <span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+        </li>
+
+        {% if page_obj.has_next %}
+        <li class="page-item">
+          <a class="page-link"
+             href="?page={{ page_obj.next_page_number }}&q={{ busca }}&tipo={{ tipo }}&status={{ status }}{% if somente_open %}&somente_open=1{% endif %}">
+            Próxima
+          </a>
+        </li>
+        {% endif %}
+      </ul>
+    </nav>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

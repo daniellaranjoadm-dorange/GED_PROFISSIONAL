@@ -1,0 +1,233 @@
+{% extends "documentos/base.html" %}
+
+{% block title %}Dashboard PCFs{% endblock %}
+
+{% block content %}
+<div class="ds-page">
+  <div class="ds-pagehead">
+    <div>
+      <h1 class="ds-title">📈 Dashboard PCFs</h1>
+      <p class="ds-subtitle">Visão executiva da Timeline PCFs importada para o GED.</p>
+    </div>
+
+    <div class="d-flex gap-2">
+      <a href="{% url 'automacoes:pcfs_timeline' %}" class="btn btn-primary">
+        Ver Timeline
+      </a>
+      <a href="{% url 'automacoes:painel' %}" class="btn btn-secondary">
+        Voltar
+      </a>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-2">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <small class="text-muted">Total PCFs</small>
+          <h2 class="mb-0">{{ total }}</h2>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-2">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <small class="text-muted">Com Open</small>
+          <h2 class="mb-0 text-warning">{{ total_open }}</h2>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-2">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <small class="text-muted">Comentários Abertos</small>
+          <h2 class="mb-0">{{ total_comentarios_abertos }}</h2>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-2">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <small class="text-muted">Released</small>
+          <h2 class="mb-0 text-success">{{ total_released }}</h2>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-2">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <small class="text-muted">Not Released</small>
+          <h2 class="mb-0 text-danger">{{ total_not_released }}</h2>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-2">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <small class="text-muted">Sem Status</small>
+          <h2 class="mb-0">{{ total_sem_status }}</h2>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+
+    <div class="col-lg-6">
+      <div class="ds-surface p-4 h-100">
+        <h4 class="mb-3">Distribuição por Tipo</h4>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th>Tipo</th>
+                <th>Total</th>
+                <th>Open Comments</th>
+                <th>Ação</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in por_tipo %}
+              <tr>
+                <td>{{ item.tipo|default:"—" }}</td>
+                <td>{{ item.total }}</td>
+                <td>
+                  {% if item.open_total %}
+                    <span class="badge bg-warning text-dark">{{ item.open_total }}</span>
+                  {% else %}
+                    <span class="badge bg-success">0</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if item.tipo %}
+                  <a href="{% url 'automacoes:pcfs_timeline' %}?tipo={{ item.tipo }}"
+                     class="btn btn-sm btn-outline-primary">
+                    Abrir
+                  </a>
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="4" class="text-center text-muted">Sem dados.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="ds-surface p-4 h-100">
+        <h4 class="mb-3">Top Status</h4>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th>Status Final</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in por_status %}
+              <tr>
+                <td>
+                  {% if item.status_final %}
+                    {{ item.status_final }}
+                  {% else %}
+                    <span class="text-muted">Sem status</span>
+                  {% endif %}
+                </td>
+                <td>{{ item.total }}</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="2" class="text-center text-muted">Sem dados.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="row g-4">
+
+    <div class="col-lg-8">
+      <div class="ds-surface p-4 h-100">
+        <h4 class="mb-3">Top Pendências por Open Comments</h4>
+        <div class="table-responsive">
+          <table class="table table-striped table-hover align-middle">
+            <thead>
+              <tr>
+                <th>Documento</th>
+                <th>PCF</th>
+                <th>Título</th>
+                <th>Rev.</th>
+                <th>Open</th>
+                <th>Status</th>
+                <th>Arquivo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in top_pendencias %}
+              <tr>
+                <td>{{ item.numero_documento }}</td>
+                <td>{{ item.numero_pcf }}</td>
+                <td>{{ item.titulo }}</td>
+                <td>{{ item.revisao_pcf }}</td>
+                <td><span class="badge bg-warning text-dark">{{ item.open_comments }}</span></td>
+                <td>{{ item.status_final }}</td>
+                <td>
+                  {% if item.caminho %}
+                  <a href="{% url 'automacoes:abrir_arquivo_pcf' item.id %}"
+                     target="_blank"
+                     class="btn btn-sm btn-outline-primary">
+                    Abrir
+                  </a>
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="7" class="text-center text-muted">Nenhuma pendência encontrada.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="ds-surface p-4 h-100">
+        <h4 class="mb-3">Últimas Atualizações</h4>
+        <div class="list-group">
+          {% for item in recentes %}
+          <a href="{% url 'automacoes:pcfs_timeline' %}?q={{ item.numero_documento }}"
+             class="list-group-item list-group-item-action">
+            <div class="fw-bold">{{ item.numero_documento }}</div>
+            <small class="text-muted">
+              {{ item.tipo }} · Rev {{ item.revisao_pcf }} · Open {{ item.open_comments }}
+            </small>
+          </a>
+          {% empty %}
+          <div class="text-muted">Sem registros recentes.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
