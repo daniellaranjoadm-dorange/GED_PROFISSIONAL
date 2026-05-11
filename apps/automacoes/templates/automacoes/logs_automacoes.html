@@ -1,0 +1,263 @@
+{% extends "documentos/base.html" %}
+
+{% block title %}Logs de Automações{% endblock %}
+
+{% block extra_head %}
+<style>
+  .logs-page { max-width: none !important; width: 100% !important; }
+
+  .logs-hero {
+    border-radius: 22px;
+    border: 1px solid rgba(148, 163, 184, .24);
+    background:
+      radial-gradient(circle at 0% 0%, rgba(255, 138, 0, .18), transparent 35%),
+      radial-gradient(circle at 85% 20%, rgba(56, 189, 248, .18), transparent 35%),
+      linear-gradient(135deg, rgba(11, 18, 32, .98), rgba(17, 26, 46, .96));
+    color: #fff;
+    box-shadow: 0 18px 45px rgba(15, 23, 42, .22);
+    overflow: hidden;
+    position: relative;
+  }
+
+  .logs-hero::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 3px;
+    background: linear-gradient(90deg, #38BDF8, #FF8A00);
+  }
+
+  .logs-kpi {
+    border: 0;
+    border-radius: 18px;
+    background: rgba(255,255,255,.94);
+    box-shadow: 0 .6rem 1.35rem rgba(15, 23, 42, .08);
+  }
+
+  .logs-kpi small {
+    color: #64748b;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+
+  .logs-kpi h2 {
+    margin: .25rem 0 0;
+    letter-spacing: -.05em;
+  }
+
+  .logs-panel {
+    border-radius: 20px;
+    border: 1px solid rgba(148, 163, 184, .24);
+    background: rgba(255,255,255,.94);
+    box-shadow: 0 .55rem 1.25rem rgba(15, 23, 42, .07);
+  }
+
+  .logs-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    border-radius: 999px;
+    padding: .32rem .7rem;
+    font-size: .75rem;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .logs-badge-success { background: rgba(22, 163, 74, .12); color: #15803d; }
+  .logs-badge-danger { background: rgba(220, 38, 38, .12); color: #991b1b; }
+  .logs-badge-info { background: rgba(14, 165, 233, .14); color: #0369a1; }
+
+  .logs-message {
+    max-width: 520px;
+    white-space: normal;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ds-page logs-page">
+  <div class="logs-hero p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+      <div>
+        <h1 class="mb-1 fw-bold">🧾 Logs Executivos de Automações</h1>
+        <p class="mb-0 text-white-50">
+          Auditoria operacional: usuário, status, duração, quantidade processada e mensagens de execução.
+        </p>
+      </div>
+
+      <div class="d-flex gap-2">
+        <a href="{% url 'automacoes:painel' %}" class="btn btn-outline-light">
+          Voltar ao Painel
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md">
+      <div class="card logs-kpi h-100">
+        <div class="card-body">
+          <small>Total filtrado</small>
+          <h2>{{ total }}</h2>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md">
+      <a href="{% url 'automacoes:logs_automacoes' %}?status=sucesso" class="text-decoration-none text-dark">
+        <div class="card logs-kpi h-100">
+          <div class="card-body">
+            <small>Sucessos</small>
+            <h2 class="text-success">{{ total_sucesso }}</h2>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md">
+      <a href="{% url 'automacoes:logs_automacoes' %}?status=erro" class="text-decoration-none text-dark">
+        <div class="card logs-kpi h-100">
+          <div class="card-body">
+            <small>Erros</small>
+            <h2 class="text-danger">{{ total_erros }}</h2>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md">
+      <a href="{% url 'automacoes:logs_automacoes' %}?status=iniciado" class="text-decoration-none text-dark">
+        <div class="card logs-kpi h-100">
+          <div class="card-body">
+            <small>Iniciados</small>
+            <h2 class="text-primary">{{ total_iniciados }}</h2>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md">
+      <div class="card logs-kpi h-100">
+        <div class="card-body">
+          <small>Duração média</small>
+          <h2>{{ duracao_media }}s</h2>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="logs-panel p-4 mb-4">
+    <form method="get">
+      <div class="row g-2 align-items-end">
+        <div class="col-lg-4">
+          <label class="form-label small text-muted">Busca</label>
+          <input type="text" name="q" value="{{ busca }}" class="form-control"
+                 placeholder="Automação, mensagem ou usuário...">
+        </div>
+
+        <div class="col-lg-3">
+          <label class="form-label small text-muted">Automação</label>
+          <select name="nome" class="form-select">
+            <option value="">Todas</option>
+            {% for item in nomes %}
+              <option value="{{ item }}" {% if nome == item %}selected{% endif %}>{{ item }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-lg-2">
+          <label class="form-label small text-muted">Status</label>
+          <select name="status" class="form-select">
+            <option value="">Todos</option>
+            {% for valor, rotulo in status_choices %}
+              <option value="{{ valor }}" {% if status == valor %}selected{% endif %}>{{ rotulo }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-lg-2">
+          <button class="btn btn-primary w-100">Filtrar</button>
+        </div>
+
+        <div class="col-lg-1">
+          <a href="{% url 'automacoes:logs_automacoes' %}" class="btn btn-outline-secondary w-100">Limpar</a>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div class="logs-panel p-4">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Início</th>
+            <th>Automação</th>
+            <th>Status</th>
+            <th>Usuário</th>
+            <th>Qtd.</th>
+            <th>Duração</th>
+            <th>Mensagem</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in logs %}
+            <tr>
+              <td>{{ log.iniciado_em }}</td>
+              <td class="fw-bold">{{ log.nome }}</td>
+              <td>
+                {% if log.sucesso %}
+                  <span class="logs-badge logs-badge-success">● Sucesso</span>
+                {% elif log.status == "iniciado" %}
+                  <span class="logs-badge logs-badge-info">● Iniciado</span>
+                {% else %}
+                  <span class="logs-badge logs-badge-danger">● Erro</span>
+                {% endif %}
+              </td>
+              <td>{{ log.usuario|default:"Sistema" }}</td>
+              <td>{{ log.quantidade_processada|default:0 }}</td>
+              <td>{{ log.duracao_segundos|default:0 }}s</td>
+              <td class="logs-message">{{ log.mensagem|default:"—" }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="7" class="text-center text-muted">Nenhum log encontrado.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if page_obj.has_other_pages %}
+      <nav class="mt-4">
+        <ul class="pagination justify-content-center mb-0">
+          {% if page_obj.has_previous %}
+            <li class="page-item">
+              <a class="page-link"
+                 href="?page={{ page_obj.previous_page_number }}&q={{ busca|urlencode }}&status={{ status|urlencode }}&nome={{ nome|urlencode }}">
+                Anterior
+              </a>
+            </li>
+          {% endif %}
+
+          <li class="page-item disabled">
+            <span class="page-link">
+              Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+            </span>
+          </li>
+
+          {% if page_obj.has_next %}
+            <li class="page-item">
+              <a class="page-link"
+                 href="?page={{ page_obj.next_page_number }}&q={{ busca|urlencode }}&status={{ status|urlencode }}&nome={{ nome|urlencode }}">
+                Próxima
+              </a>
+            </li>
+          {% endif %}
+        </ul>
+      </nav>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

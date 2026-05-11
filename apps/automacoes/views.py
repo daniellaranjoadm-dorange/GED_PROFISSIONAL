@@ -1,16 +1,18 @@
 from pathlib import Path
+import time
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
+from django.utils import timezone
 from django.core.paginator import Paginator
-from django.db.models import Count, Q, Sum
+from django.db.models import Avg, Count, Q, Sum
 from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import redirect, render
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 
-from apps.automacoes.models import TransmittalKM, PCFTimeline, DocumentoLD
+from apps.automacoes.models import TransmittalKM, PCFTimeline, DocumentoLD, ExecucaoAutomacao
 from apps.automacoes.services import (
     atualizar_ld,
     grd_ghenova,
@@ -39,6 +41,51 @@ def _latest_model_value(model, *campos):
             except Exception:
                 continue
     return None
+
+
+def _extrair_quantidade_processada(resultado):
+    if not isinstance(resultado, dict):
+        return 0
+
+    chaves = (
+        "quantidade_processada",
+        "processados",
+        "total_processado",
+        "total",
+        "importados",
+        "criados",
+        "atualizados",
+    )
+
+    for chave in chaves:
+        valor = resultado.get(chave)
+        if isinstance(valor, int):
+            return valor
+
+    detalhes = resultado.get("detalhes")
+    if isinstance(detalhes, dict):
+        for chave in chaves:
+            valor = detalhes.get(chave)
+            if isinstance(valor, int):
+                return valor
+
+    return 0
+
+
+def _detalhes_execucao(resultado):
+    if not isinstance(resultado, dict):
+        return {}
+
+    detalhes = resultado.get("detalhes")
+    if isinstance(detalhes, dict):
+        return detalhes
+
+    return {
+        chave: valor
+        for chave, valor in resultado.items()
+        if chave not in {"ok", "mensagem"}
+        and isinstance(valor, (str, int, float, bool, list, dict, type(None)))
+    }
 
 
 @login_required
@@ -80,6 +127,22 @@ def painel(request):
         _latest_model_value(PCFTimeline, "atualizado_em", "criado_em")
         or _latest_model_value(TransmittalKM, "criado_em", "atualizado_em")
         or _latest_model_value(DocumentoLD, "atualizado_em", "criado_em")
+    )
+
+    ultimas_execucoes = ExecucaoAutomacao.objects.select_related("usuario").order_by("-iniciado_em")[:8]
+    ultima_execucao = ultimas_execucoes[0] if ultimas_execucoes else None
+    ultima_falha = (
+        ExecucaoAutomacao.objects.select_related("usuario")
+        .filter(sucesso=False)
+        .exclude(status=ExecucaoAutomacao.STATUS_INICIADO)
+        .order_by("-iniciado_em")
+        .first()
+    )
+    total_execucoes = ExecucaoAutomacao.objects.count()
+    total_falhas = (
+        ExecucaoAutomacao.objects.filter(sucesso=False)
+        .exclude(status=ExecucaoAutomacao.STATUS_INICIADO)
+        .count()
     )
 
     automacoes = [
@@ -172,6 +235,11 @@ def painel(request):
             "automacoes": automacoes,
             "ultimos_pcfs": ultimos_pcfs,
             "ultimos_transmittals": ultimos_transmittals,
+            "ultimas_execucoes": ultimas_execucoes,
+            "ultima_execucao": ultima_execucao,
+            "ultima_falha": ultima_falha,
+            "total_execucoes": total_execucoes,
+            "total_falhas": total_falhas,
         },
     )
 
@@ -181,24 +249,122 @@ def _executar_automacao(request, executor, nome):
         messages.error(request, f"Método inválido para executar {nome}.")
         return redirect("automacoes:painel")
 
+    inicio = time.monotonic()
+    log = ExecucaoAutomacao.objects.create(
+        nome=nome,
+        usuario=request.user if request.user.is_authenticated else None,
+        status=ExecucaoAutomacao.STATUS_INICIADO,
+        mensagem="Execução iniciada.",
+    )
+
     try:
         resultado = executor()
+        ok = bool(resultado.get("ok")) if isinstance(resultado, dict) else False
+        mensagem = (
+            resultado.get("mensagem")
+            if isinstance(resultado, dict)
+            else f"{nome} executado."
+        )
 
-        if resultado.get("ok"):
-            messages.success(
-                request,
-                resultado.get("mensagem", f"{nome} executado com sucesso."),
-            )
+        log.status = ExecucaoAutomacao.STATUS_SUCESSO if ok else ExecucaoAutomacao.STATUS_ERRO
+        log.sucesso = ok
+        log.mensagem = mensagem or (
+            f"{nome} executado com sucesso." if ok else f"Falha ao executar {nome}."
+        )
+        log.quantidade_processada = _extrair_quantidade_processada(resultado)
+        log.detalhes = _detalhes_execucao(resultado)
+
+        if ok:
+            messages.success(request, log.mensagem)
         else:
-            messages.error(
-                request,
-                resultado.get("mensagem", f"Falha ao executar {nome}."),
-            )
+            messages.error(request, log.mensagem)
 
     except Exception as exc:
-        messages.error(request, f"Erro ao executar {nome}: {exc}")
+        log.status = ExecucaoAutomacao.STATUS_ERRO
+        log.sucesso = False
+        log.mensagem = f"Erro ao executar {nome}: {exc}"
+        log.detalhes = {"erro": str(exc)}
+        messages.error(request, log.mensagem)
+
+    finally:
+        log.finalizado_em = timezone.now()
+        log.duracao_segundos = round(time.monotonic() - inicio, 3)
+        log.save(
+            update_fields=[
+                "status",
+                "sucesso",
+                "mensagem",
+                "detalhes",
+                "quantidade_processada",
+                "duracao_segundos",
+                "finalizado_em",
+            ]
+        )
 
     return redirect("automacoes:painel")
+
+
+@login_required
+def logs_automacoes(request):
+    busca = request.GET.get("q", "").strip()
+    status = request.GET.get("status", "").strip()
+    nome = request.GET.get("nome", "").strip()
+
+    logs = ExecucaoAutomacao.objects.select_related("usuario").order_by("-iniciado_em")
+
+    if busca:
+        logs = logs.filter(
+            Q(nome__icontains=busca)
+            | Q(mensagem__icontains=busca)
+            | Q(usuario__username__icontains=busca)
+            | Q(usuario__first_name__icontains=busca)
+            | Q(usuario__last_name__icontains=busca)
+        )
+
+    if status:
+        logs = logs.filter(status=status)
+
+    if nome:
+        logs = logs.filter(nome__iexact=nome)
+
+    nomes = (
+        ExecucaoAutomacao.objects.exclude(nome="")
+        .values_list("nome", flat=True)
+        .distinct()
+        .order_by("nome")
+    )
+
+    total = logs.count()
+    total_sucesso = logs.filter(sucesso=True).count()
+    total_erros = logs.filter(status=ExecucaoAutomacao.STATUS_ERRO).count()
+    total_iniciados = logs.filter(status=ExecucaoAutomacao.STATUS_INICIADO).count()
+
+    duracao_media = logs.exclude(duracao_segundos=0).aggregate(
+        media=Avg("duracao_segundos")
+    ).get("media")
+    duracao_media = round(duracao_media, 2) if duracao_media else 0
+
+    paginator = Paginator(logs, 50)
+    page_obj = paginator.get_page(request.GET.get("page"))
+
+    return render(
+        request,
+        "automacoes/logs_automacoes.html",
+        {
+            "logs": page_obj,
+            "page_obj": page_obj,
+            "busca": busca,
+            "status": status,
+            "nome": nome,
+            "nomes": nomes,
+            "total": total,
+            "total_sucesso": total_sucesso,
+            "total_erros": total_erros,
+            "total_iniciados": total_iniciados,
+            "duracao_media": duracao_media,
+            "status_choices": ExecucaoAutomacao.STATUS_CHOICES,
+        },
+    )
 
 
 @login_required

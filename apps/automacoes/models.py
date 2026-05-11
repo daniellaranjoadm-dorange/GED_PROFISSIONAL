@@ -1,12 +1,44 @@
+from django.conf import settings
 from django.db import models
 
 
 class ExecucaoAutomacao(models.Model):
+    STATUS_INICIADO = "iniciado"
+    STATUS_SUCESSO = "sucesso"
+    STATUS_ERRO = "erro"
+
+    STATUS_CHOICES = [
+        (STATUS_INICIADO, "Iniciado"),
+        (STATUS_SUCESSO, "Sucesso"),
+        (STATUS_ERRO, "Erro"),
+    ]
+
     nome = models.CharField(max_length=100)
-    status = models.CharField(max_length=30, default="iniciado")
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="execucoes_automacoes",
+    )
+    status = models.CharField(
+        max_length=30,
+        choices=STATUS_CHOICES,
+        default=STATUS_INICIADO,
+        db_index=True,
+    )
+    sucesso = models.BooleanField(default=False, db_index=True)
     mensagem = models.TextField(blank=True)
-    iniciado_em = models.DateTimeField(auto_now_add=True)
+    detalhes = models.JSONField(default=dict, blank=True)
+    quantidade_processada = models.IntegerField(default=0)
+    duracao_segundos = models.FloatField(default=0)
+    iniciado_em = models.DateTimeField(auto_now_add=True, db_index=True)
     finalizado_em = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-iniciado_em"]
+        verbose_name = "Execução de automação"
+        verbose_name_plural = "Execuções de automações"
 
     def __str__(self):
         return f"{self.nome} - {self.status}"
