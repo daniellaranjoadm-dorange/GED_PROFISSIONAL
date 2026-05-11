@@ -98,7 +98,12 @@ class DocumentoLD(models.Model):
 
     class Meta:
         ordering = ["origem_aba", "documento", "revisao"]
-        unique_together = ("origem_aba", "documento", "revisao")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["origem_aba", "documento", "revisao"],
+                name="uniq_documentold_origem_documento_revisao",
+            )
+        ]
 
     def __str__(self):
         return f"{self.documento} R{self.revisao}"

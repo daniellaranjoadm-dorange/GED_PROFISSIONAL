@@ -377,7 +377,7 @@ def _ld_valores_distintos(campo):
     valores = []
     vistos = set()
 
-    for valor in DocumentoLD.objects.values_list(campo, flat=True):
+    for valor in DocumentoLD.objects.order_by().values_list(campo, flat=True):
         texto = " ".join(_ld_texto(valor).split())
         if not texto:
             continue
@@ -536,7 +536,7 @@ def _ld_filtrar_queryset(request):
 def _ld_kpis(registros):
     return {
         "total": registros.count(),
-        "total_exclusivos": registros.values("documento").distinct().count(),
+        "total_exclusivos": registros.order_by().values("documento").distinct().count(),
         "total_recebidos": registros.filter(status_documento__iexact="Recebido").count(),
         "total_aprovados": registros.filter(status_documento__iexact="Aprovado").count(),
         "total_emitidos": registros.filter(status_grd__iexact="Emitido").count(),
