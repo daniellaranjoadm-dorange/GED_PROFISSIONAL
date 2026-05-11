@@ -2,205 +2,82 @@
 
 {% block title %}Dashboard Transmittals{% endblock %}
 
-{% block content %}
-<div class="ds-page">
+{% block extra_head %}
+<style>
+  .dash-page { max-width: none !important; width: 100% !important; }
+  .dash-kpi { border: 0; border-radius: 16px; overflow: hidden; transition: transform .15s ease, box-shadow .15s ease; }
+  .dash-kpi:hover { transform: translateY(-2px); box-shadow: 0 .75rem 1.5rem rgba(15, 23, 42, .12) !important; }
+  .dash-kpi small { color: #64748b; }
+  .dash-kpi h2 { letter-spacing: -.04em; }
+  .dash-panel { border-radius: 18px; border: 1px solid rgba(148, 163, 184, .25); background: rgba(255,255,255,.92); box-shadow: 0 .35rem 1rem rgba(15, 23, 42, .06); }
+  .dash-panel-title { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-bottom: 1rem; }
+  .dash-panel-title h4 { margin: 0; }
+  .dash-chip { border-radius: 999px; padding: .28rem .65rem; background: #eef2ff; color: #1e40af; font-size: .78rem; font-weight: 700; }
+  .dash-progress { height: 9px; border-radius: 999px; background: #e2e8f0; overflow: hidden; }
+  .dash-progress > span { display: block; height: 100%; background: #0d6efd; }
+  .dash-table td, .dash-table th { vertical-align: middle; }
+  .dash-list-item { border: 1px solid rgba(148, 163, 184, .22); border-radius: 12px; padding: .8rem; background: #fff; text-decoration: none; color: inherit; display: block; margin-bottom: .65rem; }
+  .dash-list-item:hover { border-color: #0d6efd; background: #f8fafc; }
+  .chart-wrap { min-height: 300px; position: relative; }
+</style>
+{% endblock %}
 
+{% block content %}
+<div class="ds-page dash-page">
   <div class="ds-pagehead">
     <div>
       <h1 class="ds-title">📦 Dashboard Transmittals KM</h1>
-      <p class="ds-subtitle">
-        Indicadores operacionais dos transmittals importados para o GED.
-      </p>
+      <p class="ds-subtitle">Indicadores executivos dos transmittals importados para o GED.</p>
     </div>
-
     <div class="d-flex gap-2">
-      <a href="{% url 'automacoes:transmittals_km' %}" class="btn btn-primary">
-        Ver Registros
-      </a>
-
-      <a href="{% url 'automacoes:painel' %}" class="btn btn-secondary">
-        Voltar
-      </a>
+      <a href="{% url 'automacoes:transmittals_km' %}" class="btn btn-primary">Ver Registros</a>
+      <a href="{% url 'automacoes:painel' %}" class="btn btn-secondary">Voltar</a>
     </div>
   </div>
 
   <div class="row g-3 mb-4">
-
-    <div class="col-md-3">
-      <div class="card border-0 shadow-sm">
-        <div class="card-body">
-          <small class="text-muted">Registros</small>
-          <h2>{{ total_registros }}</h2>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-md-3">
-      <div class="card border-0 shadow-sm">
-        <div class="card-body">
-          <small class="text-muted">Transmittals</small>
-          <h2>{{ total_transmittals }}</h2>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-md-3">
-      <div class="card border-0 shadow-sm">
-        <div class="card-body">
-          <small class="text-muted">Status OK</small>
-          <h2 class="text-success">{{ total_ok }}</h2>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-md-3">
-      <div class="card border-0 shadow-sm">
-        <div class="card-body">
-          <small class="text-muted">PDFs válidos</small>
-          <h2 class="text-primary">{{ total_pdf }}</h2>
-        </div>
-      </div>
-    </div>
-
+    <div class="col-md"><a href="{% url 'automacoes:transmittals_km' %}" class="text-decoration-none text-dark"><div class="card dash-kpi shadow-sm h-100"><div class="card-body"><small>Registros</small><h2>{{ total_registros }}</h2></div></div></a></div>
+    <div class="col-md"><div class="card dash-kpi shadow-sm h-100"><div class="card-body"><small>Transmittals</small><h2>{{ total_transmittals }}</h2></div></div></div>
+    <div class="col-md"><div class="card dash-kpi shadow-sm h-100"><div class="card-body"><small>Status OK</small><h2 class="text-success">{{ total_ok }}</h2></div></div></div>
+    <div class="col-md"><div class="card dash-kpi shadow-sm h-100"><div class="card-body"><small>PDFs válidos</small><h2 class="text-primary">{{ total_pdf }}</h2></div></div></div>
+    <div class="col-md"><div class="card dash-kpi shadow-sm h-100"><div class="card-body"><small>Sem PDF</small><h2 class="text-danger">{{ total_sem_pdf }}</h2></div></div></div>
+    <div class="col-md"><div class="card dash-kpi shadow-sm h-100"><div class="card-body"><small>Média Docs/Transmittal</small><h2>{{ media_docs_transmittal }}</h2></div></div></div>
   </div>
 
+  {{ pastas_labels|json_script:"tr-pastas-labels" }}
+  {{ pastas_values|json_script:"tr-pastas-values" }}
+  {{ emissoes_labels|json_script:"tr-emissoes-labels" }}
+  {{ emissoes_values|json_script:"tr-emissoes-values" }}
+  {{ transmittal_labels|json_script:"tr-top-labels" }}
+  {{ transmittal_values|json_script:"tr-top-values" }}
+
   <div class="row g-4 mb-4">
-
-    <div class="col-lg-6">
-      <div class="ds-surface p-4 h-100">
-        <h4 class="mb-3">Top Pastas</h4>
-
-        <div class="table-responsive">
-          <table class="table table-hover">
-            <thead>
-              <tr>
-                <th>Pasta</th>
-                <th>Total</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {% for item in por_pasta %}
-              <tr>
-                <td>{{ item.pasta|default:"—" }}</td>
-                <td>{{ item.total }}</td>
-              </tr>
-              {% empty %}
-              <tr>
-                <td colspan="2" class="text-center text-muted">
-                  Sem dados.
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-lg-6">
-      <div class="ds-surface p-4 h-100">
-        <h4 class="mb-3">Top Emissões</h4>
-
-        <div class="table-responsive">
-          <table class="table table-hover">
-            <thead>
-              <tr>
-                <th>Emissão</th>
-                <th>Total</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {% for item in por_emissao %}
-              <tr>
-                <td>{{ item.emissao|default:"—" }}</td>
-                <td>{{ item.total }}</td>
-              </tr>
-              {% empty %}
-              <tr>
-                <td colspan="2" class="text-center text-muted">
-                  Sem dados.
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-
-          </table>
-        </div>
-      </div>
-    </div>
-
+    <div class="col-lg-6"><div class="dash-panel p-4 h-100"><div class="dash-panel-title"><h4>Top Pastas</h4><span class="dash-chip">Volume</span></div><div class="chart-wrap"><canvas id="transPastasChart"></canvas></div></div></div>
+    <div class="col-lg-6"><div class="dash-panel p-4 h-100"><div class="dash-panel-title"><h4>Top Emissões</h4><span class="dash-chip">Distribuição</span></div><div class="chart-wrap"><canvas id="transEmissoesChart"></canvas></div></div></div>
   </div>
 
   <div class="row g-4">
-
-    <div class="col-lg-7">
-      <div class="ds-surface p-4 h-100">
-
-        <h4 class="mb-3">Top Transmittals</h4>
-
-        <div class="table-responsive">
-          <table class="table table-striped table-hover">
-            <thead>
-              <tr>
-                <th>Transmittal</th>
-                <th>Total Docs</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {% for item in top_transmittals %}
-              <tr>
-                <td>{{ item.transmittal_numero }}</td>
-                <td>{{ item.total }}</td>
-              </tr>
-              {% empty %}
-              <tr>
-                <td colspan="2" class="text-center text-muted">
-                  Sem registros.
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-
-          </table>
-        </div>
-
-      </div>
-    </div>
-
-    <div class="col-lg-5">
-      <div class="ds-surface p-4 h-100">
-
-        <h4 class="mb-3">Últimos Importados</h4>
-
-        <div class="list-group">
-          {% for item in ultimos %}
-          <a href="{% url 'automacoes:transmittals_km' %}?q={{ item.documento }}"
-             class="list-group-item list-group-item-action">
-
-            <div class="fw-bold">
-              {{ item.documento }}
-            </div>
-
-            <small class="text-muted">
-              {{ item.transmittal_numero }} · {{ item.emissao }}
-            </small>
-
-          </a>
-          {% empty %}
-          <div class="text-muted">
-            Sem registros.
-          </div>
-          {% endfor %}
-        </div>
-
-      </div>
-    </div>
-
+    <div class="col-lg-7"><div class="dash-panel p-4 h-100"><div class="dash-panel-title"><h4>Top Transmittals</h4><span class="dash-chip">Documentos</span></div><div class="chart-wrap"><canvas id="transTopChart"></canvas></div></div></div>
+    <div class="col-lg-5"><div class="dash-panel p-4 h-100"><div class="dash-panel-title"><h4>Últimos Importados</h4><span class="dash-chip">Recentes</span></div>{% for item in ultimos %}<a href="{% url 'automacoes:transmittals_km' %}?q={{ item.documento }}" class="dash-list-item"><div class="fw-bold">{{ item.documento }}</div><small class="text-muted">{{ item.transmittal_numero }} · {{ item.emissao|default:"—" }}</small></a>{% empty %}<div class="text-muted">Sem registros.</div>{% endfor %}</div></div>
   </div>
-
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  const pastasLabels = JSON.parse(document.getElementById("tr-pastas-labels").textContent);
+  const pastasValues = JSON.parse(document.getElementById("tr-pastas-values").textContent);
+  const emissoesLabels = JSON.parse(document.getElementById("tr-emissoes-labels").textContent);
+  const emissoesValues = JSON.parse(document.getElementById("tr-emissoes-values").textContent);
+  const topLabels = JSON.parse(document.getElementById("tr-top-labels").textContent);
+  const topValues = JSON.parse(document.getElementById("tr-top-values").textContent);
+
+  if (!window.Chart) return;
+
+  new Chart(document.getElementById("transPastasChart"), { type: "bar", data: { labels: pastasLabels, datasets: [{ label: "Documentos", data: pastasValues }] }, options: { responsive: true, maintainAspectRatio: false, indexAxis: "y", plugins: { legend: { display: false } } } });
+  new Chart(document.getElementById("transEmissoesChart"), { type: "doughnut", data: { labels: emissoesLabels, datasets: [{ data: emissoesValues }] }, options: { responsive: true, maintainAspectRatio: false } });
+  new Chart(document.getElementById("transTopChart"), { type: "bar", data: { labels: topLabels, datasets: [{ label: "Total Docs", data: topValues }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+})();
+</script>
 {% endblock %}

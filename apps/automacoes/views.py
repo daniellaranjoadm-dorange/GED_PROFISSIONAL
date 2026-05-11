@@ -302,6 +302,7 @@ def exportar_pcfs_timeline_excel(request):
     return response
 
 
+
 @login_required
 def dashboard_pcfs(request):
     registros = PCFTimeline.objects.all()
@@ -318,13 +319,13 @@ def dashboard_pcfs(request):
         registros.aggregate(total=Sum("open_comments")).get("total") or 0
     )
 
-    por_tipo = (
+    por_tipo = list(
         registros.values("tipo")
         .annotate(total=Count("id"), open_total=Sum("open_comments"))
-        .order_by("tipo")
+        .order_by("-total", "tipo")
     )
 
-    por_status = (
+    por_status = list(
         registros.values("status_final")
         .annotate(total=Count("id"))
         .order_by("-total")[:10]
@@ -337,6 +338,17 @@ def dashboard_pcfs(request):
 
     recentes = registros.order_by("-atualizado_em")[:10]
 
+    status_chart_labels = [(item.get("status_final") or "Sem status") for item in por_status]
+    status_chart_values = [item.get("total") or 0 for item in por_status]
+
+    tipo_chart_labels = [(item.get("tipo") or "Sem tipo") for item in por_tipo]
+    tipo_chart_values = [item.get("total") or 0 for item in por_tipo]
+
+    tipo_open_labels = [(item.get("tipo") or "Sem tipo") for item in por_tipo]
+    tipo_open_values = [item.get("open_total") or 0 for item in por_tipo]
+
+    critical_rate = round((total_not_released / total) * 100, 1) if total else 0
+
     return render(
         request,
         "automacoes/dashboard_pcfs.html",
@@ -347,10 +359,17 @@ def dashboard_pcfs(request):
             "total_not_released": total_not_released,
             "total_released": total_released,
             "total_comentarios_abertos": total_comentarios_abertos,
+            "critical_rate": critical_rate,
             "por_tipo": por_tipo,
             "por_status": por_status,
             "top_pendencias": top_pendencias,
             "recentes": recentes,
+            "status_chart_labels": status_chart_labels,
+            "status_chart_values": status_chart_values,
+            "tipo_chart_labels": tipo_chart_labels,
+            "tipo_chart_values": tipo_chart_values,
+            "tipo_open_labels": tipo_open_labels,
+            "tipo_open_values": tipo_open_values,
         },
     )
 
@@ -991,6 +1010,7 @@ def exportar_ld_excel(request):
     return response
 
 
+
 @login_required
 def dashboard_transmittals(request):
     registros = TransmittalKM.objects.all()
@@ -999,26 +1019,38 @@ def dashboard_transmittals(request):
     total_transmittals = registros.values("transmittal_numero").distinct().count()
     total_ok = registros.filter(status_parse__icontains="OK").count()
     total_pdf = registros.exclude(arquivo_pdf="").count()
+    total_sem_pdf = registros.filter(Q(arquivo_pdf__isnull=True) | Q(arquivo_pdf="")).count()
 
-    por_pasta = (
+    media_docs_transmittal = round(total_registros / total_transmittals, 1) if total_transmittals else 0
+
+    por_pasta = list(
         registros.values("pasta")
         .annotate(total=Count("id"))
         .order_by("-total")[:10]
     )
 
-    por_emissao = (
+    por_emissao = list(
         registros.values("emissao")
         .annotate(total=Count("id"))
         .order_by("-total")[:10]
     )
 
-    top_transmittals = (
+    top_transmittals = list(
         registros.values("transmittal_numero")
         .annotate(total=Count("id"))
         .order_by("-total")[:10]
     )
 
     ultimos = registros.order_by("-criado_em")[:15]
+
+    pastas_labels = [item.get("pasta") or "Sem pasta" for item in por_pasta]
+    pastas_values = [item.get("total") or 0 for item in por_pasta]
+
+    emissoes_labels = [item.get("emissao") or "Sem emissão" for item in por_emissao]
+    emissoes_values = [item.get("total") or 0 for item in por_emissao]
+
+    transmittal_labels = [item.get("transmittal_numero") or "Sem número" for item in top_transmittals]
+    transmittal_values = [item.get("total") or 0 for item in top_transmittals]
 
     return render(
         request,
@@ -1028,12 +1060,21 @@ def dashboard_transmittals(request):
             "total_transmittals": total_transmittals,
             "total_ok": total_ok,
             "total_pdf": total_pdf,
+            "total_sem_pdf": total_sem_pdf,
+            "media_docs_transmittal": media_docs_transmittal,
             "por_pasta": por_pasta,
             "por_emissao": por_emissao,
             "top_transmittals": top_transmittals,
             "ultimos": ultimos,
+            "pastas_labels": pastas_labels,
+            "pastas_values": pastas_values,
+            "emissoes_labels": emissoes_labels,
+            "emissoes_values": emissoes_values,
+            "transmittal_labels": transmittal_labels,
+            "transmittal_values": transmittal_values,
         },
     )
+
 
 
 @login_required
