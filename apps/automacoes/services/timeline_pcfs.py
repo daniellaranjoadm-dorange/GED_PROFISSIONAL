@@ -837,12 +837,6 @@ def salvar_com_trava(wb, resumo, backup_path):
 
 
 def executar():
-    execucao = ExecucaoAutomacao.objects.create(
-        nome="Timeline PCFs",
-        status="executando",
-        mensagem="Processamento iniciado.",
-    )
-
     try:
         log_secao("Início da atualização da Timeline PCFs")
         log(f"Arquivo Timeline: {ARQUIVO_XLSX}")
@@ -862,6 +856,9 @@ def executar():
         resumo = atualizar_abas_pcf(wb)
 
         total_linhas = sum(info.get("linhas", 0) for info in resumo.values())
+        total_arquivos = sum(info.get("arquivos", 0) for info in resumo.values())
+        total_erros = sum(len(info.get("erros", []) or []) for info in resumo.values())
+
         if total_linhas == 0:
             wb.close()
             restaurar_backup(backup_path, ARQUIVO_XLSX)
@@ -894,27 +891,28 @@ def executar():
                 for erro in info["erros"][:30]:
                     print(" -", erro)
 
-        execucao.status = "sucesso"
-        execucao.mensagem = (
-            f"Timeline PCFs atualizada com sucesso. "
-            f"Linhas gravadas: {total_linhas}."
-        )
-        execucao.save()
-
+        status = "sucesso_parcial" if total_erros else "sucesso"
         return {
             "ok": True,
+            "status": status,
             "mensagem": (
                 "Timeline PCFs atualizada com sucesso. "
                 f"Linhas gravadas: {total_linhas}."
+                + (f" Avisos/erros: {total_erros}." if total_erros else "")
             ),
+            "quantidade_processada": total_linhas,
+            "detalhes": {
+                "linhas": total_linhas,
+                "arquivos": total_arquivos,
+                "erros": total_erros,
+                "resumo": resumo,
+                "backup": backup_path,
+            },
         }
 
     except Exception as e:
-        execucao.status = "erro"
-        execucao.mensagem = str(e)
-        execucao.save()
-
         return {
             "ok": False,
             "mensagem": str(e),
+            "detalhes": {"erro": str(e), "tipo": e.__class__.__name__},
         }

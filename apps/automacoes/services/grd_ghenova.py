@@ -537,10 +537,15 @@ def executar():
 
         return {
             "ok": True,
-            "mensagem": "Automação executada com sucesso.",
+            "mensagem": "GRD GHENOVA executado com sucesso.",
+            "detalhes": {
+                "bases": [str(item.get("base_dir")) for item in BASE_DIRS],
+                "outputs": [item.get("output_filename") for item in BASE_DIRS],
+            },
         }
     except Exception as e:
         return {
             "ok": False,
-            "mensagem": str(e),
+            "mensagem": f"Erro na GRD GHENOVA: {e}",
+            "detalhes": {"erro": str(e), "tipo": e.__class__.__name__},
         }

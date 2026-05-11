@@ -1387,10 +1387,12 @@ def executar():
     if _lock_ativo_recente(LOCK_FILE):
         return {
             "ok": False,
+            "status": "cancelado",
             "mensagem": (
                 "Atualização LD já está em execução ou ficou travada com lock recente. "
                 "Aguarde finalizar antes de executar novamente."
             ),
+            "detalhes": {"lock_file": LOCK_FILE},
         }
 
     _criar_lock(LOCK_FILE)
@@ -1402,6 +1404,12 @@ def executar():
         return {
             "ok": True,
             "mensagem": "Atualização LD executada com sucesso.",
+            "detalhes": {
+                "planilha": PLANILHA,
+                "aba_ld": ABA_LD,
+                "aba_ld_marenova": ABA_LD_MARENOVA,
+                "logs": PASTA_LOGS,
+            },
         }
 
     except Exception as e:
@@ -1409,6 +1417,7 @@ def executar():
         return {
             "ok": False,
             "mensagem": f"Erro na Atualização LD: {e}",
+            "detalhes": {"erro": str(e), "tipo": e.__class__.__name__},
         }
 
     finally:

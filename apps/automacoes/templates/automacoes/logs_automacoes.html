@@ -170,6 +170,10 @@
     </div>
   </div>
 
+  {{ dias_labels|json_script:"logs-dias-labels" }}
+  {{ dias_execucoes|json_script:"logs-dias-execucoes" }}
+  {{ dias_erros|json_script:"logs-dias-erros" }}
+
   {{ automacao_chart_labels|json_script:"logs-auto-labels" }}
   {{ automacao_chart_values|json_script:"logs-auto-values" }}
   {{ erros_chart_labels|json_script:"logs-erros-labels" }}
@@ -241,6 +245,19 @@
     </form>
   </div>
 
+  <div class="logs-panel p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+      <div>
+        <h4 class="mb-0">Execuções nos últimos 14 dias</h4>
+        <small class="text-muted">Volume diário e falhas operacionais.</small>
+      </div>
+      <span class="logs-badge logs-badge-info">Analytics</span>
+    </div>
+    <div class="logs-chart-wrap">
+      <canvas id="logsDiasChart"></canvas>
+    </div>
+  </div>
+
   <div class="logs-panel p-4">
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0">
@@ -261,10 +278,14 @@
               <td>{{ log.iniciado_em }}</td>
               <td class="fw-bold">{{ log.nome }}</td>
               <td>
-                {% if log.sucesso %}
+                {% if log.status == "sucesso" %}
                   <span class="logs-badge logs-badge-success">● Sucesso</span>
-                {% elif log.status == "iniciado" %}
-                  <span class="logs-badge logs-badge-info">● Iniciado</span>
+                {% elif log.status == "sucesso_parcial" %}
+                  <span class="logs-badge logs-badge-info">● Parcial</span>
+                {% elif log.status == "iniciado" or log.status == "processando" %}
+                  <span class="logs-badge logs-badge-info">● Executando</span>
+                {% elif log.status == "cancelado" %}
+                  <span class="logs-badge logs-badge-info">● Cancelado</span>
                 {% else %}
                   <span class="logs-badge logs-badge-danger">● Erro</span>
                 {% endif %}
@@ -336,6 +357,9 @@
   const autoValues = readJson("logs-auto-values");
   const errosLabels = readJson("logs-erros-labels");
   const errosValues = readJson("logs-erros-values");
+  const diasLabels = readJson("logs-dias-labels");
+  const diasExecucoes = readJson("logs-dias-execucoes");
+  const diasErros = readJson("logs-dias-erros");
 
   const autoCanvas = document.getElementById("logsAutomacaoChart");
   if (autoCanvas && autoLabels.length) {
@@ -367,6 +391,27 @@
         maintainAspectRatio: false,
         indexAxis: "y",
         plugins: { legend: { display: false } }
+      }
+    });
+  }
+
+
+  const diasCanvas = document.getElementById("logsDiasChart");
+  if (diasCanvas && diasLabels.length) {
+    new Chart(diasCanvas, {
+      type: "line",
+      data: {
+        labels: diasLabels,
+        datasets: [
+          { label: "Execuções", data: diasExecucoes, tension: 0.25 },
+          { label: "Erros", data: diasErros, tension: 0.25 }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: "bottom" } },
+        scales: { y: { beginAtZero: true, precision: 0 } }
       }
     });
   }

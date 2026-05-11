@@ -423,12 +423,24 @@ def salvar_no_banco(dados: dict):
 def processar():
     if not PASTA_PDFS.exists():
         print(f"[ERRO] Pasta não encontrada: {PASTA_PDFS}")
-        return
+        return {
+            "ok": False,
+            "pdfs_lidos": 0,
+            "linhas_gravadas": 0,
+            "arquivo": str(ARQUIVO_EXCEL_NOVO),
+            "mensagem": f"Pasta não encontrada: {PASTA_PDFS}",
+        }
 
     pdfs = sorted(PASTA_PDFS.glob("*.pdf"))
     if not pdfs:
         print(f"[AVISO] Nenhum PDF encontrado em: {PASTA_PDFS}")
-        return
+        return {
+            "ok": False,
+            "pdfs_lidos": 0,
+            "linhas_gravadas": 0,
+            "arquivo": str(ARQUIVO_EXCEL_NOVO),
+            "mensagem": f"Nenhum PDF encontrado em: {PASTA_PDFS}",
+        }
 
     wb, ws, ws_log = criar_planilha_nova()
 
@@ -501,9 +513,16 @@ def processar():
     print(f"Arquivo gerado: {ARQUIVO_EXCEL_NOVO}")
 
     return {
+        "ok": True,
         "pdfs_lidos": total_pdfs_lidos,
         "linhas_gravadas": total_registros,
         "arquivo": str(ARQUIVO_EXCEL_NOVO),
+        "quantidade_processada": total_registros,
+        "detalhes": {
+            "pdfs_lidos": total_pdfs_lidos,
+            "linhas_gravadas": total_registros,
+            "arquivo": str(ARQUIVO_EXCEL_NOVO),
+        },
     }
 
 
@@ -511,46 +530,50 @@ def processar():
 def executar():
     global pdfplumber
 
-    execucao = ExecucaoAutomacao.objects.create(
-        nome="Transmittal KM",
-        status="executando",
-        mensagem="Processamento iniciado.",
-    )
-
     try:
         import pdfplumber as pdfplumber_module
-
         pdfplumber = pdfplumber_module
 
         resumo = processar()
+        if not isinstance(resumo, dict):
+            return {
+                "ok": False,
+                "mensagem": "Transmittal KM não retornou resumo de processamento.",
+                "detalhes": {"resumo": str(resumo)},
+            }
 
-        execucao.status = "sucesso"
-        execucao.mensagem = (
-            f"PDFs lidos: {resumo['pdfs_lidos']} | "
-            f"Linhas gravadas: {resumo['linhas_gravadas']} | "
-            f"Arquivo: {resumo['arquivo']}"
-        )
-        execucao.finalizado_em = timezone.now()
-        execucao.save()
+        ok = bool(resumo.get("ok", True))
+        pdfs_lidos = int(resumo.get("pdfs_lidos") or 0)
+        linhas_gravadas = int(resumo.get("linhas_gravadas") or 0)
+        arquivo = resumo.get("arquivo") or str(ARQUIVO_EXCEL_NOVO)
+
+        if not ok:
+            return {
+                "ok": False,
+                "mensagem": resumo.get("mensagem") or "Transmittal KM não foi concluído.",
+                "quantidade_processada": linhas_gravadas,
+                "detalhes": resumo,
+            }
 
         return {
             "ok": True,
             "mensagem": (
                 "Transmittal KM executado com sucesso. "
-                f"PDFs lidos: {resumo['pdfs_lidos']}. "
-                f"Linhas gravadas: {resumo['linhas_gravadas']}."
+                f"PDFs lidos: {pdfs_lidos}. "
+                f"Linhas gravadas: {linhas_gravadas}."
             ),
+            "quantidade_processada": linhas_gravadas,
+            "detalhes": {
+                "pdfs_lidos": pdfs_lidos,
+                "linhas_gravadas": linhas_gravadas,
+                "arquivo": arquivo,
+            },
         }
 
     except Exception as e:
         print(f"[ERRO TRANSMITTAL KM] {e}")
-
-        execucao.status = "erro"
-        execucao.mensagem = str(e)
-        execucao.finalizado_em = timezone.now()
-        execucao.save()
-
         return {
             "ok": False,
             "mensagem": f"Erro no Transmittal KM: {e}",
+            "detalhes": {"erro": str(e), "tipo": e.__class__.__name__},
         }

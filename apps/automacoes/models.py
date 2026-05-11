@@ -4,13 +4,19 @@ from django.db import models
 
 class ExecucaoAutomacao(models.Model):
     STATUS_INICIADO = "iniciado"
+    STATUS_PROCESSANDO = "processando"
     STATUS_SUCESSO = "sucesso"
+    STATUS_SUCESSO_PARCIAL = "sucesso_parcial"
     STATUS_ERRO = "erro"
+    STATUS_CANCELADO = "cancelado"
 
     STATUS_CHOICES = [
         (STATUS_INICIADO, "Iniciado"),
+        (STATUS_PROCESSANDO, "Processando"),
         (STATUS_SUCESSO, "Sucesso"),
+        (STATUS_SUCESSO_PARCIAL, "Sucesso parcial"),
         (STATUS_ERRO, "Erro"),
+        (STATUS_CANCELADO, "Cancelado"),
     ]
 
     nome = models.CharField(max_length=100)

@@ -1,6 +1,7 @@
 from pathlib import Path
 import os
 import time
+import traceback
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -106,7 +107,7 @@ def _health_automacoes(nomes):
     for nome in nomes:
         qs = ExecucaoAutomacao.objects.filter(nome=nome)
         ultima = qs.order_by("-iniciado_em").first()
-        total_finalizado = qs.exclude(status=ExecucaoAutomacao.STATUS_INICIADO).count()
+        total_finalizado = qs.exclude(status__in=[ExecucaoAutomacao.STATUS_INICIADO, ExecucaoAutomacao.STATUS_PROCESSANDO]).count()
         total_sucesso = qs.filter(status=ExecucaoAutomacao.STATUS_SUCESSO).count()
         total_erros = qs.filter(status=ExecucaoAutomacao.STATUS_ERRO).count()
         duracao_media = (
@@ -120,7 +121,7 @@ def _health_automacoes(nomes):
             estado = "OCIOSO"
             classe = "auto-status-idle"
             icone = "bi-circle"
-        elif ultima.status == ExecucaoAutomacao.STATUS_INICIADO:
+        elif ultima.status in {ExecucaoAutomacao.STATUS_INICIADO, ExecucaoAutomacao.STATUS_PROCESSANDO}:
             estado = "EXECUTANDO"
             classe = "auto-status-running"
             icone = "bi-arrow-repeat"
@@ -203,11 +204,11 @@ def painel(request):
     total_execucoes = ExecucaoAutomacao.objects.count()
     total_falhas = (
         ExecucaoAutomacao.objects.filter(sucesso=False)
-        .exclude(status=ExecucaoAutomacao.STATUS_INICIADO)
+        .exclude(status__in=[ExecucaoAutomacao.STATUS_INICIADO, ExecucaoAutomacao.STATUS_PROCESSANDO])
         .count()
     )
     total_sucessos = ExecucaoAutomacao.objects.filter(status=ExecucaoAutomacao.STATUS_SUCESSO).count()
-    total_finalizados = ExecucaoAutomacao.objects.exclude(status=ExecucaoAutomacao.STATUS_INICIADO).count()
+    total_finalizados = ExecucaoAutomacao.objects.exclude(status__in=[ExecucaoAutomacao.STATUS_INICIADO, ExecucaoAutomacao.STATUS_PROCESSANDO]).count()
     taxa_sucesso_global = round((total_sucessos / total_finalizados) * 100, 1) if total_finalizados else 0
     hoje = timezone.localdate()
     execucoes_hoje = ExecucaoAutomacao.objects.filter(iniciado_em__date=hoje).count()
@@ -331,6 +332,44 @@ def painel(request):
     )
 
 
+def _resultado_bool(resultado):
+    """Interpreta retornos de automação de forma tolerante."""
+    if isinstance(resultado, dict):
+        return bool(resultado.get("ok"))
+    return resultado is not None
+
+
+def _resultado_mensagem(resultado, nome, ok):
+    if isinstance(resultado, dict):
+        mensagem = resultado.get("mensagem")
+        if mensagem:
+            return str(mensagem)
+
+    return (
+        f"{nome} executado com sucesso."
+        if ok
+        else f"Falha ao executar {nome}. Verifique os detalhes no log."
+    )
+
+
+def _status_final_execucao(resultado, ok):
+    if isinstance(resultado, dict):
+        status = str(resultado.get("status") or "").strip().lower()
+        if status in {
+            ExecucaoAutomacao.STATUS_SUCESSO,
+            ExecucaoAutomacao.STATUS_SUCESSO_PARCIAL,
+            ExecucaoAutomacao.STATUS_ERRO,
+            ExecucaoAutomacao.STATUS_CANCELADO,
+        }:
+            return status
+
+        avisos = resultado.get("avisos") or resultado.get("warnings")
+        if ok and avisos:
+            return ExecucaoAutomacao.STATUS_SUCESSO_PARCIAL
+
+    return ExecucaoAutomacao.STATUS_SUCESSO if ok else ExecucaoAutomacao.STATUS_ERRO
+
+
 def _executar_automacao(request, executor, nome):
     if request.method != "POST":
         messages.error(request, f"Método inválido para executar {nome}.")
@@ -340,29 +379,30 @@ def _executar_automacao(request, executor, nome):
     log = ExecucaoAutomacao.objects.create(
         nome=nome,
         usuario=request.user if request.user.is_authenticated else None,
-        status=ExecucaoAutomacao.STATUS_INICIADO,
+        status=ExecucaoAutomacao.STATUS_PROCESSANDO,
         mensagem="Execução iniciada.",
     )
 
     try:
         resultado = executor()
-        ok = bool(resultado.get("ok")) if isinstance(resultado, dict) else False
-        mensagem = (
-            resultado.get("mensagem")
-            if isinstance(resultado, dict)
-            else f"{nome} executado."
-        )
 
-        log.status = ExecucaoAutomacao.STATUS_SUCESSO if ok else ExecucaoAutomacao.STATUS_ERRO
-        log.sucesso = ok
-        log.mensagem = mensagem or (
-            f"{nome} executado com sucesso." if ok else f"Falha ao executar {nome}."
-        )
+        ok = _resultado_bool(resultado)
+        mensagem = _resultado_mensagem(resultado, nome, ok)
+        status_final = _status_final_execucao(resultado, ok)
+
+        log.status = status_final
+        log.sucesso = status_final in {
+            ExecucaoAutomacao.STATUS_SUCESSO,
+            ExecucaoAutomacao.STATUS_SUCESSO_PARCIAL,
+        }
+        log.mensagem = mensagem
         log.quantidade_processada = _extrair_quantidade_processada(resultado)
         log.detalhes = _detalhes_execucao(resultado)
 
-        if ok:
+        if status_final == ExecucaoAutomacao.STATUS_SUCESSO:
             messages.success(request, log.mensagem)
+        elif status_final == ExecucaoAutomacao.STATUS_SUCESSO_PARCIAL:
+            messages.warning(request, log.mensagem)
         else:
             messages.error(request, log.mensagem)
 
@@ -370,7 +410,11 @@ def _executar_automacao(request, executor, nome):
         log.status = ExecucaoAutomacao.STATUS_ERRO
         log.sucesso = False
         log.mensagem = f"Erro ao executar {nome}: {exc}"
-        log.detalhes = {"erro": str(exc)}
+        log.detalhes = {
+            "erro": str(exc),
+            "tipo": exc.__class__.__name__,
+            "traceback": traceback.format_exc(limit=12),
+        }
         messages.error(request, log.mensagem)
 
     finally:
@@ -389,7 +433,6 @@ def _executar_automacao(request, executor, nome):
         )
 
     return redirect("automacoes:painel")
-
 
 @login_required
 def logs_automacoes(request):
@@ -424,14 +467,14 @@ def logs_automacoes(request):
     total = logs.count()
     total_sucesso = logs.filter(sucesso=True).count()
     total_erros = logs.filter(status=ExecucaoAutomacao.STATUS_ERRO).count()
-    total_iniciados = logs.filter(status=ExecucaoAutomacao.STATUS_INICIADO).count()
+    total_iniciados = logs.filter(status__in=[ExecucaoAutomacao.STATUS_INICIADO, ExecucaoAutomacao.STATUS_PROCESSANDO]).count()
 
     duracao_media = logs.exclude(duracao_segundos=0).aggregate(
         media=Avg("duracao_segundos")
     ).get("media")
     duracao_media = round(duracao_media, 2) if duracao_media else 0
 
-    total_finalizados = logs.exclude(status=ExecucaoAutomacao.STATUS_INICIADO).count()
+    total_finalizados = logs.exclude(status__in=[ExecucaoAutomacao.STATUS_INICIADO, ExecucaoAutomacao.STATUS_PROCESSANDO]).count()
     taxa_sucesso = round((total_sucesso / total_finalizados) * 100, 1) if total_finalizados else 0
     hoje = timezone.localdate()
     falhas_hoje = logs.filter(iniciado_em__date=hoje, status=ExecucaoAutomacao.STATUS_ERRO).count()
@@ -453,6 +496,17 @@ def logs_automacoes(request):
     )
     erros_chart_labels = [(item.get("nome") or "Sem nome") for item in erros_por_automacao]
     erros_chart_values = [item.get("total") or 0 for item in erros_por_automacao]
+
+    # Série simples dos últimos 14 dias para analytics operacional.
+    dias_labels = []
+    dias_execucoes = []
+    dias_erros = []
+    for offset in range(13, -1, -1):
+        dia = hoje - timezone.timedelta(days=offset)
+        dia_qs = logs.filter(iniciado_em__date=dia)
+        dias_labels.append(dia.strftime("%d/%m"))
+        dias_execucoes.append(dia_qs.count())
+        dias_erros.append(dia_qs.filter(status=ExecucaoAutomacao.STATUS_ERRO).count())
 
     paginator = Paginator(logs, 50)
     page_obj = paginator.get_page(request.GET.get("page"))
@@ -479,6 +533,9 @@ def logs_automacoes(request):
             "automacao_chart_values": automacao_chart_values,
             "erros_chart_labels": erros_chart_labels,
             "erros_chart_values": erros_chart_values,
+            "dias_labels": dias_labels,
+            "dias_execucoes": dias_execucoes,
+            "dias_erros": dias_erros,
             "status_choices": ExecucaoAutomacao.STATUS_CHOICES,
         },
     )
