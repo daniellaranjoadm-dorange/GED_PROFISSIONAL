@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 import time
 
 from django.contrib import messages
@@ -88,6 +89,67 @@ def _detalhes_execucao(resultado):
     }
 
 
+def _formatar_duracao(segundos):
+    segundos = float(segundos or 0)
+
+    if segundos < 60:
+        return f"{segundos:.1f}s" if segundos and segundos < 10 else f"{round(segundos)}s"
+
+    minutos = int(segundos // 60)
+    resto = int(segundos % 60)
+    return f"{minutos}m {resto}s"
+
+
+def _health_automacoes(nomes):
+    health = {}
+
+    for nome in nomes:
+        qs = ExecucaoAutomacao.objects.filter(nome=nome)
+        ultima = qs.order_by("-iniciado_em").first()
+        total_finalizado = qs.exclude(status=ExecucaoAutomacao.STATUS_INICIADO).count()
+        total_sucesso = qs.filter(status=ExecucaoAutomacao.STATUS_SUCESSO).count()
+        total_erros = qs.filter(status=ExecucaoAutomacao.STATUS_ERRO).count()
+        duracao_media = (
+            qs.exclude(duracao_segundos=0)
+            .aggregate(media=Avg("duracao_segundos"))
+            .get("media")
+            or 0
+        )
+
+        if not ultima:
+            estado = "OCIOSO"
+            classe = "auto-status-idle"
+            icone = "bi-circle"
+        elif ultima.status == ExecucaoAutomacao.STATUS_INICIADO:
+            estado = "EXECUTANDO"
+            classe = "auto-status-running"
+            icone = "bi-arrow-repeat"
+        elif ultima.status == ExecucaoAutomacao.STATUS_ERRO:
+            estado = "ERRO"
+            classe = "auto-status-error"
+            icone = "bi-exclamation-triangle"
+        else:
+            estado = "ONLINE"
+            classe = "auto-status-online"
+            icone = "bi-check-circle"
+
+        taxa_sucesso = round((total_sucesso / total_finalizado) * 100, 1) if total_finalizado else 0
+
+        health[nome] = {
+            "estado": estado,
+            "classe": classe,
+            "icone": icone,
+            "ultima": ultima,
+            "taxa_sucesso": taxa_sucesso,
+            "total_erros": total_erros,
+            "duracao_media": round(duracao_media, 2) if duracao_media else 0,
+            "duracao_media_fmt": _formatar_duracao(duracao_media),
+        }
+
+    return health
+
+
+
 @login_required
 def painel(request):
     total_ld = DocumentoLD.objects.count()
@@ -144,6 +206,22 @@ def painel(request):
         .exclude(status=ExecucaoAutomacao.STATUS_INICIADO)
         .count()
     )
+    total_sucessos = ExecucaoAutomacao.objects.filter(status=ExecucaoAutomacao.STATUS_SUCESSO).count()
+    total_finalizados = ExecucaoAutomacao.objects.exclude(status=ExecucaoAutomacao.STATUS_INICIADO).count()
+    taxa_sucesso_global = round((total_sucessos / total_finalizados) * 100, 1) if total_finalizados else 0
+    hoje = timezone.localdate()
+    execucoes_hoje = ExecucaoAutomacao.objects.filter(iniciado_em__date=hoje).count()
+    falhas_hoje = ExecucaoAutomacao.objects.filter(
+        iniciado_em__date=hoje,
+        status=ExecucaoAutomacao.STATUS_ERRO,
+    ).count()
+    duracao_media_global = (
+        ExecucaoAutomacao.objects.exclude(duracao_segundos=0)
+        .aggregate(media=Avg("duracao_segundos"))
+        .get("media")
+        or 0
+    )
+    duracao_media_global = round(duracao_media_global, 2) if duracao_media_global else 0
 
     automacoes = [
         {
@@ -220,6 +298,10 @@ def painel(request):
         },
     ]
 
+    health_map = _health_automacoes([rotina["nome"] for rotina in automacoes])
+    for rotina in automacoes:
+        rotina["health"] = health_map.get(rotina["nome"], {})
+
     return render(
         request,
         "automacoes/painel.html",
@@ -240,6 +322,11 @@ def painel(request):
             "ultima_falha": ultima_falha,
             "total_execucoes": total_execucoes,
             "total_falhas": total_falhas,
+            "total_sucessos": total_sucessos,
+            "taxa_sucesso_global": taxa_sucesso_global,
+            "execucoes_hoje": execucoes_hoje,
+            "falhas_hoje": falhas_hoje,
+            "duracao_media_global": duracao_media_global,
         },
     )
 
@@ -344,6 +431,29 @@ def logs_automacoes(request):
     ).get("media")
     duracao_media = round(duracao_media, 2) if duracao_media else 0
 
+    total_finalizados = logs.exclude(status=ExecucaoAutomacao.STATUS_INICIADO).count()
+    taxa_sucesso = round((total_sucesso / total_finalizados) * 100, 1) if total_finalizados else 0
+    hoje = timezone.localdate()
+    falhas_hoje = logs.filter(iniciado_em__date=hoje, status=ExecucaoAutomacao.STATUS_ERRO).count()
+    execucoes_hoje = logs.filter(iniciado_em__date=hoje).count()
+
+    por_automacao = list(
+        logs.values("nome")
+        .annotate(total=Count("id"))
+        .order_by("-total", "nome")[:10]
+    )
+    automacao_chart_labels = [(item.get("nome") or "Sem nome") for item in por_automacao]
+    automacao_chart_values = [item.get("total") or 0 for item in por_automacao]
+
+    erros_por_automacao = list(
+        logs.filter(status=ExecucaoAutomacao.STATUS_ERRO)
+        .values("nome")
+        .annotate(total=Count("id"))
+        .order_by("-total", "nome")[:10]
+    )
+    erros_chart_labels = [(item.get("nome") or "Sem nome") for item in erros_por_automacao]
+    erros_chart_values = [item.get("total") or 0 for item in erros_por_automacao]
+
     paginator = Paginator(logs, 50)
     page_obj = paginator.get_page(request.GET.get("page"))
 
@@ -362,6 +472,13 @@ def logs_automacoes(request):
             "total_erros": total_erros,
             "total_iniciados": total_iniciados,
             "duracao_media": duracao_media,
+            "taxa_sucesso": taxa_sucesso,
+            "falhas_hoje": falhas_hoje,
+            "execucoes_hoje": execucoes_hoje,
+            "automacao_chart_labels": automacao_chart_labels,
+            "automacao_chart_values": automacao_chart_values,
+            "erros_chart_labels": erros_chart_labels,
+            "erros_chart_values": erros_chart_values,
             "status_choices": ExecucaoAutomacao.STATUS_CHOICES,
         },
     )
@@ -933,8 +1050,69 @@ def _ld_kpis(registros):
     }
 
 
+def _ld_normalizar_path_texto(valor):
+    return _ld_texto(valor).split("#", 1)[0].replace("/", "\\")
+
+
+def _ld_raizes_inferidas_do_banco():
+    """
+    Infere a raiz da rede a partir de caminhos absolutos já gravados na LD.
+
+    Exemplo:
+    \\servidor\...\09. Doc Control\10 - Engenharia\...
+    vira:
+    \\servidor\...\09. Doc Control
+    """
+    campos = [
+        "caminho_documento",
+        "caminho_grd",
+        "caminho_pcf",
+        "caminho_resposta",
+        "caminho_grd_resposta",
+    ]
+
+    raizes = []
+    vistos = set()
+
+    for campo in campos:
+        if not _ld_has_field(campo):
+            continue
+
+        try:
+            valores = (
+                DocumentoLD.objects.exclude(**{campo: ""})
+                .exclude(**{f"{campo}__isnull": True})
+                .values_list(campo, flat=True)[:500]
+            )
+        except Exception:
+            continue
+
+        for valor in valores:
+            texto = _ld_normalizar_path_texto(valor)
+            texto_lower = texto.lower()
+
+            if not texto or not (texto.startswith("\\\\") or ":" in texto):
+                continue
+
+            for marcador in [
+                "\\1 - docs emissão engedoc",
+                "\\9 - pcfs transpetro",
+                "\\10 - engenharia",
+            ]:
+                pos = texto_lower.find(marcador)
+                if pos > 0:
+                    raiz = texto[:pos]
+                    chave = raiz.lower()
+                    if chave not in vistos:
+                        vistos.add(chave)
+                        raizes.append(Path(raiz))
+                    break
+
+    return raizes
+
+
 def _ld_caminhos_candidatos(caminho_salvo):
-    bruto = _ld_texto(caminho_salvo).split("#", 1)[0].replace("/", "\\")
+    bruto = _ld_normalizar_path_texto(caminho_salvo)
     candidatos = []
 
     if not bruto:
@@ -942,13 +1120,26 @@ def _ld_caminhos_candidatos(caminho_salvo):
 
     candidatos.append(Path(bruto))
 
+    # Mantém o caminho relativo "limpo", removendo apenas . e ..
+    # Ex.: ../1 - DOCS... -> 1 - DOCS...
     partes = [p for p in bruto.split("\\") if p and p not in {".", ".."}]
 
     base_path = _ld_texto(getattr(settings, "LD_BASE_PATH", ""))
 
     bases = []
+
     if base_path:
-        bases.append(Path(base_path))
+        base = Path(base_path)
+        bases.append(base)
+
+        # Se LD_BASE_PATH aponta para "10 - Engenharia", a raiz operacional
+        # é a pasta acima, onde também existem "1 - DOCS..." e "9 - PCFs...".
+        if base.name.strip().lower() == "10 - engenharia":
+            bases.append(base.parent)
+
+    # Raízes inferidas do próprio banco, preservando o comportamento antigo
+    # mesmo quando LD_BASE_PATH não estiver configurado.
+    bases.extend(_ld_raizes_inferidas_do_banco())
 
     user_home = Path.home()
     bases.extend([
@@ -960,19 +1151,22 @@ def _ld_caminhos_candidatos(caminho_salvo):
     ])
 
     for base in bases:
-        candidatos.append(base / Path(*partes))
+        if partes:
+            candidatos.append(base / Path(*partes))
 
-    # Quando o caminho vem como ../9 - PCFs..., a raiz deve ser a pasta acima de 1/9/10.
-    if base_path and partes:
-        candidatos.append(Path(base_path) / Path(*partes))
+        # Caso o caminho salvo tenha vindo como "../1 - DOCS..." e a base
+        # seja "10 - Engenharia", testa também a pasta irmã.
+        if bruto.startswith("..\\") and base.name.strip().lower() == "10 - engenharia" and partes:
+            candidatos.append(base.parent / Path(*partes))
 
     unicos = []
     vistos = set()
 
     for candidato in candidatos:
         texto = str(candidato)
-        if texto not in vistos:
-            vistos.add(texto)
+        chave = texto.lower()
+        if chave not in vistos:
+            vistos.add(chave)
             unicos.append(candidato)
 
     return unicos
@@ -1594,22 +1788,29 @@ def abrir_arquivo_ld(request, pk, tipo):
 
         html += "</ul>"
         html += "<p>Configure no <strong>settings.py</strong>:</p>"
-        html += '<pre>LD_BASE_PATH = r"C:\\CAMINHO\\DA\\PASTA\\RAIZ"</pre>'
+        html += '<pre>LD_BASE_PATH = r"C:\CAMINHO\DA\PASTA\RAIZ"</pre>'
         html += "<p>A raiz deve conter as pastas anteriores a <strong>1 - DOCS EMISSÃO ENGEDOC</strong>, <strong>9 - PCFs Transpetro</strong> e <strong>10 - Engenharia</strong>.</p>"
 
         return HttpResponse(html, status=404)
 
-    if arquivo.is_dir():
-        html = "<h3>Pasta localizada.</h3>"
+    try:
+        if arquivo.is_dir():
+            os.startfile(str(arquivo))
+            html = "<h3>Pasta aberta no Windows Explorer.</h3>"
+            html += f"<p><strong>Caminho:</strong> {arquivo}</p>"
+            html += "<p>Você pode fechar esta aba.</p>"
+            return HttpResponse(html)
+
+        return FileResponse(
+            open(arquivo, "rb"),
+            as_attachment=False,
+            filename=arquivo.name,
+        )
+
+    except Exception as exc:
+        html = "<h3>Arquivo ou pasta localizado, mas não foi possível abrir automaticamente.</h3>"
         html += f"<p><strong>Caminho:</strong> {arquivo}</p>"
-        html += "<p>Por segurança, navegadores não abrem pasta local diretamente via Django.</p>"
-        html += "<p>Copie o caminho acima e cole no Windows Explorer.</p>"
+        html += f"<p><strong>Erro:</strong> {exc}</p>"
+        return HttpResponse(html, status=500)
 
-        return HttpResponse(html)
-
-    return FileResponse(
-        open(arquivo, "rb"),
-        as_attachment=False,
-        filename=arquivo.name,
-    )
 

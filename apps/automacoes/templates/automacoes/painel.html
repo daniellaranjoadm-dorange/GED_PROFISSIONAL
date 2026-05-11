@@ -141,6 +141,22 @@
   .auto-badge-info { background: rgba(14, 165, 233, .14); color: #0369a1; }
   .auto-badge-neutral { background: rgba(100, 116, 139, .14); color: #334155; }
 
+  .auto-status {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    border-radius: 999px;
+    padding: .34rem .72rem;
+    font-size: .74rem;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+
+  .auto-status-online { background: rgba(22, 163, 74, .12); color: #15803d; }
+  .auto-status-running { background: rgba(14, 165, 233, .14); color: #0369a1; }
+  .auto-status-error { background: rgba(220, 38, 38, .12); color: #991b1b; }
+  .auto-status-idle { background: rgba(100, 116, 139, .14); color: #334155; }
+
   .auto-metrics {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -330,6 +346,28 @@
         </div>
       </a>
     </div>
+
+    <div class="col-md">
+      <a href="{% url 'automacoes:logs_automacoes' %}" class="text-decoration-none text-dark">
+        <div class="card auto-kpi h-100">
+          <div class="card-body">
+            <small>Sucesso %</small>
+            <h2 class="text-success">{{ taxa_sucesso_global|default:0 }}%</h2>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md">
+      <a href="{% url 'automacoes:logs_automacoes' %}?status=erro" class="text-decoration-none text-dark">
+        <div class="card auto-kpi h-100">
+          <div class="card-body">
+            <small>Falhas hoje</small>
+            <h2 class="text-danger">{{ falhas_hoje|default:0 }}</h2>
+          </div>
+        </div>
+      </a>
+    </div>
   </div>
 
   <div class="row g-4 mb-4">
@@ -348,9 +386,15 @@
                 </div>
               </div>
 
-              <span class="auto-badge {{ rotina.badge_class }}">
-                ● {{ rotina.badge }}
-              </span>
+              <div class="d-flex flex-column align-items-end gap-2">
+                <span class="auto-badge {{ rotina.badge_class }}">
+                  ● {{ rotina.badge }}
+                </span>
+                <span class="auto-status {{ rotina.health.classe|default:'auto-status-idle' }}">
+                  <i class="bi {{ rotina.health.icone|default:'bi-circle' }}"></i>
+                  {{ rotina.health.estado|default:"OCIOSO" }}
+                </span>
+              </div>
             </div>
 
             <p class="text-muted mb-3">{{ rotina.descricao }}</p>
@@ -362,6 +406,21 @@
                   <div class="auto-metric-value">{{ metrica.valor }}</div>
                 </div>
               {% endfor %}
+            </div>
+
+            <div class="auto-metrics mb-4">
+              <div class="auto-metric">
+                <div class="auto-metric-label">Sucesso</div>
+                <div class="auto-metric-value">{{ rotina.health.taxa_sucesso|default:0 }}%</div>
+              </div>
+              <div class="auto-metric">
+                <div class="auto-metric-label">Tempo médio</div>
+                <div class="auto-metric-value">{{ rotina.health.duracao_media_fmt|default:"0s" }}</div>
+              </div>
+              <div class="auto-metric">
+                <div class="auto-metric-label">Erros</div>
+                <div class="auto-metric-value">{{ rotina.health.total_erros|default:0 }}</div>
+              </div>
             </div>
 
             <div class="auto-btn-row">
@@ -386,6 +445,11 @@
                   Registros
                 </a>
               {% endif %}
+
+              <a href="{% url 'automacoes:logs_automacoes' %}?nome={{ rotina.nome|urlencode }}" class="btn btn-outline-dark">
+                <i class="bi bi-activity"></i>
+                Logs
+              </a>
             </div>
           </div>
         </div>

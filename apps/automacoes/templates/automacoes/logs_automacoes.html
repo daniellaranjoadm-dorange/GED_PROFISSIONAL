@@ -72,6 +72,11 @@
     max-width: 520px;
     white-space: normal;
   }
+
+  .logs-chart-wrap {
+    min-height: 280px;
+    position: relative;
+  }
 </style>
 {% endblock %}
 
@@ -142,6 +147,55 @@
         <div class="card-body">
           <small>Duração média</small>
           <h2>{{ duracao_media }}s</h2>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md">
+      <div class="card logs-kpi h-100">
+        <div class="card-body">
+          <small>Sucesso %</small>
+          <h2 class="text-success">{{ taxa_sucesso }}%</h2>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md">
+      <div class="card logs-kpi h-100">
+        <div class="card-body">
+          <small>Falhas hoje</small>
+          <h2 class="text-danger">{{ falhas_hoje }}</h2>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {{ automacao_chart_labels|json_script:"logs-auto-labels" }}
+  {{ automacao_chart_values|json_script:"logs-auto-values" }}
+  {{ erros_chart_labels|json_script:"logs-erros-labels" }}
+  {{ erros_chart_values|json_script:"logs-erros-values" }}
+
+  <div class="row g-4 mb-4">
+    <div class="col-lg-6">
+      <div class="logs-panel p-4 h-100">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h4 class="mb-0">Execuções por automação</h4>
+          <span class="logs-badge logs-badge-info">{{ execucoes_hoje }} hoje</span>
+        </div>
+        <div class="logs-chart-wrap">
+          <canvas id="logsAutomacaoChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="logs-panel p-4 h-100">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h4 class="mb-0">Erros por automação</h4>
+          <span class="logs-badge logs-badge-danger">{{ total_erros }} erros</span>
+        </div>
+        <div class="logs-chart-wrap">
+          <canvas id="logsErrosChart"></canvas>
         </div>
       </div>
     </div>
@@ -260,4 +314,62 @@
     {% endif %}
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  function readJson(id) {
+    const element = document.getElementById(id);
+    if (!element) return [];
+    try {
+      return JSON.parse(element.textContent || "[]");
+    } catch (error) {
+      console.warn("Falha ao ler JSON do gráfico", id, error);
+      return [];
+    }
+  }
+
+  if (!window.Chart) return;
+
+  const autoLabels = readJson("logs-auto-labels");
+  const autoValues = readJson("logs-auto-values");
+  const errosLabels = readJson("logs-erros-labels");
+  const errosValues = readJson("logs-erros-values");
+
+  const autoCanvas = document.getElementById("logsAutomacaoChart");
+  if (autoCanvas && autoLabels.length) {
+    new Chart(autoCanvas, {
+      type: "bar",
+      data: {
+        labels: autoLabels,
+        datasets: [{ label: "Execuções", data: autoValues }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: "y",
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
+
+  const errosCanvas = document.getElementById("logsErrosChart");
+  if (errosCanvas && errosLabels.length) {
+    new Chart(errosCanvas, {
+      type: "bar",
+      data: {
+        labels: errosLabels,
+        datasets: [{ label: "Erros", data: errosValues }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: "y",
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
+})();
+</script>
 {% endblock %}
