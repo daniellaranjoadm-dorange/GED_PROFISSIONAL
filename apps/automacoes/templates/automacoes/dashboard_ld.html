@@ -145,7 +145,7 @@
     </div>
 
     <div class="col-md">
-      <a href="{% url 'automacoes:lista_ld' %}?status_pcf=NOT RELEASED" class="text-decoration-none text-dark">
+      <a href="{% url 'automacoes:lista_ld' %}?status_pcf=NOT%20RELEASED" class="text-decoration-none text-dark">
         <div class="card dash-kpi shadow-sm h-100">
           <div class="card-body">
             <small>Not Released</small>
@@ -290,7 +290,7 @@
                 <td><span class="badge bg-warning text-dark">{{ item.total }}</span></td>
                 <td class="text-end">
                   {% if item.disciplina %}
-                  <a href="{% url 'automacoes:lista_ld' %}?disciplina={{ item.disciplina }}&sem_pcf=1"
+                  <a href="{% url 'automacoes:lista_ld' %}?disciplina={{ item.disciplina|urlencode }}&sem_pcf=1"
                      class="btn btn-sm btn-outline-primary">
                     Abrir
                   </a>
@@ -314,7 +314,7 @@
         </div>
 
         {% for item in top_not_released %}
-        <a href="{% url 'automacoes:lista_ld' %}?q={{ item.documento }}"
+        <a href="{% url 'automacoes:lista_ld' %}?q={{ item.documento|urlencode }}"
            class="dash-list-item">
           <div class="fw-bold">{{ item.documento }}</div>
           <small class="text-muted">
@@ -334,16 +334,45 @@
 {% block extra_js %}
 <script>
 (function () {
-  const disciplinaLabels = JSON.parse(document.getElementById("ld-disciplina-labels").textContent);
-  const disciplinaValues = JSON.parse(document.getElementById("ld-disciplina-values").textContent);
-  const origemLabels = JSON.parse(document.getElementById("ld-origem-labels").textContent);
-  const origemValues = JSON.parse(document.getElementById("ld-origem-values").textContent);
-  const statusDocLabels = JSON.parse(document.getElementById("ld-status-doc-labels").textContent);
-  const statusDocValues = JSON.parse(document.getElementById("ld-status-doc-values").textContent);
-  const statusGrdLabels = JSON.parse(document.getElementById("ld-status-grd-labels").textContent);
-  const statusGrdValues = JSON.parse(document.getElementById("ld-status-grd-values").textContent);
-  const pcfLabels = JSON.parse(document.getElementById("ld-pcf-labels").textContent);
-  const pcfValues = JSON.parse(document.getElementById("ld-pcf-values").textContent);
+  const listaLdUrl = "{% url 'automacoes:lista_ld' %}";
+
+  function readJsonScript(id) {
+    const element = document.getElementById(id);
+    if (!element) return [];
+    try {
+      return JSON.parse(element.textContent || "[]");
+    } catch (error) {
+      console.warn("Falha ao ler dados do gráfico:", id, error);
+      return [];
+    }
+  }
+
+  function goToList(params) {
+    const url = new URL(listaLdUrl, window.location.origin);
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && String(value).trim() !== "") {
+        url.searchParams.set(key, value);
+      }
+    });
+    window.location.href = url.toString();
+  }
+
+  function clickedLabel(chart, event) {
+    const points = chart.getElementsAtEventForMode(event, "nearest", { intersect: true }, true);
+    if (!points.length) return null;
+    return chart.data.labels[points[0].index];
+  }
+
+  const disciplinaLabels = readJsonScript("ld-disciplina-labels");
+  const disciplinaValues = readJsonScript("ld-disciplina-values");
+  const origemLabels = readJsonScript("ld-origem-labels");
+  const origemValues = readJsonScript("ld-origem-values");
+  const statusDocLabels = readJsonScript("ld-status-doc-labels");
+  const statusDocValues = readJsonScript("ld-status-doc-values");
+  const statusGrdLabels = readJsonScript("ld-status-grd-labels");
+  const statusGrdValues = readJsonScript("ld-status-grd-values");
+  const pcfLabels = readJsonScript("ld-pcf-labels");
+  const pcfValues = readJsonScript("ld-pcf-values");
 
   if (!window.Chart) return;
 
@@ -354,26 +383,51 @@
       responsive: true,
       maintainAspectRatio: false,
       indexAxis: "y",
-      plugins: { legend: { display: false } }
+      plugins: { legend: { display: false } },
+      onClick: function (event) {
+        const label = clickedLabel(this, event);
+        if (label && label !== "Sem disciplina") goToList({ disciplina: label });
+      }
     }
   });
 
   new Chart(document.getElementById("ldOrigemChart"), {
     type: "doughnut",
     data: { labels: origemLabels, datasets: [{ data: origemValues }] },
-    options: { responsive: true, maintainAspectRatio: false }
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      onClick: function (event) {
+        const label = clickedLabel(this, event);
+        if (label && label !== "Sem origem") goToList({ origem: label });
+      }
+    }
   });
 
   new Chart(document.getElementById("ldStatusDocChart"), {
     type: "doughnut",
     data: { labels: statusDocLabels, datasets: [{ data: statusDocValues }] },
-    options: { responsive: true, maintainAspectRatio: false }
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      onClick: function (event) {
+        const label = clickedLabel(this, event);
+        if (label && label !== "Sem status") goToList({ status_doc: label });
+      }
+    }
   });
 
   new Chart(document.getElementById("ldStatusGrdChart"), {
     type: "doughnut",
     data: { labels: statusGrdLabels, datasets: [{ data: statusGrdValues }] },
-    options: { responsive: true, maintainAspectRatio: false }
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      onClick: function (event) {
+        const label = clickedLabel(this, event);
+        if (label && label !== "Sem status") goToList({ status_grd: label });
+      }
+    }
   });
 
   new Chart(document.getElementById("ldPcfChart"), {
@@ -382,7 +436,14 @@
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { display: false } }
+      plugins: { legend: { display: false } },
+      onClick: function (event) {
+        const label = clickedLabel(this, event);
+        if (label === "Com PCF") goToList({ com_pcf: "1" });
+        if (label === "Sem PCF") goToList({ sem_pcf: "1" });
+        if (label === "Com resposta") goToList({ com_resposta: "1" });
+        if (label === "Sem resposta") goToList({ com_pcf: "1" });
+      }
     }
   });
 })();

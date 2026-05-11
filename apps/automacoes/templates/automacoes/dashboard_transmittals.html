@@ -58,7 +58,7 @@
 
   <div class="row g-4">
     <div class="col-lg-7"><div class="dash-panel p-4 h-100"><div class="dash-panel-title"><h4>Top Transmittals</h4><span class="dash-chip">Documentos</span></div><div class="chart-wrap"><canvas id="transTopChart"></canvas></div></div></div>
-    <div class="col-lg-5"><div class="dash-panel p-4 h-100"><div class="dash-panel-title"><h4>Últimos Importados</h4><span class="dash-chip">Recentes</span></div>{% for item in ultimos %}<a href="{% url 'automacoes:transmittals_km' %}?q={{ item.documento }}" class="dash-list-item"><div class="fw-bold">{{ item.documento }}</div><small class="text-muted">{{ item.transmittal_numero }} · {{ item.emissao|default:"—" }}</small></a>{% empty %}<div class="text-muted">Sem registros.</div>{% endfor %}</div></div>
+    <div class="col-lg-5"><div class="dash-panel p-4 h-100"><div class="dash-panel-title"><h4>Últimos Importados</h4><span class="dash-chip">Recentes</span></div>{% for item in ultimos %}<a href="{% url 'automacoes:transmittals_km' %}?q={{ item.documento|urlencode }}" class="dash-list-item"><div class="fw-bold">{{ item.documento }}</div><small class="text-muted">{{ item.transmittal_numero }} · {{ item.emissao|default:"—" }}</small></a>{% empty %}<div class="text-muted">Sem registros.</div>{% endfor %}</div></div>
   </div>
 </div>
 {% endblock %}
@@ -66,18 +66,86 @@
 {% block extra_js %}
 <script>
 (function () {
-  const pastasLabels = JSON.parse(document.getElementById("tr-pastas-labels").textContent);
-  const pastasValues = JSON.parse(document.getElementById("tr-pastas-values").textContent);
-  const emissoesLabels = JSON.parse(document.getElementById("tr-emissoes-labels").textContent);
-  const emissoesValues = JSON.parse(document.getElementById("tr-emissoes-values").textContent);
-  const topLabels = JSON.parse(document.getElementById("tr-top-labels").textContent);
-  const topValues = JSON.parse(document.getElementById("tr-top-values").textContent);
+  const registrosUrl = "{% url 'automacoes:transmittals_km' %}";
+
+  function readJsonScript(id) {
+    const element = document.getElementById(id);
+    if (!element) return [];
+    try {
+      return JSON.parse(element.textContent || "[]");
+    } catch (error) {
+      console.warn("Falha ao ler dados do gráfico:", id, error);
+      return [];
+    }
+  }
+
+  function goToRecords(params) {
+    const url = new URL(registrosUrl, window.location.origin);
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && String(value).trim() !== "") {
+        url.searchParams.set(key, value);
+      }
+    });
+    window.location.href = url.toString();
+  }
+
+  function clickedLabel(chart, event) {
+    const points = chart.getElementsAtEventForMode(event, "nearest", { intersect: true }, true);
+    if (!points.length) return null;
+    return chart.data.labels[points[0].index];
+  }
+
+  const pastasLabels = readJsonScript("tr-pastas-labels");
+  const pastasValues = readJsonScript("tr-pastas-values");
+  const emissoesLabels = readJsonScript("tr-emissoes-labels");
+  const emissoesValues = readJsonScript("tr-emissoes-values");
+  const topLabels = readJsonScript("tr-top-labels");
+  const topValues = readJsonScript("tr-top-values");
 
   if (!window.Chart) return;
 
-  new Chart(document.getElementById("transPastasChart"), { type: "bar", data: { labels: pastasLabels, datasets: [{ label: "Documentos", data: pastasValues }] }, options: { responsive: true, maintainAspectRatio: false, indexAxis: "y", plugins: { legend: { display: false } } } });
-  new Chart(document.getElementById("transEmissoesChart"), { type: "doughnut", data: { labels: emissoesLabels, datasets: [{ data: emissoesValues }] }, options: { responsive: true, maintainAspectRatio: false } });
-  new Chart(document.getElementById("transTopChart"), { type: "bar", data: { labels: topLabels, datasets: [{ label: "Total Docs", data: topValues }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+  new Chart(document.getElementById("transPastasChart"), {
+    type: "bar",
+    data: { labels: pastasLabels, datasets: [{ label: "Documentos", data: pastasValues }] },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      indexAxis: "y",
+      plugins: { legend: { display: false } },
+      onClick: function (event) {
+        const label = clickedLabel(this, event);
+        if (label && label !== "Sem pasta") goToRecords({ pasta: label });
+      }
+    }
+  });
+
+  new Chart(document.getElementById("transEmissoesChart"), {
+    type: "doughnut",
+    data: { labels: emissoesLabels, datasets: [{ data: emissoesValues }] },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      onClick: function (event) {
+        const label = clickedLabel(this, event);
+        if (label && label !== "Sem emissão") goToRecords({ emissao: label });
+      }
+    }
+  });
+
+  new Chart(document.getElementById("transTopChart"), {
+    type: "bar",
+    data: { labels: topLabels, datasets: [{ label: "Documentos", data: topValues }] },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      indexAxis: "y",
+      plugins: { legend: { display: false } },
+      onClick: function (event) {
+        const label = clickedLabel(this, event);
+        if (label && label !== "Sem número") goToRecords({ transmittal: label });
+      }
+    }
+  });
 })();
 </script>
 {% endblock %}

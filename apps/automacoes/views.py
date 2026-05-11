@@ -88,19 +88,27 @@ def executar_grd_ghenova(request):
 @login_required
 def listar_transmittals_km(request):
     busca = request.GET.get("q", "").strip()
+    pasta = request.GET.get("pasta", "").strip()
+    emissao = request.GET.get("emissao", "").strip()
+    transmittal = request.GET.get("transmittal", "").strip()
 
-    registros = TransmittalKM.objects.all().order_by(
-    "-criado_em"
-   )
+    registros = TransmittalKM.objects.all().order_by("-criado_em")
 
     if busca:
         registros = registros.filter(
-            documento__icontains=busca
-        ) | registros.filter(
-            titulo__icontains=busca
-        ) | registros.filter(
-            transmittal_numero__icontains=busca
+            Q(documento__icontains=busca)
+            | Q(titulo__icontains=busca)
+            | Q(transmittal_numero__icontains=busca)
         )
+
+    if pasta:
+        registros = registros.filter(pasta__iexact=pasta)
+
+    if emissao:
+        registros = registros.filter(emissao__iexact=emissao)
+
+    if transmittal:
+        registros = registros.filter(transmittal_numero__iexact=transmittal)
 
     return render(
         request,
@@ -108,6 +116,9 @@ def listar_transmittals_km(request):
         {
             "registros": registros,
             "busca": busca,
+            "pasta": pasta,
+            "emissao": emissao,
+            "transmittal": transmittal,
         },
     )
 
@@ -160,26 +171,7 @@ def _filtrar_pcfs_timeline(request):
         registros = registros.filter(tipo=tipo)
 
     if status:
-        status_norm = status.strip().upper()
-
-        # Filtro categórico usado pelos dashboards:
-        # "RELEASED" deve incluir RELEASED / RELEASED WITH COMMENTS,
-        # mas nunca NOT RELEASED.
-        if status_norm == "RELEASED":
-            registros = registros.filter(
-                status_final__icontains="RELEASED"
-            ).exclude(
-                status_final__icontains="NOT RELEASED"
-            )
-
-        # "NOT RELEASED" deve ficar isolado para não misturar com RELEASED.
-        elif status_norm == "NOT RELEASED":
-            registros = registros.filter(
-                status_final__icontains="NOT RELEASED"
-            )
-
-        else:
-            registros = registros.filter(status_final__icontains=status)
+        registros = registros.filter(status_final__icontains=status)
 
     if somente_open:
         registros = registros.filter(open_comments__gt=0)
@@ -573,7 +565,11 @@ def _ld_filtrar_queryset(request):
         registros = registros.filter(status_grd__iexact=status_grd)
 
     if status_pcf:
-        registros = registros.filter(status_final_pcf__icontains=status_pcf)
+        status_pcf_norm = status_pcf.strip().upper()
+        if status_pcf_norm in ["RELEASED", "NOT RELEASED"]:
+            registros = registros.filter(status_final_pcf__iexact=status_pcf)
+        else:
+            registros = registros.filter(status_final_pcf__icontains=status_pcf)
 
     if com_pcf and not sem_pcf:
         registros = registros.exclude(pcf__isnull=True).exclude(pcf="")
@@ -1037,13 +1033,11 @@ def dashboard_ld(request):
     kpis = _ld_kpis(registros)
 
     total_not_released = registros.filter(
-        status_final_pcf__icontains="NOT RELEASED"
+        status_final_pcf__iexact="NOT RELEASED"
     ).count()
 
     total_released = registros.filter(
-        status_final_pcf__icontains="RELEASED"
-    ).exclude(
-        status_final_pcf__icontains="NOT RELEASED"
+        status_final_pcf__iexact="RELEASED"
     ).count()
 
     total_sem_status_doc = registros.filter(
@@ -1092,7 +1086,7 @@ def dashboard_ld(request):
     )
 
     top_not_released = registros.filter(
-        status_final_pcf__icontains="NOT RELEASED"
+        status_final_pcf__iexact="NOT RELEASED"
     ).order_by("documento", "revisao")[:12]
 
     recentes = registros.order_by("-id")[:12]
