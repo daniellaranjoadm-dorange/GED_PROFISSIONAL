@@ -48,6 +48,11 @@ urlpatterns = [
         name="lista_ld",
     ),
     path(
+        "ld/exportar/",
+        views.exportar_ld_excel,
+        name="exportar_ld_excel",
+    ),
+    path(
         "dashboard-transmittals/",
         views.dashboard_transmittals,
         name="dashboard_transmittals",

@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 from django.contrib import messages
@@ -8,7 +7,6 @@ from django.core.paginator import Paginator
 from django.db.models import Count, Q, Sum
 from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import redirect, render
-from django.utils.html import escape
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 
@@ -358,6 +356,10 @@ def dashboard_pcfs(request):
 
 
 
+def _ld_has_field(nome):
+    return any(field.name == nome for field in DocumentoLD._meta.get_fields())
+
+
 def _ld_texto(valor):
     return str(valor or "").strip()
 
@@ -366,37 +368,68 @@ def _ld_bool(valor):
     return _ld_texto(valor).lower() in {"1", "true", "on", "sim", "yes"}
 
 
-def _ld_normalizar_origem(valor):
-    texto = _ld_texto(valor).casefold()
-    texto = texto.replace("_", " ").replace("-", " ").replace(".", " ")
-    texto = " ".join(texto.split())
-    return texto
-
-
-def _ld_valores_distintos(campo):
+def _ld_valores_distintos(campo, extras=None):
     valores = []
     vistos = set()
 
-    for valor in DocumentoLD.objects.order_by().values_list(campo, flat=True):
-        texto = " ".join(_ld_texto(valor).split())
-        if not texto:
-            continue
+    if _ld_has_field(campo):
+        for valor in (
+            DocumentoLD.objects.exclude(**{campo: ""})
+            .exclude(**{f"{campo}__isnull": True})
+            .values_list(campo, flat=True)
+            .distinct()
+            .order_by(campo)
+        ):
+            texto = _ld_texto(valor)
+            chave = texto.lower()
+            if texto and chave not in vistos:
+                vistos.add(chave)
+                valores.append(texto)
 
-        chave = texto.casefold()
-        if chave not in vistos:
+    for valor in extras or []:
+        texto = _ld_texto(valor)
+        chave = texto.lower()
+        if texto and chave not in vistos:
             vistos.add(chave)
             valores.append(texto)
 
-    return sorted(valores, key=lambda item: item.casefold())
+    return valores
+
+
+def _ld_normalizar_origem(valor):
+    texto = _ld_texto(valor).lower()
+    texto = " ".join(texto.replace("_", " ").replace("-", " ").split())
+
+    if not texto:
+        return ""
+
+    if "marenova" in texto:
+        return "ld marenova"
+
+    if texto in {"ld", "lista ld", "aba ld"}:
+        return "ld"
+
+    return texto
 
 
 def _ld_filtrar_origem(queryset, origem):
-    origem_norm = _ld_normalizar_origem(origem)
+    """
+    Filtra a origem sem zerar a lista quando a importação antiga veio com
+    origem_aba vazia, "LD", "Lista LD" ou variações de escrita.
 
-    if not origem_norm:
+    Regra operacional:
+    - LD Marenova: registros cuja origem contém "Marenova".
+    - LD: registros LD explícitos + registros sem origem + registros que não são Marenova.
+    - Outras origens: busca flexível por texto.
+    """
+    origem = _ld_texto(origem)
+
+    if not origem or not _ld_has_field("origem_aba"):
         return queryset
 
-    if "marenova" in origem_norm:
+    origem_norm = _ld_normalizar_origem(origem)
+
+    if origem_norm == "ld marenova":
         return queryset.filter(origem_aba__icontains="Marenova")
 
     if origem_norm == "ld":
@@ -404,10 +437,11 @@ def _ld_filtrar_origem(queryset, origem):
             Q(origem_aba__isnull=True)
             | Q(origem_aba="")
             | Q(origem_aba__iexact="LD")
-        )
+            | Q(origem_aba__iexact="Lista LD")
+            | Q(origem_aba__icontains="LD")
+        ).exclude(origem_aba__icontains="Marenova")
 
     return queryset.filter(origem_aba__icontains=origem)
-
 
 
 def _ld_revisao_peso(revisao):
@@ -456,6 +490,7 @@ def _ld_filtrar_queryset(request):
     sem_pcf = _ld_bool(request.GET.get("sem_pcf"))
     com_resposta = _ld_bool(request.GET.get("com_resposta"))
     ultimas_revisoes = _ld_bool(request.GET.get("ultimas_revisoes"))
+
     filtro_rapido = _ld_texto(request.GET.get("filtro"))
 
     if filtro_rapido == "recebidos":
@@ -488,8 +523,6 @@ def _ld_filtrar_queryset(request):
             | Q(pcf__icontains=busca)
             | Q(pcf_resposta__icontains=busca)
             | Q(grd_resposta__icontains=busca)
-            | Q(status_documento__icontains=busca)
-            | Q(status_grd__icontains=busca)
         )
 
     if disciplina:
@@ -534,8 +567,10 @@ def _ld_filtrar_queryset(request):
 
 
 def _ld_kpis(registros):
+    total = registros.count()
+
     return {
-        "total": registros.count(),
+        "total": total,
         "total_exclusivos": registros.order_by().values("documento").distinct().count(),
         "total_recebidos": registros.filter(status_documento__iexact="Recebido").count(),
         "total_aprovados": registros.filter(status_documento__iexact="Aprovado").count(),
@@ -547,144 +582,56 @@ def _ld_kpis(registros):
 
 
 def _ld_caminhos_candidatos(caminho_salvo):
-    """
-    Gera candidatos de caminho para links da LD.
-
-    Resolve:
-    - caminhos relativos do Excel, como ../10 - Engenharia/...
-    - caminhos absolutos/UNC
-    - caminhos com / ou \
-    - fallback automático para a raiz da rede definida em services/atualizar_ld.py
-    - LD_BASE_PATH opcional no settings.py
-    """
-    bruto_original = _ld_texto(caminho_salvo).split("#", 1)[0].strip()
-    bruto = bruto_original.replace("/", "\\").strip()
+    bruto = _ld_texto(caminho_salvo).split("#", 1)[0].replace("/", "\\")
     candidatos = []
 
     if not bruto:
         return candidatos
 
-    def add(path):
-        if path:
-            try:
-                candidatos.append(Path(path))
-            except Exception:
-                pass
+    candidatos.append(Path(bruto))
 
-    add(bruto)
+    partes = [p for p in bruto.split("\\") if p and p not in {".", ".."}]
 
-    partes = [
-        parte for parte in bruto.split("\\")
-        if parte and parte not in {".", ".."}
-    ]
+    base_path = _ld_texto(getattr(settings, "LD_BASE_PATH", ""))
 
     bases = []
+    if base_path:
+        bases.append(Path(base_path))
 
-    def add_base(path):
-        texto = _ld_texto(path)
-        if texto:
-            try:
-                p = Path(texto)
-                bases.append(p)
-                bases.append(p.parent)
-                bases.append(p.parent.parent)
-            except Exception:
-                pass
-
-    # 1) Base explícita do projeto, quando configurada no settings.py.
-    add_base(getattr(settings, "LD_BASE_PATH", ""))
-
-    # 2) Bases reais da automação LD. Isso evita depender de configuração manual
-    # quando o serviço já sabe onde estão Engenharia, GRD e PCFs.
-    try:
-        add_base(getattr(atualizar_ld, "PASTA_DOCS", ""))
-        add_base(getattr(atualizar_ld, "PASTA_GRD", ""))
-        add_base(getattr(atualizar_ld, "PASTA_PCF", ""))
-        add_base(getattr(atualizar_ld, "PASTA_PCF_RESPOSTA", ""))
-
-        pasta_docs = _ld_texto(getattr(atualizar_ld, "PASTA_DOCS", ""))
-        if pasta_docs:
-            add_base(Path(pasta_docs).parent)
-    except Exception:
-        pass
-
-    # 3) Bases locais prováveis, úteis em desenvolvimento.
-    base_dir = getattr(settings, "BASE_DIR", None)
-    if base_dir:
-        add_base(base_dir)
-
+    user_home = Path.home()
     bases.extend([
         Path.cwd(),
-        Path.cwd().parent,
-        Path.home(),
-        Path.home() / "Documents",
-        Path.home() / "Documents" / "GED_PROFISSIONAL",
-        Path.home() / "OneDrive",
-        Path.home() / "Desktop",
+        user_home,
+        user_home / "Documents",
+        user_home / "OneDrive",
+        user_home / "Desktop",
     ])
 
-    # Remove bases duplicadas antes de compor candidatos.
-    bases_unicas = []
-    vistos_bases = set()
     for base in bases:
-        chave = str(base).casefold()
-        if chave not in vistos_bases:
-            vistos_bases.add(chave)
-            bases_unicas.append(base)
+        candidatos.append(base / Path(*partes))
 
-    # Candidato normal: BASE + partes do caminho relativo.
-    for base in bases_unicas:
-        if partes:
-            add(base / Path(*partes))
+    # Quando o caminho vem como ../9 - PCFs..., a raiz deve ser a pasta acima de 1/9/10.
+    if base_path and partes:
+        candidatos.append(Path(base_path) / Path(*partes))
 
-        # Se a base já é "10 - Engenharia" e o caminho também começa com
-        # "10 - Engenharia", remove a primeira parte para não duplicar.
-        if partes and base.name.casefold() == partes[0].casefold():
-            add(base / Path(*partes[1:]))
-
-    # Candidato a partir da primeira pasta conhecida no caminho.
-    raizes = {
-        "1 - docs emissão engedoc",
-        "1 - docs emissao engedoc",
-        "9 - pcfs transpetro",
-        "10 - engenharia",
-    }
-
-    for idx, parte in enumerate(partes):
-        if parte.casefold() in raizes:
-            subpartes = partes[idx:]
-            for base in bases_unicas:
-                add(base / Path(*subpartes))
-
-                if base.name.casefold() == subpartes[0].casefold():
-                    add(base / Path(*subpartes[1:]))
-            break
-
-    # Remove duplicados preservando ordem.
     unicos = []
     vistos = set()
 
     for candidato in candidatos:
         texto = str(candidato)
-        chave = texto.casefold()
-
-        if chave not in vistos:
-            vistos.add(chave)
+        if texto not in vistos:
+            vistos.add(texto)
             unicos.append(candidato)
 
     return unicos
-
 
 
 def _ld_resolver_caminho(caminho_salvo):
     candidatos = _ld_caminhos_candidatos(caminho_salvo)
 
     for candidato in candidatos:
-        try:
-            if candidato.exists():
-                return candidato, candidatos
-        except OSError:
-            continue
+        if candidato.exists():
+            return candidato, candidatos
 
     return None, candidatos
 
@@ -692,11 +639,187 @@ def _ld_resolver_caminho(caminho_salvo):
 def _ld_hyperlink(caminho):
     arquivo, _ = _ld_resolver_caminho(caminho)
     if arquivo:
-        try:
-            return arquivo.resolve().as_uri()
-        except Exception:
-            return str(arquivo)
+        return arquivo.resolve().as_uri()
     return _ld_texto(caminho)
+
+
+
+def _ld_querystring(request, updates=None, clears=None):
+    """
+    Monta querystring preservando os filtros atuais, removendo paginação
+    e evitando parâmetros duplicados.
+
+    Usado pelos chips rápidos da Lista LD.
+    """
+    query = request.GET.copy()
+    query.pop("page", None)
+
+    for key in clears or []:
+        query.pop(key, None)
+
+    for key, value in (updates or {}).items():
+        query.pop(key, None)
+        if value not in (None, "", False):
+            query[key] = str(value)
+
+    encoded = query.urlencode()
+    return f"?{encoded}" if encoded else ""
+
+
+def _ld_chip(label, query, active=False):
+    return {
+        "label": label,
+        "query": query,
+        "active": active,
+    }
+
+
+def _ld_montar_chips(request, filtros, status_documentos, status_grds):
+    status_doc = _ld_texto(filtros.get("status_doc"))
+    status_grd = _ld_texto(filtros.get("status_grd"))
+    status_pcf = _ld_texto(filtros.get("status_pcf"))
+
+    com_pcf = bool(filtros.get("com_pcf"))
+    sem_pcf = bool(filtros.get("sem_pcf"))
+    com_resposta = bool(filtros.get("com_resposta"))
+    ultimas_revisoes = bool(filtros.get("ultimas_revisoes"))
+
+    status_documento_chips = [
+        _ld_chip(
+            "Todos",
+            _ld_querystring(
+                request,
+                clears=["status_doc", "filtro"],
+            ),
+            active=not status_doc,
+        )
+    ]
+
+    for valor in status_documentos:
+        status_documento_chips.append(
+            _ld_chip(
+                valor,
+                _ld_querystring(
+                    request,
+                    updates={"status_doc": valor},
+                    clears=["status_doc", "filtro"],
+                ),
+                active=status_doc.casefold() == _ld_texto(valor).casefold(),
+            )
+        )
+
+    status_grd_chips = [
+        _ld_chip(
+            "Todos",
+            _ld_querystring(
+                request,
+                clears=["status_grd", "filtro"],
+            ),
+            active=not status_grd,
+        )
+    ]
+
+    for valor in status_grds:
+        status_grd_chips.append(
+            _ld_chip(
+                valor,
+                _ld_querystring(
+                    request,
+                    updates={"status_grd": valor},
+                    clears=["status_grd", "filtro"],
+                ),
+                active=status_grd.casefold() == _ld_texto(valor).casefold(),
+            )
+        )
+
+    operacional_chips = [
+        _ld_chip(
+            "Todos",
+            "",
+            active=not any(
+                key != "page" and _ld_texto(value)
+                for key, value in request.GET.items()
+            ),
+        ),
+        _ld_chip(
+            "Recebidos",
+            _ld_querystring(
+                request,
+                updates={"status_doc": "Recebido"},
+                clears=["status_doc", "filtro"],
+            ),
+            active=status_doc.casefold() == "recebido",
+        ),
+        _ld_chip(
+            "Aprovados",
+            _ld_querystring(
+                request,
+                updates={"status_doc": "Aprovado"},
+                clears=["status_doc", "filtro"],
+            ),
+            active=status_doc.casefold() == "aprovado",
+        ),
+        _ld_chip(
+            "GRD emitido",
+            _ld_querystring(
+                request,
+                updates={"status_grd": "Emitido"},
+                clears=["status_grd", "filtro"],
+            ),
+            active=status_grd.casefold() == "emitido",
+        ),
+        _ld_chip(
+            "Com PCF",
+            _ld_querystring(
+                request,
+                updates={"com_pcf": "1"},
+                clears=["sem_pcf", "filtro"],
+            ),
+            active=com_pcf and not sem_pcf,
+        ),
+        _ld_chip(
+            "Sem PCF",
+            _ld_querystring(
+                request,
+                updates={"sem_pcf": "1"},
+                clears=["com_pcf", "filtro"],
+            ),
+            active=sem_pcf and not com_pcf,
+        ),
+        _ld_chip(
+            "Com resposta",
+            _ld_querystring(
+                request,
+                updates={"com_resposta": "1"},
+                clears=["filtro"],
+            ),
+            active=com_resposta,
+        ),
+        _ld_chip(
+            "Not Released",
+            _ld_querystring(
+                request,
+                updates={"status_pcf": "NOT RELEASED"},
+                clears=["status_pcf", "filtro"],
+            ),
+            active=status_pcf.casefold() == "not released",
+        ),
+        _ld_chip(
+            "Últimas revisões",
+            _ld_querystring(
+                request,
+                updates={"ultimas_revisoes": "1"},
+                clears=["filtro"],
+            ),
+            active=ultimas_revisoes,
+        ),
+    ]
+
+    return {
+        "status_documento_chips": status_documento_chips,
+        "status_grd_chips": status_grd_chips,
+        "operacional_chips": operacional_chips,
+    }
 
 
 @login_required
@@ -706,9 +829,22 @@ def listar_ld(request):
     kpis = _ld_kpis(registros)
 
     disciplinas = _ld_valores_distintos("disciplina")
-    origens = ["LD", "LD Marenova"]
+    origens = _ld_valores_distintos("origem_aba", extras=["LD", "LD Marenova"])
+    # Mantém as duas origens operacionais sempre disponíveis, mesmo quando a
+    # importação antiga gravou origem_aba em branco.
+    origens_norm = []
+    for origem_item in ["LD", "LD Marenova", *origens]:
+        if origem_item not in origens_norm:
+            origens_norm.append(origem_item)
+    origens = origens_norm
     status_documentos = _ld_valores_distintos("status_documento")
     status_grds = _ld_valores_distintos("status_grd")
+    chips_ld = _ld_montar_chips(
+        request,
+        filtros,
+        status_documentos,
+        status_grds,
+    )
 
     paginator = Paginator(registros, 25)
     page_number = request.GET.get("page")
@@ -728,9 +864,10 @@ def listar_ld(request):
 
             "origens": origens,
             "disciplinas": disciplinas,
-            "status_documentos": status_documentos,
+"status_documentos": status_documentos,
             "status_grds": status_grds,
 
+            **chips_ld,
             **filtros,
             **kpis,
         },
@@ -920,37 +1057,25 @@ def abrir_arquivo_ld(request, pk, tipo):
 
     if not arquivo:
         html = "<h3>Arquivo ou pasta não encontrado.</h3>"
-        html += f"<p><strong>Caminho salvo no banco:</strong> {escape(_ld_texto(caminho_salvo))}</p>"
+        html += f"<p><strong>Caminho salvo no banco:</strong> {_ld_texto(caminho_salvo)}</p>"
         html += "<p><strong>Caminhos testados:</strong></p><ul>"
 
         for candidato in candidatos:
-            html += f"<li>{escape(str(candidato))}</li>"
+            html += f"<li>{candidato}</li>"
 
         html += "</ul>"
-        html += "<hr>"
-        html += "<p><strong>Ação necessária:</strong> configure a raiz real no settings.py.</p>"
-        html += '<pre>LD_BASE_PATH = r"C:\\CAMINHO\\REAL\\DA\\RAIZ"</pre>'
-        html += "<p>Essa raiz precisa conter as pastas usadas pela LD, por exemplo: <strong>10 - Engenharia</strong>, <strong>9 - PCFs Transpetro</strong> e <strong>1 - DOCS EMISSÃO ENGEDOC</strong>.</p>"
+        html += "<p>Configure no <strong>settings.py</strong>:</p>"
+        html += '<pre>LD_BASE_PATH = r"C:\\CAMINHO\\DA\\PASTA\\RAIZ"</pre>'
+        html += "<p>A raiz deve conter as pastas anteriores a <strong>1 - DOCS EMISSÃO ENGEDOC</strong>, <strong>9 - PCFs Transpetro</strong> e <strong>10 - Engenharia</strong>.</p>"
 
         return HttpResponse(html, status=404)
 
-    if os.name == "nt":
-        try:
-            os.startfile(str(arquivo))
-            html = "<h3>Comando enviado ao Windows.</h3>"
-            html += f"<p><strong>Caminho aberto:</strong> {escape(str(arquivo))}</p>"
-            html += "<p>Se nada abriu, verifique permissão de rede, VPN, mapeamento de unidade ou se o processo do Django está rodando no mesmo usuário do Windows.</p>"
-            return HttpResponse(html)
-        except OSError as exc:
-            html = "<h3>Arquivo/pasta localizado, mas o Windows não conseguiu abrir.</h3>"
-            html += f"<p><strong>Caminho:</strong> {escape(str(arquivo))}</p>"
-            html += f"<p><strong>Erro:</strong> {escape(str(exc))}</p>"
-            return HttpResponse(html, status=500)
-
     if arquivo.is_dir():
         html = "<h3>Pasta localizada.</h3>"
-        html += f"<p><strong>Caminho:</strong> {escape(str(arquivo))}</p>"
-        html += "<p>Fora do Windows local, o navegador não abre pasta diretamente. Copie o caminho acima.</p>"
+        html += f"<p><strong>Caminho:</strong> {arquivo}</p>"
+        html += "<p>Por segurança, navegadores não abrem pasta local diretamente via Django.</p>"
+        html += "<p>Copie o caminho acima e cole no Windows Explorer.</p>"
+
         return HttpResponse(html)
 
     return FileResponse(
@@ -958,3 +1083,4 @@ def abrir_arquivo_ld(request, pk, tipo):
         as_attachment=False,
         filename=arquivo.name,
     )
+

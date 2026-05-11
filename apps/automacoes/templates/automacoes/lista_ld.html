@@ -36,6 +36,21 @@
     font-size: .85rem;
     text-decoration: none;
   }
+
+  .ld-chip-section {
+    border-top: 1px solid rgba(148, 163, 184, .22);
+    padding-top: .9rem;
+    margin-top: .9rem;
+  }
+  .ld-chip-title {
+    font-size: .72rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: #64748b;
+    font-weight: 700;
+    margin-bottom: .45rem;
+  }
+
   .ld-chip.active,
   .ld-chip:hover {
     background: #0d6efd;
@@ -57,6 +72,10 @@
     </div>
 
     <div class="d-flex gap-2">
+      <a href="{% url 'automacoes:exportar_ld_excel' %}{% if query_string %}?{{ query_string }}{% endif %}"
+         class="btn btn-success">
+        Exportar Excel
+      </a>
       <a href="{% url 'automacoes:painel' %}" class="btn btn-secondary">Voltar</a>
     </div>
   </div>
@@ -152,20 +171,32 @@
 
         <div class="col-lg-2">
           <label class="form-label small text-muted">Status Documento</label>
-          <input type="text"
-                 name="status_doc"
-                 value="{{ status_doc }}"
-                 class="form-control"
-                 placeholder="Recebido...">
+
+          <select name="status_doc" class="form-select">
+            <option value="">Todos</option>
+
+            {% for s in status_documentos %}
+              <option value="{{ s }}"
+                {% if status_doc == s %}selected{% endif %}>
+                {{ s }}
+              </option>
+            {% endfor %}
+          </select>
         </div>
 
         <div class="col-lg-2">
           <label class="form-label small text-muted">Status GRD</label>
-          <input type="text"
-                 name="status_grd"
-                 value="{{ status_grd }}"
-                 class="form-control"
-                 placeholder="Emitido...">
+
+          <select name="status_grd" class="form-select">
+            <option value="">Todos</option>
+
+            {% for s in status_grds %}
+              <option value="{{ s }}"
+                {% if status_grd == s %}selected{% endif %}>
+                {{ s }}
+              </option>
+            {% endfor %}
+          </select>
         </div>
 
         <div class="col-lg-2">
@@ -221,16 +252,40 @@
       </div>
     </form>
 
-    <div class="ld-chip-row mt-3">
-      <a class="ld-chip {% if not status_doc and not status_grd and not status_pcf and not com_pcf and not sem_pcf and not com_resposta and not origem and not disciplina and not busca %}active{% endif %}"
-         href="{% url 'automacoes:lista_ld' %}">Todos</a>
+    <div class="ld-chip-section">
+      <div class="ld-chip-title">Filtros operacionais</div>
+      <div class="ld-chip-row">
+        {% for chip in operacional_chips %}
+          <a class="ld-chip {% if chip.active %}active{% endif %}"
+             href="{% url 'automacoes:lista_ld' %}{{ chip.query }}">
+            {{ chip.label }}
+          </a>
+        {% endfor %}
+      </div>
+    </div>
 
-      <a class="ld-chip" href="{% url 'automacoes:lista_ld' %}?status_doc=Recebido">Recebidos</a>
-      <a class="ld-chip" href="{% url 'automacoes:lista_ld' %}?status_grd=Emitido">GRD emitido</a>
-      <a class="ld-chip" href="{% url 'automacoes:lista_ld' %}?com_pcf=1">Com PCF</a>
-      <a class="ld-chip" href="{% url 'automacoes:lista_ld' %}?sem_pcf=1">Sem PCF</a>
-      <a class="ld-chip" href="{% url 'automacoes:lista_ld' %}?com_resposta=1">Com resposta</a>
-      <a class="ld-chip" href="{% url 'automacoes:lista_ld' %}?status_pcf=NOT RELEASED">Not Released</a>
+    <div class="ld-chip-section">
+      <div class="ld-chip-title">Status Documento</div>
+      <div class="ld-chip-row">
+        {% for chip in status_documento_chips %}
+          <a class="ld-chip {% if chip.active %}active{% endif %}"
+             href="{% url 'automacoes:lista_ld' %}{{ chip.query }}">
+            {{ chip.label }}
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="ld-chip-section">
+      <div class="ld-chip-title">Status GRD</div>
+      <div class="ld-chip-row">
+        {% for chip in status_grd_chips %}
+          <a class="ld-chip {% if chip.active %}active{% endif %}"
+             href="{% url 'automacoes:lista_ld' %}{{ chip.query }}">
+            {{ chip.label }}
+          </a>
+        {% endfor %}
+      </div>
     </div>
   </div>
 
