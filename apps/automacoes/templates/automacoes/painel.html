@@ -3,132 +3,406 @@
 
 {% block title %}D'ORANGE — Automações GED{% endblock %}
 
+{% block extra_head %}
+<style>
+  .auto-page { max-width: none !important; width: 100% !important; }
+
+  .auto-hero {
+    border-radius: 22px;
+    border: 1px solid rgba(148, 163, 184, .24);
+    background:
+      radial-gradient(circle at 0% 0%, rgba(255, 138, 0, .18), transparent 35%),
+      radial-gradient(circle at 85% 20%, rgba(56, 189, 248, .18), transparent 35%),
+      linear-gradient(135deg, rgba(11, 18, 32, .98), rgba(17, 26, 46, .96));
+    color: #fff;
+    box-shadow: 0 18px 45px rgba(15, 23, 42, .22);
+    overflow: hidden;
+    position: relative;
+  }
+
+  .auto-hero::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 3px;
+    background: linear-gradient(90deg, #38BDF8, #FF8A00);
+  }
+
+  .auto-hero-title {
+    font-size: clamp(1.6rem, 2.5vw, 2.45rem);
+    font-weight: 800;
+    letter-spacing: -.04em;
+    margin: 0;
+  }
+
+  .auto-hero-subtitle {
+    color: rgba(226, 232, 240, .82);
+    margin: .35rem 0 0;
+  }
+
+  .auto-health {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    border-radius: 999px;
+    padding: .45rem .8rem;
+    background: rgba(34, 197, 94, .14);
+    border: 1px solid rgba(34, 197, 94, .35);
+    color: #bbf7d0;
+    font-weight: 700;
+    font-size: .85rem;
+  }
+
+  .auto-health-dot {
+    width: .6rem;
+    height: .6rem;
+    border-radius: 999px;
+    background: #22c55e;
+    box-shadow: 0 0 0 .3rem rgba(34, 197, 94, .14);
+  }
+
+  .auto-kpi {
+    border: 0;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, .94);
+    box-shadow: 0 .6rem 1.35rem rgba(15, 23, 42, .08);
+    transition: transform .15s ease, box-shadow .15s ease;
+    overflow: hidden;
+  }
+
+  .auto-kpi:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 .85rem 1.75rem rgba(15, 23, 42, .13);
+  }
+
+  .auto-kpi small {
+    color: #64748b;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+
+  .auto-kpi h2 {
+    margin: .25rem 0 0;
+    letter-spacing: -.05em;
+  }
+
+  .auto-card {
+    border: 1px solid rgba(148, 163, 184, .24);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, .94);
+    box-shadow: 0 .55rem 1.25rem rgba(15, 23, 42, .07);
+    transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+    overflow: hidden;
+  }
+
+  .auto-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(56, 189, 248, .45);
+    box-shadow: 0 .9rem 1.8rem rgba(15, 23, 42, .12);
+  }
+
+  .auto-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(56, 189, 248, .14), rgba(255, 138, 0, .16));
+    color: #0f172a;
+    font-size: 1.45rem;
+  }
+
+  .auto-card-title {
+    font-weight: 800;
+    margin: 0;
+    letter-spacing: -.03em;
+  }
+
+  .auto-card-subtitle {
+    color: #64748b;
+    font-size: .88rem;
+  }
+
+  .auto-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    border-radius: 999px;
+    padding: .32rem .7rem;
+    font-size: .75rem;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .auto-badge-success { background: rgba(22, 163, 74, .12); color: #15803d; }
+  .auto-badge-warning { background: rgba(245, 158, 11, .16); color: #92400e; }
+  .auto-badge-info { background: rgba(14, 165, 233, .14); color: #0369a1; }
+  .auto-badge-neutral { background: rgba(100, 116, 139, .14); color: #334155; }
+
+  .auto-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: .65rem;
+  }
+
+  .auto-metric {
+    border: 1px solid rgba(148, 163, 184, .22);
+    border-radius: 14px;
+    padding: .75rem;
+    background: #f8fafc;
+  }
+
+  .auto-metric-label {
+    color: #64748b;
+    font-size: .74rem;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    font-weight: 800;
+  }
+
+  .auto-metric-value {
+    font-size: 1.15rem;
+    font-weight: 800;
+    margin-top: .15rem;
+  }
+
+  .auto-panel {
+    border-radius: 20px;
+    border: 1px solid rgba(148, 163, 184, .24);
+    background: rgba(255, 255, 255, .94);
+    box-shadow: 0 .55rem 1.25rem rgba(15, 23, 42, .07);
+  }
+
+  .auto-list-item {
+    border: 1px solid rgba(148, 163, 184, .22);
+    border-radius: 14px;
+    padding: .8rem;
+    background: #fff;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    margin-bottom: .65rem;
+  }
+
+  .auto-list-item:hover {
+    border-color: #0d6efd;
+    background: #f8fafc;
+  }
+
+  .auto-btn-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+  }
+
+  @media (max-width: 768px) {
+    .auto-metrics { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="ds-page">
-  <div class="ds-pagehead">
-    <div>
-      <h1 class="ds-title">🤖 Painel de Automações</h1>
-      <p class="ds-subtitle">Rotinas corporativas integradas ao GED Enterprise.</p>
+<div class="ds-page auto-page">
+  <div class="auto-hero p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+      <div>
+        <div class="auto-health mb-3">
+          <span class="auto-health-dot"></span>
+          GED Automations Online
+        </div>
+        <h1 class="auto-hero-title">🤖 Painel Executivo de Automações</h1>
+        <p class="auto-hero-subtitle">
+          Cockpit operacional das rotinas corporativas integradas ao GED Enterprise.
+        </p>
+      </div>
+
+      <div class="text-end">
+        <small class="d-block text-white-50">Última atualização registrada</small>
+        <strong>
+          {% if ultima_atualizacao %}
+            {{ ultima_atualizacao }}
+          {% else %}
+            Sem histórico disponível
+          {% endif %}
+        </strong>
+      </div>
     </div>
   </div>
 
-  <div class="ds-surface p-4">
+  {% if messages %}
+    <div class="mb-4">
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
 
-    {% if messages %}
-      <div class="mb-4">
-        {% for message in messages %}
-          <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+  <div id="loading-alert" class="alert alert-info shadow-sm mb-4 d-none">
+    ⏳ Automação em execução. Aguarde o processamento finalizar. Não feche esta janela.
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md">
+      <a href="{% url 'automacoes:lista_ld' %}" class="text-decoration-none text-dark">
+        <div class="card auto-kpi h-100">
+          <div class="card-body">
+            <small>Linhas LD</small>
+            <h2>{{ total_ld }}</h2>
           </div>
-        {% endfor %}
-      </div>
-    {% endif %}
-
-    <div id="loading-alert" class="alert alert-info shadow-sm mb-4 d-none">
-      ⏳ Automação em execução. Aguarde o processamento finalizar. Não feche esta janela.
+        </div>
+      </a>
     </div>
 
-    <div class="row g-4">
+    <div class="col-md">
+      <a href="{% url 'automacoes:pcfs_timeline' %}" class="text-decoration-none text-dark">
+        <div class="card auto-kpi h-100">
+          <div class="card-body">
+            <small>PCFs</small>
+            <h2>{{ total_pcfs }}</h2>
+          </div>
+        </div>
+      </a>
+    </div>
 
-      <div class="col-xl-6 col-lg-6">
-        <div class="card border-0 shadow-sm h-100">
+    <div class="col-md">
+      <a href="{% url 'automacoes:pcfs_timeline' %}?somente_open=1" class="text-decoration-none text-dark">
+        <div class="card auto-kpi h-100">
+          <div class="card-body">
+            <small>Open Comments</small>
+            <h2 class="text-warning">{{ total_pcfs_open }}</h2>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md">
+      <a href="{% url 'automacoes:pcfs_timeline' %}?status=NOT%20RELEASED" class="text-decoration-none text-dark">
+        <div class="card auto-kpi h-100">
+          <div class="card-body">
+            <small>Not Released</small>
+            <h2 class="text-danger">{{ total_pcfs_not_released }}</h2>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md">
+      <a href="{% url 'automacoes:transmittals_km' %}" class="text-decoration-none text-dark">
+        <div class="card auto-kpi h-100">
+          <div class="card-body">
+            <small>Transmittals KM</small>
+            <h2 class="text-primary">{{ total_transmittals_unicos }}</h2>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    {% for rotina in automacoes %}
+      <div class="col-xl-6">
+        <div class="auto-card h-100">
           <div class="card-body p-4">
-            <div class="d-flex align-items-center gap-3 mb-3">
-              <div class="fs-2">📄</div>
-              <div>
-                <h4 class="mb-0">Atualização LD</h4>
-                <small class="text-muted">Atualização crítica da Lista de Documentos</small>
+            <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+              <div class="d-flex align-items-center gap-3">
+                <div class="auto-icon">
+                  <i class="bi {{ rotina.icone }}"></i>
+                </div>
+                <div>
+                  <h4 class="auto-card-title">{{ rotina.nome }}</h4>
+                  <div class="auto-card-subtitle">{{ rotina.subtitulo }}</div>
+                </div>
               </div>
+
+              <span class="auto-badge {{ rotina.badge_class }}">
+                ● {{ rotina.badge }}
+              </span>
             </div>
-            <p class="text-muted">Sincroniza dados documentais, links, revisões, PCFs, GRDs e medição.</p>
-            <span class="badge bg-warning text-dark mb-3">Automação crítica</span>
-            <form method="post" action="{% url 'automacoes:atualizar_ld' %}" class="auto-form">
-              {% csrf_token %}
-              <button type="submit" class="btn btn-primary executar-btn">
-                Executar Atualização LD
-              </button>
-            </form>
+
+            <p class="text-muted mb-3">{{ rotina.descricao }}</p>
+
+            <div class="auto-metrics mb-4">
+              {% for metrica in rotina.metricas %}
+                <div class="auto-metric">
+                  <div class="auto-metric-label">{{ metrica.label }}</div>
+                  <div class="auto-metric-value">{{ metrica.valor }}</div>
+                </div>
+              {% endfor %}
+            </div>
+
+            <div class="auto-btn-row">
+              <form method="post" action="{% url rotina.form_url %}" class="auto-form">
+                {% csrf_token %}
+                <button type="submit" class="btn {{ rotina.botao_class }} executar-btn">
+                  <i class="bi bi-play-fill"></i>
+                  {{ rotina.botao }}
+                </button>
+              </form>
+
+              {% if rotina.dashboard_url %}
+                <a href="{% url rotina.dashboard_url %}" class="btn btn-outline-primary">
+                  <i class="bi bi-graph-up-arrow"></i>
+                  Analytics
+                </a>
+              {% endif %}
+
+              {% if rotina.registros_url %}
+                <a href="{% url rotina.registros_url %}" class="btn btn-outline-secondary">
+                  <i class="bi bi-table"></i>
+                  Registros
+                </a>
+              {% endif %}
+            </div>
           </div>
         </div>
       </div>
+    {% endfor %}
+  </div>
 
-      <div class="col-xl-6 col-lg-6">
-        <div class="card border-0 shadow-sm h-100">
-          <div class="card-body p-4">
-            <div class="d-flex align-items-center gap-3 mb-3">
-              <div class="fs-2">📊</div>
-              <div>
-                <h4 class="mb-0">Timeline PCFs</h4>
-                <small class="text-muted">Consolidação de comentários e revisões</small>
-              </div>
-            </div>
-            <p class="text-muted">Gera e atualiza a timeline das PCFs recebidas e respondidas.</p>
-            <span class="badge bg-success mb-3">Integrada</span>
-            <form method="post" action="{% url 'automacoes:timeline_pcfs' %}" class="auto-form">
-              {% csrf_token %}
-              <button type="submit" class="btn btn-success executar-btn">
-                Gerar Timeline PCFs
-              </button>
-            </form>
-
-            <a href="{% url 'automacoes:pcfs_timeline' %}"
-               class="btn btn-outline-secondary mt-2">
-              Ver registros importados
-            </a>
-          </div>
+  <div class="row g-4">
+    <div class="col-lg-6">
+      <div class="auto-panel p-4 h-100">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h4 class="mb-0">PCFs recentes</h4>
+          <a href="{% url 'automacoes:pcfs_timeline' %}" class="btn btn-sm btn-outline-primary">Abrir Timeline</a>
         </div>
+
+        {% for item in ultimos_pcfs %}
+          <a href="{% url 'automacoes:pcfs_timeline' %}?q={{ item.numero_documento|urlencode }}" class="auto-list-item">
+            <div class="fw-bold">{{ item.numero_documento|default:"Documento sem código" }}</div>
+            <small class="text-muted">
+              {{ item.tipo|default:"Sem tipo" }} · Rev {{ item.revisao_pcf|default:"—" }} · Open {{ item.open_comments|default:0 }}
+            </small>
+          </a>
+        {% empty %}
+          <div class="text-muted">Sem PCFs recentes.</div>
+        {% endfor %}
       </div>
+    </div>
 
-      <div class="col-xl-6 col-lg-6">
-        <div class="card border-0 shadow-sm h-100">
-          <div class="card-body p-4">
-            <div class="d-flex align-items-center gap-3 mb-3">
-              <div class="fs-2">📦</div>
-              <div>
-                <h4 class="mb-0">Transmittal KM</h4>
-                <small class="text-muted">Parser PDF de transmittals</small>
-              </div>
-            </div>
-            <p class="text-muted">Lê PDFs KM e gera planilha consolidada para acompanhamento documental.</p>
-            <span class="badge bg-info text-dark mb-3">Parser PDF</span>
-            <form method="post" action="{% url 'automacoes:transmittal_km' %}" class="auto-form">
-              {% csrf_token %}
-              <button type="submit" class="btn btn-info executar-btn">
-                Consolidar Transmittals KM
-              </button>
-            </form>
-
-            <a href="{% url 'automacoes:transmittals_km' %}"
-               class="btn btn-outline-secondary mt-2">
-              Ver registros importados
-            </a>
-          </div>
+    <div class="col-lg-6">
+      <div class="auto-panel p-4 h-100">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h4 class="mb-0">Transmittals recentes</h4>
+          <a href="{% url 'automacoes:transmittals_km' %}" class="btn btn-sm btn-outline-primary">Abrir Registros</a>
         </div>
-      </div>
 
-      <div class="col-xl-6 col-lg-6">
-        <div class="card border-0 shadow-sm h-100">
-          <div class="card-body p-4">
-            <div class="d-flex align-items-center gap-3 mb-3">
-              <div class="fs-2">🧩</div>
-              <div>
-                <h4 class="mb-0">GRD GHENOVA</h4>
-                <small class="text-muted">Consolidação de GRDs 7K e 14K</small>
-              </div>
-            </div>
-            <p class="text-muted">Processa PDFs de GRD e gera planilhas consolidadas por empreendimento.</p>
-            <span class="badge bg-secondary mb-3">Engenharia</span>
-            <form method="post" action="{% url 'automacoes:grd_ghenova' %}" class="auto-form">
-              {% csrf_token %}
-              <button type="submit" class="btn btn-secondary executar-btn">
-                Consolidar GRDs GHENOVA
-              </button>
-            </form>
-          </div>
-        </div>
+        {% for item in ultimos_transmittals %}
+          <a href="{% url 'automacoes:transmittals_km' %}?q={{ item.documento|urlencode }}" class="auto-list-item">
+            <div class="fw-bold">{{ item.documento|default:"Documento sem código" }}</div>
+            <small class="text-muted">
+              {{ item.transmittal_numero|default:"Sem transmittal" }} · {{ item.emissao|default:"—" }}
+            </small>
+          </a>
+        {% empty %}
+          <div class="text-muted">Sem transmittals recentes.</div>
+        {% endfor %}
       </div>
-
     </div>
   </div>
 </div>

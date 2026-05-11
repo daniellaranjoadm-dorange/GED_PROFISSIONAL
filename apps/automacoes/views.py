@@ -19,9 +19,161 @@ from apps.automacoes.services import (
 )
 
 
+
+def _model_has_field(model, nome):
+    return any(field.name == nome for field in model._meta.get_fields())
+
+
+def _latest_model_value(model, *campos):
+    for campo in campos:
+        if _model_has_field(model, campo):
+            try:
+                valor = (
+                    model.objects.exclude(**{f"{campo}__isnull": True})
+                    .order_by(f"-{campo}")
+                    .values_list(campo, flat=True)
+                    .first()
+                )
+                if valor:
+                    return valor
+            except Exception:
+                continue
+    return None
+
+
 @login_required
 def painel(request):
-    return render(request, "automacoes/painel.html")
+    total_ld = DocumentoLD.objects.count()
+    total_pcfs = PCFTimeline.objects.count()
+    total_transmittals = TransmittalKM.objects.count()
+
+    total_ld_com_pcf = 0
+    if _model_has_field(DocumentoLD, "pcf"):
+        total_ld_com_pcf = DocumentoLD.objects.exclude(pcf="").exclude(pcf__isnull=True).count()
+
+    total_ld_sem_pcf = max(total_ld - total_ld_com_pcf, 0)
+
+    total_pcfs_open = PCFTimeline.objects.filter(open_comments__gt=0).count()
+    total_pcfs_not_released = PCFTimeline.objects.filter(status_final__iexact="NOT RELEASED").count()
+    total_pcfs_released = PCFTimeline.objects.filter(status_final__iexact="RELEASED").count()
+
+    total_transmittals_unicos = (
+        TransmittalKM.objects.exclude(transmittal_numero="")
+        .exclude(transmittal_numero__isnull=True)
+        .values("transmittal_numero")
+        .distinct()
+        .count()
+        if _model_has_field(TransmittalKM, "transmittal_numero")
+        else 0
+    )
+
+    total_transmittals_sem_pdf = (
+        TransmittalKM.objects.filter(Q(arquivo_pdf="") | Q(arquivo_pdf__isnull=True)).count()
+        if _model_has_field(TransmittalKM, "arquivo_pdf")
+        else 0
+    )
+
+    ultimos_pcfs = PCFTimeline.objects.order_by("-atualizado_em")[:5] if _model_has_field(PCFTimeline, "atualizado_em") else PCFTimeline.objects.all()[:5]
+    ultimos_transmittals = TransmittalKM.objects.order_by("-criado_em")[:5] if _model_has_field(TransmittalKM, "criado_em") else TransmittalKM.objects.all()[:5]
+
+    ultima_atualizacao = (
+        _latest_model_value(PCFTimeline, "atualizado_em", "criado_em")
+        or _latest_model_value(TransmittalKM, "criado_em", "atualizado_em")
+        or _latest_model_value(DocumentoLD, "atualizado_em", "criado_em")
+    )
+
+    automacoes = [
+        {
+            "nome": "Atualização LD",
+            "subtitulo": "Lista de Documentos",
+            "icone": "bi-file-earmark-spreadsheet",
+            "badge": "Crítica",
+            "badge_class": "auto-badge-warning",
+            "descricao": "Sincroniza dados documentais, revisões, PCFs, GRDs, links de rede e medição.",
+            "form_url": "automacoes:atualizar_ld",
+            "botao": "Executar Atualização LD",
+            "botao_class": "btn-primary",
+            "dashboard_url": "automacoes:dashboard_ld",
+            "registros_url": "automacoes:lista_ld",
+            "metricas": [
+                {"label": "Linhas LD", "valor": total_ld},
+                {"label": "Com PCF", "valor": total_ld_com_pcf},
+                {"label": "Sem PCF", "valor": total_ld_sem_pcf},
+            ],
+        },
+        {
+            "nome": "Timeline PCFs",
+            "subtitulo": "Comentários e revisões",
+            "icone": "bi-bar-chart-line",
+            "badge": "Integrada",
+            "badge_class": "auto-badge-success",
+            "descricao": "Gera e atualiza a timeline das PCFs recebidas e respondidas.",
+            "form_url": "automacoes:timeline_pcfs",
+            "botao": "Gerar Timeline PCFs",
+            "botao_class": "btn-success",
+            "dashboard_url": "automacoes:dashboard_pcfs",
+            "registros_url": "automacoes:pcfs_timeline",
+            "metricas": [
+                {"label": "PCFs", "valor": total_pcfs},
+                {"label": "Open", "valor": total_pcfs_open},
+                {"label": "Not Released", "valor": total_pcfs_not_released},
+            ],
+        },
+        {
+            "nome": "Transmittal KM",
+            "subtitulo": "Parser PDF",
+            "icone": "bi-box-seam",
+            "badge": "Parser PDF",
+            "badge_class": "auto-badge-info",
+            "descricao": "Lê PDFs KM e consolida transmittals para acompanhamento documental.",
+            "form_url": "automacoes:transmittal_km",
+            "botao": "Consolidar Transmittals KM",
+            "botao_class": "btn-info",
+            "dashboard_url": "automacoes:dashboard_transmittals",
+            "registros_url": "automacoes:transmittals_km",
+            "metricas": [
+                {"label": "Registros", "valor": total_transmittals},
+                {"label": "Transmittals", "valor": total_transmittals_unicos},
+                {"label": "Sem PDF", "valor": total_transmittals_sem_pdf},
+            ],
+        },
+        {
+            "nome": "GRD GHENOVA",
+            "subtitulo": "Consolidação GRDs 7K e 14K",
+            "icone": "bi-diagram-3",
+            "badge": "Engenharia",
+            "badge_class": "auto-badge-neutral",
+            "descricao": "Processa PDFs de GRD e gera planilhas consolidadas por empreendimento.",
+            "form_url": "automacoes:grd_ghenova",
+            "botao": "Consolidar GRDs GHENOVA",
+            "botao_class": "btn-secondary",
+            "dashboard_url": "",
+            "registros_url": "",
+            "metricas": [
+                {"label": "Fonte", "valor": "PDF"},
+                {"label": "Escopo", "valor": "7K/14K"},
+                {"label": "Status", "valor": "Ativo"},
+            ],
+        },
+    ]
+
+    return render(
+        request,
+        "automacoes/painel.html",
+        {
+            "total_ld": total_ld,
+            "total_pcfs": total_pcfs,
+            "total_pcfs_open": total_pcfs_open,
+            "total_pcfs_released": total_pcfs_released,
+            "total_pcfs_not_released": total_pcfs_not_released,
+            "total_transmittals": total_transmittals,
+            "total_transmittals_unicos": total_transmittals_unicos,
+            "ultima_atualizacao": ultima_atualizacao,
+            "automacoes": automacoes,
+            "ultimos_pcfs": ultimos_pcfs,
+            "ultimos_transmittals": ultimos_transmittals,
+        },
+    )
 
 
 def _executar_automacao(request, executor, nome):
@@ -171,7 +323,7 @@ def _filtrar_pcfs_timeline(request):
         registros = registros.filter(tipo=tipo)
 
     if status:
-        registros = registros.filter(status_final__icontains=status)
+        registros = registros.filter(status_final__iexact=status)
 
     if somente_open:
         registros = registros.filter(open_comments__gt=0)
