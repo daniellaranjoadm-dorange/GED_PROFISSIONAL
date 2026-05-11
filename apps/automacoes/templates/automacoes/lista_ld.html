@@ -37,18 +37,53 @@
     text-decoration: none;
   }
 
-  .ld-chip-section {
-    border-top: 1px solid rgba(148, 163, 184, .22);
-    padding-top: .9rem;
-    margin-top: .9rem;
+  .ld-detail-panel {
+    margin-top: 1rem;
+    border: 1px solid rgba(148, 163, 184, .25);
+    border-radius: 14px;
+    background: #f8fafc;
+    padding: 1rem;
   }
-  .ld-chip-title {
+  .ld-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: .75rem;
+  }
+  .ld-detail-box {
+    background: #fff;
+    border: 1px solid rgba(148, 163, 184, .22);
+    border-radius: 12px;
+    padding: .8rem;
+  }
+  .ld-detail-title {
     font-size: .72rem;
     text-transform: uppercase;
     letter-spacing: .06em;
     color: #64748b;
     font-weight: 700;
-    margin-bottom: .45rem;
+    margin-bottom: .5rem;
+  }
+  .ld-path {
+    font-size: .82rem;
+    color: #334155;
+    word-break: break-all;
+    line-height: 1.35;
+  }
+  .ld-timeline {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .ld-timeline-item {
+    border-left: 3px solid #0d6efd;
+    padding-left: .65rem;
+    min-width: 180px;
+  }
+  @media (max-width: 992px) {
+    .ld-detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 576px) {
+    .ld-detail-grid { grid-template-columns: 1fr; }
   }
 
   .ld-chip.active,
@@ -56,6 +91,12 @@
     background: #0d6efd;
     color: #fff;
     border-color: #0d6efd;
+  }
+  .ld-detail-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 14px;
   }
 </style>
 {% endblock %}
@@ -111,6 +152,15 @@
     <div class="col-md">
       <div class="card ld-kpi shadow-sm">
         <div class="card-body">
+          <small>Aprovados</small>
+          <h3 class="mb-0 text-success">{{ total_aprovados }}</h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md">
+      <div class="card ld-kpi shadow-sm">
+        <div class="card-body">
           <small>Emitidos GRD</small>
           <h3 class="mb-0 text-primary">{{ total_emitidos }}</h3>
         </div>
@@ -154,7 +204,7 @@
           <select name="origem" class="form-select">
             <option value="">Todas</option>
             {% for o in origens %}
-              <option value="{{ o }}" {% if origem == o %}selected{% endif %}>{{ o }}</option>
+              <option value="{{ o }}" {% if origem|lower == o|lower %}selected{% endif %}>{{ o }}</option>
             {% endfor %}
           </select>
         </div>
@@ -171,30 +221,20 @@
 
         <div class="col-lg-2">
           <label class="form-label small text-muted">Status Documento</label>
-
           <select name="status_doc" class="form-select">
             <option value="">Todos</option>
-
             {% for s in status_documentos %}
-              <option value="{{ s }}"
-                {% if status_doc == s %}selected{% endif %}>
-                {{ s }}
-              </option>
+              <option value="{{ s }}" {% if status_doc|lower == s|lower %}selected{% endif %}>{{ s }}</option>
             {% endfor %}
           </select>
         </div>
 
         <div class="col-lg-2">
           <label class="form-label small text-muted">Status GRD</label>
-
           <select name="status_grd" class="form-select">
             <option value="">Todos</option>
-
             {% for s in status_grds %}
-              <option value="{{ s }}"
-                {% if status_grd == s %}selected{% endif %}>
-                {{ s }}
-              </option>
+              <option value="{{ s }}" {% if status_grd|lower == s|lower %}selected{% endif %}>{{ s }}</option>
             {% endfor %}
           </select>
         </div>
@@ -237,6 +277,15 @@
                      {% if com_resposta %}checked{% endif %}>
               <label class="form-check-label">Com resposta</label>
             </div>
+
+            <div class="form-check">
+              <input class="form-check-input"
+                     type="checkbox"
+                     name="ultimas_revisoes"
+                     value="1"
+                     {% if ultimas_revisoes %}checked{% endif %}>
+              <label class="form-check-label">Últimas revisões</label>
+            </div>
           </div>
         </div>
 
@@ -252,40 +301,33 @@
       </div>
     </form>
 
-    <div class="ld-chip-section">
-      <div class="ld-chip-title">Filtros operacionais</div>
-      <div class="ld-chip-row">
-        {% for chip in operacional_chips %}
-          <a class="ld-chip {% if chip.active %}active{% endif %}"
-             href="{% url 'automacoes:lista_ld' %}{{ chip.query }}">
-            {{ chip.label }}
-          </a>
-        {% endfor %}
-      </div>
-    </div>
+    <div class="ld-chip-row mt-3">
+      <a class="ld-chip {% if not query_string %}active{% endif %}"
+         href="{% url 'automacoes:lista_ld' %}">Todos</a>
 
-    <div class="ld-chip-section">
-      <div class="ld-chip-title">Status Documento</div>
-      <div class="ld-chip-row">
-        {% for chip in status_documento_chips %}
-          <a class="ld-chip {% if chip.active %}active{% endif %}"
-             href="{% url 'automacoes:lista_ld' %}{{ chip.query }}">
-            {{ chip.label }}
-          </a>
-        {% endfor %}
-      </div>
-    </div>
+      <a class="ld-chip {% if filtro_rapido == 'recebidos' %}active{% endif %}"
+         href="{% url 'automacoes:lista_ld' %}?filtro=recebidos">Recebidos</a>
 
-    <div class="ld-chip-section">
-      <div class="ld-chip-title">Status GRD</div>
-      <div class="ld-chip-row">
-        {% for chip in status_grd_chips %}
-          <a class="ld-chip {% if chip.active %}active{% endif %}"
-             href="{% url 'automacoes:lista_ld' %}{{ chip.query }}">
-            {{ chip.label }}
-          </a>
-        {% endfor %}
-      </div>
+      <a class="ld-chip {% if filtro_rapido == 'aprovados' %}active{% endif %}"
+         href="{% url 'automacoes:lista_ld' %}?filtro=aprovados">Aprovados</a>
+
+      <a class="ld-chip {% if filtro_rapido == 'grd_emitido' %}active{% endif %}"
+         href="{% url 'automacoes:lista_ld' %}?filtro=grd_emitido">GRD emitido</a>
+
+      <a class="ld-chip {% if filtro_rapido == 'com_pcf' %}active{% endif %}"
+         href="{% url 'automacoes:lista_ld' %}?filtro=com_pcf">Com PCF</a>
+
+      <a class="ld-chip {% if filtro_rapido == 'sem_pcf' %}active{% endif %}"
+         href="{% url 'automacoes:lista_ld' %}?filtro=sem_pcf">Sem PCF</a>
+
+      <a class="ld-chip {% if filtro_rapido == 'com_resposta' %}active{% endif %}"
+         href="{% url 'automacoes:lista_ld' %}?filtro=com_resposta">Com resposta</a>
+
+      <a class="ld-chip {% if filtro_rapido == 'not_released' %}active{% endif %}"
+         href="{% url 'automacoes:lista_ld' %}?filtro=not_released">Not Released</a>
+
+      <a class="ld-chip {% if filtro_rapido == 'ultimas_revisoes' %}active{% endif %}"
+         href="{% url 'automacoes:lista_ld' %}?filtro=ultimas_revisoes">Últimas revisões</a>
     </div>
   </div>
 
@@ -311,7 +353,7 @@
 
             <div class="d-flex flex-wrap gap-1 justify-content-end">
               {% if item.status_documento %}
-                {% if "Recebido" in item.status_documento %}
+                {% if "Recebido" in item.status_documento or "Aprovado" in item.status_documento %}
                   <span class="badge bg-success">{{ item.status_documento }}</span>
                 {% else %}
                   <span class="badge bg-secondary">{{ item.status_documento }}</span>
@@ -404,9 +446,122 @@
             </a>
             {% endif %}
 
-            <button class="btn btn-dark btn-sm" type="button">
+            <button class="btn btn-dark btn-sm"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#detalhes-{{ item.id }}">
               <i class="bi bi-eye"></i> Detalhes
             </button>
+          </div>
+
+          <div class="collapse mt-3" id="detalhes-{{ item.id }}">
+            <div class="ld-detail-box">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <div class="ld-info-label">Caminho Documento</div>
+                  <div class="small">{{ item.caminho_documento|default:"—" }}</div>
+                </div>
+                <div class="col-md-6">
+                  <div class="ld-info-label">Caminho GRD</div>
+                  <div class="small">{{ item.caminho_grd|default:"—" }}</div>
+                </div>
+                <div class="col-md-6">
+                  <div class="ld-info-label">Caminho PCF</div>
+                  <div class="small">{{ item.caminho_pcf|default:"—" }}</div>
+                </div>
+                <div class="col-md-6">
+                  <div class="ld-info-label">Caminho Resposta</div>
+                  <div class="small">{{ item.caminho_resposta|default:"—" }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="collapse mt-3 show" id="ld-detalhes-{{ item.id }}">
+            <div class="ld-detail-panel">
+              <div class="ld-detail-grid mb-3">
+                <div class="ld-detail-box">
+                  <div class="ld-detail-title">Identificação</div>
+                  <div><strong>ID banco:</strong> {{ item.id }}</div>
+                  <div><strong>Documento:</strong> {{ item.documento }}</div>
+                  <div><strong>Revisão:</strong> {{ item.revisao|default:"—" }}</div>
+                  <div><strong>Origem:</strong> {{ item.origem_aba|default:"—" }}</div>
+                </div>
+
+                <div class="ld-detail-box">
+                  <div class="ld-detail-title">Status</div>
+                  <div><strong>Documento:</strong> {{ item.status_documento|default:"—" }}</div>
+                  <div><strong>GRD:</strong> {{ item.status_grd|default:"—" }}</div>
+                  <div><strong>PCF:</strong> {{ item.status_final_pcf|default:"—" }}</div>
+                </div>
+
+                <div class="ld-detail-box">
+                  <div class="ld-detail-title">Datas</div>
+                  <div><strong>Data GRD:</strong> {{ item.data_grd|default:"—" }}</div>
+                  <div><strong>Data PCF:</strong> {{ item.data_pcf|default:"—" }}</div>
+                  <div><strong>Data resposta:</strong> {{ item.data_resposta|default:"—" }}</div>
+                </div>
+
+                <div class="ld-detail-box">
+                  <div class="ld-detail-title">Referências</div>
+                  <div><strong>GRD:</strong> {{ item.grd|default:"—" }}</div>
+                  <div><strong>PCF:</strong> {{ item.pcf|default:"—" }}</div>
+                  <div><strong>Resposta:</strong> {{ item.pcf_resposta|default:"—" }}</div>
+                  <div><strong>GRD resposta:</strong> {{ item.grd_resposta|default:"—" }}</div>
+                </div>
+              </div>
+
+              <div class="ld-detail-box mb-3">
+                <div class="ld-detail-title">Timeline documental</div>
+                <div class="ld-timeline">
+                  <div class="ld-timeline-item">
+                    <div class="ld-info-label">GRD</div>
+                    <div class="ld-info-value">{{ item.grd|default:"—" }}</div>
+                    <small class="text-muted">{{ item.data_grd|default:"Sem data" }}</small>
+                  </div>
+
+                  <div class="ld-timeline-item">
+                    <div class="ld-info-label">PCF</div>
+                    <div class="ld-info-value">{{ item.pcf|default:"—" }}</div>
+                    <small class="text-muted">{{ item.data_pcf|default:"Sem data" }}</small>
+                  </div>
+
+                  <div class="ld-timeline-item">
+                    <div class="ld-info-label">Resposta PCF</div>
+                    <div class="ld-info-value">{{ item.pcf_resposta|default:"—" }}</div>
+                    <small class="text-muted">{{ item.data_resposta|default:"Sem data" }}</small>
+                  </div>
+
+                  <div class="ld-timeline-item">
+                    <div class="ld-info-label">GRD Resposta</div>
+                    <div class="ld-info-value">{{ item.grd_resposta|default:"—" }}</div>
+                    <small class="text-muted">Referência final</small>
+                  </div>
+                </div>
+              </div>
+
+              <div class="ld-detail-grid">
+                <div class="ld-detail-box">
+                  <div class="ld-detail-title">Caminho Documento</div>
+                  <div class="ld-path">{{ item.caminho_documento|default:"—" }}</div>
+                </div>
+
+                <div class="ld-detail-box">
+                  <div class="ld-detail-title">Caminho GRD</div>
+                  <div class="ld-path">{{ item.caminho_grd|default:"—" }}</div>
+                </div>
+
+                <div class="ld-detail-box">
+                  <div class="ld-detail-title">Caminho PCF</div>
+                  <div class="ld-path">{{ item.caminho_pcf|default:"—" }}</div>
+                </div>
+
+                <div class="ld-detail-box">
+                  <div class="ld-detail-title">Caminho Resposta</div>
+                  <div class="ld-path">{{ item.caminho_resposta|default:"—" }}</div>
+                </div>
+              </div>
+            </div>
           </div>
 
         </div>
@@ -425,7 +580,7 @@
       {% if page_obj.has_previous %}
       <li class="page-item">
         <a class="page-link"
-           href="?page={{ page_obj.previous_page_number }}&q={{ busca }}&origem={{ origem }}&disciplina={{ disciplina }}&status_doc={{ status_doc }}&status_grd={{ status_grd }}&status_pcf={{ status_pcf }}{% if com_pcf %}&com_pcf=1{% endif %}{% if sem_pcf %}&sem_pcf=1{% endif %}{% if com_resposta %}&com_resposta=1{% endif %}">
+           href="?page={{ page_obj.previous_page_number }}{% if query_string %}&{{ query_string }}{% endif %}">
           Anterior
         </a>
       </li>
@@ -438,7 +593,7 @@
       {% if page_obj.has_next %}
       <li class="page-item">
         <a class="page-link"
-           href="?page={{ page_obj.next_page_number }}&q={{ busca }}&origem={{ origem }}&disciplina={{ disciplina }}&status_doc={{ status_doc }}&status_grd={{ status_grd }}&status_pcf={{ status_pcf }}{% if com_pcf %}&com_pcf=1{% endif %}{% if sem_pcf %}&sem_pcf=1{% endif %}{% if com_resposta %}&com_resposta=1{% endif %}">
+           href="?page={{ page_obj.next_page_number }}{% if query_string %}&{{ query_string }}{% endif %}">
           Próxima
         </a>
       </li>
