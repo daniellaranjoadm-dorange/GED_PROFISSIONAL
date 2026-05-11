@@ -883,7 +883,7 @@ def listar_ld(request):
 
             "origens": origens,
             "disciplinas": disciplinas,
-"status_documentos": status_documentos,
+            "status_documentos": status_documentos,
             "status_grds": status_grds,
 
             **chips_ld,
@@ -1009,6 +1009,163 @@ def exportar_ld_excel(request):
 
     return response
 
+
+
+@login_required
+def dashboard_ld(request):
+    registros = DocumentoLD.objects.all()
+
+    kpis = _ld_kpis(registros)
+
+    total_not_released = registros.filter(
+        status_final_pcf__icontains="NOT RELEASED"
+    ).count()
+
+    total_released = registros.filter(
+        status_final_pcf__icontains="RELEASED"
+    ).exclude(
+        status_final_pcf__icontains="NOT RELEASED"
+    ).count()
+
+    total_sem_status_doc = registros.filter(
+        Q(status_documento__isnull=True) | Q(status_documento="")
+    ).count()
+
+    total_sem_grd = registros.filter(
+        Q(status_grd__isnull=True) | Q(status_grd="")
+    ).count()
+
+    total_sem_resposta = registros.filter(
+        Q(pcf_resposta__isnull=True) | Q(pcf_resposta="")
+    ).exclude(
+        Q(pcf__isnull=True) | Q(pcf="")
+    ).count()
+
+    por_disciplina = list(
+        registros.values("disciplina")
+        .annotate(total=Count("id"))
+        .order_by("-total")[:12]
+    )
+
+    por_origem = list(
+        registros.values("origem_aba")
+        .annotate(total=Count("id"))
+        .order_by("-total")
+    )
+
+    por_status_documento = list(
+        registros.values("status_documento")
+        .annotate(total=Count("id"))
+        .order_by("-total")[:10]
+    )
+
+    por_status_grd = list(
+        registros.values("status_grd")
+        .annotate(total=Count("id"))
+        .order_by("-total")[:10]
+    )
+
+    top_disciplinas_pendentes = list(
+        registros.filter(Q(pcf__isnull=True) | Q(pcf=""))
+        .values("disciplina")
+        .annotate(total=Count("id"))
+        .order_by("-total")[:10]
+    )
+
+    top_not_released = registros.filter(
+        status_final_pcf__icontains="NOT RELEASED"
+    ).order_by("documento", "revisao")[:12]
+
+    recentes = registros.order_by("-id")[:12]
+
+    disciplina_labels = [
+        item.get("disciplina") or "Sem disciplina"
+        for item in por_disciplina
+    ]
+    disciplina_values = [
+        item.get("total") or 0
+        for item in por_disciplina
+    ]
+
+    origem_labels = [
+        item.get("origem_aba") or "Sem origem"
+        for item in por_origem
+    ]
+    origem_values = [
+        item.get("total") or 0
+        for item in por_origem
+    ]
+
+    status_doc_labels = [
+        item.get("status_documento") or "Sem status"
+        for item in por_status_documento
+    ]
+    status_doc_values = [
+        item.get("total") or 0
+        for item in por_status_documento
+    ]
+
+    status_grd_labels = [
+        item.get("status_grd") or "Sem status"
+        for item in por_status_grd
+    ]
+    status_grd_values = [
+        item.get("total") or 0
+        for item in por_status_grd
+    ]
+
+    pcf_labels = ["Com PCF", "Sem PCF", "Com resposta", "Sem resposta"]
+    pcf_values = [
+        kpis["total_com_pcf"],
+        kpis["total_sem_pcf"],
+        kpis["total_com_resposta"],
+        total_sem_resposta,
+    ]
+
+    taxa_pcf = 0
+    if kpis["total"]:
+        taxa_pcf = round((kpis["total_com_pcf"] / kpis["total"]) * 100, 1)
+
+    taxa_grd = 0
+    if kpis["total"]:
+        taxa_grd = round((kpis["total_emitidos"] / kpis["total"]) * 100, 1)
+
+    taxa_aprovacao = 0
+    if kpis["total"]:
+        taxa_aprovacao = round((kpis["total_aprovados"] / kpis["total"]) * 100, 1)
+
+    return render(
+        request,
+        "automacoes/dashboard_ld.html",
+        {
+            **kpis,
+            "total_not_released": total_not_released,
+            "total_released": total_released,
+            "total_sem_status_doc": total_sem_status_doc,
+            "total_sem_grd": total_sem_grd,
+            "total_sem_resposta": total_sem_resposta,
+            "taxa_pcf": taxa_pcf,
+            "taxa_grd": taxa_grd,
+            "taxa_aprovacao": taxa_aprovacao,
+            "por_disciplina": por_disciplina,
+            "por_origem": por_origem,
+            "por_status_documento": por_status_documento,
+            "por_status_grd": por_status_grd,
+            "top_disciplinas_pendentes": top_disciplinas_pendentes,
+            "top_not_released": top_not_released,
+            "recentes": recentes,
+            "disciplina_labels": disciplina_labels,
+            "disciplina_values": disciplina_values,
+            "origem_labels": origem_labels,
+            "origem_values": origem_values,
+            "status_doc_labels": status_doc_labels,
+            "status_doc_values": status_doc_values,
+            "status_grd_labels": status_grd_labels,
+            "status_grd_values": status_grd_values,
+            "pcf_labels": pcf_labels,
+            "pcf_values": pcf_values,
+        },
+    )
 
 
 @login_required

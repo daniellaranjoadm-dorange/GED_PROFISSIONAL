@@ -1,0 +1,390 @@
+{% extends "documentos/base.html" %}
+
+{% block title %}Dashboard LD{% endblock %}
+
+{% block extra_head %}
+<style>
+  .dash-page { max-width: none !important; width: 100% !important; }
+  .dash-kpi {
+    border: 0;
+    border-radius: 16px;
+    overflow: hidden;
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .dash-kpi:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 .75rem 1.5rem rgba(15, 23, 42, .12) !important;
+  }
+  .dash-kpi small { color: #64748b; }
+  .dash-kpi h2 { letter-spacing: -.04em; }
+  .dash-panel {
+    border-radius: 18px;
+    border: 1px solid rgba(148, 163, 184, .25);
+    background: rgba(255,255,255,.92);
+    box-shadow: 0 .35rem 1rem rgba(15, 23, 42, .06);
+  }
+  .dash-panel-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    margin-bottom: 1rem;
+  }
+  .dash-panel-title h4 { margin: 0; }
+  .dash-chip {
+    border-radius: 999px;
+    padding: .28rem .65rem;
+    background: #eef2ff;
+    color: #1e40af;
+    font-size: .78rem;
+    font-weight: 700;
+  }
+  .chart-wrap {
+    min-height: 310px;
+    position: relative;
+  }
+  .mini-progress {
+    height: 9px;
+    border-radius: 999px;
+    background: #e2e8f0;
+    overflow: hidden;
+  }
+  .mini-progress > span {
+    display: block;
+    height: 100%;
+    background: #0d6efd;
+  }
+  .dash-list-item {
+    border: 1px solid rgba(148, 163, 184, .22);
+    border-radius: 12px;
+    padding: .8rem;
+    background: #fff;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    margin-bottom: .65rem;
+  }
+  .dash-list-item:hover {
+    border-color: #0d6efd;
+    background: #f8fafc;
+  }
+  .dash-table td,
+  .dash-table th { vertical-align: middle; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ds-page dash-page">
+
+  <div class="ds-pagehead">
+    <div>
+      <h1 class="ds-title">📁 Dashboard LD</h1>
+      <p class="ds-subtitle">
+        Cockpit executivo da Lista de Documentos: origem, disciplina, status, GRD, PCF e pendências.
+      </p>
+    </div>
+
+    <div class="d-flex gap-2">
+      <a href="{% url 'automacoes:lista_ld' %}" class="btn btn-primary">Abrir Lista LD</a>
+      <a href="{% url 'automacoes:painel' %}" class="btn btn-secondary">Voltar</a>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md">
+      <a href="{% url 'automacoes:lista_ld' %}" class="text-decoration-none text-dark">
+        <div class="card dash-kpi shadow-sm h-100">
+          <div class="card-body">
+            <small>Total linhas</small>
+            <h2 class="mb-0">{{ total }}</h2>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md">
+      <div class="card dash-kpi shadow-sm h-100">
+        <div class="card-body">
+          <small>Documentos únicos</small>
+          <h2 class="mb-0">{{ total_exclusivos }}</h2>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md">
+      <a href="{% url 'automacoes:lista_ld' %}?status_doc=Recebido" class="text-decoration-none text-dark">
+        <div class="card dash-kpi shadow-sm h-100">
+          <div class="card-body">
+            <small>Recebidos</small>
+            <h2 class="mb-0 text-success">{{ total_recebidos }}</h2>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md">
+      <a href="{% url 'automacoes:lista_ld' %}?status_doc=Aprovado" class="text-decoration-none text-dark">
+        <div class="card dash-kpi shadow-sm h-100">
+          <div class="card-body">
+            <small>Aprovados</small>
+            <h2 class="mb-0 text-success">{{ total_aprovados }}</h2>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md">
+      <a href="{% url 'automacoes:lista_ld' %}?status_grd=Emitido" class="text-decoration-none text-dark">
+        <div class="card dash-kpi shadow-sm h-100">
+          <div class="card-body">
+            <small>GRD emitido</small>
+            <h2 class="mb-0 text-primary">{{ total_emitidos }}</h2>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md">
+      <a href="{% url 'automacoes:lista_ld' %}?status_pcf=NOT RELEASED" class="text-decoration-none text-dark">
+        <div class="card dash-kpi shadow-sm h-100">
+          <div class="card-body">
+            <small>Not Released</small>
+            <h2 class="mb-0 text-danger">{{ total_not_released }}</h2>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-lg-4">
+      <div class="dash-panel p-4 h-100">
+        <div class="dash-panel-title">
+          <h4>Taxa PCF</h4>
+          <span class="dash-chip">{{ taxa_pcf }}%</span>
+        </div>
+        <div class="mini-progress mb-2"><span style="width: {{ taxa_pcf }}%;"></span></div>
+        <small class="text-muted">Registros LD com PCF vinculado.</small>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="dash-panel p-4 h-100">
+        <div class="dash-panel-title">
+          <h4>Taxa GRD</h4>
+          <span class="dash-chip">{{ taxa_grd }}%</span>
+        </div>
+        <div class="mini-progress mb-2"><span style="width: {{ taxa_grd }}%;"></span></div>
+        <small class="text-muted">Registros LD com GRD emitido.</small>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="dash-panel p-4 h-100">
+        <div class="dash-panel-title">
+          <h4>Taxa Aprovação</h4>
+          <span class="dash-chip">{{ taxa_aprovacao }}%</span>
+        </div>
+        <div class="mini-progress mb-2"><span style="width: {{ taxa_aprovacao }}%;"></span></div>
+        <small class="text-muted">Registros LD com status aprovado.</small>
+      </div>
+    </div>
+  </div>
+
+  {{ disciplina_labels|json_script:"ld-disciplina-labels" }}
+  {{ disciplina_values|json_script:"ld-disciplina-values" }}
+  {{ origem_labels|json_script:"ld-origem-labels" }}
+  {{ origem_values|json_script:"ld-origem-values" }}
+  {{ status_doc_labels|json_script:"ld-status-doc-labels" }}
+  {{ status_doc_values|json_script:"ld-status-doc-values" }}
+  {{ status_grd_labels|json_script:"ld-status-grd-labels" }}
+  {{ status_grd_values|json_script:"ld-status-grd-values" }}
+  {{ pcf_labels|json_script:"ld-pcf-labels" }}
+  {{ pcf_values|json_script:"ld-pcf-values" }}
+
+  <div class="row g-4 mb-4">
+    <div class="col-lg-6">
+      <div class="dash-panel p-4 h-100">
+        <div class="dash-panel-title">
+          <h4>Documentos por Disciplina</h4>
+          <span class="dash-chip">Top 12</span>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="ldDisciplinaChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="dash-panel p-4 h-100">
+        <div class="dash-panel-title">
+          <h4>Origem LD</h4>
+          <span class="dash-chip">LD / Marenova</span>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="ldOrigemChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <div class="col-lg-4">
+      <div class="dash-panel p-4 h-100">
+        <div class="dash-panel-title">
+          <h4>Status Documento</h4>
+          <span class="dash-chip">Operacional</span>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="ldStatusDocChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="dash-panel p-4 h-100">
+        <div class="dash-panel-title">
+          <h4>Status GRD</h4>
+          <span class="dash-chip">Emissão</span>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="ldStatusGrdChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="dash-panel p-4 h-100">
+        <div class="dash-panel-title">
+          <h4>PCF / Respostas</h4>
+          <span class="dash-chip">Workflow</span>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="ldPcfChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-7">
+      <div class="dash-panel p-4 h-100">
+        <div class="dash-panel-title">
+          <h4>Top Disciplinas Sem PCF</h4>
+          <span class="dash-chip">Pendências</span>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle dash-table">
+            <thead>
+              <tr>
+                <th>Disciplina</th>
+                <th>Total pendente</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in top_disciplinas_pendentes %}
+              <tr>
+                <td>{{ item.disciplina|default:"Sem disciplina" }}</td>
+                <td><span class="badge bg-warning text-dark">{{ item.total }}</span></td>
+                <td class="text-end">
+                  {% if item.disciplina %}
+                  <a href="{% url 'automacoes:lista_ld' %}?disciplina={{ item.disciplina }}&sem_pcf=1"
+                     class="btn btn-sm btn-outline-primary">
+                    Abrir
+                  </a>
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="3" class="text-center text-muted">Sem pendências.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="dash-panel p-4 h-100">
+        <div class="dash-panel-title">
+          <h4>Not Released</h4>
+          <span class="dash-chip">Crítico</span>
+        </div>
+
+        {% for item in top_not_released %}
+        <a href="{% url 'automacoes:lista_ld' %}?q={{ item.documento }}"
+           class="dash-list-item">
+          <div class="fw-bold">{{ item.documento }}</div>
+          <small class="text-muted">
+            Rev {{ item.revisao|default:"—" }} · {{ item.disciplina|default:"—" }} · {{ item.status_final_pcf|default:"—" }}
+          </small>
+        </a>
+        {% empty %}
+        <div class="text-muted">Nenhum documento NOT RELEASED.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  const disciplinaLabels = JSON.parse(document.getElementById("ld-disciplina-labels").textContent);
+  const disciplinaValues = JSON.parse(document.getElementById("ld-disciplina-values").textContent);
+  const origemLabels = JSON.parse(document.getElementById("ld-origem-labels").textContent);
+  const origemValues = JSON.parse(document.getElementById("ld-origem-values").textContent);
+  const statusDocLabels = JSON.parse(document.getElementById("ld-status-doc-labels").textContent);
+  const statusDocValues = JSON.parse(document.getElementById("ld-status-doc-values").textContent);
+  const statusGrdLabels = JSON.parse(document.getElementById("ld-status-grd-labels").textContent);
+  const statusGrdValues = JSON.parse(document.getElementById("ld-status-grd-values").textContent);
+  const pcfLabels = JSON.parse(document.getElementById("ld-pcf-labels").textContent);
+  const pcfValues = JSON.parse(document.getElementById("ld-pcf-values").textContent);
+
+  if (!window.Chart) return;
+
+  new Chart(document.getElementById("ldDisciplinaChart"), {
+    type: "bar",
+    data: { labels: disciplinaLabels, datasets: [{ label: "Documentos", data: disciplinaValues }] },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      indexAxis: "y",
+      plugins: { legend: { display: false } }
+    }
+  });
+
+  new Chart(document.getElementById("ldOrigemChart"), {
+    type: "doughnut",
+    data: { labels: origemLabels, datasets: [{ data: origemValues }] },
+    options: { responsive: true, maintainAspectRatio: false }
+  });
+
+  new Chart(document.getElementById("ldStatusDocChart"), {
+    type: "doughnut",
+    data: { labels: statusDocLabels, datasets: [{ data: statusDocValues }] },
+    options: { responsive: true, maintainAspectRatio: false }
+  });
+
+  new Chart(document.getElementById("ldStatusGrdChart"), {
+    type: "doughnut",
+    data: { labels: statusGrdLabels, datasets: [{ data: statusGrdValues }] },
+    options: { responsive: true, maintainAspectRatio: false }
+  });
+
+  new Chart(document.getElementById("ldPcfChart"), {
+    type: "bar",
+    data: { labels: pcfLabels, datasets: [{ label: "Quantidade", data: pcfValues }] },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } }
+    }
+  });
+})();
+</script>
+{% endblock %}
