@@ -10,6 +10,46 @@
   .tr-title { font-size: 1rem; line-height: 1.35; }
   .tr-label { font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; color: #64748b; }
   .tr-value { font-weight: 600; word-break: break-word; }
+
+  .tr-detail-panel {
+    margin-top: 1rem;
+    border: 1px solid rgba(148, 163, 184, .25);
+    border-radius: 14px;
+    background: #f8fafc;
+    padding: 1rem;
+  }
+  .tr-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: .75rem;
+  }
+  .tr-detail-box {
+    background: #fff;
+    border: 1px solid rgba(148, 163, 184, .22);
+    border-radius: 12px;
+    padding: .8rem;
+  }
+  .tr-detail-title {
+    font-size: .72rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: #64748b;
+    font-weight: 700;
+    margin-bottom: .5rem;
+  }
+  .tr-path {
+    font-size: .82rem;
+    color: #334155;
+    word-break: break-all;
+    line-height: 1.35;
+  }
+  @media (max-width: 992px) {
+    .tr-detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 576px) {
+    .tr-detail-grid { grid-template-columns: 1fr; }
+  }
+
 </style>
 {% endblock %}
 
@@ -119,10 +159,59 @@
               </a>
               {% endif %}
 
-              <button class="btn btn-dark btn-sm" type="button">
+              <button class="btn btn-dark btn-sm"
+                      type="button"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#tr-detalhes-{{ item.id }}"
+                      aria-expanded="false"
+                      aria-controls="tr-detalhes-{{ item.id }}">
                 <i class="bi bi-eye"></i>
                 Detalhes
               </button>
+            </div>
+
+            <div class="collapse" id="tr-detalhes-{{ item.id }}">
+              <div class="tr-detail-panel">
+                <div class="tr-detail-grid">
+                  <div class="tr-detail-box">
+                    <div class="tr-detail-title">Identificação</div>
+                    <div><strong>ID banco:</strong> {{ item.id }}</div>
+                    <div><strong>Documento:</strong> {{ item.documento|default:"—" }}</div>
+                    <div><strong>Transmittal:</strong> {{ item.transmittal_numero|default:"—" }}</div>
+                    <div><strong>Pasta:</strong> {{ item.pasta|default:"—" }}</div>
+                  </div>
+
+                  <div class="tr-detail-box">
+                    <div class="tr-detail-title">Emissão</div>
+                    <div><strong>Emissão:</strong> {{ item.emissao|default:"—" }}</div>
+                    <div><strong>Propósito:</strong> {{ item.proposito_emissao|default:"—" }}</div>
+                    <div><strong>Data envio:</strong> {{ item.data_envio|default:"—" }}</div>
+                  </div>
+
+                  <div class="tr-detail-box">
+                    <div class="tr-detail-title">Processamento</div>
+                    <div><strong>Status parse:</strong> {{ item.status_parse|default:"—" }}</div>
+                    <div><strong>PDF:</strong> {% if item.arquivo_pdf %}Disponível{% else %}—{% endif %}</div>
+                  </div>
+
+                  <div class="tr-detail-box">
+                    <div class="tr-detail-title">Arquivo PDF</div>
+                    <div class="tr-path">{{ item.arquivo_pdf|default:"—" }}</div>
+                  </div>
+                </div>
+
+                <div class="tr-detail-box mt-3">
+                  <div class="tr-detail-title">Título completo</div>
+                  <div>{{ item.titulo|default:"—" }}</div>
+                </div>
+
+                {% if item.observacao_parse %}
+                <div class="tr-detail-box mt-3">
+                  <div class="tr-detail-title">Observação parse</div>
+                  <div>{{ item.observacao_parse }}</div>
+                </div>
+                {% endif %}
+              </div>
             </div>
           </div>
         </div>

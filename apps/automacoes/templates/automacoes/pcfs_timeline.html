@@ -10,6 +10,46 @@
   .pcf-title { font-size: 1rem; line-height: 1.35; }
   .pcf-label { font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; color: #64748b; }
   .pcf-value { font-weight: 600; word-break: break-word; }
+
+  .pcf-detail-panel {
+    margin-top: 1rem;
+    border: 1px solid rgba(148, 163, 184, .25);
+    border-radius: 14px;
+    background: #f8fafc;
+    padding: 1rem;
+  }
+  .pcf-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: .75rem;
+  }
+  .pcf-detail-box {
+    background: #fff;
+    border: 1px solid rgba(148, 163, 184, .22);
+    border-radius: 12px;
+    padding: .8rem;
+  }
+  .pcf-detail-title {
+    font-size: .72rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: #64748b;
+    font-weight: 700;
+    margin-bottom: .5rem;
+  }
+  .pcf-path {
+    font-size: .82rem;
+    color: #334155;
+    word-break: break-all;
+    line-height: 1.35;
+  }
+  @media (max-width: 992px) {
+    .pcf-detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 576px) {
+    .pcf-detail-grid { grid-template-columns: 1fr; }
+  }
+
 </style>
 {% endblock %}
 
@@ -177,10 +217,55 @@
               </a>
               {% endif %}
 
-              <button class="btn btn-dark btn-sm" type="button">
+              <button class="btn btn-dark btn-sm"
+                      type="button"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#pcf-detalhes-{{ item.id }}"
+                      aria-expanded="false"
+                      aria-controls="pcf-detalhes-{{ item.id }}">
                 <i class="bi bi-eye"></i>
                 Detalhes
               </button>
+            </div>
+
+            <div class="collapse" id="pcf-detalhes-{{ item.id }}">
+              <div class="pcf-detail-panel">
+                <div class="pcf-detail-grid">
+                  <div class="pcf-detail-box">
+                    <div class="pcf-detail-title">Identificação</div>
+                    <div><strong>ID banco:</strong> {{ item.id }}</div>
+                    <div><strong>Documento:</strong> {{ item.numero_documento|default:"—" }}</div>
+                    <div><strong>Nº PCF:</strong> {{ item.numero_pcf|default:"—" }}</div>
+                    <div><strong>Revisão:</strong> {{ item.revisao_pcf|default:"—" }}</div>
+                    <div><strong>Tipo:</strong> {{ item.tipo|default:"—" }}</div>
+                  </div>
+
+                  <div class="pcf-detail-box">
+                    <div class="pcf-detail-title">Status e comentários</div>
+                    <div><strong>Status final:</strong> {{ item.status_final|default:"—" }}</div>
+                    <div><strong>Open comments:</strong> {{ item.open_comments }}</div>
+                    <div><strong>Qtd. comentários:</strong> {{ item.qtd_comentarios }}</div>
+                    <div><strong>Data recebimento:</strong> {{ item.data_recebimento|default:"—" }}</div>
+                  </div>
+
+                  <div class="pcf-detail-box">
+                    <div class="pcf-detail-title">Referências</div>
+                    <div><strong>PCF link:</strong></div>
+                    <div class="pcf-path">{{ item.pcf_link|default:"—" }}</div>
+                  </div>
+
+                  <div class="pcf-detail-box">
+                    <div class="pcf-detail-title">Arquivo</div>
+                    <div><strong>Disponibilidade:</strong> {% if item.caminho %}Disponível{% else %}—{% endif %}</div>
+                    <div class="pcf-path mt-2">{{ item.caminho|default:"—" }}</div>
+                  </div>
+                </div>
+
+                <div class="pcf-detail-box mt-3">
+                  <div class="pcf-detail-title">Título completo</div>
+                  <div>{{ item.titulo|default:"—" }}</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
