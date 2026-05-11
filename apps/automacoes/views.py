@@ -160,7 +160,26 @@ def _filtrar_pcfs_timeline(request):
         registros = registros.filter(tipo=tipo)
 
     if status:
-        registros = registros.filter(status_final__icontains=status)
+        status_norm = status.strip().upper()
+
+        # Filtro categórico usado pelos dashboards:
+        # "RELEASED" deve incluir RELEASED / RELEASED WITH COMMENTS,
+        # mas nunca NOT RELEASED.
+        if status_norm == "RELEASED":
+            registros = registros.filter(
+                status_final__icontains="RELEASED"
+            ).exclude(
+                status_final__icontains="NOT RELEASED"
+            )
+
+        # "NOT RELEASED" deve ficar isolado para não misturar com RELEASED.
+        elif status_norm == "NOT RELEASED":
+            registros = registros.filter(
+                status_final__icontains="NOT RELEASED"
+            )
+
+        else:
+            registros = registros.filter(status_final__icontains=status)
 
     if somente_open:
         registros = registros.filter(open_comments__gt=0)

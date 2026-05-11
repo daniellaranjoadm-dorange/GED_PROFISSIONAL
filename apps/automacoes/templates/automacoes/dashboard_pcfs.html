@@ -4,21 +4,121 @@
 
 {% block extra_head %}
 <style>
-  .dash-page { max-width: none !important; width: 100% !important; }
-  .dash-kpi { border: 0; border-radius: 16px; overflow: hidden; transition: transform .15s ease, box-shadow .15s ease; }
-  .dash-kpi:hover { transform: translateY(-2px); box-shadow: 0 .75rem 1.5rem rgba(15, 23, 42, .12) !important; }
-  .dash-kpi small { color: #64748b; }
-  .dash-kpi h2 { letter-spacing: -.04em; }
-  .dash-panel { border-radius: 18px; border: 1px solid rgba(148, 163, 184, .25); background: rgba(255,255,255,.92); box-shadow: 0 .35rem 1rem rgba(15, 23, 42, .06); }
-  .dash-panel-title { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-bottom: 1rem; }
-  .dash-panel-title h4 { margin: 0; }
-  .dash-chip { border-radius: 999px; padding: .28rem .65rem; background: #eef2ff; color: #1e40af; font-size: .78rem; font-weight: 700; }
-  .dash-progress { height: 9px; border-radius: 999px; background: #e2e8f0; overflow: hidden; }
-  .dash-progress > span { display: block; height: 100%; background: #0d6efd; }
-  .dash-table td, .dash-table th { vertical-align: middle; }
-  .dash-list-item { border: 1px solid rgba(148, 163, 184, .22); border-radius: 12px; padding: .8rem; background: #fff; text-decoration: none; color: inherit; display: block; margin-bottom: .65rem; }
-  .dash-list-item:hover { border-color: #0d6efd; background: #f8fafc; }
-  .chart-wrap { min-height: 300px; position: relative; }
+  .dash-page {
+    max-width: none !important;
+    width: 100% !important;
+  }
+
+  .dash-kpi {
+    border: 0;
+    border-radius: 16px;
+    overflow: hidden;
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+
+  .dash-kpi:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 .75rem 1.5rem rgba(15, 23, 42, .12) !important;
+  }
+
+  .dash-kpi small {
+    color: #64748b;
+  }
+
+  .dash-kpi h2 {
+    letter-spacing: -.04em;
+  }
+
+  .dash-panel {
+    border-radius: 18px;
+    border: 1px solid rgba(148, 163, 184, .25);
+    background: rgba(255, 255, 255, .92);
+    box-shadow: 0 .35rem 1rem rgba(15, 23, 42, .06);
+  }
+
+  .dash-panel-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    margin-bottom: 1rem;
+  }
+
+  .dash-panel-title h4 {
+    margin: 0;
+  }
+
+  .dash-chip {
+    border-radius: 999px;
+    padding: .28rem .65rem;
+    background: #eef2ff;
+    color: #1e40af;
+    font-size: .78rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .dash-progress {
+    height: 9px;
+    border-radius: 999px;
+    background: #e2e8f0;
+    overflow: hidden;
+  }
+
+  .dash-progress > span {
+    display: block;
+    height: 100%;
+    background: #0d6efd;
+  }
+
+  .dash-table td,
+  .dash-table th {
+    vertical-align: middle;
+  }
+
+  .dash-list-item {
+    border: 1px solid rgba(148, 163, 184, .22);
+    border-radius: 12px;
+    padding: .8rem;
+    background: #fff;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    margin-bottom: .65rem;
+    transition: border-color .15s ease, background .15s ease, transform .15s ease;
+  }
+
+  .dash-list-item:hover {
+    border-color: #0d6efd;
+    background: #f8fafc;
+    transform: translateY(-1px);
+  }
+
+  .chart-wrap {
+    min-height: 300px;
+    position: relative;
+  }
+
+  .chart-empty {
+    display: none;
+    min-height: 300px;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
+    border: 1px dashed rgba(148, 163, 184, .45);
+    border-radius: 14px;
+    background: #f8fafc;
+    text-align: center;
+    padding: 1rem;
+  }
+
+  .chart-clickable {
+    cursor: pointer;
+  }
+
+  .dash-muted {
+    color: #64748b;
+  }
 </style>
 {% endblock %}
 
@@ -29,19 +129,82 @@
       <h1 class="ds-title">📈 Dashboard PCFs</h1>
       <p class="ds-subtitle">Visão executiva da Timeline PCFs importada para o GED.</p>
     </div>
+
     <div class="d-flex gap-2">
-      <a href="{% url 'automacoes:pcfs_timeline' %}" class="btn btn-primary">Ver Timeline</a>
-      <a href="{% url 'automacoes:painel' %}" class="btn btn-secondary">Voltar</a>
+      <a href="{% url 'automacoes:pcfs_timeline' %}" class="btn btn-primary">
+        Ver Timeline
+      </a>
+      <a href="{% url 'automacoes:painel' %}" class="btn btn-secondary">
+        Voltar
+      </a>
     </div>
   </div>
 
   <div class="row g-3 mb-4">
-    <div class="col-md-2"><a href="{% url 'automacoes:pcfs_timeline' %}" class="text-decoration-none text-dark"><div class="card dash-kpi shadow-sm h-100"><div class="card-body"><small>Total PCFs</small><h2 class="mb-0">{{ total }}</h2></div></div></a></div>
-    <div class="col-md-2"><a href="{% url 'automacoes:pcfs_timeline' %}?somente_open=1" class="text-decoration-none text-dark"><div class="card dash-kpi shadow-sm h-100"><div class="card-body"><small>Com Open</small><h2 class="mb-0 text-warning">{{ total_open }}</h2></div></div></a></div>
-    <div class="col-md-2"><div class="card dash-kpi shadow-sm h-100"><div class="card-body"><small>Comentários Abertos</small><h2 class="mb-0">{{ total_comentarios_abertos }}</h2></div></div></div>
-    <div class="col-md-2"><a href="{% url 'automacoes:pcfs_timeline' %}?status=RELEASED" class="text-decoration-none text-dark"><div class="card dash-kpi shadow-sm h-100"><div class="card-body"><small>Released</small><h2 class="mb-0 text-success">{{ total_released }}</h2></div></div></a></div>
-    <div class="col-md-2"><a href="{% url 'automacoes:pcfs_timeline' %}?status=NOT RELEASED" class="text-decoration-none text-dark"><div class="card dash-kpi shadow-sm h-100"><div class="card-body"><small>Not Released</small><h2 class="mb-0 text-danger">{{ total_not_released }}</h2></div></div></a></div>
-    <div class="col-md-2"><div class="card dash-kpi shadow-sm h-100"><div class="card-body"><small>Risco crítico</small><h2 class="mb-0">{{ critical_rate }}%</h2><div class="dash-progress mt-2"><span style="width: {{ critical_rate }}%;"></span></div></div></div></div>
+    <div class="col-md-2">
+      <a href="{% url 'automacoes:pcfs_timeline' %}" class="text-decoration-none text-dark">
+        <div class="card dash-kpi shadow-sm h-100">
+          <div class="card-body">
+            <small>Total PCFs</small>
+            <h2 class="mb-0">{{ total }}</h2>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md-2">
+      <a href="{% url 'automacoes:pcfs_timeline' %}?somente_open=1" class="text-decoration-none text-dark">
+        <div class="card dash-kpi shadow-sm h-100">
+          <div class="card-body">
+            <small>Com Open</small>
+            <h2 class="mb-0 text-warning">{{ total_open }}</h2>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md-2">
+      <div class="card dash-kpi shadow-sm h-100">
+        <div class="card-body">
+          <small>Comentários Abertos</small>
+          <h2 class="mb-0">{{ total_comentarios_abertos }}</h2>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-2">
+      <a href="{% url 'automacoes:pcfs_timeline' %}?status=RELEASED" class="text-decoration-none text-dark">
+        <div class="card dash-kpi shadow-sm h-100">
+          <div class="card-body">
+            <small>Released</small>
+            <h2 class="mb-0 text-success">{{ total_released }}</h2>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md-2">
+      <a href="{% url 'automacoes:pcfs_timeline' %}?status=NOT%20RELEASED" class="text-decoration-none text-dark">
+        <div class="card dash-kpi shadow-sm h-100">
+          <div class="card-body">
+            <small>Not Released</small>
+            <h2 class="mb-0 text-danger">{{ total_not_released }}</h2>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md-2">
+      <div class="card dash-kpi shadow-sm h-100">
+        <div class="card-body">
+          <small>Risco crítico</small>
+          <h2 class="mb-0">{{ critical_rate|default:0 }}%</h2>
+          <div class="dash-progress mt-2" title="Percentual crítico">
+            <span style="width: {{ critical_rate|default:0 }}%;"></span>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   {{ status_chart_labels|json_script:"pcf-status-labels" }}
@@ -52,18 +215,160 @@
   {{ tipo_open_values|json_script:"pcf-open-values" }}
 
   <div class="row g-4 mb-4">
-    <div class="col-lg-6"><div class="dash-panel p-4 h-100"><div class="dash-panel-title"><h4>Distribuição por Status</h4><span class="dash-chip">Top 10</span></div><div class="chart-wrap"><canvas id="pcfStatusChart"></canvas></div></div></div>
-    <div class="col-lg-6"><div class="dash-panel p-4 h-100"><div class="dash-panel-title"><h4>PCFs por Tipo</h4><span class="dash-chip">Volume</span></div><div class="chart-wrap"><canvas id="pcfTipoChart"></canvas></div></div></div>
+    <div class="col-lg-6">
+      <div class="dash-panel p-4 h-100">
+        <div class="dash-panel-title">
+          <h4>Distribuição por Status</h4>
+          <span class="dash-chip">Clique para filtrar</span>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="pcfStatusChart" class="chart-clickable"></canvas>
+          <div id="pcfStatusEmpty" class="chart-empty">Sem dados de status para exibir.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="dash-panel p-4 h-100">
+        <div class="dash-panel-title">
+          <h4>PCFs por Tipo</h4>
+          <span class="dash-chip">Clique para filtrar</span>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="pcfTipoChart" class="chart-clickable"></canvas>
+          <div id="pcfTipoEmpty" class="chart-empty">Sem dados de tipo para exibir.</div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="row g-4 mb-4">
-    <div class="col-lg-6"><div class="dash-panel p-4 h-100"><div class="dash-panel-title"><h4>Open Comments por Tipo</h4><span class="dash-chip">Pendências</span></div><div class="chart-wrap"><canvas id="pcfOpenChart"></canvas></div></div></div>
-    <div class="col-lg-6"><div class="dash-panel p-4 h-100"><div class="dash-panel-title"><h4>Top Status</h4><span class="dash-chip">Operacional</span></div><div class="table-responsive"><table class="table table-hover align-middle dash-table"><thead><tr><th>Status Final</th><th>Total</th><th></th></tr></thead><tbody>{% for item in por_status %}<tr><td>{{ item.status_final|default:"Sem status" }}</td><td>{{ item.total }}</td><td class="text-end">{% if item.status_final %}<a href="{% url 'automacoes:pcfs_timeline' %}?status={{ item.status_final }}" class="btn btn-sm btn-outline-primary">Abrir</a>{% endif %}</td></tr>{% empty %}<tr><td colspan="3" class="text-center text-muted">Sem dados.</td></tr>{% endfor %}</tbody></table></div></div></div>
+    <div class="col-lg-6">
+      <div class="dash-panel p-4 h-100">
+        <div class="dash-panel-title">
+          <h4>Open Comments por Tipo</h4>
+          <span class="dash-chip">Pendências</span>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="pcfOpenChart" class="chart-clickable"></canvas>
+          <div id="pcfOpenEmpty" class="chart-empty">Sem pendências por tipo para exibir.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="dash-panel p-4 h-100">
+        <div class="dash-panel-title">
+          <h4>Top Status</h4>
+          <span class="dash-chip">Operacional</span>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle dash-table">
+            <thead>
+              <tr>
+                <th>Status Final</th>
+                <th>Total</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in por_status %}
+                <tr>
+                  <td>{{ item.status_final|default:"Sem status" }}</td>
+                  <td>{{ item.total }}</td>
+                  <td class="text-end">
+                    {% if item.status_final %}
+                      <a href="{% url 'automacoes:pcfs_timeline' %}?status={{ item.status_final|urlencode }}" class="btn btn-sm btn-outline-primary">
+                        Abrir
+                      </a>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="3" class="text-center text-muted">Sem dados.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="row g-4">
-    <div class="col-lg-8"><div class="dash-panel p-4 h-100"><div class="dash-panel-title"><h4>Top Pendências por Open Comments</h4><span class="dash-chip">Crítico</span></div><div class="table-responsive"><table class="table table-striped table-hover align-middle dash-table"><thead><tr><th>Documento</th><th>PCF</th><th>Título</th><th>Rev.</th><th>Open</th><th>Status</th><th>Arquivo</th></tr></thead><tbody>{% for item in top_pendencias %}<tr><td class="fw-bold">{{ item.numero_documento }}</td><td>{{ item.numero_pcf }}</td><td>{{ item.titulo }}</td><td>{{ item.revisao_pcf }}</td><td><span class="badge bg-warning text-dark">{{ item.open_comments }}</span></td><td>{{ item.status_final }}</td><td>{% if item.caminho %}<a href="{% url 'automacoes:abrir_arquivo_pcf' item.id %}" target="_blank" class="btn btn-sm btn-outline-primary">Abrir</a>{% else %}—{% endif %}</td></tr>{% empty %}<tr><td colspan="7" class="text-center text-muted">Nenhuma pendência encontrada.</td></tr>{% endfor %}</tbody></table></div></div></div>
-    <div class="col-lg-4"><div class="dash-panel p-4 h-100"><div class="dash-panel-title"><h4>Últimas Atualizações</h4><span class="dash-chip">Recentes</span></div>{% for item in recentes %}<a href="{% url 'automacoes:pcfs_timeline' %}?q={{ item.numero_documento }}" class="dash-list-item"><div class="fw-bold">{{ item.numero_documento }}</div><small class="text-muted">{{ item.tipo }} · Rev {{ item.revisao_pcf }} · Open {{ item.open_comments }}</small></a>{% empty %}<div class="text-muted">Sem registros recentes.</div>{% endfor %}</div></div>
+    <div class="col-lg-8">
+      <div class="dash-panel p-4 h-100">
+        <div class="dash-panel-title">
+          <h4>Top Pendências por Open Comments</h4>
+          <span class="dash-chip">Crítico</span>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-striped table-hover align-middle dash-table">
+            <thead>
+              <tr>
+                <th>Documento</th>
+                <th>PCF</th>
+                <th>Título</th>
+                <th>Rev.</th>
+                <th>Open</th>
+                <th>Status</th>
+                <th>Arquivo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in top_pendencias %}
+                <tr>
+                  <td class="fw-bold">{{ item.numero_documento }}</td>
+                  <td>{{ item.numero_pcf }}</td>
+                  <td>{{ item.titulo }}</td>
+                  <td>{{ item.revisao_pcf }}</td>
+                  <td>
+                    <span class="badge bg-warning text-dark">{{ item.open_comments }}</span>
+                  </td>
+                  <td>{{ item.status_final }}</td>
+                  <td>
+                    {% if item.caminho %}
+                      <a href="{% url 'automacoes:abrir_arquivo_pcf' item.id %}" target="_blank" class="btn btn-sm btn-outline-primary">
+                        Abrir
+                      </a>
+                    {% else %}
+                      <span class="dash-muted">—</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="7" class="text-center text-muted">Nenhuma pendência encontrada.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="dash-panel p-4 h-100">
+        <div class="dash-panel-title">
+          <h4>Últimas Atualizações</h4>
+          <span class="dash-chip">Recentes</span>
+        </div>
+
+        {% for item in recentes %}
+          <a href="{% url 'automacoes:pcfs_timeline' %}?q={{ item.numero_documento|urlencode }}" class="dash-list-item">
+            <div class="fw-bold">{{ item.numero_documento }}</div>
+            <small class="text-muted">
+              {{ item.tipo }} · Rev {{ item.revisao_pcf }} · Open {{ item.open_comments }}
+            </small>
+          </a>
+        {% empty %}
+          <div class="text-muted">Sem registros recentes.</div>
+        {% endfor %}
+      </div>
+    </div>
   </div>
 </div>
 {% endblock %}
@@ -71,18 +376,131 @@
 {% block extra_js %}
 <script>
 (function () {
-  const statusLabels = JSON.parse(document.getElementById("pcf-status-labels").textContent);
-  const statusValues = JSON.parse(document.getElementById("pcf-status-values").textContent);
-  const tipoLabels = JSON.parse(document.getElementById("pcf-tipo-labels").textContent);
-  const tipoValues = JSON.parse(document.getElementById("pcf-tipo-values").textContent);
-  const openLabels = JSON.parse(document.getElementById("pcf-open-labels").textContent);
-  const openValues = JSON.parse(document.getElementById("pcf-open-values").textContent);
+  const timelineUrl = "{% url 'automacoes:pcfs_timeline' %}";
 
-  if (!window.Chart) return;
+  function readJsonScript(id) {
+    const element = document.getElementById(id);
+    if (!element) return [];
+    try {
+      return JSON.parse(element.textContent || "[]");
+    } catch (error) {
+      console.warn("Falha ao ler dados do gráfico:", id, error);
+      return [];
+    }
+  }
 
-  new Chart(document.getElementById("pcfStatusChart"), { type: "doughnut", data: { labels: statusLabels, datasets: [{ data: statusValues }] }, options: { responsive: true, maintainAspectRatio: false } });
-  new Chart(document.getElementById("pcfTipoChart"), { type: "bar", data: { labels: tipoLabels, datasets: [{ label: "PCFs", data: tipoValues }] }, options: { responsive: true, maintainAspectRatio: false, indexAxis: "y", plugins: { legend: { display: false } } } });
-  new Chart(document.getElementById("pcfOpenChart"), { type: "bar", data: { labels: openLabels, datasets: [{ label: "Open Comments", data: openValues }] }, options: { responsive: true, maintainAspectRatio: false, indexAxis: "y", plugins: { legend: { display: false } } } });
+  function hasChartData(labels, values) {
+    return Array.isArray(labels)
+      && Array.isArray(values)
+      && labels.length > 0
+      && values.some((value) => Number(value) > 0);
+  }
+
+  function showEmpty(canvasId, emptyId) {
+    const canvas = document.getElementById(canvasId);
+    const empty = document.getElementById(emptyId);
+
+    if (canvas) canvas.style.display = "none";
+    if (empty) empty.style.display = "flex";
+  }
+
+  function buildTimelineUrl(paramName, rawValue, extraParams) {
+    const params = new URLSearchParams(extraParams || {});
+    params.set(paramName, rawValue || "");
+    return `${timelineUrl}?${params.toString()}`;
+  }
+
+  function bindDrilldown(chart, paramName, extraParams) {
+    chart.canvas.addEventListener("click", function (event) {
+      const points = chart.getElementsAtEventForMode(event, "nearest", { intersect: true }, true);
+      if (!points.length) return;
+
+      const index = points[0].index;
+      const label = chart.data.labels[index];
+
+      if (!label) return;
+      window.location.href = buildTimelineUrl(paramName, label, extraParams);
+    });
+  }
+
+  const statusLabels = readJsonScript("pcf-status-labels");
+  const statusValues = readJsonScript("pcf-status-values");
+  const tipoLabels = readJsonScript("pcf-tipo-labels");
+  const tipoValues = readJsonScript("pcf-tipo-values");
+  const openLabels = readJsonScript("pcf-open-labels");
+  const openValues = readJsonScript("pcf-open-values");
+
+  if (!window.Chart) {
+    showEmpty("pcfStatusChart", "pcfStatusEmpty");
+    showEmpty("pcfTipoChart", "pcfTipoEmpty");
+    showEmpty("pcfOpenChart", "pcfOpenEmpty");
+    return;
+  }
+
+  if (hasChartData(statusLabels, statusValues)) {
+    const statusChart = new Chart(document.getElementById("pcfStatusChart"), {
+      type: "doughnut",
+      data: {
+        labels: statusLabels,
+        datasets: [{ data: statusValues }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: "bottom" }
+        }
+      }
+    });
+
+    bindDrilldown(statusChart, "status");
+  } else {
+    showEmpty("pcfStatusChart", "pcfStatusEmpty");
+  }
+
+  if (hasChartData(tipoLabels, tipoValues)) {
+    const tipoChart = new Chart(document.getElementById("pcfTipoChart"), {
+      type: "bar",
+      data: {
+        labels: tipoLabels,
+        datasets: [{ label: "PCFs", data: tipoValues }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: "y",
+        plugins: {
+          legend: { display: false }
+        }
+      }
+    });
+
+    bindDrilldown(tipoChart, "tipo");
+  } else {
+    showEmpty("pcfTipoChart", "pcfTipoEmpty");
+  }
+
+  if (hasChartData(openLabels, openValues)) {
+    const openChart = new Chart(document.getElementById("pcfOpenChart"), {
+      type: "bar",
+      data: {
+        labels: openLabels,
+        datasets: [{ label: "Open Comments", data: openValues }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: "y",
+        plugins: {
+          legend: { display: false }
+        }
+      }
+    });
+
+    bindDrilldown(openChart, "tipo", { somente_open: "1" });
+  } else {
+    showEmpty("pcfOpenChart", "pcfOpenEmpty");
+  }
 })();
 </script>
 {% endblock %}
