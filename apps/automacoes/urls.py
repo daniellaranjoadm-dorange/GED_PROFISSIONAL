@@ -11,6 +11,10 @@ urlpatterns = [
     path("transmittal-km/", views.executar_transmittal_km, name="transmittal_km"),
     path("grd-ghenova/", views.executar_grd_ghenova, name="grd_ghenova"),
     path("km-indexar/", views.executar_indice_km, name="indexar_km"),
+    path("busca-global/", views.busca_global_ged, name="busca_global"),
+    path("api/busca-global/", views.api_busca_global_ged, name="api_busca_global"),
+    path("km-index/<int:pk>/abrir/", views.abrir_km_index, name="abrir_km_index"),
+    path("km-index/<int:pk>/abrir-pasta/", views.abrir_pasta_km_index, name="abrir_pasta_km_index"),
     path("logs/", views.logs_automacoes, name="logs_automacoes"),
 
     path(

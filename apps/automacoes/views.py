@@ -10,7 +10,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.core.paginator import Paginator
 from django.db.models import Avg, Count, Q, Sum
-from django.http import FileResponse, Http404, HttpResponse
+from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
@@ -2524,4 +2524,265 @@ def abrir_arquivo_ld(request, pk, tipo):
         html += f"<p><strong>Erro:</strong> {exc}</p>"
         return HttpResponse(html, status=500)
 
+
+# ============================================================
+# BUSCA GLOBAL GED ENTERPRISE
+# ============================================================
+
+def _bg_texto(valor):
+    return str(valor or "").strip()
+
+
+def _bg_url(path):
+    return path
+
+
+def _bg_score(q, *valores):
+    q_norm = _km_normalizar(q)
+    if not q_norm:
+        return 0
+
+    melhor = 0
+    for valor in valores:
+        texto = _bg_texto(valor)
+        if not texto:
+            continue
+
+        texto_norm = _km_normalizar(texto)
+
+        if texto_norm == q_norm:
+            melhor = max(melhor, 100)
+        elif q_norm in texto_norm:
+            melhor = max(melhor, 85)
+        elif texto_norm in q_norm and len(texto_norm) >= 6:
+            melhor = max(melhor, 70)
+        elif q.lower() in texto.lower():
+            melhor = max(melhor, 60)
+
+    return melhor
+
+
+def _bg_limite(qs, limite=20):
+    return list(qs[:limite])
+
+
+@login_required
+def abrir_km_index(request, pk):
+    item = KMFileIndex.objects.get(pk=pk, ativo=True)
+    arquivo = Path(item.caminho_completo)
+
+    if not arquivo.exists():
+        raise Http404(f"Arquivo KM não encontrado: {arquivo}")
+
+    if os.name == "nt":
+        os.startfile(str(arquivo))
+        return HttpResponse(
+            f"Arquivo aberto: {arquivo}",
+            content_type="text/plain; charset=utf-8",
+        )
+
+    return FileResponse(
+        open(arquivo, "rb"),
+        as_attachment=False,
+        filename=arquivo.name,
+    )
+
+
+@login_required
+def abrir_pasta_km_index(request, pk):
+    item = KMFileIndex.objects.get(pk=pk, ativo=True)
+    arquivo = Path(item.caminho_completo)
+    pasta = arquivo.parent if arquivo.suffix else arquivo
+
+    if not pasta.exists():
+        raise Http404(f"Pasta KM não encontrada: {pasta}")
+
+    if os.name == "nt":
+        os.startfile(str(pasta))
+        return HttpResponse(
+            f"Pasta aberta: {pasta}",
+            content_type="text/plain; charset=utf-8",
+        )
+
+    return HttpResponse(
+        f"Pasta localizada: {pasta}",
+        content_type="text/plain; charset=utf-8",
+    )
+
+
+@login_required
+def busca_global_ged(request):
+    q = _bg_texto(request.GET.get("q") or request.GET.get("busca"))
+    resultados = {
+        "km": [],
+        "transmittals": [],
+        "ld": [],
+        "pcfs": [],
+    }
+
+    totais = {
+        "km": 0,
+        "transmittals": 0,
+        "ld": 0,
+        "pcfs": 0,
+        "geral": 0,
+    }
+
+    if len(q) >= 2:
+        q_norm = _km_normalizar(q)
+
+        km_qs = KMFileIndex.objects.filter(ativo=True).filter(
+            Q(nome_arquivo__icontains=q)
+            | Q(caminho_completo__icontains=q)
+            | Q(pasta__icontains=q)
+            | Q(documento_extraido__icontains=q)
+            | Q(nome_normalizado__icontains=q_norm)
+            | Q(stem_normalizado__icontains=q_norm)
+        ).order_by("eh_transmittal_letter", "nome_arquivo")
+
+        totais["km"] = km_qs.count()
+        for item in _bg_limite(km_qs, 30):
+            resultados["km"].append({
+                "id": item.id,
+                "tipo": "KM",
+                "titulo": item.nome_arquivo,
+                "subtitulo": item.documento_extraido or item.extensao or "Arquivo KM",
+                "descricao": item.pasta,
+                "badge": "Transmittal Letter" if item.eh_transmittal_letter else "Documento KM",
+                "score": _bg_score(q, item.nome_arquivo, item.documento_extraido, item.caminho_completo),
+                "abrir_url": f"/automacoes/km-index/{item.id}/abrir/",
+                "pasta_url": f"/automacoes/km-index/{item.id}/abrir-pasta/",
+            })
+
+        tr_qs = TransmittalKM.objects.filter(
+            Q(documento__icontains=q)
+            | Q(titulo__icontains=q)
+            | Q(pasta__icontains=q)
+            | Q(emissao__icontains=q)
+            | Q(proposito_emissao__icontains=q)
+            | Q(transmittal_numero__icontains=q)
+        ).order_by("transmittal_numero", "documento")
+
+        totais["transmittals"] = tr_qs.count()
+        for item in _bg_limite(tr_qs, 25):
+            resultados["transmittals"].append({
+                "id": item.id,
+                "tipo": "Transmittal KM",
+                "titulo": item.documento or item.transmittal_numero or "Registro KM",
+                "subtitulo": item.transmittal_numero or "Sem transmittal",
+                "descricao": item.titulo or item.pasta,
+                "badge": item.status_parse or "KM",
+                "score": _bg_score(q, item.documento, item.titulo, item.transmittal_numero, item.pasta),
+                "abrir_url": f"/automacoes/transmittals-km/{item.id}/abrir-documento/",
+                "pasta_url": f"/automacoes/transmittals-km/{item.id}/abrir-pasta/",
+                "registro_url": f"/automacoes/transmittals-km/?q={q}",
+            })
+
+        ld_qs = DocumentoLD.objects.filter(
+            Q(documento__icontains=q)
+            | Q(titulo__icontains=q)
+            | Q(disciplina__icontains=q)
+            | Q(status_documento__icontains=q)
+            | Q(status_grd__icontains=q)
+            | Q(grd__icontains=q)
+            | Q(pcf__icontains=q)
+            | Q(pcf_resposta__icontains=q)
+            | Q(grd_resposta__icontains=q)
+        ).order_by("documento", "revisao")
+
+        totais["ld"] = ld_qs.count()
+        for item in _bg_limite(ld_qs, 25):
+            resultados["ld"].append({
+                "id": item.id,
+                "tipo": "LD",
+                "titulo": item.documento or "Documento LD",
+                "subtitulo": f"Rev. {item.revisao or '—'} · {item.disciplina or 'Sem disciplina'}",
+                "descricao": item.titulo,
+                "badge": item.status_documento or item.status_grd or "LD",
+                "score": _bg_score(q, item.documento, item.titulo, item.disciplina, item.grd, item.pcf),
+                "abrir_url": f"/automacoes/ld/{item.id}/abrir/documento/",
+                "registro_url": f"/automacoes/ld/?q={q}",
+            })
+
+        pcfs_qs = PCFTimeline.objects.filter(
+            Q(numero_documento__icontains=q)
+            | Q(numero_pcf__icontains=q)
+            | Q(pcf_link__icontains=q)
+            | Q(titulo__icontains=q)
+            | Q(status_final__icontains=q)
+            | Q(tipo__icontains=q)
+        ).order_by("numero_documento", "revisao_pcf")
+
+        totais["pcfs"] = pcfs_qs.count()
+        for item in _bg_limite(pcfs_qs, 25):
+            resultados["pcfs"].append({
+                "id": item.id,
+                "tipo": "PCF",
+                "titulo": item.numero_documento or item.numero_pcf or "PCF",
+                "subtitulo": f"{item.tipo or 'PCF'} · Rev. {item.revisao_pcf or '—'}",
+                "descricao": item.titulo,
+                "badge": item.status_final or "PCF",
+                "score": _bg_score(q, item.numero_documento, item.numero_pcf, item.titulo, item.status_final),
+                "abrir_url": f"/automacoes/pcfs/{item.id}/abrir-arquivo/",
+                "registro_url": f"/automacoes/pcfs/?q={q}",
+            })
+
+        totais["geral"] = sum(totais.values())
+
+    return render(
+        request,
+        "automacoes/busca_global.html",
+        {
+            "q": q,
+            "resultados": resultados,
+            "totais": totais,
+        },
+    )
+
+
+@login_required
+def api_busca_global_ged(request):
+    q = _bg_texto(request.GET.get("q") or request.GET.get("busca"))
+    if len(q) < 2:
+        return JsonResponse({"results": []})
+
+    q_norm = _km_normalizar(q)
+    results = []
+
+    for item in KMFileIndex.objects.filter(ativo=True).filter(
+        Q(nome_arquivo__icontains=q)
+        | Q(documento_extraido__icontains=q)
+        | Q(nome_normalizado__icontains=q_norm)
+        | Q(stem_normalizado__icontains=q_norm)
+    ).order_by("eh_transmittal_letter", "nome_arquivo")[:8]:
+        results.append({
+            "type": "KM",
+            "title": item.nome_arquivo,
+            "subtitle": item.documento_extraido or item.pasta,
+            "url": f"/automacoes/km-index/{item.id}/abrir/",
+        })
+
+    for item in DocumentoLD.objects.filter(
+        Q(documento__icontains=q) | Q(titulo__icontains=q)
+    ).order_by("documento")[:5]:
+        results.append({
+            "type": "LD",
+            "title": item.documento,
+            "subtitle": item.titulo[:120] if item.titulo else "",
+            "url": f"/automacoes/ld/?q={q}",
+        })
+
+    for item in TransmittalKM.objects.filter(
+        Q(documento__icontains=q)
+        | Q(titulo__icontains=q)
+        | Q(transmittal_numero__icontains=q)
+    ).order_by("transmittal_numero")[:5]:
+        results.append({
+            "type": "Transmittal",
+            "title": item.documento or item.transmittal_numero,
+            "subtitle": item.titulo[:120] if item.titulo else item.transmittal_numero,
+            "url": f"/automacoes/transmittals-km/?q={q}",
+        })
+
+    return JsonResponse({"results": results[:15]})
 

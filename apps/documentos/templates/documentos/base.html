@@ -1,4 +1,4 @@
-﻿{% load static %}
+{% load static %}
 {# URLs resolvidas com "as" para N&Atilde;O quebrar se algo estiver fora do ar/namespace #}
 {% url 'set_language' as url_set_language %}
 {% url 'logout' as url_logout %}
@@ -14,6 +14,7 @@
 {% url 'contas:usuarios_permissoes' as url_usuarios_permissoes %}
 
 {% url 'solicitacoes:listar_solicitacoes' as url_solicitacoes %}
+{% url 'automacoes:busca_global' as url_busca_global %}
 
 <!DOCTYPE html>
 <html lang="{{ LANGUAGE_CODE|default:'pt-br' }}" data-theme="light" data-theme-pref="auto">
@@ -192,10 +193,10 @@
         </div>
 
         <div class="topbar-center">
-          <form method="get" action="{{ url_listar_documentos|default:'/documentos/documentos/' }}" class="topbar-search">
+          <form method="get" action="{{ url_busca_global|default:'/automacoes/busca-global/' }}" class="topbar-search">
             <i class="bi bi-search search-icon"></i>
-            <input type="text" name="busca" placeholder="Buscar por código, título ou parte..."
-                   value="{{ request.GET.busca|default:'' }}">
+            <input type="text" name="q" placeholder="Buscar em LD, KM, PCFs, Transmittals..."
+                   value="{{ q|default:'' }}">
             <button class="btn-search" type="submit">Buscar</button>
           </form>
         </div>
@@ -374,7 +375,7 @@ function setLanguage(lang) {
   else if (path.startsWith("/documentos/")) action = URL_DOCS;
 
   const form = document.querySelector(".topbar-search");
-  if (form && action) form.setAttribute("action", action);
+  if (form) form.setAttribute("action", "{{ url_busca_global|default:'/automacoes/busca-global/' }}");
 })();
 </script>
 
