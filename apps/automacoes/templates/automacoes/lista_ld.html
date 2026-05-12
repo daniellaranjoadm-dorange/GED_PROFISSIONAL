@@ -210,6 +210,16 @@
         </div>
 
         <div class="col-lg-2">
+          <label class="form-label small text-muted">Tipo Documento</label>
+          <select name="tipo_doc" class="form-select">
+            <option value="">Todos</option>
+            {% for tipo in tipos_documentais %}
+              <option value="{{ tipo }}" {% if tipo_doc == tipo %}selected{% endif %}>{{ tipo }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-lg-2">
           <label class="form-label small text-muted">Disciplina</label>
           <select name="disciplina" class="form-select">
             <option value="">Todas</option>

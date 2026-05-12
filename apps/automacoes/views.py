@@ -444,6 +444,20 @@ def _executar_automacao(request, executor, nome):
 @login_required
 def logs_automacoes(request):
     busca = request.GET.get("q", "").strip()
+    tipo_doc = request.GET.get("tipo_doc", "").strip().upper()
+
+    tipos_documentais = [
+        "AC", "AF", "AP", "AR", "AV", "BM", "BS", "CA", "CC", "CE", "CF", "CG",
+        "CI", "CL", "CM", "CO", "CP", "CQ", "CR", "CT", "CV", "DB", "DC", "DE",
+        "DF", "DI", "DL", "DO", "DR", "DT", "DU", "EE", "EC", "EM", "ES", "ET",
+        "EQ", "FD", "GE", "GI", "ID", "IT", "IS", "LA", "LC", "LD", "LE", "LI",
+        "LM", "LP", "LO", "LV", "LT", "MA", "MC", "MD", "MG", "MI", "ML", "MM",
+        "MO", "NA", "NC", "NF", "NP", "NQ", "NT", "OA", "OC", "OG", "OS", "PC",
+        "PE", "PG", "PI", "PJ", "PL", "PM", "PO", "PP", "PQ", "PR", "PT", "QT",
+        "RA", "RC", "RD", "RE", "RH", "RL", "RM", "RV", "SC", "SM", "SP", "TF",
+        "TI", "TP", "TR",
+    ]
+
     status = request.GET.get("status", "").strip()
     nome = request.GET.get("nome", "").strip()
 
@@ -2081,6 +2095,19 @@ def _ld_montar_chips(request, filtros, status_documentos, status_grds):
 
 @login_required
 def listar_ld(request):
+    tipo_doc = request.GET.get("tipo_doc", "").strip().upper()
+    tipos_documentais = [
+        "AC","AF","AP","AR","AV","BM","BS","CA","CC","CE","CF","CG",
+        "CI","CL","CM","CO","CP","CQ","CR","CT","CV","DB","DC","DE",
+        "DF","DI","DL","DO","DR","DT","DU","EE","EC","EM","ES","ET",
+        "EQ","FD","GE","GI","ID","IT","IS","LA","LC","LD","LE","LI",
+        "LM","LP","LO","LV","LT","MA","MC","MD","MG","MI","ML","MM",
+        "MO","NA","NC","NF","NP","NQ","NT","OA","OC","OG","OS","PC",
+        "PE","PG","PI","PJ","PL","PM","PO","PP","PQ","PR","PT","QT",
+        "RA","RC","RD","RE","RH","RL","RM","RV","SC","SM","SP","TF",
+        "TI","TP","TR",
+    ]
+
     registros, filtros = _ld_filtrar_queryset(request)
 
     kpis = _ld_kpis(registros)
@@ -2118,6 +2145,8 @@ def listar_ld(request):
             "registros": page_obj,
             "page_obj": page_obj,
             "query_string": query_string,
+            "tipos_documentais": tipos_documentais,
+            "tipo_doc": tipo_doc,
 
             "origens": origens,
             "disciplinas": disciplinas,
