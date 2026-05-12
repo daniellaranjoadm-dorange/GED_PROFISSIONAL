@@ -15,7 +15,7 @@ from django.shortcuts import redirect, render
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 
-from apps.automacoes.models import TransmittalKM, PCFTimeline, DocumentoLD, ExecucaoAutomacao
+from apps.automacoes.models import TransmittalKM, PCFTimeline, DocumentoLD, ExecucaoAutomacao, KMFileIndex
 from apps.automacoes.services import (
     atualizar_ld,
     grd_ghenova,
@@ -241,6 +241,16 @@ def painel(request):
     )
     duracao_media_global = round(duracao_media_global, 2) if duracao_media_global else 0
 
+    total_km_index = KMFileIndex.objects.filter(ativo=True).count()
+    total_km_docs_index = KMFileIndex.objects.filter(ativo=True, eh_transmittal_letter=False).count()
+    total_km_transmittals_index = KMFileIndex.objects.filter(ativo=True, eh_transmittal_letter=True).count()
+    ultima_indexacao_km = (
+        KMFileIndex.objects.filter(ativo=True)
+        .order_by("-indexado_em")
+        .values_list("indexado_em", flat=True)
+        .first()
+    )
+
     automacoes = [
         {
             "nome": "Atualização LD",
@@ -297,6 +307,24 @@ def painel(request):
             ],
         },
         {
+            "nome": "Índice KM",
+            "subtitulo": "Arquivos e documentos KM",
+            "icone": "bi-hdd-network",
+            "badge": "Indexação",
+            "badge_class": "auto-badge-info",
+            "descricao": "Varre a pasta Documentos KM, indexa arquivos técnicos e acelera a abertura direta dos documentos.",
+            "form_url": "automacoes:indexar_km",
+            "botao": "Atualizar Índice KM",
+            "botao_class": "btn-primary",
+            "dashboard_url": "automacoes:transmittals_km",
+            "registros_url": "automacoes:transmittals_km",
+            "metricas": [
+                {"label": "Arquivos", "valor": total_km_index},
+                {"label": "Docs técnicos", "valor": total_km_docs_index},
+                {"label": "Letters", "valor": total_km_transmittals_index},
+            ],
+        },
+        {
             "nome": "GRD GHENOVA",
             "subtitulo": "Consolidação GRDs 7K e 14K",
             "icone": "bi-diagram-3",
@@ -345,6 +373,10 @@ def painel(request):
             "execucoes_hoje": execucoes_hoje,
             "falhas_hoje": falhas_hoje,
             "duracao_media_global": duracao_media_global,
+            "total_km_index": total_km_index,
+            "total_km_docs_index": total_km_docs_index,
+            "total_km_transmittals_index": total_km_transmittals_index,
+            "ultima_indexacao_km": ultima_indexacao_km,
         },
     )
 
@@ -538,6 +570,123 @@ def executar_grd_ghenova(request):
     )
 
 
+def _km_documento_extraido_do_nome(path):
+    """
+    Extrai um identificador documental provável do nome do arquivo KM.
+    Mantém formato legível quando possível; a busca usa também campos normalizados.
+    """
+    stem = Path(path).stem
+    stem = re.sub(r"[_]+", "-", stem)
+    m = re.search(r"(\d{2}-\d{4}-\d{2}-\d{3,4}-\d{2,4}-\d{2}(?:-[A-Z0-9]+)?)", stem, re.IGNORECASE)
+    if m:
+        return m.group(1).upper()
+
+    m = re.search(r"(\d{3,4}-\d{2,4}-\d{2}(?:-[A-Z0-9]+)?)", stem, re.IGNORECASE)
+    if m:
+        return m.group(1).upper()
+
+    return ""
+
+
+def _km_indexar_banco():
+    """
+    Varre a árvore KM e grava um índice persistente no banco.
+    Isso evita varredura de rede a cada abertura de documento.
+    """
+    inicio = time.monotonic()
+
+    if not KM_DOCUMENTOS_BASE.exists():
+        return {
+            "ok": False,
+            "mensagem": f"Pasta KM não encontrada: {KM_DOCUMENTOS_BASE}",
+            "quantidade_processada": 0,
+            "detalhes": {"base": str(KM_DOCUMENTOS_BASE)},
+        }
+
+    KMFileIndex.objects.update(ativo=False)
+
+    total = 0
+    criados = 0
+    atualizados = 0
+    erros = 0
+    por_extensao = {}
+
+    for arquivo in KM_DOCUMENTOS_BASE.rglob("*"):
+        try:
+            if not arquivo.is_file():
+                continue
+
+            stat = arquivo.stat()
+            extensao = arquivo.suffix.lower()
+            por_extensao[extensao or "sem_extensao"] = por_extensao.get(extensao or "sem_extensao", 0) + 1
+
+            defaults = {
+                "nome_arquivo": arquivo.name,
+                "pasta": str(arquivo.parent),
+                "extensao": extensao,
+                "tamanho_bytes": int(stat.st_size or 0),
+                "modificado_em": timezone.datetime.fromtimestamp(
+                    stat.st_mtime,
+                    tz=timezone.get_current_timezone(),
+                ),
+                "nome_normalizado": _km_normalizar(arquivo.name),
+                "stem_normalizado": _km_normalizar(arquivo.stem),
+                "documento_extraido": _km_documento_extraido_do_nome(arquivo),
+                "eh_transmittal_letter": _km_eh_transmittal_letter(arquivo),
+                "ativo": True,
+            }
+
+            _, created = KMFileIndex.objects.update_or_create(
+                caminho_completo=str(arquivo),
+                defaults=defaults,
+            )
+
+            total += 1
+            if created:
+                criados += 1
+            else:
+                atualizados += 1
+
+        except Exception:
+            erros += 1
+            continue
+
+    _km_limpar_cache()
+
+    removidos = KMFileIndex.objects.filter(ativo=False).count()
+    status = "sucesso" if erros == 0 else "sucesso_parcial"
+
+    return {
+        "ok": True,
+        "status": status,
+        "mensagem": (
+            f"Índice KM atualizado: {total} arquivos ativos, "
+            f"{criados} novos, {atualizados} atualizados, {removidos} inativos."
+        ),
+        "quantidade_processada": total,
+        "detalhes": {
+            "base": str(KM_DOCUMENTOS_BASE),
+            "arquivos_ativos": total,
+            "criados": criados,
+            "atualizados": atualizados,
+            "inativos": removidos,
+            "erros": erros,
+            "por_extensao": por_extensao,
+            "duracao_segundos": round(time.monotonic() - inicio, 3),
+        },
+    }
+
+
+@login_required
+def executar_indice_km(request):
+    return _executar_automacao(
+        request,
+        _km_indexar_banco,
+        "Índice KM",
+    )
+
+
+
 _KM_INDEX_CACHE = None
 
 
@@ -656,14 +805,117 @@ def _km_score_documento(documento, item):
     return score
 
 
+def _km_score_documento_indexado(documento, item):
+    doc_norm = _km_normalizar(documento)
+
+    if not doc_norm:
+        return 0
+
+    nome_norm = item.nome_normalizado or _km_normalizar(item.nome_arquivo)
+    stem_norm = item.stem_normalizado or _km_normalizar(Path(item.nome_arquivo).stem)
+    suffix = (item.extensao or "").lower()
+
+    score = 0
+
+    if stem_norm == doc_norm:
+        score = 100
+    elif nome_norm == doc_norm:
+        score = 98
+    elif doc_norm in stem_norm:
+        score = 88
+    elif doc_norm in nome_norm:
+        score = 84
+    elif stem_norm in doc_norm and len(stem_norm) >= 8:
+        score = 60
+
+    documento_extraido_norm = _km_normalizar(item.documento_extraido)
+    if documento_extraido_norm:
+        if documento_extraido_norm == doc_norm:
+            score = max(score, 105)
+        elif doc_norm in documento_extraido_norm or documento_extraido_norm in doc_norm:
+            score = max(score, 86)
+
+    if not score:
+        return 0
+
+    score += KM_EXTENSOES_PRIORITARIAS.get(suffix, 5)
+
+    if item.eh_transmittal_letter:
+        score -= 120
+    else:
+        score += 35
+
+    caminho_lower = (item.caminho_completo or "").replace("/", "\\").lower()
+    if "\\0 transmittal letters\\" in caminho_lower and "\\transmittal letters\\" not in caminho_lower:
+        score += 8
+
+    if item.nome_arquivo.upper().startswith("T-"):
+        score -= 80
+
+    return score
+
+
+def _km_buscar_documento_indexado(documento, permitir_transmittal=False):
+    doc_norm = _km_normalizar(documento)
+
+    if not doc_norm:
+        return None
+
+    qs = KMFileIndex.objects.filter(ativo=True)
+
+    # Primeiro tenta reduzir no banco; se o código vier abreviado, ainda há fallback abaixo.
+    candidatos_qs = qs.filter(
+        Q(nome_normalizado__icontains=doc_norm)
+        | Q(stem_normalizado__icontains=doc_norm)
+        | Q(documento_extraido__icontains=str(documento or "").strip())
+    )[:500]
+
+    candidatos = []
+
+    for item in candidatos_qs:
+        score = _km_score_documento_indexado(documento, item)
+        if score <= 0:
+            continue
+
+        if item.eh_transmittal_letter and not permitir_transmittal:
+            continue
+
+        candidatos.append((score, Path(item.caminho_completo)))
+
+    if not candidatos:
+        # Fallback amplo, ainda baseado no banco, para códigos extraídos/formatos inesperados.
+        for item in qs.order_by("-indexado_em")[:20000]:
+            score = _km_score_documento_indexado(documento, item)
+            if score <= 0:
+                continue
+
+            if item.eh_transmittal_letter and not permitir_transmittal:
+                continue
+
+            candidatos.append((score, Path(item.caminho_completo)))
+
+    if not candidatos and permitir_transmittal:
+        for item in qs.filter(eh_transmittal_letter=True).order_by("-indexado_em")[:5000]:
+            score = _km_score_documento_indexado(documento, item)
+            if score > 0:
+                candidatos.append((score, Path(item.caminho_completo)))
+
+    if not candidatos:
+        return None
+
+    candidatos.sort(key=lambda par: (par[0], -len(str(par[1]))), reverse=True)
+    return candidatos[0][1]
+
+
 def _km_buscar_documento(documento, permitir_transmittal=False):
     """
-    Busca o documento real dentro de:
-    \\virm-rgr022\\FILESERVER\\Projetos\\05_HANDYMAX\\09. Doc Control\\15 - Documentos KM
-
-    A busca prioriza arquivos técnicos (.docx/.doc/.dwg/.xlsx) e rebaixa
-    PDFs de Transmittal Letter, que só devem ser fallback.
+    Busca o documento real no índice KM persistido.
+    Se o índice ainda não existir, usa a varredura antiga como fallback.
     """
+    arquivo = _km_buscar_documento_indexado(documento, permitir_transmittal=permitir_transmittal)
+    if arquivo:
+        return arquivo
+
     candidatos = []
 
     for item in _km_indexar_documentos():
@@ -686,11 +938,8 @@ def _km_buscar_documento(documento, permitir_transmittal=False):
     if not candidatos:
         return None
 
-    # Maior score primeiro; em empate, caminho menor/nome mais direto.
     candidatos.sort(key=lambda par: (par[0], -len(str(par[1]))), reverse=True)
     return candidatos[0][1]
-
-
 def _km_buscar_documento_com_debug(documento):
     candidatos = []
 

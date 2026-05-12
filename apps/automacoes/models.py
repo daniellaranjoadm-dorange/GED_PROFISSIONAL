@@ -71,6 +71,39 @@ class TransmittalKM(models.Model):
     def __str__(self):
         return f"{self.documento} - {self.transmittal_numero}"
 
+
+class KMFileIndex(models.Model):
+    nome_arquivo = models.CharField(max_length=500)
+    caminho_completo = models.TextField(unique=True)
+    pasta = models.TextField(blank=True)
+
+    extensao = models.CharField(max_length=20, blank=True, db_index=True)
+    tamanho_bytes = models.BigIntegerField(default=0)
+    modificado_em = models.DateTimeField(null=True, blank=True)
+
+    nome_normalizado = models.CharField(max_length=600, blank=True, db_index=True)
+    stem_normalizado = models.CharField(max_length=600, blank=True, db_index=True)
+    documento_extraido = models.CharField(max_length=255, blank=True, db_index=True)
+
+    eh_transmittal_letter = models.BooleanField(default=False, db_index=True)
+    ativo = models.BooleanField(default=True, db_index=True)
+
+    criado_em = models.DateTimeField(auto_now_add=True)
+    indexado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["nome_arquivo"]
+        verbose_name = "Índice de arquivo KM"
+        verbose_name_plural = "Índice de arquivos KM"
+        indexes = [
+            models.Index(fields=["ativo", "extensao"]),
+            models.Index(fields=["ativo", "eh_transmittal_letter"]),
+            models.Index(fields=["documento_extraido"]),
+        ]
+
+    def __str__(self):
+        return self.nome_arquivo
+
 class PCFTimeline(models.Model):
     tipo = models.CharField(max_length=50, blank=True)
 

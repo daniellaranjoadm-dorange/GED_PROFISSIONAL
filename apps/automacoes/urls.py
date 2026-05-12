@@ -10,6 +10,7 @@ urlpatterns = [
     path("timeline-pcfs/", views.timeline_pcfs_view, name="timeline_pcfs"),
     path("transmittal-km/", views.executar_transmittal_km, name="transmittal_km"),
     path("grd-ghenova/", views.executar_grd_ghenova, name="grd_ghenova"),
+    path("km-indexar/", views.executar_indice_km, name="indexar_km"),
     path("logs/", views.logs_automacoes, name="logs_automacoes"),
 
     path(
