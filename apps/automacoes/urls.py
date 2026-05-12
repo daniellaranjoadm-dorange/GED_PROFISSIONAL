@@ -24,6 +24,17 @@ urlpatterns = [
     ),
 
     path(
+        "transmittals-km/<int:pk>/abrir-documento/",
+        views.abrir_documento_transmittal_km,
+        name="abrir_documento_transmittal_km",
+    ),
+    path(
+        "transmittals-km/<int:pk>/abrir-pasta/",
+        views.abrir_pasta_documento_transmittal_km,
+        name="abrir_pasta_documento_transmittal_km",
+    ),
+
+    path(
         "pcfs/",
         views.listar_pcfs_timeline,
         name="pcfs_timeline",

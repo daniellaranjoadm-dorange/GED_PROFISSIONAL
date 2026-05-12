@@ -2,6 +2,7 @@ from pathlib import Path
 import os
 import time
 import traceback
+import re
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -21,6 +22,22 @@ from apps.automacoes.services import (
     timeline_pcfs,
     transmittal_km,
 )
+
+
+KM_DOCUMENTOS_BASE = Path(
+    r"\\virm-rgr022\FILESERVER\Projetos\05_HANDYMAX\09. Doc Control\15 - Documentos KM"
+)
+
+KM_EXTENSOES_PRIORITARIAS = {
+    ".docx": 60,
+    ".doc": 58,
+    ".dwg": 54,
+    ".xlsx": 48,
+    ".xlsm": 46,
+    ".xls": 44,
+    ".pdf": 20,
+}
+
 
 
 
@@ -107,7 +124,7 @@ def _health_automacoes(nomes):
     for nome in nomes:
         qs = ExecucaoAutomacao.objects.filter(nome=nome)
         ultima = qs.order_by("-iniciado_em").first()
-        total_finalizado = qs.exclude(status__in=[ExecucaoAutomacao.STATUS_INICIADO, ExecucaoAutomacao.STATUS_PROCESSANDO]).count()
+        total_finalizado = qs.exclude(status=ExecucaoAutomacao.STATUS_INICIADO).count()
         total_sucesso = qs.filter(status=ExecucaoAutomacao.STATUS_SUCESSO).count()
         total_erros = qs.filter(status=ExecucaoAutomacao.STATUS_ERRO).count()
         duracao_media = (
@@ -121,7 +138,7 @@ def _health_automacoes(nomes):
             estado = "OCIOSO"
             classe = "auto-status-idle"
             icone = "bi-circle"
-        elif ultima.status in {ExecucaoAutomacao.STATUS_INICIADO, ExecucaoAutomacao.STATUS_PROCESSANDO}:
+        elif ultima.status == ExecucaoAutomacao.STATUS_INICIADO:
             estado = "EXECUTANDO"
             classe = "auto-status-running"
             icone = "bi-arrow-repeat"
@@ -204,11 +221,11 @@ def painel(request):
     total_execucoes = ExecucaoAutomacao.objects.count()
     total_falhas = (
         ExecucaoAutomacao.objects.filter(sucesso=False)
-        .exclude(status__in=[ExecucaoAutomacao.STATUS_INICIADO, ExecucaoAutomacao.STATUS_PROCESSANDO])
+        .exclude(status=ExecucaoAutomacao.STATUS_INICIADO)
         .count()
     )
     total_sucessos = ExecucaoAutomacao.objects.filter(status=ExecucaoAutomacao.STATUS_SUCESSO).count()
-    total_finalizados = ExecucaoAutomacao.objects.exclude(status__in=[ExecucaoAutomacao.STATUS_INICIADO, ExecucaoAutomacao.STATUS_PROCESSANDO]).count()
+    total_finalizados = ExecucaoAutomacao.objects.exclude(status=ExecucaoAutomacao.STATUS_INICIADO).count()
     taxa_sucesso_global = round((total_sucessos / total_finalizados) * 100, 1) if total_finalizados else 0
     hoje = timezone.localdate()
     execucoes_hoje = ExecucaoAutomacao.objects.filter(iniciado_em__date=hoje).count()
@@ -332,44 +349,6 @@ def painel(request):
     )
 
 
-def _resultado_bool(resultado):
-    """Interpreta retornos de automação de forma tolerante."""
-    if isinstance(resultado, dict):
-        return bool(resultado.get("ok"))
-    return resultado is not None
-
-
-def _resultado_mensagem(resultado, nome, ok):
-    if isinstance(resultado, dict):
-        mensagem = resultado.get("mensagem")
-        if mensagem:
-            return str(mensagem)
-
-    return (
-        f"{nome} executado com sucesso."
-        if ok
-        else f"Falha ao executar {nome}. Verifique os detalhes no log."
-    )
-
-
-def _status_final_execucao(resultado, ok):
-    if isinstance(resultado, dict):
-        status = str(resultado.get("status") or "").strip().lower()
-        if status in {
-            ExecucaoAutomacao.STATUS_SUCESSO,
-            ExecucaoAutomacao.STATUS_SUCESSO_PARCIAL,
-            ExecucaoAutomacao.STATUS_ERRO,
-            ExecucaoAutomacao.STATUS_CANCELADO,
-        }:
-            return status
-
-        avisos = resultado.get("avisos") or resultado.get("warnings")
-        if ok and avisos:
-            return ExecucaoAutomacao.STATUS_SUCESSO_PARCIAL
-
-    return ExecucaoAutomacao.STATUS_SUCESSO if ok else ExecucaoAutomacao.STATUS_ERRO
-
-
 def _executar_automacao(request, executor, nome):
     if request.method != "POST":
         messages.error(request, f"Método inválido para executar {nome}.")
@@ -379,30 +358,29 @@ def _executar_automacao(request, executor, nome):
     log = ExecucaoAutomacao.objects.create(
         nome=nome,
         usuario=request.user if request.user.is_authenticated else None,
-        status=ExecucaoAutomacao.STATUS_PROCESSANDO,
+        status=ExecucaoAutomacao.STATUS_INICIADO,
         mensagem="Execução iniciada.",
     )
 
     try:
         resultado = executor()
+        ok = bool(resultado.get("ok")) if isinstance(resultado, dict) else False
+        mensagem = (
+            resultado.get("mensagem")
+            if isinstance(resultado, dict)
+            else f"{nome} executado."
+        )
 
-        ok = _resultado_bool(resultado)
-        mensagem = _resultado_mensagem(resultado, nome, ok)
-        status_final = _status_final_execucao(resultado, ok)
-
-        log.status = status_final
-        log.sucesso = status_final in {
-            ExecucaoAutomacao.STATUS_SUCESSO,
-            ExecucaoAutomacao.STATUS_SUCESSO_PARCIAL,
-        }
-        log.mensagem = mensagem
+        log.status = ExecucaoAutomacao.STATUS_SUCESSO if ok else ExecucaoAutomacao.STATUS_ERRO
+        log.sucesso = ok
+        log.mensagem = mensagem or (
+            f"{nome} executado com sucesso." if ok else f"Falha ao executar {nome}."
+        )
         log.quantidade_processada = _extrair_quantidade_processada(resultado)
         log.detalhes = _detalhes_execucao(resultado)
 
-        if status_final == ExecucaoAutomacao.STATUS_SUCESSO:
+        if ok:
             messages.success(request, log.mensagem)
-        elif status_final == ExecucaoAutomacao.STATUS_SUCESSO_PARCIAL:
-            messages.warning(request, log.mensagem)
         else:
             messages.error(request, log.mensagem)
 
@@ -410,11 +388,7 @@ def _executar_automacao(request, executor, nome):
         log.status = ExecucaoAutomacao.STATUS_ERRO
         log.sucesso = False
         log.mensagem = f"Erro ao executar {nome}: {exc}"
-        log.detalhes = {
-            "erro": str(exc),
-            "tipo": exc.__class__.__name__,
-            "traceback": traceback.format_exc(limit=12),
-        }
+        log.detalhes = {"erro": str(exc)}
         messages.error(request, log.mensagem)
 
     finally:
@@ -433,6 +407,7 @@ def _executar_automacao(request, executor, nome):
         )
 
     return redirect("automacoes:painel")
+
 
 @login_required
 def logs_automacoes(request):
@@ -467,14 +442,14 @@ def logs_automacoes(request):
     total = logs.count()
     total_sucesso = logs.filter(sucesso=True).count()
     total_erros = logs.filter(status=ExecucaoAutomacao.STATUS_ERRO).count()
-    total_iniciados = logs.filter(status__in=[ExecucaoAutomacao.STATUS_INICIADO, ExecucaoAutomacao.STATUS_PROCESSANDO]).count()
+    total_iniciados = logs.filter(status=ExecucaoAutomacao.STATUS_INICIADO).count()
 
     duracao_media = logs.exclude(duracao_segundos=0).aggregate(
         media=Avg("duracao_segundos")
     ).get("media")
     duracao_media = round(duracao_media, 2) if duracao_media else 0
 
-    total_finalizados = logs.exclude(status__in=[ExecucaoAutomacao.STATUS_INICIADO, ExecucaoAutomacao.STATUS_PROCESSANDO]).count()
+    total_finalizados = logs.exclude(status=ExecucaoAutomacao.STATUS_INICIADO).count()
     taxa_sucesso = round((total_sucesso / total_finalizados) * 100, 1) if total_finalizados else 0
     hoje = timezone.localdate()
     falhas_hoje = logs.filter(iniciado_em__date=hoje, status=ExecucaoAutomacao.STATUS_ERRO).count()
@@ -496,17 +471,6 @@ def logs_automacoes(request):
     )
     erros_chart_labels = [(item.get("nome") or "Sem nome") for item in erros_por_automacao]
     erros_chart_values = [item.get("total") or 0 for item in erros_por_automacao]
-
-    # Série simples dos últimos 14 dias para analytics operacional.
-    dias_labels = []
-    dias_execucoes = []
-    dias_erros = []
-    for offset in range(13, -1, -1):
-        dia = hoje - timezone.timedelta(days=offset)
-        dia_qs = logs.filter(iniciado_em__date=dia)
-        dias_labels.append(dia.strftime("%d/%m"))
-        dias_execucoes.append(dia_qs.count())
-        dias_erros.append(dia_qs.filter(status=ExecucaoAutomacao.STATUS_ERRO).count())
 
     paginator = Paginator(logs, 50)
     page_obj = paginator.get_page(request.GET.get("page"))
@@ -533,9 +497,6 @@ def logs_automacoes(request):
             "automacao_chart_values": automacao_chart_values,
             "erros_chart_labels": erros_chart_labels,
             "erros_chart_values": erros_chart_values,
-            "dias_labels": dias_labels,
-            "dias_execucoes": dias_execucoes,
-            "dias_erros": dias_erros,
             "status_choices": ExecucaoAutomacao.STATUS_CHOICES,
         },
     )
@@ -577,6 +538,438 @@ def executar_grd_ghenova(request):
     )
 
 
+_KM_INDEX_CACHE = None
+
+
+def _km_limpar_cache():
+    global _KM_INDEX_CACHE
+    _KM_INDEX_CACHE = None
+
+
+def _km_normalizar(valor):
+    return "".join(ch for ch in str(valor or "").upper() if ch.isalnum())
+
+
+def _km_eh_transmittal_letter(path):
+    texto = str(path).replace("/", "\\").lower()
+    nome = path.name.lower()
+    return (
+        "\\0 transmittal letters\\transmittal letters\\" in texto
+        or "transmittal letters\\transmittal letters\\" in texto
+        or nome.startswith("t-")
+        or "transmittal" in nome
+    )
+
+
+def _km_indexar_documentos():
+    """
+    Indexa arquivos da árvore KM uma vez por processo do Django.
+
+    Importante:
+    - Mantém os Transmittal Letters no índice apenas como fallback.
+    - Prioriza documentos técnicos em subpastas como 1.4 ETS.
+    """
+    global _KM_INDEX_CACHE
+
+    if _KM_INDEX_CACHE is not None:
+        return _KM_INDEX_CACHE
+
+    itens = []
+
+    if not KM_DOCUMENTOS_BASE.exists():
+        _KM_INDEX_CACHE = itens
+        return itens
+
+    try:
+        for arquivo in KM_DOCUMENTOS_BASE.rglob("*"):
+            try:
+                if not arquivo.is_file():
+                    continue
+            except OSError:
+                continue
+
+            nome_norm = _km_normalizar(arquivo.name)
+            stem_norm = _km_normalizar(arquivo.stem)
+            suffix = arquivo.suffix.lower()
+
+            if not nome_norm:
+                continue
+
+            itens.append({
+                "path": arquivo,
+                "nome_norm": nome_norm,
+                "stem_norm": stem_norm,
+                "suffix": suffix,
+                "is_transmittal_letter": _km_eh_transmittal_letter(arquivo),
+            })
+    except Exception:
+        itens = []
+
+    _KM_INDEX_CACHE = itens
+    return itens
+
+
+def _km_score_documento(documento, item):
+    doc_norm = _km_normalizar(documento)
+
+    if not doc_norm:
+        return 0
+
+    nome_norm = item["nome_norm"]
+    stem_norm = item["stem_norm"]
+    path = item["path"]
+    suffix = item["suffix"]
+
+    score = 0
+
+    if stem_norm == doc_norm:
+        score = 100
+    elif nome_norm == doc_norm:
+        score = 98
+    elif doc_norm in stem_norm:
+        score = 88
+    elif doc_norm in nome_norm:
+        score = 84
+    elif stem_norm in doc_norm and len(stem_norm) >= 8:
+        score = 60
+
+    if not score:
+        return 0
+
+    # Prioriza documentos reais de engenharia sobre PDF do transmittal.
+    score += KM_EXTENSOES_PRIORITARIAS.get(suffix, 5)
+
+    if item["is_transmittal_letter"]:
+        score -= 120
+    else:
+        score += 35
+
+    # Subpastas técnicas costumam ter arquivos reais; raiz de letters tende a ser só carta.
+    texto_path = str(path).replace("/", "\\").lower()
+    if "\\0 transmittal letters\\" in texto_path and "\\transmittal letters\\" not in texto_path:
+        score += 8
+
+    # Nome típico do PDF de carta começa com T-; nunca deve vencer um docx/dwg real.
+    if path.name.upper().startswith("T-"):
+        score -= 80
+
+    return score
+
+
+def _km_buscar_documento(documento, permitir_transmittal=False):
+    """
+    Busca o documento real dentro de:
+    \\virm-rgr022\\FILESERVER\\Projetos\\05_HANDYMAX\\09. Doc Control\\15 - Documentos KM
+
+    A busca prioriza arquivos técnicos (.docx/.doc/.dwg/.xlsx) e rebaixa
+    PDFs de Transmittal Letter, que só devem ser fallback.
+    """
+    candidatos = []
+
+    for item in _km_indexar_documentos():
+        score = _km_score_documento(documento, item)
+
+        if score <= 0:
+            continue
+
+        if item["is_transmittal_letter"] and not permitir_transmittal:
+            continue
+
+        candidatos.append((score, item["path"]))
+
+    if not candidatos and permitir_transmittal:
+        for item in _km_indexar_documentos():
+            score = _km_score_documento(documento, item)
+            if score > 0:
+                candidatos.append((score, item["path"]))
+
+    if not candidatos:
+        return None
+
+    # Maior score primeiro; em empate, caminho menor/nome mais direto.
+    candidatos.sort(key=lambda par: (par[0], -len(str(par[1]))), reverse=True)
+    return candidatos[0][1]
+
+
+def _km_buscar_documento_com_debug(documento):
+    candidatos = []
+
+    for item in _km_indexar_documentos():
+        score = _km_score_documento(documento, item)
+        if score > 0:
+            candidatos.append((score, item["path"], item["is_transmittal_letter"]))
+
+    candidatos.sort(key=lambda par: (par[0], -len(str(par[1]))), reverse=True)
+    return candidatos
+
+
+
+def _tr_texto(valor):
+    return str(valor or "").strip()
+
+
+def _tr_documento_normalizado(valor):
+    """
+    Normalização leve para exibição/busca textual.
+    Mantém hífens porque muitos documentos KM/LD usam hífen como parte do código.
+    """
+    texto = _tr_texto(valor).upper()
+    texto = texto.replace("\\", "/").split("/")[-1]
+    texto = texto.split(".", 1)[0]
+    texto = texto.replace("_", "-")
+    texto = " ".join(texto.split())
+    return texto.strip()
+
+
+def _tr_documento_compacto(valor):
+    """
+    Normalização forte para comparação entre códigos vindos de fontes diferentes.
+
+    Exemplos:
+    - 108-505-02
+    - 108_505_02
+    - 108 505 02
+    - DOC-108-505-02-REV0
+
+    viram uma string comparável sem símbolos.
+    """
+    texto = _tr_documento_normalizado(valor)
+    return "".join(ch for ch in texto if ch.isalnum())
+
+
+def _tr_tokens_documento(valor):
+    texto = _tr_documento_normalizado(valor)
+    tokens = [t for t in re.split(r"[^A-Z0-9]+", texto) if t]
+    return tokens
+
+
+def _tr_score_match_documento(doc_busca, item_ld):
+    """
+    Pontua possíveis correspondências entre documento KM e registro LD.
+    Evita depender apenas de iexact/icontains, porque os códigos KM podem vir
+    resumidos e a LD pode conter prefixos/sufixos/revisões.
+    """
+    busca_norm = _tr_documento_normalizado(doc_busca)
+    busca_compacta = _tr_documento_compacto(doc_busca)
+    tokens = _tr_tokens_documento(doc_busca)
+
+    campos = [
+        getattr(item_ld, "documento", ""),
+        getattr(item_ld, "titulo", ""),
+        getattr(item_ld, "caminho_documento", ""),
+        getattr(item_ld, "caminho_grd", ""),
+        getattr(item_ld, "caminho_pcf", ""),
+        getattr(item_ld, "caminho_resposta", ""),
+        getattr(item_ld, "caminho_grd_resposta", ""),
+    ]
+
+    melhor = 0
+
+    for valor in campos:
+        texto = _tr_texto(valor)
+        if not texto:
+            continue
+
+        texto_norm = _tr_documento_normalizado(texto)
+        texto_compacto = _tr_documento_compacto(texto)
+
+        if texto_norm == busca_norm:
+            melhor = max(melhor, 100)
+
+        if busca_norm and busca_norm in texto_norm:
+            melhor = max(melhor, 85)
+
+        if busca_compacta and busca_compacta == texto_compacto:
+            melhor = max(melhor, 95)
+
+        if busca_compacta and busca_compacta in texto_compacto:
+            melhor = max(melhor, 80)
+
+        if texto_compacto and texto_compacto in busca_compacta:
+            melhor = max(melhor, 70)
+
+        if tokens and all(token in texto_norm for token in tokens):
+            melhor = max(melhor, 65)
+
+        if tokens and all(token in texto_compacto for token in tokens):
+            melhor = max(melhor, 60)
+
+    return melhor
+
+
+def _tr_buscar_ld_por_documento(numero_documento):
+    """
+    Localiza o documento KM dentro da Lista LD para permitir abertura direta
+    do arquivo/pasta real na rede.
+
+    A busca é propositalmente tolerante:
+    - tenta match exato;
+    - tenta contains no campo documento;
+    - tenta comparar código compacto sem símbolos;
+    - tenta procurar também em título e caminhos da LD.
+    """
+    doc = _tr_texto(numero_documento)
+
+    if not doc:
+        return None
+
+    # 1) caminho rápido: exato no campo documento
+    candidatos = DocumentoLD.objects.filter(documento__iexact=doc).order_by("-id")
+    if candidatos.exists():
+        return candidatos.first()
+
+    doc_norm = _tr_documento_normalizado(doc)
+    doc_compacto = _tr_documento_compacto(doc)
+
+    if not doc_norm and not doc_compacto:
+        return None
+
+    # 2) contains tradicional
+    candidatos = DocumentoLD.objects.filter(documento__icontains=doc_norm).order_by("-id")
+    if candidatos.exists():
+        return candidatos.first()
+
+    # 3) busca em campos textuais/caminhos, útil quando a LD tem prefixos/sufixos
+    busca_q = (
+        Q(documento__icontains=doc_norm)
+        | Q(titulo__icontains=doc_norm)
+        | Q(caminho_documento__icontains=doc_norm)
+        | Q(caminho_grd__icontains=doc_norm)
+        | Q(caminho_pcf__icontains=doc_norm)
+        | Q(caminho_resposta__icontains=doc_norm)
+        | Q(caminho_grd_resposta__icontains=doc_norm)
+    )
+    candidatos_textuais = list(DocumentoLD.objects.filter(busca_q).order_by("-id")[:200])
+    if candidatos_textuais:
+        candidatos_textuais.sort(
+            key=lambda item: _tr_score_match_documento(doc, item),
+            reverse=True,
+        )
+        if _tr_score_match_documento(doc, candidatos_textuais[0]) >= 50:
+            return candidatos_textuais[0]
+
+    # 4) fallback amplo com pontuação. Limite para não pesar demais.
+    melhor_item = None
+    melhor_score = 0
+
+    for item in DocumentoLD.objects.exclude(documento="").order_by("-id")[:10000]:
+        score = _tr_score_match_documento(doc, item)
+        if score > melhor_score:
+            melhor_score = score
+            melhor_item = item
+
+        if melhor_score >= 95:
+            break
+
+    if melhor_item and melhor_score >= 60:
+        return melhor_item
+
+    return None
+
+
+def _tr_caminho_documento_ld(item_ld):
+    if not item_ld:
+        return ""
+
+    for campo in [
+        "caminho_documento",
+        "caminho_grd",
+        "caminho_pcf",
+        "caminho_resposta",
+        "caminho_grd_resposta",
+    ]:
+        valor = getattr(item_ld, campo, "")
+        if _tr_texto(valor):
+            return valor
+
+    return ""
+
+
+def _tr_montar_central_transmittals(registros):
+    grupos = {}
+
+    for item in registros:
+        numero = _tr_texto(item.transmittal_numero) or "Sem número"
+
+        if numero not in grupos:
+            grupos[numero] = {
+                "numero": numero,
+                "pdf_id": None,
+                "pdf_path": "",
+                "data_envio": "",
+                "emissao": "",
+                "proposito": "",
+                "pastas": set(),
+                "status": set(),
+                "docs": [],
+                "total_docs": 0,
+            }
+
+        grupo = grupos[numero]
+
+        if item.arquivo_pdf and not grupo["pdf_id"]:
+            grupo["pdf_id"] = item.id
+            grupo["pdf_path"] = item.arquivo_pdf
+
+        if item.data_envio and not grupo["data_envio"]:
+            grupo["data_envio"] = item.data_envio
+
+        if item.emissao and not grupo["emissao"]:
+            grupo["emissao"] = item.emissao
+
+        if item.proposito_emissao and not grupo["proposito"]:
+            grupo["proposito"] = item.proposito_emissao
+
+        if item.pasta:
+            grupo["pastas"].add(item.pasta)
+
+        if item.status_parse:
+            grupo["status"].add(item.status_parse)
+
+        item.km_arquivo = _km_buscar_documento(item.documento, permitir_transmittal=False)
+        item.ld_vinculado = None
+
+        grupo["docs"].append(item)
+
+    transmittals = []
+
+    for numero, grupo in grupos.items():
+        grupo["docs"] = sorted(
+            grupo["docs"],
+            key=lambda doc: (
+                _tr_texto(doc.pasta).lower(),
+                _tr_texto(doc.documento).lower(),
+                _tr_texto(doc.titulo).lower(),
+            ),
+        )
+        grupo["total_docs"] = len(grupo["docs"])
+        grupo["pastas_lista"] = sorted(grupo["pastas"])
+        grupo["status_lista"] = sorted(grupo["status"])
+
+        if any(str(s).upper() == "FALHA" for s in grupo["status_lista"]):
+            grupo["status_badge"] = "FALHA"
+            grupo["status_class"] = "bg-danger"
+        elif any(str(s).upper() == "PARCIAL" for s in grupo["status_lista"]):
+            grupo["status_badge"] = "PARCIAL"
+            grupo["status_class"] = "bg-warning text-dark"
+        elif grupo["status_lista"]:
+            grupo["status_badge"] = "OK"
+            grupo["status_class"] = "bg-success"
+        else:
+            grupo["status_badge"] = "—"
+            grupo["status_class"] = "bg-secondary"
+
+        transmittals.append(grupo)
+
+    return sorted(
+        transmittals,
+        key=lambda grupo: (
+            0 if grupo["numero"] != "Sem número" else 1,
+            grupo["numero"].lower(),
+        ),
+    )
+
+
 @login_required
 def listar_transmittals_km(request):
     busca = request.GET.get("q", "").strip()
@@ -584,13 +977,20 @@ def listar_transmittals_km(request):
     emissao = request.GET.get("emissao", "").strip()
     transmittal = request.GET.get("transmittal", "").strip()
 
-    registros = TransmittalKM.objects.all().order_by("-criado_em")
+    registros = TransmittalKM.objects.all().order_by(
+        "transmittal_numero",
+        "pasta",
+        "documento",
+    )
 
     if busca:
         registros = registros.filter(
             Q(documento__icontains=busca)
             | Q(titulo__icontains=busca)
             | Q(transmittal_numero__icontains=busca)
+            | Q(pasta__icontains=busca)
+            | Q(emissao__icontains=busca)
+            | Q(proposito_emissao__icontains=busca)
         )
 
     if pasta:
@@ -602,15 +1002,28 @@ def listar_transmittals_km(request):
     if transmittal:
         registros = registros.filter(transmittal_numero__iexact=transmittal)
 
+    registros_lista = list(registros)
+    transmittals_agrupados = _tr_montar_central_transmittals(registros_lista)
+
+    total_documentos = len(registros_lista)
+    total_transmittals = len(transmittals_agrupados)
+    total_com_pdf = sum(1 for grupo in transmittals_agrupados if grupo.get("pdf_id"))
+    total_sem_pdf = max(total_transmittals - total_com_pdf, 0)
+
     return render(
         request,
         "automacoes/transmittals_km.html",
         {
-            "registros": registros,
+            "registros": registros_lista,
+            "transmittals": transmittals_agrupados,
             "busca": busca,
             "pasta": pasta,
             "emissao": emissao,
             "transmittal": transmittal,
+            "total_documentos": total_documentos,
+            "total_transmittals": total_transmittals,
+            "total_com_pdf": total_com_pdf,
+            "total_sem_pdf": total_sem_pdf,
         },
     )
 
@@ -637,6 +1050,75 @@ def abrir_pdf_transmittal_km(request, pk):
     )
 
 
+@login_required
+def abrir_documento_transmittal_km(request, pk):
+    registro = TransmittalKM.objects.get(pk=pk)
+
+    arquivo = _km_buscar_documento(registro.documento, permitir_transmittal=False)
+
+    # Fallback controlado: só abre o PDF do transmittal se nenhum documento técnico for localizado.
+    if not arquivo and registro.arquivo_pdf:
+        pdf = Path(registro.arquivo_pdf)
+        if pdf.exists():
+            arquivo = pdf
+
+    if not arquivo:
+        candidatos = _km_buscar_documento_com_debug(registro.documento)
+        caminhos_testados = "\n".join(
+            f"{score} | {'TRANS' if is_trans else 'DOC'} | {path}"
+            for score, path, is_trans in candidatos[:20]
+        )
+        raise Http404(
+            f"Documento KM não encontrado: {registro.documento}\n\n"
+            f"Base KM: {KM_DOCUMENTOS_BASE}\n\n"
+            f"Candidatos:\n{caminhos_testados}"
+        )
+
+    if os.name == "nt":
+        os.startfile(str(arquivo))
+        return HttpResponse(
+            f"Arquivo aberto: {arquivo}",
+            content_type="text/plain; charset=utf-8",
+        )
+
+    return FileResponse(
+        open(arquivo, "rb"),
+        as_attachment=False,
+        filename=arquivo.name,
+    )
+
+
+@login_required
+def abrir_pasta_documento_transmittal_km(request, pk):
+    registro = TransmittalKM.objects.get(pk=pk)
+
+    arquivo = _km_buscar_documento(registro.documento, permitir_transmittal=False)
+
+    if not arquivo:
+        candidatos = _km_buscar_documento_com_debug(registro.documento)
+        caminhos_testados = "\n".join(
+            f"{score} | {'TRANS' if is_trans else 'DOC'} | {path}"
+            for score, path, is_trans in candidatos[:20]
+        )
+        raise Http404(
+            f"Pasta KM não encontrada para: {registro.documento}\n\n"
+            f"Base KM: {KM_DOCUMENTOS_BASE}\n\n"
+            f"Candidatos:\n{caminhos_testados}"
+        )
+
+    pasta = arquivo.parent
+
+    if os.name == "nt":
+        os.startfile(str(pasta))
+        return HttpResponse(
+            f"Pasta aberta: {pasta}",
+            content_type="text/plain; charset=utf-8",
+        )
+
+    return HttpResponse(
+        f"Pasta localizada: {pasta}",
+        content_type="text/plain; charset=utf-8",
+    )
 
 
 def _filtrar_pcfs_timeline(request):
@@ -1107,69 +1589,8 @@ def _ld_kpis(registros):
     }
 
 
-def _ld_normalizar_path_texto(valor):
-    return _ld_texto(valor).split("#", 1)[0].replace("/", "\\")
-
-
-def _ld_raizes_inferidas_do_banco():
-    """
-    Infere a raiz da rede a partir de caminhos absolutos já gravados na LD.
-
-    Exemplo:
-    \\servidor\...\09. Doc Control\10 - Engenharia\...
-    vira:
-    \\servidor\...\09. Doc Control
-    """
-    campos = [
-        "caminho_documento",
-        "caminho_grd",
-        "caminho_pcf",
-        "caminho_resposta",
-        "caminho_grd_resposta",
-    ]
-
-    raizes = []
-    vistos = set()
-
-    for campo in campos:
-        if not _ld_has_field(campo):
-            continue
-
-        try:
-            valores = (
-                DocumentoLD.objects.exclude(**{campo: ""})
-                .exclude(**{f"{campo}__isnull": True})
-                .values_list(campo, flat=True)[:500]
-            )
-        except Exception:
-            continue
-
-        for valor in valores:
-            texto = _ld_normalizar_path_texto(valor)
-            texto_lower = texto.lower()
-
-            if not texto or not (texto.startswith("\\\\") or ":" in texto):
-                continue
-
-            for marcador in [
-                "\\1 - docs emissão engedoc",
-                "\\9 - pcfs transpetro",
-                "\\10 - engenharia",
-            ]:
-                pos = texto_lower.find(marcador)
-                if pos > 0:
-                    raiz = texto[:pos]
-                    chave = raiz.lower()
-                    if chave not in vistos:
-                        vistos.add(chave)
-                        raizes.append(Path(raiz))
-                    break
-
-    return raizes
-
-
 def _ld_caminhos_candidatos(caminho_salvo):
-    bruto = _ld_normalizar_path_texto(caminho_salvo)
+    bruto = _ld_texto(caminho_salvo).split("#", 1)[0].replace("/", "\\")
     candidatos = []
 
     if not bruto:
@@ -1177,26 +1598,13 @@ def _ld_caminhos_candidatos(caminho_salvo):
 
     candidatos.append(Path(bruto))
 
-    # Mantém o caminho relativo "limpo", removendo apenas . e ..
-    # Ex.: ../1 - DOCS... -> 1 - DOCS...
     partes = [p for p in bruto.split("\\") if p and p not in {".", ".."}]
 
     base_path = _ld_texto(getattr(settings, "LD_BASE_PATH", ""))
 
     bases = []
-
     if base_path:
-        base = Path(base_path)
-        bases.append(base)
-
-        # Se LD_BASE_PATH aponta para "10 - Engenharia", a raiz operacional
-        # é a pasta acima, onde também existem "1 - DOCS..." e "9 - PCFs...".
-        if base.name.strip().lower() == "10 - engenharia":
-            bases.append(base.parent)
-
-    # Raízes inferidas do próprio banco, preservando o comportamento antigo
-    # mesmo quando LD_BASE_PATH não estiver configurado.
-    bases.extend(_ld_raizes_inferidas_do_banco())
+        bases.append(Path(base_path))
 
     user_home = Path.home()
     bases.extend([
@@ -1208,22 +1616,19 @@ def _ld_caminhos_candidatos(caminho_salvo):
     ])
 
     for base in bases:
-        if partes:
-            candidatos.append(base / Path(*partes))
+        candidatos.append(base / Path(*partes))
 
-        # Caso o caminho salvo tenha vindo como "../1 - DOCS..." e a base
-        # seja "10 - Engenharia", testa também a pasta irmã.
-        if bruto.startswith("..\\") and base.name.strip().lower() == "10 - engenharia" and partes:
-            candidatos.append(base.parent / Path(*partes))
+    # Quando o caminho vem como ../9 - PCFs..., a raiz deve ser a pasta acima de 1/9/10.
+    if base_path and partes:
+        candidatos.append(Path(base_path) / Path(*partes))
 
     unicos = []
     vistos = set()
 
     for candidato in candidatos:
         texto = str(candidato)
-        chave = texto.lower()
-        if chave not in vistos:
-            vistos.add(chave)
+        if texto not in vistos:
+            vistos.add(texto)
             unicos.append(candidato)
 
     return unicos
@@ -1845,7 +2250,7 @@ def abrir_arquivo_ld(request, pk, tipo):
 
         html += "</ul>"
         html += "<p>Configure no <strong>settings.py</strong>:</p>"
-        html += '<pre>LD_BASE_PATH = r"C:\CAMINHO\DA\PASTA\RAIZ"</pre>'
+        html += '<pre>LD_BASE_PATH = r"C:\\CAMINHO\\DA\\PASTA\\RAIZ"</pre>'
         html += "<p>A raiz deve conter as pastas anteriores a <strong>1 - DOCS EMISSÃO ENGEDOC</strong>, <strong>9 - PCFs Transpetro</strong> e <strong>10 - Engenharia</strong>.</p>"
 
         return HttpResponse(html, status=404)

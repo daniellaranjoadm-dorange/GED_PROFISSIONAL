@@ -1,140 +1,332 @@
 {% extends "documentos/base.html" %}
 
-{% block title %}Transmittals KM{% endblock %}
+{% block title %}Central de Transmittals KM{% endblock %}
 
 {% block extra_head %}
 <style>
   .tr-page { max-width: none !important; width: 100% !important; }
-  .tr-card { border-radius: 14px; border: 1px solid rgba(148, 163, 184, .22); }
-  .tr-code { font-size: 1.05rem; letter-spacing: -0.01em; }
-  .tr-title { font-size: 1rem; line-height: 1.35; }
-  .tr-label { font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; color: #64748b; }
-  .tr-value { font-weight: 600; word-break: break-word; }
 
-  .tr-detail-panel {
-    margin-top: 1rem;
-    border: 1px solid rgba(148, 163, 184, .25);
-    border-radius: 14px;
-    background: #f8fafc;
-    padding: 1rem;
+  .tr-hero {
+    border-radius: 22px;
+    border: 1px solid rgba(148, 163, 184, .24);
+    background:
+      radial-gradient(circle at 0% 0%, rgba(255, 138, 0, .16), transparent 34%),
+      radial-gradient(circle at 85% 20%, rgba(56, 189, 248, .18), transparent 34%),
+      linear-gradient(135deg, rgba(11, 18, 32, .98), rgba(17, 26, 46, .96));
+    color: #fff;
+    box-shadow: 0 18px 45px rgba(15, 23, 42, .22);
+    position: relative;
+    overflow: hidden;
   }
-  .tr-detail-grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: .75rem;
+
+  .tr-hero::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 3px;
+    background: linear-gradient(90deg, #38BDF8, #FF8A00);
   }
-  .tr-detail-box {
-    background: #fff;
-    border: 1px solid rgba(148, 163, 184, .22);
-    border-radius: 12px;
-    padding: .8rem;
+
+  .tr-kpi {
+    border: 0;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, .94);
+    box-shadow: 0 .6rem 1.35rem rgba(15, 23, 42, .08);
   }
-  .tr-detail-title {
+
+  .tr-kpi small {
+    color: #64748b;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+
+  .tr-kpi h2 {
+    margin: .25rem 0 0;
+    letter-spacing: -.05em;
+  }
+
+  .tr-filter-panel,
+  .tr-card {
+    border-radius: 20px;
+    border: 1px solid rgba(148, 163, 184, .24);
+    background: rgba(255, 255, 255, .94);
+    box-shadow: 0 .55rem 1.25rem rgba(15, 23, 42, .07);
+  }
+
+  .tr-card {
+    overflow: hidden;
+    transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+  }
+
+  .tr-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(56, 189, 248, .45);
+    box-shadow: 0 .9rem 1.8rem rgba(15, 23, 42, .12);
+  }
+
+  .tr-code {
+    font-size: 1.2rem;
+    font-weight: 900;
+    letter-spacing: -.03em;
+  }
+
+  .tr-label {
     font-size: .72rem;
     text-transform: uppercase;
-    letter-spacing: .06em;
+    letter-spacing: .04em;
     color: #64748b;
-    font-weight: 700;
-    margin-bottom: .5rem;
-  }
-  .tr-path {
-    font-size: .82rem;
-    color: #334155;
-    word-break: break-all;
-    line-height: 1.35;
-  }
-  @media (max-width: 992px) {
-    .tr-detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  }
-  @media (max-width: 576px) {
-    .tr-detail-grid { grid-template-columns: 1fr; }
+    font-weight: 800;
   }
 
+  .tr-value {
+    font-weight: 700;
+    word-break: break-word;
+  }
+
+  .tr-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    border-radius: 999px;
+    padding: .32rem .7rem;
+    background: #eef2ff;
+    color: #1e40af;
+    font-size: .78rem;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .tr-doc-table td,
+  .tr-doc-table th {
+    vertical-align: middle;
+  }
+
+  .tr-doc-title {
+    max-width: 560px;
+    white-space: normal;
+  }
+
+  .tr-path {
+    font-size: .8rem;
+    color: #475569;
+    word-break: break-all;
+  }
+
+  .tr-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .45rem;
+    justify-content: flex-end;
+  }
+
+  .tr-muted {
+    color: #64748b;
+  }
+
+  .tr-doc-ok {
+    border-left: 4px solid #22c55e;
+  }
+
+  .tr-doc-missing {
+    border-left: 4px solid #f59e0b;
+  }
+
+  @media (max-width: 768px) {
+    .tr-actions { justify-content: flex-start; }
+    .tr-doc-title { max-width: none; }
+  }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="ds-page tr-page">
-  <div class="ds-pagehead">
-    <div>
-      <h1 class="ds-title">📦 Transmittals KM</h1>
-      <p class="ds-subtitle">Dados importados para o banco do GED.</p>
-    </div>
+  <div class="tr-hero p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+      <div>
+        <h1 class="mb-1 fw-bold">📦 Central de Transmittals KM</h1>
+        <p class="mb-0 text-white-50">
+          Rastreabilidade por transmittal: documentos recebidos, PDF original e links diretos para a rede.
+        </p>
+      </div>
 
-    <a href="{% url 'automacoes:painel' %}" class="btn btn-secondary">
-      Voltar
-    </a>
+      <div class="d-flex gap-2">
+        <a href="{% url 'automacoes:dashboard_transmittals' %}" class="btn btn-outline-light">
+          Dashboard
+        </a>
+        <a href="{% url 'automacoes:painel' %}" class="btn btn-secondary">
+          Voltar
+        </a>
+      </div>
+    </div>
   </div>
 
-  <div class="ds-surface p-4">
-    <form method="get" class="mb-4">
-      <div class="row g-2">
-        <div class="col-md-10">
+  <div class="row g-3 mb-4">
+    <div class="col-md">
+      <div class="card tr-kpi h-100">
+        <div class="card-body">
+          <small>Transmittals</small>
+          <h2>{{ total_transmittals }}</h2>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md">
+      <div class="card tr-kpi h-100">
+        <div class="card-body">
+          <small>Documentos recebidos</small>
+          <h2>{{ total_documentos }}</h2>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md">
+      <div class="card tr-kpi h-100">
+        <div class="card-body">
+          <small>Com PDF original</small>
+          <h2 class="text-primary">{{ total_com_pdf }}</h2>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md">
+      <div class="card tr-kpi h-100">
+        <div class="card-body">
+          <small>Sem PDF</small>
+          <h2 class="text-danger">{{ total_sem_pdf }}</h2>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tr-filter-panel p-4 mb-4">
+    <form method="get">
+      <div class="row g-2 align-items-end">
+        <div class="col-lg-5">
+          <label class="form-label small text-muted">Busca geral</label>
           <input type="text"
                  name="q"
                  value="{{ busca }}"
                  class="form-control"
-                 placeholder="Buscar por documento, título ou transmittal...">
+                 placeholder="Documento, título, pasta, emissão ou transmittal...">
         </div>
 
-        <div class="col-md-2">
-          <button class="btn btn-primary w-100">
-            Buscar
-          </button>
+        <div class="col-lg-2">
+          <label class="form-label small text-muted">Transmittal</label>
+          <input type="text"
+                 name="transmittal"
+                 value="{{ transmittal }}"
+                 class="form-control"
+                 placeholder="T-0000">
+        </div>
+
+        <div class="col-lg-2">
+          <label class="form-label small text-muted">Pasta</label>
+          <input type="text"
+                 name="pasta"
+                 value="{{ pasta }}"
+                 class="form-control"
+                 placeholder="Pasta KM">
+        </div>
+
+        <div class="col-lg-2">
+          <label class="form-label small text-muted">Emissão</label>
+          <input type="text"
+                 name="emissao"
+                 value="{{ emissao }}"
+                 class="form-control"
+                 placeholder="Emissão">
+        </div>
+
+        <div class="col-lg-1">
+          <button class="btn btn-primary w-100">Buscar</button>
         </div>
       </div>
-    </form>
 
-    <div class="row g-3">
-      {% for item in registros %}
+      <div class="d-flex flex-wrap gap-2 mt-3">
+        <a href="{% url 'automacoes:transmittals_km' %}" class="btn btn-outline-secondary btn-sm">
+          Limpar filtros
+        </a>
+        {% if transmittal %}
+          <span class="tr-chip">Transmittal: {{ transmittal }}</span>
+        {% endif %}
+        {% if pasta %}
+          <span class="tr-chip">Pasta: {{ pasta }}</span>
+        {% endif %}
+        {% if emissao %}
+          <span class="tr-chip">Emissão: {{ emissao }}</span>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+  <div class="row g-3">
+    {% for grupo in transmittals %}
       <div class="col-12">
-        <div class="card tr-card border-0 shadow-sm">
-          <div class="card-body">
+        <div class="card tr-card">
+          <div class="card-body p-4">
             <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
               <div>
-                <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
-                  <div class="fw-bold tr-code">{{ item.documento }}</div>
-
-                  {% if item.transmittal_numero %}
-                  <span class="badge bg-dark">{{ item.transmittal_numero }}</span>
-                  {% endif %}
+                <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
+                  <div class="tr-code">{{ grupo.numero }}</div>
+                  <span class="badge bg-dark">{{ grupo.total_docs }} documento{{ grupo.total_docs|pluralize }}</span>
+                  <span class="badge {{ grupo.status_class }}">{{ grupo.status_badge }}</span>
                 </div>
 
-                <div class="text-muted small mb-2">{{ item.pasta }}</div>
-                <div class="tr-title">{{ item.titulo }}</div>
+                <div class="text-muted small">
+                  {% if grupo.data_envio %}{{ grupo.data_envio }}{% else %}Data não identificada{% endif %}
+                  {% if grupo.proposito %} · {{ grupo.proposito }}{% endif %}
+                </div>
               </div>
 
-              <div class="d-flex flex-wrap gap-1 justify-content-end">
-                {% if item.status_parse %}
-                  {% if "OK" in item.status_parse|upper %}
-                    <span class="badge bg-success">{{ item.status_parse }}</span>
-                  {% else %}
-                    <span class="badge bg-warning text-dark">{{ item.status_parse }}</span>
-                  {% endif %}
+              <div class="tr-actions">
+                {% if grupo.pdf_id %}
+                  <a href="{% url 'automacoes:abrir_pdf_transmittal_km' grupo.pdf_id %}"
+                     target="_blank"
+                     class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-file-earmark-pdf"></i>
+                    PDF Transmittal
+                  </a>
                 {% endif %}
+
+                <button class="btn btn-dark btn-sm"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#tr-docs-{{ forloop.counter }}"
+                        aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}"
+                        aria-controls="tr-docs-{{ forloop.counter }}">
+                  <i class="bi bi-list-ul"></i>
+                  Ver documentos
+                </button>
               </div>
             </div>
 
             <div class="row g-3 mb-3">
               <div class="col-md-3">
                 <div class="tr-label">Emissão</div>
-                <div class="tr-value">{{ item.emissao|default:"—" }}</div>
+                <div class="tr-value">{{ grupo.emissao|default:"—" }}</div>
               </div>
 
               <div class="col-md-3">
                 <div class="tr-label">Propósito</div>
-                <div class="tr-value">{{ item.proposito_emissao|default:"—" }}</div>
+                <div class="tr-value">{{ grupo.proposito|default:"—" }}</div>
               </div>
 
               <div class="col-md-3">
-                <div class="tr-label">Data Envio</div>
-                <div class="tr-value">{{ item.data_envio|default:"—" }}</div>
-              </div>
-
-              <div class="col-md-3">
-                <div class="tr-label">PDF</div>
+                <div class="tr-label">Pastas</div>
                 <div class="tr-value">
-                  {% if item.arquivo_pdf %}
+                  {% if grupo.pastas_lista %}
+                    {{ grupo.pastas_lista|join:", " }}
+                  {% else %}
+                    —
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="col-md-3">
+                <div class="tr-label">PDF original</div>
+                <div class="tr-value">
+                  {% if grupo.pdf_id %}
                     Disponível
                   {% else %}
                     —
@@ -143,85 +335,104 @@
               </div>
             </div>
 
-            {% if item.observacao_parse %}
-            <div class="alert alert-light border small mb-3">
-              {{ item.observacao_parse }}
-            </div>
-            {% endif %}
+            <div class="collapse {% if forloop.first %}show{% endif %}" id="tr-docs-{{ forloop.counter }}">
+              <div class="table-responsive mt-3">
+                <table class="table table-hover align-middle tr-doc-table">
+                  <thead>
+                    <tr>
+                      <th>Documento</th>
+                      <th>Título</th>
+                      <th>Pasta</th>
+                      <th>Emissão</th>
+                      <th>Status</th>
+                      <th class="text-end">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for item in grupo.docs %}
+                      <tr class="{% if item.ld_vinculado %}tr-doc-ok{% else %}tr-doc-missing{% endif %}">
+                        <td class="fw-bold">
+                          {{ item.documento|default:"—" }}
+                          {% if item.ld_vinculado %}
+                            <div class="small text-success">LD vinculada</div>
+                          {% else %}
+                            <div class="small text-warning">Sem vínculo LD</div>
+                          {% endif %}
+                        </td>
 
-            <div class="d-flex flex-wrap gap-2">
-              {% if item.arquivo_pdf %}
-              <a href="{% url 'automacoes:abrir_pdf_transmittal_km' item.id %}"
-                 target="_blank"
-                 class="btn btn-outline-primary btn-sm">
-                <i class="bi bi-file-earmark-pdf"></i>
-                Abrir PDF
-              </a>
-              {% endif %}
+                        <td class="tr-doc-title">
+                          {{ item.titulo|default:"—" }}
+                          {% if item.observacao_parse %}
+                            <div class="small text-muted mt-1">{{ item.observacao_parse }}</div>
+                          {% endif %}
+                        </td>
 
-              <button class="btn btn-dark btn-sm"
-                      type="button"
-                      data-bs-toggle="collapse"
-                      data-bs-target="#tr-detalhes-{{ item.id }}"
-                      aria-expanded="false"
-                      aria-controls="tr-detalhes-{{ item.id }}">
-                <i class="bi bi-eye"></i>
-                Detalhes
-              </button>
-            </div>
+                        <td>{{ item.pasta|default:"—" }}</td>
+                        <td>{{ item.emissao|default:"—" }}</td>
 
-            <div class="collapse" id="tr-detalhes-{{ item.id }}">
-              <div class="tr-detail-panel">
-                <div class="tr-detail-grid">
-                  <div class="tr-detail-box">
-                    <div class="tr-detail-title">Identificação</div>
-                    <div><strong>ID banco:</strong> {{ item.id }}</div>
-                    <div><strong>Documento:</strong> {{ item.documento|default:"—" }}</div>
-                    <div><strong>Transmittal:</strong> {{ item.transmittal_numero|default:"—" }}</div>
-                    <div><strong>Pasta:</strong> {{ item.pasta|default:"—" }}</div>
-                  </div>
+                        <td>
+                          {% if item.status_parse %}
+                            {% if "OK" in item.status_parse|upper %}
+                              <span class="badge bg-success">{{ item.status_parse }}</span>
+                            {% elif "FALHA" in item.status_parse|upper %}
+                              <span class="badge bg-danger">{{ item.status_parse }}</span>
+                            {% else %}
+                              <span class="badge bg-warning text-dark">{{ item.status_parse }}</span>
+                            {% endif %}
+                          {% else %}
+                            <span class="badge bg-secondary">—</span>
+                          {% endif %}
+                        </td>
 
-                  <div class="tr-detail-box">
-                    <div class="tr-detail-title">Emissão</div>
-                    <div><strong>Emissão:</strong> {{ item.emissao|default:"—" }}</div>
-                    <div><strong>Propósito:</strong> {{ item.proposito_emissao|default:"—" }}</div>
-                    <div><strong>Data envio:</strong> {{ item.data_envio|default:"—" }}</div>
-                  </div>
+                        <td>
+                          <div class="tr-actions">
+                            {% if item.arquivo_pdf %}
+                              <a href="{% url 'automacoes:abrir_pdf_transmittal_km' item.id %}"
+                                 target="_blank"
+                                 class="btn btn-outline-primary btn-sm">
+                                PDF
+                              </a>
+                            {% endif %}
 
-                  <div class="tr-detail-box">
-                    <div class="tr-detail-title">Processamento</div>
-                    <div><strong>Status parse:</strong> {{ item.status_parse|default:"—" }}</div>
-                    <div><strong>PDF:</strong> {% if item.arquivo_pdf %}Disponível{% else %}—{% endif %}</div>
-                  </div>
+                            <a href="{% url 'automacoes:abrir_documento_transmittal_km' item.id %}"
+                               target="_blank"
+                               class="btn btn-outline-success btn-sm">
+                              Abrir documento
+                            </a>
 
-                  <div class="tr-detail-box">
-                    <div class="tr-detail-title">Arquivo PDF</div>
-                    <div class="tr-path">{{ item.arquivo_pdf|default:"—" }}</div>
-                  </div>
-                </div>
-
-                <div class="tr-detail-box mt-3">
-                  <div class="tr-detail-title">Título completo</div>
-                  <div>{{ item.titulo|default:"—" }}</div>
-                </div>
-
-                {% if item.observacao_parse %}
-                <div class="tr-detail-box mt-3">
-                  <div class="tr-detail-title">Observação parse</div>
-                  <div>{{ item.observacao_parse }}</div>
-                </div>
-                {% endif %}
+                            <a href="{% url 'automacoes:abrir_pasta_documento_transmittal_km' item.id %}"
+                               target="_blank"
+                               class="btn btn-outline-secondary btn-sm">
+                              Pasta
+                            </a>
+                          </div>
+                        </td>
+                      </tr>
+                    {% empty %}
+                      <tr>
+                        <td colspan="6" class="text-center text-muted">Nenhum documento neste transmittal.</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
               </div>
+
+              {% if grupo.pdf_path %}
+                <div class="tr-path mt-2">
+                  <strong>PDF original:</strong> {{ grupo.pdf_path }}
+                </div>
+              {% endif %}
             </div>
           </div>
         </div>
       </div>
-      {% empty %}
+    {% empty %}
       <div class="col-12">
-        <div class="alert alert-secondary">Nenhum registro encontrado.</div>
+        <div class="alert alert-secondary">
+          Nenhum transmittal encontrado para os filtros aplicados.
+        </div>
       </div>
-      {% endfor %}
-    </div>
+    {% endfor %}
   </div>
 </div>
 {% endblock %}
