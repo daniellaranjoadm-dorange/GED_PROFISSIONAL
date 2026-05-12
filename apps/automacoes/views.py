@@ -1898,31 +1898,43 @@ def _ld_caminhos_candidatos(caminho_salvo):
     if not bruto:
         return candidatos
 
-    candidatos.append(Path(bruto))
+    caminho_bruto = Path(bruto)
+    candidatos.append(caminho_bruto)
 
     partes = [p for p in bruto.split("\\") if p and p not in {".", ".."}]
-
-    base_path = _ld_texto(getattr(settings, "LD_BASE_PATH", ""))
+    relativo_sem_subida = Path(*partes) if partes else None
 
     bases = []
+
+    # Mantém compatibilidade com ambientes que já tenham raiz configurada,
+    # mas não depende disso para resolver os caminhos antigos da LD.
+    base_path = _ld_texto(getattr(settings, "LD_BASE_PATH", ""))
     if base_path:
         bases.append(Path(base_path))
 
-    user_home = Path.home()
+    # Raiz histórica da LD/KM no FILESERVER.
+    bases.append(Path(r"\\virm-rgr022\FILESERVER\Projetos\05_HANDYMAX\09. Doc Control"))
+
+    # Bases locais usadas em desenvolvimento, incluindo a pasta acima do projeto.
+    base_dir = Path(getattr(settings, "BASE_DIR", Path.cwd()))
     bases.extend([
+        base_dir,
+        base_dir.parent,
         Path.cwd(),
-        user_home,
-        user_home / "Documents",
-        user_home / "OneDrive",
-        user_home / "Desktop",
+        Path.cwd().parent,
+        Path.home(),
+        Path.home() / "Documents",
+        Path.home() / "OneDrive",
+        Path.home() / "Desktop",
     ])
 
-    for base in bases:
-        candidatos.append(base / Path(*partes))
+    if relativo_sem_subida:
+        for base in bases:
+            candidatos.append(base / relativo_sem_subida)
 
-    # Quando o caminho vem como ../9 - PCFs..., a raiz deve ser a pasta acima de 1/9/10.
-    if base_path and partes:
-        candidatos.append(Path(base_path) / Path(*partes))
+    # Preserva a semântica real de caminhos salvos com "../".
+    for base in bases:
+        candidatos.append(base / caminho_bruto)
 
     unicos = []
     vistos = set()
@@ -2570,9 +2582,7 @@ def abrir_arquivo_ld(request, pk, tipo):
             html += f"<li>{candidato}</li>"
 
         html += "</ul>"
-        html += "<p>Configure no <strong>settings.py</strong>:</p>"
-        html += '<pre>LD_BASE_PATH = r"C:\\CAMINHO\\DA\\PASTA\\RAIZ"</pre>'
-        html += "<p>A raiz deve conter as pastas anteriores a <strong>1 - DOCS EMISSÃO ENGEDOC</strong>, <strong>9 - PCFs Transpetro</strong> e <strong>10 - Engenharia</strong>.</p>"
+        html += "<p>Verifique se a pasta da rede está acessível e se o caminho salvo continua válido.</p>"
 
         return HttpResponse(html, status=404)
 
