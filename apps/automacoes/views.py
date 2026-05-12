@@ -1557,7 +1557,7 @@ def dashboard_pcfs(request):
 
     total = registros.count()
     total_open = registros.filter(open_comments__gt=0).count()
-    total_sem_status = registros.filter(status_final="").count()
+    total_sem_status = registros.filter(Q(status_final__isnull=True) | Q(status_final="")).count()
     total_not_released = registros.filter(status_final__icontains="NOT RELEASED").count()
     total_released = registros.filter(status_final__icontains="RELEASED").exclude(
         status_final__icontains="NOT RELEASED"
@@ -1573,11 +1573,18 @@ def dashboard_pcfs(request):
         .order_by("-total", "tipo")
     )
 
-    por_status = list(
-        registros.values("status_final")
-        .annotate(total=Count("id"))
-        .order_by("-total")[:10]
-    )
+    status_agregado = {}
+    for status, total_status in registros.values_list("status_final").annotate(total=Count("id")):
+        status_norm = _ld_texto(status).upper() or "SEM STATUS"
+        status_agregado[status_norm] = status_agregado.get(status_norm, 0) + (total_status or 0)
+
+    por_status = [
+        {"status_final": status, "total": total_status}
+        for status, total_status in sorted(
+            status_agregado.items(),
+            key=lambda item: (-item[1], item[0]),
+        )[:10]
+    ]
 
     top_pendencias = (
         registros.filter(open_comments__gt=0)
@@ -1586,7 +1593,7 @@ def dashboard_pcfs(request):
 
     recentes = registros.order_by("-atualizado_em")[:10]
 
-    status_chart_labels = [(item.get("status_final") or "Sem status") for item in por_status]
+    status_chart_labels = [item.get("status_final") or "SEM STATUS" for item in por_status]
     status_chart_values = [item.get("total") or 0 for item in por_status]
 
     tipo_chart_labels = [(item.get("tipo") or "Sem tipo") for item in por_tipo]
@@ -1633,6 +1640,38 @@ def _ld_texto(valor):
 
 def _ld_bool(valor):
     return _ld_texto(valor).lower() in {"1", "true", "on", "sim", "yes"}
+
+
+LD_TIPOS_DOCUMENTAIS_VALIDOS = {
+    "AC", "AF", "AP", "AR", "AV", "BM", "BS", "CA", "CC", "CE", "CF", "CG",
+    "CI", "CL", "CM", "CO", "CP", "CQ", "CR", "CT", "CV", "DB", "DC", "DE",
+    "DF", "DI", "DL", "DO", "DR", "DT", "DU", "EE", "EC", "EM", "ES", "ET",
+    "EQ", "FD", "GE", "GI", "ID", "IT", "IS", "LA", "LC", "LD", "LE", "LI",
+    "LM", "LP", "LO", "LV", "LT", "MA", "MC", "MD", "MG", "MI", "ML", "MM",
+    "MO", "NA", "NC", "NF", "NP", "NQ", "NT", "OA", "OC", "OG", "OS", "PC",
+    "PE", "PG", "PI", "PJ", "PL", "PM", "PO", "PP", "PQ", "PR", "PT", "QT",
+    "RA", "RC", "RD", "RE", "RH", "RL", "RM", "RV", "SC", "SM", "SP", "TF",
+    "TI", "TP", "TR",
+}
+
+
+def extrair_tipo_documental(documento):
+    """
+    Extrai o tipo documental real do número do documento.
+
+    Exemplos:
+    24-7141-00-MA-001 -> MA
+    I-PR-4880.00-9311-100-CZ1-001 -> PR
+    """
+    texto = _ld_texto(documento).upper()
+    if not texto:
+        return ""
+
+    for parte in re.split(r"[^A-Z0-9]+", texto):
+        if parte in LD_TIPOS_DOCUMENTAIS_VALIDOS:
+            return parte
+
+    return ""
 
 
 def _ld_valores_distintos(campo, extras=None):
@@ -2095,20 +2134,23 @@ def _ld_montar_chips(request, filtros, status_documentos, status_grds):
 
 @login_required
 def listar_ld(request):
-    tipo_doc = request.GET.get("tipo_doc", "").strip().upper()
-    tipos_documentais = [
-        "AC","AF","AP","AR","AV","BM","BS","CA","CC","CE","CF","CG",
-        "CI","CL","CM","CO","CP","CQ","CR","CT","CV","DB","DC","DE",
-        "DF","DI","DL","DO","DR","DT","DU","EE","EC","EM","ES","ET",
-        "EQ","FD","GE","GI","ID","IT","IS","LA","LC","LD","LE","LI",
-        "LM","LP","LO","LV","LT","MA","MC","MD","MG","MI","ML","MM",
-        "MO","NA","NC","NF","NP","NQ","NT","OA","OC","OG","OS","PC",
-        "PE","PG","PI","PJ","PL","PM","PO","PP","PQ","PR","PT","QT",
-        "RA","RC","RD","RE","RH","RL","RM","RV","SC","SM","SP","TF",
-        "TI","TP","TR",
-    ]
+    tipo_doc = _ld_texto(request.GET.get("tipo_doc")).upper()
 
     registros, filtros = _ld_filtrar_queryset(request)
+
+    tipos_encontrados = {
+        extrair_tipo_documental(documento)
+        for documento in registros.values_list("documento", flat=True)
+    }
+    tipos_documentais = sorted(tipo for tipo in tipos_encontrados if tipo)
+
+    if tipo_doc:
+        ids_tipo_doc = [
+            pk
+            for pk, documento in registros.values_list("pk", "documento")
+            if extrair_tipo_documental(documento) == tipo_doc
+        ]
+        registros = registros.filter(pk__in=ids_tipo_doc)
 
     kpis = _ld_kpis(registros)
 
@@ -2158,6 +2200,7 @@ def listar_ld(request):
             **kpis,
         },
     )
+
 
 
 @login_required
