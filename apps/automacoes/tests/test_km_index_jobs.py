@@ -35,4 +35,5 @@ class KMIndexJobsTests(TestCase):
         self.assertEqual(job.job_name, "km_index_rebuild")
         self.assertEqual(job.status, JobExecution.STATUS_FAILED)
         self.assertIn("falha simulada", job.error)
-        self.assertEqual(job.result, {})
+        self.assertEqual(job.result.get("ok"), False)
+        self.assertEqual(job.result.get("erro"), "falha simulada")
