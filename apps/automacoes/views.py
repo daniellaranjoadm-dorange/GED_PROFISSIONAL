@@ -25,6 +25,7 @@ from apps.automacoes.services.ld_parser import extrair_tipo_documental
 from apps.automacoes.services.ld_path_resolver import gerar_hyperlink_ld, resolver_caminho_ld
 from apps.automacoes.services.status_normalizer import normalizar_status
 from apps.automacoes.services.search_engine import buscar_global_enterprise
+from apps.automacoes.services.search_analytics import obter_search_analytics
 
 
 KM_DOCUMENTOS_BASE = Path(
@@ -2598,6 +2599,19 @@ def abrir_pasta_km_index(request, pk):
         content_type="text/plain; charset=utf-8",
     )
 
+
+
+
+@login_required
+def dashboard_search(request):
+    dias = request.GET.get("dias", 30)
+    contexto = obter_search_analytics(dias=dias)
+
+    return render(
+        request,
+        "automacoes/dashboard_search.html",
+        contexto,
+    )
 
 @login_required
 def busca_global_ged(request):

@@ -1,0 +1,138 @@
+{% extends "documentos/base.html" %}
+
+{% block title %}Analytics de Busca GED{% endblock %}
+
+{% block content %}
+<div class="ds-page">
+
+  <div class="d-flex justify-content-between flex-wrap gap-3 align-items-center mb-4">
+    <div>
+      <h1 class="mb-1">📊 Analytics de Busca GED</h1>
+      <div class="text-muted">Observabilidade operacional das pesquisas globais.</div>
+    </div>
+
+    <form method="get" class="d-flex gap-2">
+      <select name="dias" class="form-select">
+        <option value="7" {% if periodo_dias == 7 %}selected{% endif %}>7 dias</option>
+        <option value="30" {% if periodo_dias == 30 %}selected{% endif %}>30 dias</option>
+        <option value="90" {% if periodo_dias == 90 %}selected{% endif %}>90 dias</option>
+        <option value="365" {% if periodo_dias == 365 %}selected{% endif %}>365 dias</option>
+      </select>
+      <button class="btn btn-primary">Atualizar</button>
+    </form>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md">
+      <div class="card shadow-sm border-0">
+        <div class="card-body">
+          <small class="text-muted fw-bold">BUSCAS</small>
+          <h2>{{ total_buscas }}</h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-md">
+      <div class="card shadow-sm border-0">
+        <div class="card-body">
+          <small class="text-muted fw-bold">COM RESULTADO</small>
+          <h2>{{ buscas_com_resultado }}</h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-md">
+      <div class="card shadow-sm border-0">
+        <div class="card-body">
+          <small class="text-muted fw-bold">SEM RESULTADO</small>
+          <h2>{{ buscas_sem_resultado }}</h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-md">
+      <div class="card shadow-sm border-0">
+        <div class="card-body">
+          <small class="text-muted fw-bold">TAXA DE SUCESSO</small>
+          <h2>{{ taxa_sucesso_resultado }}%</h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-md">
+      <div class="card shadow-sm border-0">
+        <div class="card-body">
+          <small class="text-muted fw-bold">TEMPO MÉDIO</small>
+          <h2>{{ duracao_media_ms }} ms</h2>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-6">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header bg-white fw-bold">Top pesquisas</div>
+        <div class="card-body">
+          {% for item in top_termos %}
+            <div class="d-flex justify-content-between border-bottom py-2">
+              <div>
+                <strong>{{ item.termo }}</strong>
+                <div class="small text-muted">Média resultados: {{ item.media_resultados|floatformat:1 }}</div>
+              </div>
+              <span class="badge bg-primary align-self-center">{{ item.total }}</span>
+            </div>
+          {% empty %}
+            <div class="text-muted">Nenhuma busca registrada no período.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header bg-white fw-bold">Buscas sem resultado</div>
+        <div class="card-body">
+          {% for item in sem_resultado %}
+            <div class="d-flex justify-content-between border-bottom py-2">
+              <strong>{{ item.termo }}</strong>
+              <span class="badge bg-warning text-dark">{{ item.total }}</span>
+            </div>
+          {% empty %}
+            <div class="text-muted">Nenhuma busca sem resultado no período.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header bg-white fw-bold">Volume por tipo</div>
+        <div class="card-body">
+          {% for item in por_tipo %}
+            <div class="d-flex justify-content-between border-bottom py-2">
+              <strong>{{ item.tipo|default:"todos"|upper }}</strong>
+              <span class="badge bg-secondary">{{ item.total }}</span>
+            </div>
+          {% empty %}
+            <div class="text-muted">Sem dados.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header bg-white fw-bold">Usuários mais ativos</div>
+        <div class="card-body">
+          {% for item in usuarios_ativos %}
+            <div class="d-flex justify-content-between border-bottom py-2">
+              <strong>{{ item.usuario__username }}</strong>
+              <span class="badge bg-dark">{{ item.total }}</span>
+            </div>
+          {% empty %}
+            <div class="text-muted">Sem usuários registrados no período.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

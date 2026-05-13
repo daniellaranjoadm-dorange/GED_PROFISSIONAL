@@ -75,6 +75,11 @@ urlpatterns = [
         name="dashboard_ld",
     ),
     path(
+        "dashboard-search/",
+        views.dashboard_search,
+        name="dashboard_search",
+    ),
+    path(
         "dashboard-transmittals/",
         views.dashboard_transmittals,
         name="dashboard_transmittals",
