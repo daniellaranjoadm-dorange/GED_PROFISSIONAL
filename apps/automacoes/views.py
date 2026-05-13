@@ -23,6 +23,7 @@ from apps.automacoes.services import (
 )
 from apps.automacoes.services.ld_parser import extrair_tipo_documental
 from apps.automacoes.services.ld_path_resolver import gerar_hyperlink_ld, resolver_caminho_ld
+from apps.automacoes.services.status_normalizer import normalizar_status
 
 
 KM_DOCUMENTOS_BASE = Path(
@@ -1576,7 +1577,7 @@ def dashboard_pcfs(request):
 
     status_agregado = {}
     for status, total_status in registros.values_list("status_final").annotate(total=Count("id")):
-        status_norm = _ld_texto(status).upper() or "SEM STATUS"
+        status_norm = normalizar_status(status)
         status_agregado[status_norm] = status_agregado.get(status_norm, 0) + (total_status or 0)
 
     por_status = [
