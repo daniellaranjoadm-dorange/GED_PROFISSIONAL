@@ -2604,12 +2604,18 @@ def busca_global_ged(request):
     q = (request.GET.get("q") or request.GET.get("busca") or "").strip()
     tipo = (request.GET.get("tipo") or "todos").strip().lower()
 
-    contexto_busca = buscar_global_enterprise(q=q, tipo=tipo)
+    contexto = buscar_global_enterprise(
+        q,
+        tipo=tipo,
+        usuario=request.user,
+        origem="web",
+        auditar=bool(q),
+    )
 
     return render(
         request,
         "automacoes/busca_global.html",
-        contexto_busca,
+        contexto,
     )
 
 

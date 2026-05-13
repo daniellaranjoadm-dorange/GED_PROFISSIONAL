@@ -50,6 +50,59 @@ class ExecucaoAutomacao(models.Model):
         return f"{self.nome} - {self.status}"
 
 
+class SearchAudit(models.Model):
+    """Registro operacional das buscas executadas no GED."""
+
+    ORIGEM_WEB = "web"
+    ORIGEM_API = "api"
+    ORIGEM_CHOICES = [
+        (ORIGEM_WEB, "Web"),
+        (ORIGEM_API, "API"),
+    ]
+
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="buscas_ged",
+    )
+    termo = models.CharField(max_length=500, db_index=True)
+    tipo = models.CharField(max_length=50, blank=True, default="todos", db_index=True)
+    origem = models.CharField(
+        max_length=30,
+        choices=ORIGEM_CHOICES,
+        default=ORIGEM_WEB,
+        db_index=True,
+    )
+
+    total_geral = models.PositiveIntegerField(default=0)
+    total_km = models.PositiveIntegerField(default=0)
+    total_transmittals = models.PositiveIntegerField(default=0)
+    total_ld = models.PositiveIntegerField(default=0)
+    total_pcfs = models.PositiveIntegerField(default=0)
+
+    duracao_ms = models.PositiveIntegerField(default=0)
+    sucesso = models.BooleanField(default=True, db_index=True)
+    mensagem = models.TextField(blank=True)
+
+    criado_em = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-criado_em"]
+        verbose_name = "Auditoria de busca GED"
+        verbose_name_plural = "Auditorias de busca GED"
+        indexes = [
+            models.Index(fields=["termo", "tipo"]),
+            models.Index(fields=["origem", "criado_em"]),
+            models.Index(fields=["sucesso", "criado_em"]),
+        ]
+
+    def __str__(self):
+        return f"{self.termo} ({self.total_geral})"
+
+
+
 class TransmittalKM(models.Model):
     documento = models.CharField(max_length=100, blank=True)
     titulo = models.TextField(blank=True)

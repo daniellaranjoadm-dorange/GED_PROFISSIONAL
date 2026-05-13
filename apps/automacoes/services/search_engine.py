@@ -8,13 +8,14 @@ e também fornece uma camada pronta para a tela enterprise de busca global.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import time
 from typing import Any
 from urllib.parse import quote
 
 from django.db.models import Q
 
-from apps.automacoes.models import DocumentoLD, KMFileIndex, PCFTimeline, TransmittalKM
-
+from apps.automacoes.models import DocumentoLD, KMFileIndex, PCFTimeline, SearchAudit, TransmittalKM
+from apps.automacoes.services.search_audit import registrar_busca
 from apps.automacoes.services.search_ranker import ordenar_por_score, score_documento
 
 
@@ -344,6 +345,9 @@ def buscar_global_enterprise(
     limit_transmittals: int = 25,
     limit_ld: int = 25,
     limit_pcfs: int = 25,
+    usuario: Any = None,
+    origem: str = SearchAudit.ORIGEM_WEB,
+    auditar: bool = False,
 ) -> dict[str, Any]:
     """
     Retorna contexto completo para o template enterprise de busca global.
@@ -351,6 +355,7 @@ def buscar_global_enterprise(
     A função não renderiza template e não altera banco. Assim pode ser usada por
     views, APIs e testes sem acoplar regra de busca ao ``views.py``.
     """
+    inicio = time.monotonic()
     termo = normalizar_termo_busca(q)
     tipo_normalizado = (tipo or "todos").strip().lower() or "todos"
 
@@ -376,13 +381,26 @@ def buscar_global_enterprise(
     }
 
     if len(termo) < 2:
-        return {
+        contexto = {
             "q": termo,
             "tipo": tipo_normalizado,
             "resultados": resultados,
             "totais": totais,
             "totais_reais": totais_reais,
         }
+        if auditar and termo:
+            registrar_busca(
+                termo=termo,
+                tipo=tipo_normalizado,
+                origem=origem,
+                usuario=usuario,
+                totais_reais=totais_reais,
+                total_geral=0,
+                duracao_ms=round((time.monotonic() - inicio) * 1000),
+                sucesso=True,
+                mensagem="Termo com menos de 2 caracteres.",
+            )
+        return contexto
 
     termo_norm = _termo_compacto(termo)
 
@@ -455,10 +473,24 @@ def buscar_global_enterprise(
 
     totais["geral"] = sum(totais_reais.values())
 
-    return {
+    contexto = {
         "q": termo,
         "tipo": tipo_normalizado,
         "resultados": resultados,
         "totais": totais,
         "totais_reais": totais_reais,
     }
+
+    if auditar:
+        registrar_busca(
+            termo=termo,
+            tipo=tipo_normalizado,
+            origem=origem,
+            usuario=usuario,
+            totais_reais=totais_reais,
+            total_geral=totais["geral"],
+            duracao_ms=round((time.monotonic() - inicio) * 1000),
+            sucesso=True,
+        )
+
+    return contexto
