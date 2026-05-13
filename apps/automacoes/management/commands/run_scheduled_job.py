@@ -2,11 +2,14 @@ from django.core.management.base import BaseCommand, CommandError
 
 from apps.automacoes.services.health_jobs import registrar_health_jobs
 from apps.automacoes.services.km_scheduler_jobs import registrar_km_jobs
-from apps.automacoes.services.scheduler import executar_job_agendado
+from apps.automacoes.services.scheduler_runtime import (
+    JobAlreadyRunningError,
+    executar_job_agendado_com_lock,
+)
 
 
 class Command(BaseCommand):
-    help = "Executa um job agendado do GED."
+    help = "Executa um job agendado do GED com lock operacional."
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -22,7 +25,9 @@ class Command(BaseCommand):
         job_name = options["job_name"]
 
         try:
-            job = executar_job_agendado(job_name)
+            job = executar_job_agendado_com_lock(job_name)
+        except JobAlreadyRunningError as exc:
+            raise CommandError(str(exc))
         except ValueError as exc:
             raise CommandError(str(exc))
 
@@ -32,10 +37,5 @@ class Command(BaseCommand):
             )
         )
 
-        self.stdout.write(
-            f"Status: {job.status}"
-        )
-
-        self.stdout.write(
-            f"ID execução: {job.id}"
-        )
+        self.stdout.write(f"Status: {job.status}")
+        self.stdout.write(f"ID execução: {job.id}")
