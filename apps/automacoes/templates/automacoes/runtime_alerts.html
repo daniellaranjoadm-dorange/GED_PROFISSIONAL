@@ -1,0 +1,47 @@
+
+{% extends "documentos/base.html" %}
+{% block content %}
+<div class="container py-4">
+<h1>Runtime Alerts</h1>
+
+<div class="card">
+<div class="card-body">
+<h3>Total abertos: {{ total_abertos }}</h3>
+</div>
+</div>
+
+<div class="card mt-4">
+<div class="card-header">
+Alertas
+</div>
+
+<div class="table-responsive">
+<table class="table">
+<thead>
+<tr>
+<th>Severidade</th>
+<th>Código</th>
+<th>Job</th>
+<th>Mensagem</th>
+</tr>
+</thead>
+
+<tbody>
+{% for alerta in abertos %}
+<tr>
+<td>{{ alerta.severidade }}</td>
+<td>{{ alerta.codigo }}</td>
+<td>{{ alerta.job_name }}</td>
+<td>{{ alerta.mensagem }}</td>
+</tr>
+{% empty %}
+<tr>
+<td colspan="4">Nenhum alerta aberto.</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+</div>
+</div>
+{% endblock %}

@@ -324,3 +324,46 @@ class SchedulerState(models.Model):
 
     def __str__(self):
         return f"{self.job_name} [{self.last_status}]"
+
+
+class RuntimeAlert(models.Model):
+    SEVERITY_INFO = "INFO"
+    SEVERITY_WARNING = "WARNING"
+    SEVERITY_ERROR = "ERROR"
+    SEVERITY_CRITICAL = "CRITICAL"
+
+    SEVERITY_CHOICES = [
+        (SEVERITY_INFO, "Info"),
+        (SEVERITY_WARNING, "Warning"),
+        (SEVERITY_ERROR, "Error"),
+        (SEVERITY_CRITICAL, "Critical"),
+    ]
+
+    titulo = models.CharField(max_length=255)
+    codigo = models.CharField(max_length=100, db_index=True)
+    severidade = models.CharField(
+        max_length=20,
+        choices=SEVERITY_CHOICES,
+        default=SEVERITY_WARNING,
+        db_index=True,
+    )
+
+    job_name = models.CharField(max_length=255, blank=True, db_index=True)
+
+    mensagem = models.TextField()
+    detalhes = models.JSONField(default=dict, blank=True)
+
+    resolvido = models.BooleanField(default=False, db_index=True)
+    resolvido_em = models.DateTimeField(null=True, blank=True)
+
+    criado_em = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-criado_em"]
+        indexes = [
+            models.Index(fields=["codigo", "resolvido"]),
+            models.Index(fields=["severidade", "criado_em"]),
+        ]
+
+    def __str__(self):
+        return f"{self.severidade} - {self.titulo}"
