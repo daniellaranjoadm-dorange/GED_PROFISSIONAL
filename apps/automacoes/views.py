@@ -6,7 +6,6 @@ import re
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.conf import settings
 from django.utils import timezone
 from django.core.paginator import Paginator
 from django.db.models import Avg, Count, Q, Sum
@@ -23,6 +22,7 @@ from apps.automacoes.services import (
     transmittal_km,
 )
 from apps.automacoes.services.ld_parser import extrair_tipo_documental
+from apps.automacoes.services.ld_path_resolver import gerar_hyperlink_ld, resolver_caminho_ld
 
 
 KM_DOCUMENTOS_BASE = Path(
@@ -1861,78 +1861,13 @@ def _ld_kpis(registros):
     }
 
 
-def _ld_caminhos_candidatos(caminho_salvo):
-    bruto = _ld_texto(caminho_salvo).split("#", 1)[0].replace("/", "\\")
-    candidatos = []
-
-    if not bruto:
-        return candidatos
-
-    caminho_bruto = Path(bruto)
-    candidatos.append(caminho_bruto)
-
-    partes = [p for p in bruto.split("\\") if p and p not in {".", ".."}]
-    relativo_sem_subida = Path(*partes) if partes else None
-
-    bases = []
-
-    # Mantém compatibilidade com ambientes que já tenham raiz configurada,
-    # mas não depende disso para resolver os caminhos antigos da LD.
-    base_path = _ld_texto(getattr(settings, "LD_BASE_PATH", ""))
-    if base_path:
-        bases.append(Path(base_path))
-
-    # Raiz histórica da LD/KM no FILESERVER.
-    bases.append(Path(r"\\virm-rgr022\FILESERVER\Projetos\05_HANDYMAX\09. Doc Control"))
-
-    # Bases locais usadas em desenvolvimento, incluindo a pasta acima do projeto.
-    base_dir = Path(getattr(settings, "BASE_DIR", Path.cwd()))
-    bases.extend([
-        base_dir,
-        base_dir.parent,
-        Path.cwd(),
-        Path.cwd().parent,
-        Path.home(),
-        Path.home() / "Documents",
-        Path.home() / "OneDrive",
-        Path.home() / "Desktop",
-    ])
-
-    if relativo_sem_subida:
-        for base in bases:
-            candidatos.append(base / relativo_sem_subida)
-
-    # Preserva a semântica real de caminhos salvos com "../".
-    for base in bases:
-        candidatos.append(base / caminho_bruto)
-
-    unicos = []
-    vistos = set()
-
-    for candidato in candidatos:
-        texto = str(candidato)
-        if texto not in vistos:
-            vistos.add(texto)
-            unicos.append(candidato)
-
-    return unicos
-
-
 def _ld_resolver_caminho(caminho_salvo):
-    candidatos = _ld_caminhos_candidatos(caminho_salvo)
-
-    for candidato in candidatos:
-        if candidato.exists():
-            return candidato, candidatos
-
-    return None, candidatos
+    return resolver_caminho_ld(caminho_salvo)
 
 
 def _ld_hyperlink(caminho):
-    arquivo, _ = _ld_resolver_caminho(caminho)
-    if arquivo:
-        return arquivo.resolve().as_uri()
-    return _ld_texto(caminho)
+    return gerar_hyperlink_ld(caminho)
+
 
 
 
