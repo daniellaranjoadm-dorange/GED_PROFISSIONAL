@@ -5,6 +5,7 @@ cd "C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL"
 
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
+python manage.py check
 python manage.py runserver 8000
 
 python manage.py runserver 127.0.0.1:8000
@@ -37,8 +38,10 @@ for /d /r . %d in (__pycache__) do @if exist "%d" rd /s /q "%d"
 python manage.py check
 
 # MIGRATIONS (caso necessário futuramente)
+python manage.py check
 python manage.py makemigrations
 python manage.py migrate
+python manage.py runserver
 
 # COLETAR ESTÁTICOS
 python manage.py collectstatic --noinput
