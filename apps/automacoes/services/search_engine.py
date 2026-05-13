@@ -15,6 +15,8 @@ from django.db.models import Q
 
 from apps.automacoes.models import DocumentoLD, KMFileIndex, PCFTimeline, TransmittalKM
 
+from apps.automacoes.services.search_ranker import ordenar_por_score, score_documento
+
 
 DEFAULT_LIMIT = 20
 
@@ -228,14 +230,27 @@ def buscar_global(termo: str | None, limit: int = DEFAULT_LIMIT) -> dict[str, An
 
 
 def _item_km_enterprise(item: KMFileIndex, termo: str) -> dict[str, Any]:
+    titulo = item.nome_arquivo or item.caminho_completo
+    identificador = item.documento_extraido or item.nome_arquivo or ""
+    descricao = item.pasta or item.caminho_completo
     return {
         "id": item.id,
         "tipo": "KM",
-        "titulo": item.nome_arquivo or item.caminho_completo,
+        "titulo": titulo,
         "subtitulo": item.documento_extraido or item.extensao or "Arquivo KM",
-        "descricao": item.pasta or item.caminho_completo,
+        "descricao": descricao,
         "badge": "Transmittal Letter" if item.eh_transmittal_letter else "Documento KM",
-        "score": _bg_score(termo, item.nome_arquivo, item.documento_extraido, item.caminho_completo),
+        "score": score_documento(
+            termo,
+            titulo=titulo,
+            identificador=identificador,
+            descricao=descricao,
+            caminho=item.caminho_completo,
+            extensao=item.extensao,
+            eh_transmittal=item.eh_transmittal_letter,
+            documento_tecnico=not item.eh_transmittal_letter,
+            base_score=_bg_score(termo, item.nome_arquivo, item.documento_extraido, item.caminho_completo),
+        ),
         "abrir_url": f"/automacoes/km-index/{item.id}/abrir/",
         "pasta_url": f"/automacoes/km-index/{item.id}/abrir-pasta/",
     }
@@ -250,7 +265,16 @@ def _item_transmittal_enterprise(item: TransmittalKM, termo: str) -> dict[str, A
         "subtitulo": item.transmittal_numero or "Sem transmittal",
         "descricao": item.titulo or item.pasta or "",
         "badge": item.status_parse or "KM",
-        "score": _bg_score(termo, item.documento, item.titulo, item.transmittal_numero, item.pasta),
+        "score": score_documento(
+            termo,
+            titulo=item.documento or item.transmittal_numero or "Registro KM",
+            identificador=item.transmittal_numero,
+            descricao=item.titulo or item.pasta,
+            caminho=item.arquivo_pdf,
+            eh_transmittal=True,
+            documento_tecnico=False,
+            base_score=_bg_score(termo, item.documento, item.titulo, item.transmittal_numero, item.pasta),
+        ),
         "abrir_url": f"/automacoes/transmittals-km/{item.id}/abrir-documento/",
         "pasta_url": f"/automacoes/transmittals-km/{item.id}/abrir-pasta/",
         "registro_url": f"/automacoes/transmittals-km/?q={q_url}",
@@ -268,13 +292,21 @@ def _item_ld_enterprise(item: DocumentoLD, termo: str) -> dict[str, Any]:
         "subtitulo": f"Rev. {revisao or '—'} · {disciplina or 'Sem disciplina'}",
         "descricao": _valor_modelo(item, "titulo", "descricao", default=""),
         "badge": _valor_modelo(item, "status_documento", "status_grd", "status", default="LD"),
-        "score": _bg_score(
+        "score": score_documento(
             termo,
-            _valor_modelo(item, "documento"),
-            _valor_modelo(item, "titulo"),
-            _valor_modelo(item, "disciplina"),
-            _valor_modelo(item, "grd"),
-            _valor_modelo(item, "pcf"),
+            titulo=_valor_modelo(item, "documento"),
+            identificador=_valor_modelo(item, "documento"),
+            descricao=_valor_modelo(item, "titulo"),
+            caminho=_valor_modelo(item, "caminho_documento", "caminho_grd", "caminho_pcf"),
+            documento_tecnico=True,
+            base_score=_bg_score(
+                termo,
+                _valor_modelo(item, "documento"),
+                _valor_modelo(item, "titulo"),
+                _valor_modelo(item, "disciplina"),
+                _valor_modelo(item, "grd"),
+                _valor_modelo(item, "pcf"),
+            ),
         ),
         "abrir_url": f"/automacoes/ld/{item.id}/abrir/documento/",
         "registro_url": f"/automacoes/ld/?q={q_url}",
@@ -290,7 +322,15 @@ def _item_pcf_enterprise(item: PCFTimeline, termo: str) -> dict[str, Any]:
         "subtitulo": f"{item.tipo or 'PCF'} · Rev. {item.revisao_pcf or '—'}",
         "descricao": item.titulo or "",
         "badge": item.status_final or "PCF",
-        "score": _bg_score(termo, item.numero_documento, item.numero_pcf, item.titulo, item.status_final),
+        "score": score_documento(
+            termo,
+            titulo=item.numero_documento or item.numero_pcf or "PCF",
+            identificador=item.numero_pcf,
+            descricao=item.titulo,
+            caminho=item.caminho,
+            documento_tecnico=True,
+            base_score=_bg_score(termo, item.numero_documento, item.numero_pcf, item.titulo, item.status_final),
+        ),
         "abrir_url": f"/automacoes/pcfs/{item.id}/abrir-arquivo/",
         "registro_url": f"/automacoes/pcfs/?q={q_url}",
     }
@@ -357,7 +397,10 @@ def buscar_global_enterprise(
         ).order_by("eh_transmittal_letter", "nome_arquivo")
 
         totais_reais["km"] = km_qs.count()
-        resultados["km"] = [_item_km_enterprise(item, termo) for item in _limitar(km_qs, limit_km)]
+        resultados["km"] = ordenar_por_score([
+            _item_km_enterprise(item, termo)
+            for item in _limitar(km_qs, limit_km)
+        ])
 
     if tipo_normalizado in {"todos", "transmittal", "transmittals"}:
         tr_qs = TransmittalKM.objects.filter(
@@ -370,10 +413,10 @@ def buscar_global_enterprise(
         ).order_by("transmittal_numero", "documento")
 
         totais_reais["transmittals"] = tr_qs.count()
-        resultados["transmittals"] = [
+        resultados["transmittals"] = ordenar_por_score([
             _item_transmittal_enterprise(item, termo)
             for item in _limitar(tr_qs, limit_transmittals)
-        ]
+        ])
 
     if tipo_normalizado in {"todos", "ld"}:
         ld_qs = DocumentoLD.objects.filter(
@@ -389,7 +432,10 @@ def buscar_global_enterprise(
         ).order_by("documento", "revisao", "id")
 
         totais_reais["ld"] = ld_qs.count()
-        resultados["ld"] = [_item_ld_enterprise(item, termo) for item in _limitar(ld_qs, limit_ld)]
+        resultados["ld"] = ordenar_por_score([
+            _item_ld_enterprise(item, termo)
+            for item in _limitar(ld_qs, limit_ld)
+        ])
 
     if tipo_normalizado in {"todos", "pcf", "pcfs"}:
         pcfs_qs = PCFTimeline.objects.filter(
@@ -402,7 +448,10 @@ def buscar_global_enterprise(
         ).order_by("numero_documento", "revisao_pcf", "id")
 
         totais_reais["pcfs"] = pcfs_qs.count()
-        resultados["pcfs"] = [_item_pcf_enterprise(item, termo) for item in _limitar(pcfs_qs, limit_pcfs)]
+        resultados["pcfs"] = ordenar_por_score([
+            _item_pcf_enterprise(item, termo)
+            for item in _limitar(pcfs_qs, limit_pcfs)
+        ])
 
     totais["geral"] = sum(totais_reais.values())
 
