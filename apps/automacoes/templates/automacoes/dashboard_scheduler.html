@@ -1,0 +1,176 @@
+{% extends "documentos/base.html" %}
+
+{% block title %}Scheduler Runtime Monitor{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1>⚙️ Scheduler Runtime Monitor</h1>
+            <div class="text-muted">
+                Observabilidade operacional do Scheduler GED
+            </div>
+        </div>
+
+        <div class="text-end">
+            <div class="small text-muted">Atualizado em</div>
+            <strong>{{ agora }}</strong>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+
+        <div class="col-md-2">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <small class="text-muted">TOTAL</small>
+                    <h2>{{ runtime_health.total }}</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-2">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <small class="text-muted">RUNNING</small>
+                    <h2>{{ runtime_health.running }}</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-2">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <small class="text-muted">FAILED</small>
+                    <h2>{{ runtime_health.failed }}</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-2">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <small class="text-muted">STALE</small>
+                    <h2>{{ runtime_health.stale }}</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-2">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <small class="text-muted">ENABLED</small>
+                    <h2>{{ runtime_health.enabled }}</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-2">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <small class="text-muted">HEALTHY</small>
+                    <h2>
+                        {% if runtime_health.healthy %}
+                            ✅
+                        {% else %}
+                            ❌
+                        {% endif %}
+                    </h2>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header">
+            <strong>Scheduler States</strong>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Job</th>
+                        <th>Status</th>
+                        <th>Heartbeat</th>
+                        <th>Próxima execução</th>
+                        <th>Notas</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for state in states %}
+                    <tr>
+                        <td><strong>{{ state.job_name }}</strong></td>
+                        <td>{{ state.last_status }}</td>
+                        <td>{{ state.heartbeat_at|default:"-" }}</td>
+                        <td>{{ state.next_run_at|default:"-" }}</td>
+                        <td>{{ state.runtime_notes|default:"-" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-muted">
+                            Nenhum scheduler state encontrado.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="row g-4">
+
+        <div class="col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <strong>Jobs vencidos</strong>
+                </div>
+
+                <div class="card-body">
+                    {% for item in vencidos %}
+                        <div class="border-bottom py-2">
+                            <strong>{{ item.job_name }}</strong>
+                            <div class="small text-muted">
+                                {{ item.next_run_at }}
+                            </div>
+                        </div>
+                    {% empty %}
+                        <div class="text-muted">
+                            Nenhum job vencido.
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <strong>States obsoletos</strong>
+                </div>
+
+                <div class="card-body">
+                    {% for item in stale %}
+                        <div class="border-bottom py-2">
+                            <strong>{{ item.job_name }}</strong>
+                            <div class="small text-danger">
+                                Último heartbeat:
+                                {{ item.heartbeat_at }}
+                            </div>
+                        </div>
+                    {% empty %}
+                        <div class="text-muted">
+                            Nenhum state obsoleto.
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}
