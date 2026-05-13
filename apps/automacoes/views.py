@@ -26,6 +26,7 @@ from apps.automacoes.services.ld_path_resolver import gerar_hyperlink_ld, resolv
 from apps.automacoes.services.status_normalizer import normalizar_status
 from apps.automacoes.services.search_engine import buscar_global_enterprise
 from apps.automacoes.services.search_analytics import obter_search_analytics
+from apps.automacoes.services.km_index_jobs import executar_reindexacao_km_job
 
 
 KM_DOCUMENTOS_BASE = Path(
@@ -699,7 +700,7 @@ def _km_indexar_banco():
 def executar_indice_km(request):
     return _executar_automacao(
         request,
-        _km_indexar_banco,
+        executar_reindexacao_km_job,
         "Índice KM",
     )
 
