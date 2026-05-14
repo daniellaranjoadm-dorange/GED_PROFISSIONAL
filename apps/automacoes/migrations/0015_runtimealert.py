@@ -34,10 +34,7 @@ class Migration(migrations.Migration):
             ],
             options={
                 "ordering": ["-criado_em"],
-                "indexes": [
-                    models.Index(fields=["codigo", "resolvido"], name="automacoes__codigo_runtime_idx"),
-                    models.Index(fields=["severidade", "criado_em"], name="automacoes__severity_runtime_idx"),
-                ],
+          
             },
         ),
     ]

@@ -252,8 +252,8 @@ class JobExecution(models.Model):
         choices=STATUS_CHOICES,
         default=STATUS_PENDING,
     )
-    payload = models.JSONField(default=dict, blank=True)
-    result = models.JSONField(default=dict, blank=True)
+    payload = models.JSONField(blank=True, null=True)
+    result = models.JSONField(blank=True, null=True)
     error = models.TextField(blank=True, null=True)
     duration_ms = models.PositiveIntegerField(blank=True, null=True)
     started_at = models.DateTimeField(blank=True, null=True)
@@ -341,6 +341,7 @@ class RuntimeAlert(models.Model):
 
     titulo = models.CharField(max_length=255)
     codigo = models.CharField(max_length=100, db_index=True)
+
     severidade = models.CharField(
         max_length=20,
         choices=SEVERITY_CHOICES,
@@ -348,22 +349,36 @@ class RuntimeAlert(models.Model):
         db_index=True,
     )
 
-    job_name = models.CharField(max_length=255, blank=True, db_index=True)
+    job_name = models.CharField(
+        max_length=255,
+        blank=True,
+        db_index=True,
+    )
 
     mensagem = models.TextField()
-    detalhes = models.JSONField(default=dict, blank=True)
 
-    resolvido = models.BooleanField(default=False, db_index=True)
-    resolvido_em = models.DateTimeField(null=True, blank=True)
+    detalhes = models.JSONField(
+        default=dict,
+        blank=True,
+    )
 
-    criado_em = models.DateTimeField(auto_now_add=True, db_index=True)
+    resolvido = models.BooleanField(
+        default=False,
+        db_index=True,
+    )
+
+    resolvido_em = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    criado_em = models.DateTimeField(
+        auto_now_add=True,
+        db_index=True,
+    )
 
     class Meta:
         ordering = ["-criado_em"]
-        indexes = [
-            models.Index(fields=["codigo", "resolvido"]),
-            models.Index(fields=["severidade", "criado_em"]),
-        ]
 
     def __str__(self):
         return f"{self.severidade} - {self.titulo}"
