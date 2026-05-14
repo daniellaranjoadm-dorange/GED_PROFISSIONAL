@@ -29,4 +29,7 @@ urlpatterns = [
     path("grd-ghenova/", views.executar_grd_ghenova, name="grd_ghenova"),
     path("indexar-km/", views.executar_indice_km, name="indexar_km"),
     path("logs/", views.logs_automacoes, name="logs_automacoes"),
+    path("dashboard-ld/",views.painel,name="dashboard_ld"),
+    path("dashboard-transmittals/",views.painel,name="dashboard_transmittals",
+),
 ]
