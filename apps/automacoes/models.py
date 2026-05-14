@@ -384,6 +384,10 @@ class RuntimeAlert(models.Model):
         return f"{self.severidade} - {self.titulo}"
 
 
+# ============================================================
+# RUNTIME METRICS PERSISTENCE
+# ============================================================
+
 class RuntimeMetricSnapshot(models.Model):
     """
     Lightweight persisted runtime metrics snapshot.
