@@ -667,6 +667,8 @@ body {
 ============================================================ */
 
 .topbar-enterprise {
+    position: relative;
+    overflow: hidden;
     width: 100%;
     background: linear-gradient(90deg,#0B1220,#111A2E);
     padding: 12px 26px;
@@ -682,7 +684,7 @@ body {
 .topbar-enterprise::after {
     content:"";
     position:absolute;
-    bottom:-3px;
+    bottom:0;
     left:0;
     width:100%;
     height:3px;
