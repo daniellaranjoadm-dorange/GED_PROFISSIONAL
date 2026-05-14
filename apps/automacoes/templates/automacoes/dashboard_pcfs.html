@@ -4,94 +4,216 @@
 
 {% block extra_head %}
 <style>
-  .dash-page {
-    max-width: none !important;
-    width: 100% !important;
+  .pcfs-dash {
+    width: min(100%, 1500px);
+    margin: 0 auto;
+    color: #e5e7eb;
   }
 
-  .dash-kpi {
-    border: 0;
-    border-radius: 16px;
-    overflow: hidden;
-    transition: transform .15s ease, box-shadow .15s ease;
-  }
-
-  .dash-kpi:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 .75rem 1.5rem rgba(15, 23, 42, .12) !important;
-  }
-
-  .dash-kpi small {
-    color: #64748b;
-  }
-
-  .dash-kpi h2 {
-    letter-spacing: -.04em;
-  }
-
-  .dash-panel {
-    border-radius: 18px;
-    border: 1px solid rgba(148, 163, 184, .25);
-    background: rgba(255, 255, 255, .92);
-    box-shadow: 0 .35rem 1rem rgba(15, 23, 42, .06);
-  }
-
-  .dash-panel-title {
+  .pcfs-hero {
     display: flex;
-    align-items: center;
     justify-content: space-between;
+    align-items: flex-end;
+    gap: 1rem;
+    border: 1px solid rgba(56, 189, 248, .22);
+    border-radius: 24px;
+    padding: 1.15rem 1.25rem;
+    margin-bottom: 1rem;
+    background:
+      radial-gradient(circle at 0% 0%, rgba(56, 189, 248, .18), transparent 28rem),
+      radial-gradient(circle at 100% 0%, rgba(255, 138, 0, .12), transparent 24rem),
+      linear-gradient(135deg, rgba(15, 23, 42, .98), rgba(2, 6, 23, .92));
+    box-shadow: 0 18px 44px rgba(2, 8, 23, .28);
+  }
+
+  .pcfs-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    color: #38bdf8;
+    font-size: .72rem;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: .10em;
+    margin-bottom: .35rem;
+  }
+
+  .pcfs-hero h1 {
+    margin: 0;
+    color: #fff;
+    font-size: clamp(1.55rem, 2.4vw, 2.35rem);
+    font-weight: 950;
+    letter-spacing: -.045em;
+    line-height: 1;
+  }
+
+  .pcfs-hero p {
+    margin: .45rem 0 0;
+    color: #93c5fd;
+    max-width: 840px;
+  }
+
+  .pcfs-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: .55rem;
+  }
+
+  .pcfs-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .42rem;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, .24);
+    padding: .55rem .88rem;
+    color: #e5e7eb;
+    text-decoration: none;
+    font-size: .82rem;
+    font-weight: 900;
+    white-space: nowrap;
+    background: rgba(15, 23, 42, .70);
+  }
+
+  .pcfs-btn:hover {
+    color: #fff;
+    border-color: rgba(56, 189, 248, .56);
+  }
+
+  .pcfs-btn-primary {
+    color: #06111f;
+    background: linear-gradient(135deg, #38bdf8, #60a5fa);
+    border-color: rgba(125, 211, 252, .55);
+  }
+
+  .pcfs-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: .75rem;
     margin-bottom: 1rem;
   }
 
-  .dash-panel-title h4 {
-    margin: 0;
+  .pcfs-kpi {
+    display: block;
+    min-height: 112px;
+    border: 1px solid rgba(148, 163, 184, .18);
+    border-radius: 20px;
+    padding: .9rem;
+    background: linear-gradient(180deg, rgba(15, 23, 42, .86), rgba(15, 23, 42, .62));
+    color: #e5e7eb;
+    text-decoration: none;
+    box-shadow: 0 14px 34px rgba(2, 8, 23, .18);
   }
 
-  .dash-chip {
+  .pcfs-kpi:hover {
+    color: #fff;
+    border-color: rgba(56, 189, 248, .42);
+    transform: translateY(-1px);
+  }
+
+  .pcfs-kpi span {
+    display: block;
+    color: #bfdbfe;
+    font-size: .68rem;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+  }
+
+  .pcfs-kpi strong {
+    display: block;
+    margin-top: .25rem;
+    color: #fff;
+    font-size: clamp(1.5rem, 2.1vw, 2.2rem);
+    line-height: 1;
+    letter-spacing: -.05em;
+  }
+
+  .pcfs-kpi small {
+    display: block;
+    margin-top: .35rem;
+    color: #94a3b8;
+  }
+
+  .pcfs-progress {
+    height: 8px;
     border-radius: 999px;
-    padding: .28rem .65rem;
-    background: #eef2ff;
-    color: #1e40af;
-    font-size: .78rem;
-    font-weight: 700;
+    background: rgba(148, 163, 184, .20);
+    overflow: hidden;
+    margin-top: .7rem;
+  }
+
+  .pcfs-progress > span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #f59e0b, #ef4444);
+  }
+
+  .pcfs-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .9rem;
+    margin-bottom: 1rem;
+  }
+
+  .pcfs-grid-main {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(360px, .65fr);
+    gap: .9rem;
+  }
+
+  .pcfs-panel {
+    border: 1px solid rgba(148, 163, 184, .18);
+    border-radius: 22px;
+    padding: 1rem;
+    background: linear-gradient(180deg, rgba(15, 23, 42, .84), rgba(15, 23, 42, .64));
+    box-shadow: 0 16px 38px rgba(2, 8, 23, .20);
+  }
+
+  .pcfs-panel-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: .8rem;
+    margin-bottom: .8rem;
+  }
+
+  .pcfs-panel-head h2 {
+    margin: 0;
+    color: #fff;
+    font-size: 1.02rem;
+    font-weight: 950;
+    letter-spacing: -.025em;
+  }
+
+  .pcfs-panel-head p {
+    margin: .2rem 0 0;
+    color: #93c5fd;
+    font-size: .8rem;
+  }
+
+  .pcfs-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(56, 189, 248, .30);
+    border-radius: 999px;
+    padding: .3rem .65rem;
+    color: #bae6fd;
+    background: rgba(14, 165, 233, .14);
+    font-size: .68rem;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: .05em;
     white-space: nowrap;
   }
 
-  .dash-progress {
-    height: 9px;
-    border-radius: 999px;
-    background: #e2e8f0;
-    overflow: hidden;
-  }
-
-  .dash-progress > span {
-    display: block;
-    height: 100%;
-    background: #0d6efd;
-  }
-
-  .dash-table td,
-  .dash-table th {
-    vertical-align: middle;
-  }
-
-  .dash-list-item {
-    border: 1px solid rgba(148, 163, 184, .22);
-    border-radius: 12px;
-    padding: .8rem;
-    background: #fff;
-    text-decoration: none;
-    color: inherit;
-    display: block;
-    margin-bottom: .65rem;
-    transition: border-color .15s ease, background .15s ease, transform .15s ease;
-  }
-
-  .dash-list-item:hover {
-    border-color: #0d6efd;
-    background: #f8fafc;
-    transform: translateY(-1px);
+  .pcfs-chip-warn {
+    color: #fde68a;
+    background: rgba(245, 158, 11, .14);
+    border-color: rgba(245, 158, 11, .34);
   }
 
   .chart-wrap {
@@ -104,10 +226,10 @@
     min-height: 300px;
     align-items: center;
     justify-content: center;
-    color: #64748b;
-    border: 1px dashed rgba(148, 163, 184, .45);
-    border-radius: 14px;
-    background: #f8fafc;
+    color: #94a3b8;
+    border: 1px dashed rgba(148, 163, 184, .30);
+    border-radius: 16px;
+    background: rgba(2, 6, 23, .30);
     text-align: center;
     padding: 1rem;
   }
@@ -116,96 +238,208 @@
     cursor: pointer;
   }
 
-  .dash-muted {
-    color: #64748b;
+  .pcfs-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid rgba(148, 163, 184, .14);
+    border-radius: 16px;
+  }
+
+  .pcfs-table {
+    width: 100%;
+    min-width: 760px;
+    border-collapse: collapse;
+  }
+
+  .pcfs-table th,
+  .pcfs-table td {
+    padding: .68rem .75rem;
+    border-bottom: 1px solid rgba(148, 163, 184, .12);
+    color: #dbeafe;
+    vertical-align: middle;
+    font-size: .82rem;
+  }
+
+  .pcfs-table th {
+    color: #93c5fd;
+    background: rgba(2, 6, 23, .34);
+    font-size: .68rem;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+  }
+
+  .pcfs-table tbody tr:hover {
+    background: rgba(56, 189, 248, .06);
+  }
+
+  .pcfs-table tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .pcfs-status {
+    display: inline-flex;
+    border-radius: 999px;
+    padding: .28rem .58rem;
+    font-size: .68rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    border: 1px solid rgba(148, 163, 184, .20);
+  }
+
+  .pcfs-status-ok {
+    color: #bbf7d0;
+    background: rgba(22, 163, 74, .14);
+    border-color: rgba(34, 197, 94, .28);
+  }
+
+  .pcfs-status-risk {
+    color: #fecaca;
+    background: rgba(220, 38, 38, .15);
+    border-color: rgba(248, 113, 113, .32);
+  }
+
+  .pcfs-status-warn {
+    color: #fde68a;
+    background: rgba(245, 158, 11, .14);
+    border-color: rgba(245, 158, 11, .30);
+  }
+
+  .pcfs-list {
+    display: flex;
+    flex-direction: column;
+    gap: .55rem;
+  }
+
+  .pcfs-list-item {
+    display: block;
+    border: 1px solid rgba(148, 163, 184, .16);
+    border-radius: 16px;
+    padding: .78rem;
+    background: rgba(2, 6, 23, .30);
+    color: #e5e7eb;
+    text-decoration: none;
+  }
+
+  .pcfs-list-item:hover {
+    color: #fff;
+    border-color: rgba(56, 189, 248, .42);
+  }
+
+  .pcfs-list-item strong {
+    display: block;
+    color: #fff;
+  }
+
+  .pcfs-muted {
+    color: #94a3b8;
+  }
+
+  @media (max-width: 1280px) {
+    .pcfs-kpi-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .pcfs-grid-main {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 900px) {
+    .pcfs-hero,
+    .pcfs-panel-head {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .pcfs-actions {
+      justify-content: flex-start;
+    }
+
+    .pcfs-grid-2 {
+      grid-template-columns: 1fr;
+    }
+
+    .pcfs-kpi-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 560px) {
+    .pcfs-kpi-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .pcfs-btn {
+      width: 100%;
+    }
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="ds-page dash-page">
-  <div class="ds-pagehead">
+<div class="pcfs-dash">
+  <section class="pcfs-hero">
     <div>
-      <h1 class="ds-title">📈 Dashboard PCFs</h1>
-      <p class="ds-subtitle">Visão executiva da Timeline PCFs importada para o GED.</p>
+      <div class="pcfs-eyebrow">
+        <i class="bi bi-graph-up-arrow"></i>
+        PCF Intelligence
+      </div>
+      <h1>Dashboard PCFs</h1>
+      <p>Visão executiva da Timeline PCFs: status, comentários abertos, pendências críticas e distribuição por tipo documental.</p>
     </div>
 
-    <div class="d-flex gap-2">
-      <a href="{% url 'automacoes:pcfs_timeline' %}" class="btn btn-primary">
+    <div class="pcfs-actions">
+      <a href="{% url 'automacoes:pcfs_timeline' %}" class="pcfs-btn pcfs-btn-primary">
+        <i class="bi bi-table"></i>
         Ver Timeline
       </a>
-      <a href="{% url 'automacoes:painel' %}" class="btn btn-secondary">
+      <a href="{% url 'automacoes:painel' %}" class="pcfs-btn">
+        <i class="bi bi-arrow-left"></i>
         Voltar
       </a>
     </div>
-  </div>
+  </section>
 
-  <div class="row g-3 mb-4">
-    <div class="col-md-2">
-      <a href="{% url 'automacoes:pcfs_timeline' %}" class="text-decoration-none text-dark">
-        <div class="card dash-kpi shadow-sm h-100">
-          <div class="card-body">
-            <small>Total PCFs</small>
-            <h2 class="mb-0">{{ total }}</h2>
-          </div>
-        </div>
-      </a>
+  <section class="pcfs-kpi-grid">
+    <a href="{% url 'automacoes:pcfs_timeline' %}" class="pcfs-kpi">
+      <span>Total PCFs</span>
+      <strong>{{ total }}</strong>
+      <small>registros importados</small>
+    </a>
+
+    <a href="{% url 'automacoes:pcfs_timeline' %}?somente_open=1" class="pcfs-kpi">
+      <span>Com Open</span>
+      <strong>{{ total_open }}</strong>
+      <small>com comentários abertos</small>
+    </a>
+
+    <div class="pcfs-kpi">
+      <span>Comentários Abertos</span>
+      <strong>{{ total_comentarios_abertos }}</strong>
+      <small>volume total pendente</small>
     </div>
 
-    <div class="col-md-2">
-      <a href="{% url 'automacoes:pcfs_timeline' %}?somente_open=1" class="text-decoration-none text-dark">
-        <div class="card dash-kpi shadow-sm h-100">
-          <div class="card-body">
-            <small>Com Open</small>
-            <h2 class="mb-0 text-warning">{{ total_open }}</h2>
-          </div>
-        </div>
-      </a>
-    </div>
+    <a href="{% url 'automacoes:pcfs_timeline' %}?status=RELEASED" class="pcfs-kpi">
+      <span>Released</span>
+      <strong>{{ total_released }}</strong>
+      <small>liberados</small>
+    </a>
 
-    <div class="col-md-2">
-      <div class="card dash-kpi shadow-sm h-100">
-        <div class="card-body">
-          <small>Comentários Abertos</small>
-          <h2 class="mb-0">{{ total_comentarios_abertos }}</h2>
-        </div>
+    <a href="{% url 'automacoes:pcfs_timeline' %}?status=NOT%20RELEASED" class="pcfs-kpi">
+      <span>Not Released</span>
+      <strong>{{ total_not_released }}</strong>
+      <small>não liberados</small>
+    </a>
+
+    <div class="pcfs-kpi">
+      <span>Risco Crítico</span>
+      <strong>{{ critical_rate|default:0 }}%</strong>
+      <div class="pcfs-progress" title="Percentual crítico">
+        <span style="width: {{ critical_rate|default:0 }}%;"></span>
       </div>
     </div>
-
-    <div class="col-md-2">
-      <a href="{% url 'automacoes:pcfs_timeline' %}?status=RELEASED" class="text-decoration-none text-dark">
-        <div class="card dash-kpi shadow-sm h-100">
-          <div class="card-body">
-            <small>Released</small>
-            <h2 class="mb-0 text-success">{{ total_released }}</h2>
-          </div>
-        </div>
-      </a>
-    </div>
-
-    <div class="col-md-2">
-      <a href="{% url 'automacoes:pcfs_timeline' %}?status=NOT%20RELEASED" class="text-decoration-none text-dark">
-        <div class="card dash-kpi shadow-sm h-100">
-          <div class="card-body">
-            <small>Not Released</small>
-            <h2 class="mb-0 text-danger">{{ total_not_released }}</h2>
-          </div>
-        </div>
-      </a>
-    </div>
-
-    <div class="col-md-2">
-      <div class="card dash-kpi shadow-sm h-100">
-        <div class="card-body">
-          <small>Risco crítico</small>
-          <h2 class="mb-0">{{ critical_rate|default:0 }}%</h2>
-          <div class="dash-progress mt-2" title="Percentual crítico">
-            <span style="width: {{ critical_rate|default:0 }}%;"></span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+  </section>
 
   {{ status_chart_labels|json_script:"pcf-status-labels" }}
   {{ status_chart_values|json_script:"pcf-status-values" }}
@@ -214,162 +448,192 @@
   {{ tipo_open_labels|json_script:"pcf-open-labels" }}
   {{ tipo_open_values|json_script:"pcf-open-values" }}
 
-  <div class="row g-4 mb-4">
-    <div class="col-lg-6">
-      <div class="dash-panel p-4 h-100">
-        <div class="dash-panel-title">
-          <h4>Distribuição por Status</h4>
-          <span class="dash-chip">Clique para filtrar</span>
+  <section class="pcfs-grid-2">
+    <div class="pcfs-panel">
+      <div class="pcfs-panel-head">
+        <div>
+          <h2>Distribuição por Status</h2>
+          <p>Quantidade de PCFs por status final.</p>
         </div>
-        <div class="chart-wrap">
-          <canvas id="pcfStatusChart" class="chart-clickable"></canvas>
-          <div id="pcfStatusEmpty" class="chart-empty">Sem dados de status para exibir.</div>
-        </div>
+        <span class="pcfs-chip">Clique para filtrar</span>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="pcfStatusChart" class="chart-clickable"></canvas>
+        <div id="pcfStatusEmpty" class="chart-empty">Sem dados de status para exibir.</div>
       </div>
     </div>
 
-    <div class="col-lg-6">
-      <div class="dash-panel p-4 h-100">
-        <div class="dash-panel-title">
-          <h4>PCFs por Tipo</h4>
-          <span class="dash-chip">Clique para filtrar</span>
+    <div class="pcfs-panel">
+      <div class="pcfs-panel-head">
+        <div>
+          <h2>PCFs por Tipo</h2>
+          <p>Distribuição por tipo documental.</p>
         </div>
-        <div class="chart-wrap">
-          <canvas id="pcfTipoChart" class="chart-clickable"></canvas>
-          <div id="pcfTipoEmpty" class="chart-empty">Sem dados de tipo para exibir.</div>
-        </div>
+        <span class="pcfs-chip">Clique para filtrar</span>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="pcfTipoChart" class="chart-clickable"></canvas>
+        <div id="pcfTipoEmpty" class="chart-empty">Sem dados de tipo para exibir.</div>
       </div>
     </div>
-  </div>
+  </section>
 
-  <div class="row g-4 mb-4">
-    <div class="col-lg-6">
-      <div class="dash-panel p-4 h-100">
-        <div class="dash-panel-title">
-          <h4>Open Comments por Tipo</h4>
-          <span class="dash-chip">Pendências</span>
+  <section class="pcfs-grid-2">
+    <div class="pcfs-panel">
+      <div class="pcfs-panel-head">
+        <div>
+          <h2>Open Comments por Tipo</h2>
+          <p>Tipos documentais com maior volume de comentários abertos.</p>
         </div>
-        <div class="chart-wrap">
-          <canvas id="pcfOpenChart" class="chart-clickable"></canvas>
-          <div id="pcfOpenEmpty" class="chart-empty">Sem pendências por tipo para exibir.</div>
-        </div>
+        <span class="pcfs-chip pcfs-chip-warn">Pendências</span>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="pcfOpenChart" class="chart-clickable"></canvas>
+        <div id="pcfOpenEmpty" class="chart-empty">Sem pendências por tipo para exibir.</div>
       </div>
     </div>
 
-    <div class="col-lg-6">
-      <div class="dash-panel p-4 h-100">
-        <div class="dash-panel-title">
-          <h4>Top Status</h4>
-          <span class="dash-chip">Operacional</span>
+    <div class="pcfs-panel">
+      <div class="pcfs-panel-head">
+        <div>
+          <h2>Top Status</h2>
+          <p>Resumo operacional por status final.</p>
         </div>
+        <span class="pcfs-chip">Operacional</span>
+      </div>
 
-        <div class="table-responsive">
-          <table class="table table-hover align-middle dash-table">
-            <thead>
+      <div class="pcfs-table-wrap">
+        <table class="pcfs-table">
+          <thead>
+            <tr>
+              <th>Status Final</th>
+              <th>Total</th>
+              <th>Ação</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in por_status %}
               <tr>
-                <th>Status Final</th>
-                <th>Total</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for item in por_status %}
-                <tr>
-                  <td>{{ item.status_final|default:"Sem status" }}</td>
-                  <td>{{ item.total }}</td>
-                  <td class="text-end">
-                    {% if item.status_final %}
-                      <a href="{% url 'automacoes:pcfs_timeline' %}?status={{ item.status_final|urlencode }}" class="btn btn-sm btn-outline-primary">
-                        Abrir
-                      </a>
-                    {% endif %}
-                  </td>
-                </tr>
-              {% empty %}
-                <tr>
-                  <td colspan="3" class="text-center text-muted">Sem dados.</td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="row g-4">
-    <div class="col-lg-8">
-      <div class="dash-panel p-4 h-100">
-        <div class="dash-panel-title">
-          <h4>Top Pendências por Open Comments</h4>
-          <span class="dash-chip">Crítico</span>
-        </div>
-
-        <div class="table-responsive">
-          <table class="table table-striped table-hover align-middle dash-table">
-            <thead>
-              <tr>
-                <th>Documento</th>
-                <th>PCF</th>
-                <th>Título</th>
-                <th>Rev.</th>
-                <th>Open</th>
-                <th>Status</th>
-                <th>Arquivo</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for item in top_pendencias %}
-                <tr>
-                  <td class="fw-bold">{{ item.numero_documento }}</td>
-                  <td>{{ item.numero_pcf }}</td>
-                  <td>{{ item.titulo }}</td>
-                  <td>{{ item.revisao_pcf }}</td>
-                  <td>
-                    <span class="badge bg-warning text-dark">{{ item.open_comments }}</span>
-                  </td>
-                  <td>{{ item.status_final }}</td>
-                  <td>
-                    {% if item.caminho %}
-                      <a href="{% url 'automacoes:abrir_arquivo_pcf' item.id %}" target="_blank" class="btn btn-sm btn-outline-primary">
-                        Abrir
-                      </a>
+                <td>
+                  {% if item.status_final %}
+                    {% if "NOT" in item.status_final|upper %}
+                      <span class="pcfs-status pcfs-status-risk">{{ item.status_final }}</span>
+                    {% elif "RELEASED" in item.status_final|upper %}
+                      <span class="pcfs-status pcfs-status-ok">{{ item.status_final }}</span>
                     {% else %}
-                      <span class="dash-muted">—</span>
+                      <span class="pcfs-status pcfs-status-warn">{{ item.status_final }}</span>
                     {% endif %}
-                  </td>
-                </tr>
-              {% empty %}
-                <tr>
-                  <td colspan="7" class="text-center text-muted">Nenhuma pendência encontrada.</td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+                  {% else %}
+                    <span class="pcfs-muted">Sem status</span>
+                  {% endif %}
+                </td>
+                <td><strong>{{ item.total }}</strong></td>
+                <td>
+                  {% if item.status_final %}
+                    <a href="{% url 'automacoes:pcfs_timeline' %}?status={{ item.status_final|urlencode }}" class="pcfs-btn">
+                      Abrir
+                    </a>
+                  {% endif %}
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="3" class="text-center pcfs-muted">Sem dados.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="pcfs-grid-main">
+    <div class="pcfs-panel">
+      <div class="pcfs-panel-head">
+        <div>
+          <h2>Top Pendências por Open Comments</h2>
+          <p>Documentos com maior volume de comentários abertos.</p>
         </div>
+        <span class="pcfs-chip pcfs-chip-warn">Crítico</span>
+      </div>
+
+      <div class="pcfs-table-wrap">
+        <table class="pcfs-table">
+          <thead>
+            <tr>
+              <th>Documento</th>
+              <th>PCF</th>
+              <th>Título</th>
+              <th>Rev.</th>
+              <th>Open</th>
+              <th>Status</th>
+              <th>Arquivo</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in top_pendencias %}
+              <tr>
+                <td><strong>{{ item.numero_documento }}</strong></td>
+                <td>{{ item.numero_pcf }}</td>
+                <td>{{ item.titulo }}</td>
+                <td>{{ item.revisao_pcf }}</td>
+                <td><span class="pcfs-status pcfs-status-warn">{{ item.open_comments }}</span></td>
+                <td>
+                  {% if item.status_final %}
+                    {% if "NOT" in item.status_final|upper %}
+                      <span class="pcfs-status pcfs-status-risk">{{ item.status_final }}</span>
+                    {% elif "RELEASED" in item.status_final|upper %}
+                      <span class="pcfs-status pcfs-status-ok">{{ item.status_final }}</span>
+                    {% else %}
+                      <span class="pcfs-status pcfs-status-warn">{{ item.status_final }}</span>
+                    {% endif %}
+                  {% else %}
+                    <span class="pcfs-muted">—</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if item.caminho %}
+                    <a href="{% url 'automacoes:abrir_arquivo_pcf' item.id %}" target="_blank" class="pcfs-btn">
+                      Abrir
+                    </a>
+                  {% else %}
+                    <span class="pcfs-muted">—</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="7" class="text-center pcfs-muted">Nenhuma pendência encontrada.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
     </div>
 
-    <div class="col-lg-4">
-      <div class="dash-panel p-4 h-100">
-        <div class="dash-panel-title">
-          <h4>Últimas Atualizações</h4>
-          <span class="dash-chip">Recentes</span>
+    <aside class="pcfs-panel">
+      <div class="pcfs-panel-head">
+        <div>
+          <h2>Últimas Atualizações</h2>
+          <p>Registros mais recentes da timeline.</p>
         </div>
+        <span class="pcfs-chip">Recentes</span>
+      </div>
 
+      <div class="pcfs-list">
         {% for item in recentes %}
-          <a href="{% url 'automacoes:pcfs_timeline' %}?q={{ item.numero_documento|urlencode }}" class="dash-list-item">
-            <div class="fw-bold">{{ item.numero_documento }}</div>
-            <small class="text-muted">
+          <a href="{% url 'automacoes:pcfs_timeline' %}?q={{ item.numero_documento|urlencode }}" class="pcfs-list-item">
+            <strong>{{ item.numero_documento }}</strong>
+            <small class="pcfs-muted">
               {{ item.tipo }} · Rev {{ item.revisao_pcf }} · Open {{ item.open_comments }}
             </small>
           </a>
         {% empty %}
-          <div class="text-muted">Sem registros recentes.</div>
+          <div class="pcfs-muted">Sem registros recentes.</div>
         {% endfor %}
       </div>
-    </div>
-  </div>
+    </aside>
+  </section>
 </div>
 {% endblock %}
 
