@@ -3,6 +3,7 @@ from django.utils import timezone
 from apps.automacoes.models import SchedulerState
 from apps.automacoes.services.health_jobs import registrar_health_jobs
 from apps.automacoes.services.km_scheduler_jobs import registrar_km_jobs
+from apps.automacoes.services.runtime_alerts import executar_varredura_alertas_runtime
 from apps.automacoes.services.scheduler import obter_job_agendado
 from apps.automacoes.services.scheduler_runtime import (
     JobAlreadyRunningError,
@@ -10,7 +11,6 @@ from apps.automacoes.services.scheduler_runtime import (
 )
 from apps.automacoes.services.scheduler_state import (
     calcular_proxima_execucao,
-    obter_ou_criar_scheduler_state,
     sincronizar_state_com_jobs_registrados,
 )
 
@@ -50,7 +50,7 @@ def listar_jobs_vencidos(agora=None):
     ).order_by("next_run_at", "job_name")
 
 
-def scheduler_tick(limit=10, user=None):
+def scheduler_tick(limit=10, user=None, detectar_alertas=True):
     """
     Executa um ciclo controlado do scheduler.
 
@@ -113,12 +113,18 @@ def scheduler_tick(limit=10, user=None):
             state.save(update_fields=["runtime_notes", "next_run_at", "updated_at"])
             erros.append({"job_name": state.job_name, "erro": str(exc)})
 
+    alertas = {"ok": True, "alertas_criados": 0, "codigos": []}
+    if detectar_alertas:
+        alertas = executar_varredura_alertas_runtime()
+
     return {
         "ok": not erros,
         "executados": executados,
         "ignorados": ignorados,
         "erros": erros,
+        "alertas": alertas,
         "total_executados": len(executados),
         "total_ignorados": len(ignorados),
         "total_erros": len(erros),
+        "total_alertas": alertas.get("alertas_criados", 0),
     }
