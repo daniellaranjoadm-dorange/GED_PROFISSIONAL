@@ -1,0 +1,43 @@
+<section class="ops-panel ops-events-panel">
+  <div class="ops-panel-header">
+    <div>
+      <h2>Runtime Event Stream</h2>
+      <p>Timeline operacional unificada de jobs, scheduler e alertas.</p>
+    </div>
+    <div class="ops-mini-kpis">
+      <span>Total {{ runtime_events_summary.total }}</span>
+      <span>Critical {{ runtime_events_summary.critical }}</span>
+      <span>Error {{ runtime_events_summary.error }}</span>
+      <span>Warning {{ runtime_events_summary.warning }}</span>
+    </div>
+  </div>
+
+  <div class="ops-event-stream">
+    {% for event in runtime_events %}
+      <article class="ops-event ops-event-{{ event.severity|lower }}">
+        <div class="ops-event-time">
+          {% if event.timestamp %}
+            {{ event.timestamp|date:"d/m/Y H:i:s" }}
+          {% else %}
+            —
+          {% endif %}
+        </div>
+
+        <div class="ops-event-body">
+          <div class="ops-event-title-row">
+            <span class="ops-event-source">{{ event.source }}</span>
+            <strong>{{ event.title }}</strong>
+            <span class="ops-severity ops-severity-{{ event.severity|lower }}">
+              {{ event.severity }}
+            </span>
+          </div>
+          <p>{{ event.message }}</p>
+        </div>
+      </article>
+    {% empty %}
+      <div class="ops-empty-state">
+        Nenhum evento runtime encontrado.
+      </div>
+    {% endfor %}
+  </div>
+</section>
