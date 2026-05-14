@@ -1,0 +1,47 @@
+<section class="ops-card ops-predictive-runtime">
+  <div class="ops-card-header">
+    <div>
+      <h2>Predictive Runtime Signals</h2>
+      <p>Sinais preditivos gerados a partir do histórico operacional.</p>
+    </div>
+    <span class="ops-badge">{{ predictive_runtime.risk.label }}</span>
+  </div>
+
+  <div class="ops-grid ops-grid-3">
+    <div class="ops-metric">
+      <span>Risk Score</span>
+      <strong>{{ predictive_runtime.risk.score }}</strong>
+      <small>{{ predictive_runtime.risk.level }}</small>
+    </div>
+
+    <div class="ops-metric">
+      <span>Stability Index</span>
+      <strong>{{ predictive_runtime.stability.score }}</strong>
+      <small>{{ predictive_runtime.stability.label }}</small>
+    </div>
+
+    <div class="ops-metric">
+      <span>Failure Forecast</span>
+      <strong>{{ predictive_runtime.failure_forecast.label }}</strong>
+      <small>{{ predictive_runtime.failure_forecast.risk }}</small>
+    </div>
+  </div>
+
+  <div class="ops-section">
+    <h3>Predictive Warnings</h3>
+
+    {% for warning in predictive_runtime.warnings %}
+      <div class="ops-alert ops-alert-{{ warning.severity }}">
+        <strong>{{ warning.title }}</strong>
+        <p>{{ warning.message }}</p>
+      </div>
+    {% empty %}
+      <p class="ops-muted">Nenhum sinal preditivo crítico no momento.</p>
+    {% endfor %}
+  </div>
+
+  <div class="ops-section">
+    <h3>Alert Acceleration</h3>
+    <p>{{ predictive_runtime.alert_acceleration.label }}</p>
+  </div>
+</section>
