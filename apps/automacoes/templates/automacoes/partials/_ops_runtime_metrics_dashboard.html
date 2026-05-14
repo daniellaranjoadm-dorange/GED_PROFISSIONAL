@@ -1,0 +1,93 @@
+<section class="ops-section ops-metrics-dashboard">
+  <div class="ops-section-header">
+    <div>
+      <h2>Runtime Metrics Dashboard</h2>
+      <p>Histórico operacional persistido do runtime.</p>
+    </div>
+    <span class="ops-muted">
+      Atualizado em {{ runtime_metrics_dashboard.updated_at|date:"d/m/Y H:i:s" }}
+    </span>
+  </div>
+
+  {% with summary=runtime_metrics_dashboard.summary %}
+    {% if summary.has_data %}
+      <div class="ops-grid ops-grid-4">
+        <div class="ops-card">
+          <span class="ops-label">Runtime score</span>
+          <strong>{{ summary.runtime_score }}</strong>
+          <small>Status: {{ summary.runtime_status }}</small>
+        </div>
+
+        <div class="ops-card">
+          <span class="ops-label">Variação</span>
+          <strong>
+            {% if summary.score_delta > 0 %}+{% endif %}{{ summary.score_delta }}
+          </strong>
+          <small>Comparado ao snapshot anterior</small>
+        </div>
+
+        <div class="ops-card">
+          <span class="ops-label">Success rate</span>
+          <strong>{{ summary.success_rate }}%</strong>
+          <small>Jobs do dia</small>
+        </div>
+
+        <div class="ops-card">
+          <span class="ops-label">Alertas ativos</span>
+          <strong>{{ summary.active_alerts }}</strong>
+          <small>Falhas: {{ summary.failed_jobs }} | Running: {{ summary.running_jobs }}</small>
+        </div>
+      </div>
+
+      <div class="ops-chart-lite">
+        <h3>Runtime score trend</h3>
+        <div class="ops-trend-list">
+          {% for snapshot in runtime_metrics_dashboard.trend.scores %}
+            <span class="ops-trend-point" title="Score {{ snapshot }}">{{ snapshot }}</span>
+          {% empty %}
+            <span class="ops-muted">Sem pontos de tendência.</span>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="ops-table-wrapper">
+        <h3>Últimos snapshots</h3>
+        <table class="ops-table">
+          <thead>
+            <tr>
+              <th>Capturado em</th>
+              <th>Origem</th>
+              <th>Score</th>
+              <th>Status</th>
+              <th>Success rate</th>
+              <th>Alertas</th>
+              <th>Falhas</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for snapshot in runtime_metrics_dashboard.timeline %}
+              <tr>
+                <td>{{ snapshot.captured_at|date:"d/m/Y H:i:s" }}</td>
+                <td>{{ snapshot.source }}</td>
+                <td>{{ snapshot.runtime_score }}</td>
+                <td>{{ snapshot.runtime_status }}</td>
+                <td>{{ snapshot.success_rate }}%</td>
+                <td>{{ snapshot.active_alerts }}</td>
+                <td>{{ snapshot.failed_jobs }}</td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="7">Nenhum snapshot encontrado.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="ops-empty-state">
+        Nenhum snapshot runtime foi capturado ainda.
+        Execute <code>python manage.py capture_runtime_metrics --source manual</code>.
+      </div>
+    {% endif %}
+  {% endwith %}
+</section>
