@@ -1,4 +1,4 @@
-﻿{% extends "documentos/base.html" %}
+{% extends "documentos/base.html" %}
 {% load static %}
 {% load permisos %}
 
@@ -7,365 +7,359 @@
 {% block content %}
 
 <style>
-    /* ================================
-       PALETA CORPORATIVA (AZUL PREMIUM)
-    =================================== */
-    :root {
-        --primary: #0B5ED7;
-        --primary-dark: #0948A8;
-        --primary-soft: #E4EDFF;
-
-        --accent: #F2790F;
-        --accent-soft: #FFE3C6;
-
-        --bg-page: #F4F6FA;
-        --bg-card: #FFFFFF;
-
-        --soft-border: #D8E0F0;
-        --text-main: #1F2933;
-        --text-muted: #6B7280;
-
-        --row-highlight-bg: #E7F0FF;
-    }
-
-    /* Garante fundo limpo */
-    body {
-        background-color: var(--bg-page) !important;
-        background-image: none !important;
-    }
-
-    /* Layout geral da página de detalhes */
-    .doc-wrapper {
-    width: 100%;
-    max-width: 100%;
-    margin-left: 0;
+  .doc-wrapper {
+    width: min(100%, 1500px);
+    max-width: 1500px;
+    margin: 0 auto;
     padding: 0;
-}
+    color: #e5e7eb;
+  }
 
+  .doc-title-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    border: 1px solid rgba(56, 189, 248, .22);
+    border-radius: 24px;
+    padding: 1.15rem 1.25rem;
+    margin-bottom: 1rem;
+    background:
+      radial-gradient(circle at 0% 0%, rgba(56, 189, 248, .18), transparent 28rem),
+      radial-gradient(circle at 100% 0%, rgba(255, 138, 0, .12), transparent 24rem),
+      linear-gradient(135deg, rgba(15, 23, 42, .98), rgba(2, 6, 23, .92));
+    box-shadow: 0 18px 44px rgba(2, 8, 23, .28);
+    color: #fff;
+    font-weight: 950;
+    font-size: clamp(1.55rem, 2.4vw, 2.35rem);
+    letter-spacing: -.045em;
+  }
 
-    /* Título principal tipo "Microsoft / Autodesk" */
+  .doc-title-main .icon {
+    display: inline-grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 16px;
+    background: rgba(56, 189, 248, .14);
+    border: 1px solid rgba(56, 189, 248, .28);
+    font-size: 1.35rem;
+  }
+
+  .doc-section-title {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    margin: 1rem 0 .75rem;
+    padding: .42rem .75rem;
+    border-radius: 999px;
+    border: 1px solid rgba(56, 189, 248, .30);
+    color: #bae6fd;
+    background: rgba(14, 165, 233, .14);
+    font-size: .82rem;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+  }
+
+  .doc-wrapper .card,
+  .doc-wrapper .modal-content {
+    border: 1px solid rgba(148, 163, 184, .18);
+    border-radius: 22px;
+    background: linear-gradient(180deg, rgba(15, 23, 42, .88), rgba(15, 23, 42, .70));
+    color: #e5e7eb;
+    box-shadow: 0 16px 38px rgba(2, 8, 23, .20);
+  }
+
+  .doc-wrapper .card.shadow-sm {
+    box-shadow: 0 16px 38px rgba(2, 8, 23, .20) !important;
+  }
+
+  .doc-wrapper .table {
+    margin-bottom: 0;
+    color: #dbeafe;
+    font-size: .86rem;
+    --bs-table-bg: transparent;
+    --bs-table-color: #dbeafe;
+    --bs-table-striped-bg: rgba(255,255,255,.03);
+    --bs-table-striped-color: #dbeafe;
+    --bs-table-hover-bg: rgba(56,189,248,.06);
+    --bs-table-hover-color: #fff;
+  }
+
+  .doc-wrapper .table > :not(caption) > * > * {
+    background-color: transparent !important;
+    color: #dbeafe !important;
+    border-color: rgba(148, 163, 184, .16) !important;
+    vertical-align: middle;
+  }
+
+  .doc-wrapper .table thead th,
+  .doc-wrapper .table-light th {
+    color: #93c5fd !important;
+    background: rgba(2, 6, 23, .42) !important;
+    font-size: .68rem;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+  }
+
+  .doc-wrapper .table-info th {
+    width: 220px;
+    color: #93c5fd !important;
+    background: rgba(2, 6, 23, .40) !important;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    font-size: .72rem;
+  }
+
+  .doc-wrapper .table-info td {
+    background: rgba(15, 23, 42, .42) !important;
+    color: #e5e7eb !important;
+    font-weight: 750;
+  }
+
+  .doc-wrapper .table-versions tr.versao-atual {
+    box-shadow: inset 4px 0 0 rgba(56, 189, 248, .90);
+    background: rgba(56, 189, 248, .08) !important;
+  }
+
+  .doc-wrapper .btn,
+  .btn-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .36rem;
+    border-radius: 999px !important;
+    font-weight: 900;
+    font-size: .82rem;
+    padding: .52rem .85rem;
+  }
+
+  .doc-wrapper .btn-primary {
+    color: #06111f !important;
+    background: linear-gradient(135deg, #38bdf8, #60a5fa) !important;
+    border-color: rgba(125, 211, 252, .55) !important;
+  }
+
+  .doc-wrapper .btn-success {
+    color: #052e16 !important;
+    background: linear-gradient(135deg, #22c55e, #86efac) !important;
+    border-color: rgba(134, 239, 172, .55) !important;
+  }
+
+  .doc-wrapper .btn-warning {
+    color: #422006 !important;
+    background: linear-gradient(135deg, #f59e0b, #fde68a) !important;
+    border-color: rgba(253, 230, 138, .55) !important;
+  }
+
+  .doc-wrapper .btn-secondary,
+  .doc-wrapper .btn-dark,
+  .doc-wrapper .btn-outline-secondary {
+    color: #e5e7eb !important;
+    background: rgba(15, 23, 42, .72) !important;
+    border-color: rgba(148, 163, 184, .26) !important;
+  }
+
+  .doc-wrapper .btn-danger {
+    color: #fff !important;
+    background: rgba(220, 38, 38, .20) !important;
+    border-color: rgba(248, 113, 113, .38) !important;
+  }
+
+  .doc-wrapper .btn-info,
+  .doc-wrapper .btn-outline-info,
+  .doc-wrapper .btn-outline-primary {
+    color: #bae6fd !important;
+    background: rgba(14, 165, 233, .12) !important;
+    border-color: rgba(56, 189, 248, .32) !important;
+  }
+
+  .doc-wrapper .badge,
+  .badge-versao-atual {
+    border-radius: 999px;
+    font-size: .68rem;
+    padding: .26rem .58rem;
+    font-weight: 900;
+  }
+
+  .doc-wrapper .badge.bg-primary {
+    color: #06111f !important;
+    background: linear-gradient(135deg, #38bdf8, #60a5fa) !important;
+  }
+
+  .doc-wrapper .badge.bg-secondary {
+    color: #dbeafe !important;
+    background: rgba(15, 23, 42, .72) !important;
+    border: 1px solid rgba(148, 163, 184, .22);
+  }
+
+  .doc-wrapper .text-muted,
+  .doc-wrapper small {
+    color: #94a3b8 !important;
+  }
+
+  .doc-wrapper .text-warning {
+    color: #fde68a !important;
+  }
+
+  .workflow-item,
+  .doc-wrapper .list-group-item {
+    border-color: rgba(148, 163, 184, .16) !important;
+    background: rgba(2, 6, 23, .30) !important;
+    color: #dbeafe !important;
+  }
+
+  .workflow-item strong {
+    color: #fff;
+  }
+
+  .wf-card {
+    margin-bottom: 1rem;
+  }
+
+  .wf-header-label {
+    color: #93c5fd;
+    font-size: .66rem;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    font-weight: 950;
+  }
+
+  .wf-current-name {
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 950;
+  }
+
+  .wf-pipeline {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    margin-top: .5rem;
+  }
+
+  .wf-step {
+    position: relative;
+    flex: 1;
+    text-align: center;
+    font-size: .72rem;
+    color: #94a3b8;
+    padding-top: .5rem;
+  }
+
+  .wf-step::before {
+    content: "";
+    position: absolute;
+    top: 12px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: rgba(148, 163, 184, .22);
+    z-index: 1;
+  }
+
+  .wf-step:first-child::before {
+    left: 50%;
+  }
+
+  .wf-step:last-child::before {
+    right: 50%;
+  }
+
+  .wf-step-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid rgba(148, 163, 184, .42);
+    background: #020617;
+    margin: 0 auto .25rem;
+    position: relative;
+    z-index: 2;
+  }
+
+  .wf-step.done .wf-step-dot {
+    background: #22c55e;
+    border-color: #22c55e;
+    box-shadow: 0 0 0 .22rem rgba(34, 197, 94, .14);
+  }
+
+  .wf-step.current .wf-step-dot {
+    background: #f59e0b;
+    border-color: #fde68a;
+    box-shadow: 0 0 0 .26rem rgba(245, 158, 11, .18);
+  }
+
+  .wf-step.done .wf-step-label,
+  .wf-step.current .wf-step-label {
+    color: #fff;
+    font-weight: 900;
+  }
+
+  .doc-wrapper .modal-header {
+    border-bottom: 1px solid rgba(148, 163, 184, .16);
+  }
+
+  .doc-wrapper .modal-footer {
+    border-top: 1px solid rgba(148, 163, 184, .16);
+  }
+
+  .doc-wrapper .modal-header.bg-success,
+  .doc-wrapper .modal-header.bg-warning,
+  .doc-wrapper .modal-header.bg-primary,
+  .doc-wrapper .modal-header.bg-secondary {
+    background: linear-gradient(135deg, rgba(15, 23, 42, .98), rgba(30, 41, 59, .94)) !important;
+    color: #fff !important;
+  }
+
+  .doc-wrapper .form-control,
+  .doc-wrapper .form-select,
+  .doc-wrapper textarea {
+    background: rgba(2, 6, 23, .42) !important;
+    border: 1px solid rgba(148, 163, 184, .22) !important;
+    color: #e5e7eb !important;
+    border-radius: 14px !important;
+  }
+
+  .doc-wrapper .form-control::placeholder,
+  .doc-wrapper textarea::placeholder {
+    color: #94a3b8 !important;
+  }
+
+  .doc-wrapper label,
+  .doc-wrapper .form-label {
+    color: #dbeafe !important;
+  }
+
+  #modalCompararVersoes .border {
+    border-color: rgba(148, 163, 184, .20) !important;
+    border-radius: 16px;
+    overflow: hidden;
+    background: rgba(2, 6, 23, .36);
+  }
+
+  @media (max-width: 992px) {
     .doc-title-main {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        background: linear-gradient(90deg, #FFFFFF 0%, #F2F6FF 40%, #E7F0FF 100%);
-        border-radius: 0.9rem;
-        padding: 0.9rem 1.3rem;
-        border: 1px solid #E1E7F5;
-        color: var(--text-main);
-        font-weight: 700;
-        margin-bottom: 1.2rem;
-        font-size: 1.35rem;
-        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
-    }
-
-    .doc-title-main span.icon {
-        font-size: 1.5rem;
-    }
-
-    /* Títulos de seção em "pílula premium" */
-    .doc-section-title {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.55rem;
-        padding: 0.4rem 0.95rem;
-        border-radius: 999px;
-        font-size: 1.05rem;
-        font-weight: 600;
-        color: var(--primary-dark);
-        background: rgba(11, 94, 215, 0.10);
-        margin-bottom: 0.9rem;
-    }
-
-    .doc-section-title span.icon {
-        font-size: 1.1rem;
-    }
-
-    /* Cards corporativos */
-    .doc-wrapper .card {
-        border-radius: 1rem;
-        border-color: var(--soft-border);
-        background-color: var(--bg-card);
-    }
-
-    .doc-wrapper .card.shadow-sm {
-        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05) !important;
-    }
-
-    /* Tabelas corporativas */
-    .doc-wrapper .table {
-        margin-bottom: 0;
-        font-size: 0.9rem;
-        color: var(--text-main);
-    }
-
-    .doc-wrapper .table thead tr {
-        background: #F1F4FB;
-    }
-
-    .doc-wrapper .table thead th {
-        border-bottom-width: 1px;
-        font-weight: 600;
-        color: #4A4F5C;
-        text-transform: uppercase;
-        font-size: 0.78rem;
-        letter-spacing: 0.03em;
-    }
-
-    .doc-wrapper .table tbody tr:hover {
-        background-color: #F8FAFE;
-    }
-
-    .doc-wrapper .table-bordered > :not(caption) > * > * {
-        border-color: #D5DBE8;
-    }
-
-    .doc-wrapper .table td, .doc-wrapper .table th {
-        vertical-align: middle;
-    }
-
-    /* Informações principais — cabeçalhos da tabela de metadados */
-    .doc-wrapper .table-info th {
-        width: 220px;
-        background-color: #F6F8FE;
-        color: #4A4F5C;
-        font-weight: 600;
-        border-right: 1px solid #E0E6F4;
-    }
-
-    .doc-wrapper .table-info td {
-        background-color: #EFF5FF;
-    }
-
-    /* Destaque da versão atual no histórico */
-    .doc-wrapper .table-versions tr.versao-atual {
-        background: var(--row-highlight-bg) !important;
-        border-left: 4px solid var(--primary);
-    }
-
-    .doc-wrapper .table-versions tr.versao-atual td:first-child strong {
-        color: var(--primary-dark);
-    }
-
-    .badge-versao-atual,
-    .badge.bg-primary {
-        background-color: var(--primary) !important;
-        color: #fff !important;
-        font-size: 0.7rem;
-        padding: 0.2rem 0.55rem;
-        border-radius: 999px;
-    }
-
-    /* Badge de Anexo mais discreta */
-    .badge.bg-secondary {
-        background: #E5E7EB !important;
-        color: #374151 !important;
-        font-size: 0.7rem;
-        border-radius: 999px;
-    }
-
-    /* Botões – estilo pill corporativo */
-    .btn-pill {
-        border-radius: 999px !important;
-        font-weight: 500;
-        padding-inline: 1.2rem;
-    }
-
-    .doc-wrapper .btn {
-        font-size: 0.9rem;
-    }
-
-    .doc-wrapper .btn-primary {
-        background-color: var(--primary);
-        border-color: var(--primary);
-        box-shadow: 0 4px 10px rgba(11, 94, 215, 0.35);
-    }
-
-    .doc-wrapper .btn-primary:hover,
-    .doc-wrapper .btn-primary:focus {
-        background-color: var(--primary-dark);
-        border-color: var(--primary-dark);
-    }
-
-    .doc-wrapper .btn-outline-primary {
-        border-radius: 999px;
-        border-color: var(--primary);
-        color: var(--primary);
-    }
-
-    .doc-wrapper .btn-outline-primary:hover {
-        background-color: var(--primary);
-        color: #fff;
-    }
-
-    .doc-wrapper .btn-outline-info {
-        border-radius: 999px;
-    }
-
-    .doc-wrapper .btn-warning,
-    .doc-wrapper .btn-success,
-    .doc-wrapper .btn-info,
-    .doc-wrapper .btn-secondary,
-    .doc-wrapper .btn-dark,
-    .doc-wrapper .btn-danger {
-        border-radius: 999px;
-    }
-
-    /* Workflow histórico */
-    .workflow-item strong {
-        color: var(--primary-dark);
-    }
-
-    .workflow-item small {
-        font-size: 0.78rem;
-    }
-
-    /* Modal comparar versões */
-    #modalCompararVersoes .modal-header {
-        border-bottom: 1px solid var(--soft-border);
-    }
-
-    #modalCompararVersoes .modal-body h6 {
-        color: var(--primary-dark);
-    }
-
-    /* Texto auxiliar */
-    .text-muted {
-        color: var(--text-muted) !important;
-    }
-
-    /* ============================================
-       PIPELINE DE WORKFLOW (C2)
-    ============================================= */
-    .wf-card {
-        margin-bottom: 1.8rem;
-    }
-
-    .wf-header-label {
-        font-size: 0.78rem;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        color: var(--text-muted);
-    }
-
-    .wf-current-name {
-        font-weight: 600;
-        color: var(--primary-dark);
-        font-size: 0.95rem;
+      align-items: flex-start;
+      flex-direction: column;
+      font-size: 1.45rem;
     }
 
     .wf-pipeline {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        margin-top: 0.5rem;
+      overflow-x: auto;
+      padding-bottom: .5rem;
     }
 
     .wf-step {
-        position: relative;
-        flex: 1;
-        text-align: center;
-        font-size: 0.78rem;
-        color: var(--text-muted);
-        padding-top: 0.5rem;
+      min-width: 120px;
     }
 
-    .wf-step-dot {
-        width: 14px;
-        height: 14px;
-        border-radius: 50%;
-        border: 2px solid #CBD5F5;
-        background-color: #FFFFFF;
-        margin: 0 auto 0.25rem;
-        position: relative;
-        z-index: 2;
+    .doc-wrapper .card {
+      border-radius: 18px;
     }
-
-    .wf-step::before {
-        content: "";
-        position: absolute;
-        top: 12px;
-        left: 0;
-        right: 0;
-        height: 2px;
-        background: #E5E7EB;
-        z-index: 1;
-    }
-
-    .wf-step:first-child::before {
-        left: 50%;
-    }
-
-    .wf-step:last-child::before {
-        right: 50%;
-    }
-
-    .wf-step-label {
-        display: block;
-        margin-top: 0.1rem;
-        white-space: nowrap;
-    }
-
-    .wf-step.done .wf-step-dot {
-        background-color: var(--primary);
-        border-color: var(--primary);
-    }
-
-    .wf-step.done .wf-step-label {
-        color: var(--primary-dark);
-        font-weight: 600;
-    }
-
-    .wf-step.current .wf-step-dot {
-        background-color: #FFFFFF;
-        border-color: var(--accent);
-        box-shadow: 0 0 0 3px rgba(242, 121, 15, 0.25);
-    }
-
-    .wf-step.current .wf-step-label {
-        color: var(--primary-dark);
-        font-weight: 700;
-    }
-
-    @media (max-width: 992px) {
-        .wf-card .d-flex.flex-wrap {
-            gap: 1rem;
-        }
-        .wf-step-label {
-            font-size: 0.7rem;
-        }
-    }
-
-    /* Responsividade geral */
-    @media (max-width: 992px) {
-        .doc-wrapper {
-            padding-inline: 0;
-        }
-
-        .doc-title-main {
-            font-size: 1.15rem;
-            padding: 0.8rem 1rem;
-        }
-
-        .doc-wrapper .card {
-            border-radius: 0.8rem;
-        }
-
-        .doc-wrapper .table {
-            font-size: 0.84rem;
-        }
-
-        .doc-wrapper .btn {
-            margin-bottom: 0.25rem;
-        }
-    }
-
-    @media (max-width: 768px) {
-        .doc-title-main {
-            flex-direction: row;
-            align-items: center;
-        }
-    }
+  }
 </style>
 
 <div class="doc-wrapper">
@@ -567,8 +561,8 @@
         </div>
       </div>
     </div>
-         INFORMAÇÕES PRINCIPAIS
-    
+    <h3 class="doc-section-title mt-4 mb-3"><span class="icon">📌</span><span>Informações Principais</span></h3>
+
     <div class="card shadow-sm p-4 mb-4">
         <table class="table table-bordered mb-0 table-info">
             <tbody>

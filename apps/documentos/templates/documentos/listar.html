@@ -1,351 +1,533 @@
 {% extends "documentos/base.html" %}
 {% block body_attrs %} data-force-reload-on-show="1"{% endblock %}
-{% block title %}📁 Lista de Documentos · D’OR@NGE Enterprise{% endblock %}
+{% block title %}Lista de Documentos · D’OR@NGE Enterprise{% endblock %}
 
 {% block extra_head %}
-<!-- Datatables -->
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
 <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
-
-<!-- ✅ DataTables Responsive -->
 <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css">
 
 <style>
-.doc-wrapper{ --gap: clamp(10px, 1.1vw, 16px); }
-
-
-.doc-wrapper .page-header{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  margin-bottom:1.4rem;
-  gap: var(--gap);
-  flex-wrap:wrap;
-}
-.doc-wrapper .page-header h2{
-  margin:0;
-  font-weight:700;
-  font-size:clamp(1.15rem, 1.1vw + .7rem, 1.55rem);
-  color:var(--accent-blue);
-  display:flex;
-  align-items:center;
-  gap:.5rem;
-}
-
-.filtro-card{
-  background: var(--bg-card);
-  border:1px solid var(--border);
-  border-radius:14px;
-  padding:1.2rem 1rem;
-  box-shadow:0 4px 14px var(--shadow);
-}
-.filtro-card label{
-  font-weight:600;
-  font-size:.78rem;
-  color:var(--content-muted);
-  margin-bottom:.25rem;
-  display:block;
-}
-
-.filtro-card .form-select,
-.filtro-card .form-control{
-  background: var(--field-bg) !important;
-  border-radius:10px!important;
-  border:1px solid var(--field-border)!important;
-  color:var(--field-text)!important;
-  font-size:.90rem;
-  padding:.55rem .75rem;
-  width:100%;
-  max-width:100%;
-}
-.filtro-card .form-control::placeholder{
-  color: var(--field-placeholder) !important;
-}
-.filtro-card .form-select:focus,
-.filtro-card .form-control:focus{
-  border-color: var(--accent-blue) !important;
-  box-shadow: 0 0 0 .25rem var(--accent-blue-soft) !important;
-}
-
-.badge-status{ padding:4px 9px; border-radius:8px; font-size:.75rem; }
-.badge-doc{ background:#0ea5e9; color:white; }
-.badge-emissao{ background:#fbbf24; color:#111; font-weight:600; }
-.btn-premium{ border-radius:10px; font-weight:600; }
-
-/* =========================================================
-   ✅ FILTROS: GRID 12 COLUNAS (PREVISÍVEL)
-   ========================================================= */
-.filtro-card form.filters-grid{
-  display:grid !important;
-  grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
-  gap: var(--gap) !important;
-  align-items:end !important;
-  margin:0 !important; /* neutraliza .row do bootstrap */
-}
-
-/* Neutraliza col-* dentro do grid */
-.filtro-card form.filters-grid [class^="col-"],
-.filtro-card form.filters-grid [class*=" col-"]{
-  padding:0 !important;
-  flex: initial !important;
-  width:auto !important;
-  max-width:100% !important;
-}
-
-.filtro-card form.filters-grid .filter-item{ min-width:0; }
-
-/* Desktop grande: 4 selects em linha (3 col cada) */
-.filter-projeto{ grid-column: span 3; }
-.filter-disciplina{ grid-column: span 3; }
-.filter-statusdoc{ grid-column: span 3; }
-.filter-statusem{ grid-column: span 3; }
-
-/* Linha 2: busca + ação */
-.filter-busca{ grid-column: span 10; }
-.filter-actions{
-  grid-column: span 2;
-  display:flex;
-  justify-content:flex-end;
-}
-
-/* Botão do filtro (escopo só aqui — não mexe no botão Buscar da topbar) */
-.filters-grid .btn-search{
-  width: 100% !important;
-  max-width: 220px !important;
-  height: 42px;
-}
-
-/* <= 1200px: 2 colunas (6+6), busca maior e botão com max-width */
-@media (max-width: 1200px){
-  .filter-projeto,
-  .filter-disciplina,
-  .filter-statusdoc,
-  .filter-statusem{
-    grid-column: span 6;
+  .doc-page {
+    width: min(100%, 1500px);
+    margin: 0 auto;
+    color: #e5e7eb;
   }
-  .filter-busca{
-    grid-column: span 8;
-  }
-  .filter-actions{
-    grid-column: span 4;
-    justify-content:flex-end;
-  }
-}
 
-/* <= 820px: tudo empilha */
-@media (max-width: 820px){
-  .filter-projeto,
-  .filter-disciplina,
-  .filter-statusdoc,
-  .filter-statusem,
-  .filter-busca,
-  .filter-actions{
-    grid-column: 1 / -1;
+  .doc-hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 1rem;
+    border: 1px solid rgba(56, 189, 248, .22);
+    border-radius: 24px;
+    padding: 1.15rem 1.25rem;
+    margin-bottom: 1rem;
+    background:
+      radial-gradient(circle at 0% 0%, rgba(56, 189, 248, .18), transparent 28rem),
+      radial-gradient(circle at 100% 0%, rgba(255, 138, 0, .12), transparent 24rem),
+      linear-gradient(135deg, rgba(15, 23, 42, .98), rgba(2, 6, 23, .92));
+    box-shadow: 0 18px 44px rgba(2, 8, 23, .28);
   }
-  .filters-grid .btn-search{
+
+  .doc-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    color: #38bdf8;
+    font-size: .72rem;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: .10em;
+    margin-bottom: .35rem;
+  }
+
+  .doc-hero h1 {
+    margin: 0;
+    color: #fff;
+    font-size: clamp(1.55rem, 2.4vw, 2.35rem);
+    font-weight: 950;
+    letter-spacing: -.045em;
+    line-height: 1;
+  }
+
+  .doc-hero p {
+    margin: .45rem 0 0;
+    color: #93c5fd;
+    max-width: 900px;
+  }
+
+  .doc-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: .55rem;
+  }
+
+  .doc-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .42rem;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, .24);
+    padding: .55rem .88rem;
+    color: #e5e7eb;
+    text-decoration: none;
+    font-size: .82rem;
+    font-weight: 900;
+    white-space: nowrap;
+    background: rgba(15, 23, 42, .70);
+  }
+
+  .doc-btn:hover {
+    color: #fff;
+    border-color: rgba(56, 189, 248, .56);
+  }
+
+  .doc-btn-primary {
+    color: #06111f;
+    background: linear-gradient(135deg, #38bdf8, #60a5fa);
+    border-color: rgba(125, 211, 252, .55);
+  }
+
+  .doc-btn-success {
+    color: #052e16;
+    background: linear-gradient(135deg, #22c55e, #86efac);
+    border-color: rgba(134, 239, 172, .55);
+  }
+
+  .doc-btn-danger {
+    color: #fff;
+    background: rgba(220, 38, 38, .18);
+    border-color: rgba(248, 113, 113, .35);
+  }
+
+  .doc-filter-panel,
+  .doc-table-panel {
+    border: 1px solid rgba(148, 163, 184, .18);
+    border-radius: 22px;
+    padding: 1rem;
+    background: linear-gradient(180deg, rgba(15, 23, 42, .84), rgba(15, 23, 42, .64));
+    box-shadow: 0 16px 38px rgba(2, 8, 23, .20);
+  }
+
+  .doc-filter-panel {
+    margin-bottom: 1rem;
+  }
+
+  .doc-filter-grid {
+    display: grid !important;
+    grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+    gap: .7rem !important;
+    align-items: end !important;
+    margin: 0 !important;
+  }
+
+  .doc-filter-grid [class^="col-"],
+  .doc-filter-grid [class*=" col-"] {
+    padding: 0 !important;
+    flex: initial !important;
+    width: auto !important;
     max-width: 100% !important;
   }
-}
 
-/* Tabela */
-.doc-wrapper .table-responsive{
-  width:100%;
-  overflow-x:auto;
-}
-.doc-wrapper .dataTables_wrapper{ width:100% !important; }
-.doc-wrapper table.dataTable{ width:100% !important; }
+  .doc-filter-grid label {
+    display: block;
+    margin-bottom: .25rem;
+    color: #bfdbfe;
+    font-size: .66rem;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    font-weight: 950;
+    opacity: 1;
+  }
 
-.doc-wrapper #tabelaDocumentos{ font-size:.88rem; width:100% !important; }
-.doc-wrapper #tabelaDocumentos thead{ background:rgba(56,189,248,0.10); color:var(--accent-blue); }
+  .filter-projeto,
+  .filter-disciplina,
+  .filter-statusdoc,
+  .filter-statusem {
+    grid-column: span 3;
+  }
+
+  .filter-busca {
+    grid-column: span 10;
+  }
+
+  .filter-actions {
+    grid-column: span 2;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .doc-filter-grid .form-select,
+  .doc-filter-grid .form-control {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 14px !important;
+    background: rgba(2, 6, 23, .42) !important;
+    border: 1px solid rgba(148, 163, 184, .22) !important;
+    color: #e5e7eb !important;
+    min-height: 42px;
+  }
+
+  .doc-filter-grid .form-control::placeholder {
+    color: #94a3b8 !important;
+  }
+
+  .doc-table-panel .table-responsive {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .doc-table-panel .dataTables_wrapper {
+    width: 100% !important;
+    color: #dbeafe;
+  }
+
+  .doc-table-panel table.dataTable {
+    width: 100% !important;
+    color: #dbeafe !important;
+    border-color: rgba(148, 163, 184, .14) !important;
+  }
+
+  #tabelaDocumentos {
+    width: 100% !important;
+    font-size: .82rem;
+  }
+
+  #tabelaDocumentos thead th {
+    background: rgba(2, 6, 23, .48) !important;
+    color: #93c5fd !important;
+    border-color: rgba(148, 163, 184, .16) !important;
+    font-size: .68rem;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    font-weight: 950;
+    white-space: nowrap;
+  }
+
+  #tabelaDocumentos tbody td {
+    background: transparent !important;
+    color: #dbeafe !important;
+    border-color: rgba(148, 163, 184, .12) !important;
+    vertical-align: middle;
+  }
+
+  #tabelaDocumentos tbody tr:hover {
+    background: rgba(56, 189, 248, .06) !important;
+  }
+
+  .doc-table-panel .text-muted {
+    color: #94a3b8 !important;
+    opacity: 1;
+  }
+
+  .doc-table-panel td .text-muted {
+    font-weight: 850;
+  }
+
+  #tabelaDocumentos th.col-acoes,
+  #tabelaDocumentos td.col-acoes {
+    min-width: 116px;
+    white-space: nowrap;
+  }
+
+  #tabelaDocumentos th.col-arquivo,
+  #tabelaDocumentos td.col-arquivo {
+    min-width: 92px;
+    white-space: nowrap;
+  }
+
+  #tabelaDocumentos th.col-codigo,
+  #tabelaDocumentos td.col-codigo {
+    min-width: 150px;
+  }
+
+  #tabelaDocumentos th.col-titulo,
+  #tabelaDocumentos td.col-titulo {
+    min-width: 210px;
+  }
+
+  .badge-status {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: .28rem .58rem;
+    font-size: .68rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    border: 1px solid rgba(148, 163, 184, .22);
+  }
+
+  .badge-doc {
+    color: #bae6fd;
+    background: rgba(14, 165, 233, .16);
+    border-color: rgba(56, 189, 248, .32);
+  }
+
+  .badge-emissao {
+    color: #fde68a;
+    background: rgba(245, 158, 11, .14);
+    border-color: rgba(245, 158, 11, .32);
+  }
+
+  .dt-buttons .btn,
+  .dataTables_wrapper .btn,
+  .dataTables_wrapper .page-link {
+    border-radius: 999px !important;
+    font-weight: 850 !important;
+  }
+
+  .dataTables_wrapper .dataTables_filter input,
+  .dataTables_wrapper .dataTables_length select {
+    background: rgba(2, 6, 23, .42) !important;
+    border: 1px solid rgba(148, 163, 184, .22) !important;
+    color: #e5e7eb !important;
+    border-radius: 12px !important;
+  }
+
+  .dataTables_info,
+  .dataTables_length label,
+  .dataTables_filter label {
+    color: #94a3b8 !important;
+  }
+
+  @media (max-width: 1200px) {
+    .filter-projeto,
+    .filter-disciplina,
+    .filter-statusdoc,
+    .filter-statusem {
+      grid-column: span 6;
+    }
+
+    .filter-busca {
+      grid-column: span 8;
+    }
+
+    .filter-actions {
+      grid-column: span 4;
+    }
+  }
+
+  @media (max-width: 820px) {
+    .doc-hero {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .doc-actions {
+      justify-content: flex-start;
+    }
+
+    .filter-projeto,
+    .filter-disciplina,
+    .filter-statusdoc,
+    .filter-statusem,
+    .filter-busca,
+    .filter-actions {
+      grid-column: 1 / -1;
+    }
+
+    .doc-btn {
+      width: 100%;
+    }
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="doc-wrapper">
-<div class="page-lista-documentos">
-<div class="page-header">
-  <h2><i class="bi bi-folder2-open"></i> Lista de Documentos</h2>
-
-  <div class="d-flex gap-2 flex-wrap">
-    <a href="{% url 'documentos:upload_documento' %}" class="btn btn-success btn-premium">
-      <i class="bi bi-file-earmark-plus"></i> Novo Documento
-    </a>
-
-    {% if request.user.is_superuser %}
-    <button form="formExcluir" class="btn btn-outline-danger btn-premium">
-      <i class="bi bi-trash"></i> Excluir Selecionados
-    </button>
-    {% endif %}
-  </div>
-</div>
-
-<div class="filtro-card mb-3">
-  <form method="GET" class="row g-3 filters-grid">
-
-    <div class="col-md-2 filter-item filter-projeto">
-      <label>Projeto</label>
-      <select name="projeto" class="form-select">
-        <option value="">Todos</option>
-        {% for p in projetos %}
-        <option value="{{ p }}" {% if request.GET.projeto == p %}selected{% endif %}>{{ p }}</option>
-        {% endfor %}
-      </select>
+<div class="doc-page">
+  <section class="doc-hero">
+    <div>
+      <div class="doc-eyebrow">
+        <i class="bi bi-folder2-open"></i>
+        GED Document Control
+      </div>
+      <h1>Lista de Documentos</h1>
+      <p>Consulta operacional de documentos, revisões, status, GRDT, PCF e arquivos vinculados.</p>
     </div>
 
-    <div class="col-md-2 filter-item filter-disciplina">
-      <label>Disciplina</label>
-      <select name="disciplina" class="form-select">
-        <option value="">Todas</option>
-        {% for d in disciplinas %}
-        <option value="{{ d }}" {% if request.GET.disciplina == d %}selected{% endif %}>{{ d }}</option>
-        {% endfor %}
-      </select>
-    </div>
+    <div class="doc-actions">
+      <a href="{% url 'documentos:upload_documento' %}" class="doc-btn doc-btn-success">
+        <i class="bi bi-file-earmark-plus"></i>
+        Novo Documento
+      </a>
 
-    <div class="col-md-2 filter-item filter-statusdoc">
-      <label>Status Documento</label>
-      <select name="status_documento" class="form-select">
-        <option value="">Todos</option>
-        {% for s in status_documento_list %}
-        <option value="{{ s }}" {% if request.GET.status_documento == s %}selected{% endif %}>{{ s }}</option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <div class="col-md-2 filter-item filter-statusem">
-      <label>Status Emissão</label>
-      <select name="status_emissao" class="form-select">
-        <option value="">Todos</option>
-        {% for e in status_emissao_list %}
-        <option value="{{ e }}" {% if request.GET.status_emissao == e %}selected{% endif %}>{{ e }}</option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <div class="col-md-3 filter-item filter-busca">
-      <label>Busca Global</label>
-      <input type="text" name="busca" value="{{ request.GET.busca }}" class="form-control" placeholder="Código, título...">
-    </div>
-
-    <div class="col-md-1 filter-item filter-actions">
-      <button type="submit" class="btn btn-primary btn-premium btn-search" aria-label="Buscar">
-        <i class="bi bi-search"></i>
+      {% if request.user.is_superuser %}
+      <button form="formExcluir" class="doc-btn doc-btn-danger">
+        <i class="bi bi-trash"></i>
+        Excluir Selecionados
       </button>
+      {% endif %}
     </div>
+  </section>
 
-  </form>
-</div>
+  <section class="doc-filter-panel">
+    <form method="GET" class="row g-3 doc-filter-grid">
 
-<div class="card enterprise-card p-3">
-  <div class="table-responsive">
+      <div class="col-md-2 filter-item filter-projeto">
+        <label>Projeto</label>
+        <select name="projeto" class="form-select">
+          <option value="">Todos</option>
+          {% for p in projetos %}
+          <option value="{{ p }}" {% if request.GET.projeto == p %}selected{% endif %}>{{ p }}</option>
+          {% endfor %}
+        </select>
+      </div>
 
-    {% if request.user.is_superuser %}
-    <form id="formExcluir" method="POST" action="{% url 'documentos:excluir_selecionados' %}">
-      {% csrf_token %}
-    {% endif %}
+      <div class="col-md-2 filter-item filter-disciplina">
+        <label>Disciplina</label>
+        <select name="disciplina" class="form-select">
+          <option value="">Todas</option>
+          {% for d in disciplinas %}
+          <option value="{{ d }}" {% if request.GET.disciplina == d %}selected{% endif %}>{{ d }}</option>
+          {% endfor %}
+        </select>
+      </div>
 
-    <table id="tabelaDocumentos" class="table table-hover table-bordered align-middle w-100">
-      <thead>
-        <tr>
-          {% if request.user.is_superuser %}
-          <th><input type="checkbox" id="selectAll"></th>
-          {% endif %}
-          <th>Projeto</th>
-          <th>Fase</th>
-          <th>Tipo</th>
-          <th>Código</th>
-          <th>Rev</th>
-          <th>Disciplina</th>
-          <th>Título</th>
-          <th>Versões</th>
-          <th>Status Documento</th>
-          <th>Status Emissão</th>
-          <th>GRDT</th>
-          <th>PCF</th>
-          <th>Data</th>
-          <th>Arquivo</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
+      <div class="col-md-2 filter-item filter-statusdoc">
+        <label>Status Documento</label>
+        <select name="status_documento" class="form-select">
+          <option value="">Todos</option>
+          {% for s in status_documento_list %}
+          <option value="{{ s }}" {% if request.GET.status_documento == s %}selected{% endif %}>{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
 
-      <tbody>
-        {% for doc in documentos %}
-        <tr>
-          {% if request.user.is_superuser %}
-          <td><input type="checkbox" class="selectItem" name="selecionados" value="{{ doc.id }}"></td>
-          {% endif %}
-          <td>{{ doc.projeto.nome|default:"—" }}</td>
-          <td>{{ doc.fase }}</td>
-          <td>{{ doc.tipo_doc }}</td>
-          <td><b>{{ doc.codigo }}</b></td>
-          <td>{{ doc.revisao }}</td>
-          <td>{{ doc.disciplina }}</td>
-          <td>{{ doc.titulo }}</td>
-          <td class="text-nowrap">
-            {{ doc.versoes_count|default:0 }}
-            {% if doc.versoes_count %}
-              <a href="{% url 'documentos:historico' doc.codigo %}" class="btn btn-outline-primary btn-sm ms-2">Histórico</a>
-            {% endif %}
-          </td>
-          <td>{% if doc.status_documento %}<span class="badge badge-status badge-doc">{{ doc.status_documento }}</span>{% else %}—{% endif %}</td>
-          <td>{% if doc.status_emissao %}<span class="badge badge-status badge-emissao">{{ doc.status_emissao }}</span>{% else %}—{% endif %}</td>
-          <td>{% firstof doc.num_grdt doc.numero_grdt doc.grdt doc.n_grdt doc.grdt_cliente "—" %}</td>
-          <td>{% firstof doc.num_pcf doc.numero_pcf doc.pcf doc.n_pcf doc.resposta_cliente "—" %}</td>
-          <td>
-            {% with dt=doc.data_emissao_tp %}
-              {% if dt %}
-                {{ dt|date:"d/m/Y" }}
-              {% else %}
-                {% with dt2=doc.data_emissao_tp_doc %}
-                  {% if dt2 %}
-                    {{ dt2|date:"d/m/Y" }}
-                  {% else %}
-                    {% with dt3=doc.data_emissao_grdt %}
-                      {% if dt3 %}
-                        {{ dt3|date:"d/m/Y" }}
-                      {% else %}
-                        {% with dt4=doc.data_emissao %}
-                          {% if dt4 %}
-                            {{ dt4|date:"d/m/Y" }}
-                          {% else %}
-                            {% with dt5=doc.data %}
-                              {% if dt5 %}
-                                {{ dt5|date:"d/m/Y" }}
-                              {% else %}
-                                —
-                              {% endif %}
-                            {% endwith %}
-                          {% endif %}
-                        {% endwith %}
-                      {% endif %}
-                    {% endwith %}
-                  {% endif %}
-                {% endwith %}
-              {% endif %}
-            {% endwith %}
-          </td>
-          <td>
-            {% if doc.arquivos.all|length > 0 %}
-              <a href="{% url 'documentos:detalhes_documento' doc.id %}" class="btn btn-sm btn-primary btn-premium">Abrir</a>
-            {% else %}
-              <span class="text-muted">Sem</span>
-            {% endif %}
-          </td>
-          <td>
-            <a href="{% url 'documentos:detalhes_documento' doc.id %}" class="btn btn-sm btn-outline-secondary btn-premium">Detalhes</a>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+      <div class="col-md-2 filter-item filter-statusem">
+        <label>Status Emissão</label>
+        <select name="status_emissao" class="form-select">
+          <option value="">Todos</option>
+          {% for e in status_emissao_list %}
+          <option value="{{ e }}" {% if request.GET.status_emissao == e %}selected{% endif %}>{{ e }}</option>
+          {% endfor %}
+        </select>
+      </div>
 
-    {% if request.user.is_superuser %}
+      <div class="col-md-3 filter-item filter-busca">
+        <label>Busca Global</label>
+        <input type="text" name="busca" value="{{ request.GET.busca }}" class="form-control" placeholder="Código, título...">
+      </div>
+
+      <div class="col-md-1 filter-item filter-actions">
+        <button type="submit" class="doc-btn doc-btn-primary" aria-label="Buscar">
+          <i class="bi bi-search"></i>
+          Buscar
+        </button>
+      </div>
     </form>
-    {% endif %}
+  </section>
 
-  </div>
-</div>
-</div>
+  <section class="doc-table-panel">
+    <div class="table-responsive">
+
+      {% if request.user.is_superuser %}
+      <form id="formExcluir" method="POST" action="{% url 'documentos:excluir_selecionados' %}">
+        {% csrf_token %}
+      {% endif %}
+
+      <table id="tabelaDocumentos" class="table table-hover table-bordered align-middle w-100">
+        <thead>
+          <tr>
+            {% if request.user.is_superuser %}
+            <th><input type="checkbox" id="selectAll"></th>
+            {% endif %}
+            <th>Projeto</th>
+            <th>Fase</th>
+            <th>Tipo</th>
+            <th class="col-codigo all">Código</th>
+            <th>Rev</th>
+            <th>Disciplina</th>
+            <th class="col-titulo min-tablet-l">Título</th>
+            <th>Versões</th>
+            <th>Status Documento</th>
+            <th>Status Emissão</th>
+            <th>GRDT</th>
+            <th>PCF</th>
+            <th>Data</th>
+            <th class="col-arquivo min-tablet-l">Arquivo</th>
+            <th class="col-acoes all">Ações</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for doc in documentos %}
+          <tr>
+            {% if request.user.is_superuser %}
+            <td><input type="checkbox" class="selectItem" name="selecionados" value="{{ doc.id }}"></td>
+            {% endif %}
+            <td>{{ doc.projeto.nome|default:"—" }}</td>
+            <td>{{ doc.fase }}</td>
+            <td>{{ doc.tipo_doc }}</td>
+            <td class="col-codigo"><b>{{ doc.codigo }}</b></td>
+            <td>{{ doc.revisao }}</td>
+            <td>{{ doc.disciplina }}</td>
+            <td class="col-titulo">{{ doc.titulo }}</td>
+            <td class="text-nowrap">
+              {{ doc.versoes_count|default:0 }}
+              {% if doc.versoes_count %}
+                <a href="{% url 'documentos:historico' doc.codigo %}" class="doc-btn ms-2">Histórico</a>
+              {% endif %}
+            </td>
+            <td>{% if doc.status_documento %}<span class="badge-status badge-doc">{{ doc.status_documento }}</span>{% else %}—{% endif %}</td>
+            <td>{% if doc.status_emissao %}<span class="badge-status badge-emissao">{{ doc.status_emissao }}</span>{% else %}—{% endif %}</td>
+            <td>{% firstof doc.num_grdt doc.numero_grdt doc.grdt doc.n_grdt doc.grdt_cliente "—" %}</td>
+            <td>{% firstof doc.num_pcf doc.numero_pcf doc.pcf doc.n_pcf doc.resposta_cliente "—" %}</td>
+            <td>
+              {% with dt=doc.data_emissao_tp %}
+                {% if dt %}
+                  {{ dt|date:"d/m/Y" }}
+                {% else %}
+                  {% with dt2=doc.data_emissao_tp_doc %}
+                    {% if dt2 %}
+                      {{ dt2|date:"d/m/Y" }}
+                    {% else %}
+                      {% with dt3=doc.data_emissao_grdt %}
+                        {% if dt3 %}
+                          {{ dt3|date:"d/m/Y" }}
+                        {% else %}
+                          {% with dt4=doc.data_emissao %}
+                            {% if dt4 %}
+                              {{ dt4|date:"d/m/Y" }}
+                            {% else %}
+                              {% with dt5=doc.data %}
+                                {% if dt5 %}
+                                  {{ dt5|date:"d/m/Y" }}
+                                {% else %}
+                                  —
+                                {% endif %}
+                              {% endwith %}
+                            {% endif %}
+                          {% endwith %}
+                        {% endif %}
+                      {% endwith %}
+                    {% endif %}
+                  {% endwith %}
+                {% endif %}
+              {% endwith %}
+            </td>
+            <td class="col-arquivo">
+              {% if doc.arquivos.all|length > 0 %}
+                <a href="{% url 'documentos:detalhes_documento' doc.id %}" class="doc-btn doc-btn-primary">Abrir</a>
+              {% else %}
+                <span class="text-muted">Sem</span>
+              {% endif %}
+            </td>
+            <td class="col-acoes">
+              <a href="{% url 'documentos:detalhes_documento' doc.id %}" class="doc-btn">Detalhes</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      {% if request.user.is_superuser %}
+      </form>
+      {% endif %}
+    </div>
+  </section>
 </div>
 {% endblock %}
 
@@ -360,19 +542,36 @@
 <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
-<!-- ✅ DataTables Responsive (JS) -->
 <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
 <script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
 
 <script>
 $(document).ready(function(){
+  const isSuperuser = document.querySelector("#tabelaDocumentos thead input#selectAll") !== null;
+  const totalColumns = $("#tabelaDocumentos thead th").length;
+  const codigoIndex = isSuperuser ? 4 : 3;
+  const tituloIndex = isSuperuser ? 7 : 6;
+  const arquivoIndex = totalColumns - 2;
+  const acoesIndex = totalColumns - 1;
+
   const dt = $('#tabelaDocumentos').DataTable({
     pageLength: 25,
     lengthMenu: [10,25,50,100],
-    responsive: true,
+    responsive: {
+      details: {
+        type: "inline",
+        target: "tr"
+      }
+    },
     autoWidth: false,
     scrollX: false,
     dom:'Bfrtip',
+    columnDefs: [
+      { responsivePriority: 1, targets: acoesIndex },
+      { responsivePriority: 2, targets: codigoIndex },
+      { responsivePriority: 3, targets: arquivoIndex },
+      { responsivePriority: 4, targets: tituloIndex }
+    ],
     buttons:[
       { extend:'excelHtml5', text:'Excel' },
       { extend:'csvHtml5', text:'CSV' },
