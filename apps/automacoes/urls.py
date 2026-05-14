@@ -89,4 +89,9 @@ urlpatterns = [
         views.abrir_arquivo_ld,
         name="abrir_arquivo_ld",
     ),
+    path(
+        "ops-center/",
+        views.ops_center,
+        name="ops_center",
+    ),
 ]

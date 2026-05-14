@@ -27,6 +27,7 @@ from apps.automacoes.services.status_normalizer import normalizar_status
 from apps.automacoes.services.search_engine import buscar_global_enterprise
 from apps.automacoes.services.search_analytics import obter_search_analytics
 from apps.automacoes.services.km_index_jobs import executar_reindexacao_km_job
+from apps.automacoes.services.ops_center_service import OperationsCenterService
 
 
 KM_DOCUMENTOS_BASE = Path(
@@ -2680,3 +2681,20 @@ def api_busca_global_ged(request):
 
     return JsonResponse({"results": results[:15]})
 
+
+
+# ============================================================
+# UNIFIED OPERATIONS CENTER
+# ============================================================
+
+@login_required
+def ops_center(request):
+    contexto = {
+        "ops": OperationsCenterService.build_dashboard(),
+    }
+
+    return render(
+        request,
+        "automacoes/ops_center.html",
+        contexto,
+    )

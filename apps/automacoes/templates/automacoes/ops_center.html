@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Unified Operations Center</h1>
+
+<p>Última atualização: {{ ops.updated_at }}</p>
+
+<section>
+  <h2>Runtime Health</h2>
+  <p>Status: <strong>{{ ops.runtime.status }}</strong></p>
+  <p>Score: <strong>{{ ops.runtime.score }}</strong></p>
+  <p>Alertas ativos: {{ ops.runtime.active_alerts }}</p>
+  <p>Jobs falhos: {{ ops.runtime.failed_jobs }}</p>
+  <p>Jobs em execução: {{ ops.runtime.running_jobs }}</p>
+  <p>Scheduler stale: {{ ops.runtime.stale_scheduler_states }}</p>
+</section>
+
+<hr>
+
+<section>
+  <h2>Scheduler</h2>
+  <p>Total: {{ ops.scheduler.total }}</p>
+  <p>Ativos: {{ ops.scheduler.enabled }}</p>
+  <p>Desativados: {{ ops.scheduler.disabled }}</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Scheduler State</th>
+        <th>Status</th>
+        <th>Heartbeat</th>
+        <th>Próxima execução</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for state in ops.scheduler.latest_states %}
+        <tr>
+          <td>{{ state.job_name|default:state.name|default:state }}</td>
+          <td>{{ state.last_status|default:"-" }}</td>
+          <td>{{ state.heartbeat|default:state.last_heartbeat|default:"-" }}</td>
+          <td>{{ state.next_run_at|default:"-" }}</td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="4">Nenhum estado de scheduler encontrado.</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<hr>
+
+<section>
+  <h2>Jobs de Hoje</h2>
+  <p>Total: {{ ops.jobs.total_today }}</p>
+  <p>Sucesso: {{ ops.jobs.success_today }}</p>
+  <p>Falha: {{ ops.jobs.failed_today }}</p>
+  <p>Executando: {{ ops.jobs.running }}</p>
+  <p>Success rate: {{ ops.jobs.success_rate }}%</p>
+  <p>Duração média: {{ ops.jobs.avg_duration|default:"-" }}</p>
+</section>
+
+<hr>
+
+<section>
+  <h2>Últimos Jobs</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Job</th>
+        <th>Status</th>
+        <th>Duração</th>
+        <th>Criado em</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for job in ops.jobs.latest_jobs %}
+        <tr>
+          <td>{{ job.job_name|default:job.name|default:job.nome|default:job }}</td>
+          <td>{{ job.status|default:"-" }}</td>
+          <td>{{ job.duration|default:job.duration_seconds|default:job.duracao|default:job.duracao_segundos|default:"-" }}</td>
+          <td>{{ job.created_at|default:job.criado_em|default:job.started_at|default:job.iniciado_em|default:"-" }}</td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="4">Nenhum job encontrado.</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<hr>
+
+<section>
+  <h2>Alertas Runtime</h2>
+  <p>Alertas ativos: {{ ops.alerts.active_total }}</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Nível</th>
+        <th>Mensagem</th>
+        <th>Criado em</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for alert in ops.alerts.latest_alerts %}
+        <tr>
+          <td>{{ alert.level|default:alert.severity|default:alert.nivel|default:"-" }}</td>
+          <td>{{ alert.message|default:alert.mensagem|default:alert.description|default:alert.descricao|default:alert }}</td>
+          <td>{{ alert.created_at|default:alert.criado_em|default:alert.timestamp|default:"-" }}</td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="3">Nenhum alerta encontrado.</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<hr>
+
+<section>
+  <h2>KPIs Globais</h2>
+  <p>Total de jobs: {{ ops.kpis.total_jobs }}</p>
+  <p>Total scheduler states: {{ ops.kpis.total_scheduler_states }}</p>
+  <p>Total alertas: {{ ops.kpis.total_alerts }}</p>
+  <p>Alertas ativos: {{ ops.kpis.active_alerts }}</p>
+</section>
+{% endblock %}
