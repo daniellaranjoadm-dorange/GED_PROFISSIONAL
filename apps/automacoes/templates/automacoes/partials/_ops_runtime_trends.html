@@ -1,0 +1,81 @@
+<section class="ops-card ops-runtime-trends">
+  <div class="ops-card-header">
+    <div>
+      <h2>Runtime Trend Analytics</h2>
+      <p>Inteligência histórica baseada em snapshots operacionais.</p>
+    </div>
+    <span class="ops-badge">{{ runtime_trends.summary.health_label }}</span>
+  </div>
+
+  <div class="ops-grid ops-grid-4">
+    <div class="ops-kpi">
+      <span class="ops-kpi-label">Score atual</span>
+      <strong>{{ runtime_trends.summary.latest_score }}</strong>
+      <small>{{ runtime_trends.summary.latest_status }}</small>
+    </div>
+
+    <div class="ops-kpi">
+      <span class="ops-kpi-label">Média histórica</span>
+      <strong>{{ runtime_trends.summary.avg_score }}</strong>
+      <small>{{ runtime_trends.summary.total_snapshots }} snapshots</small>
+    </div>
+
+    <div class="ops-kpi">
+      <span class="ops-kpi-label">Tendência score</span>
+      <strong>{{ runtime_trends.score_trend.label }}</strong>
+      <small>Δ {{ runtime_trends.score_trend.delta }}</small>
+    </div>
+
+    <div class="ops-kpi">
+      <span class="ops-kpi-label">Alertas</span>
+      <strong>{{ runtime_trends.alert_trend.label }}</strong>
+      <small>Δ {{ runtime_trends.alert_trend.delta }}</small>
+    </div>
+  </div>
+
+  <div class="ops-grid ops-grid-2">
+    <div>
+      <h3>Anomalias</h3>
+      <ul class="ops-list">
+        {% for anomaly in runtime_trends.anomalies %}
+          <li>
+            <strong>{{ anomaly.severity|upper }}</strong>
+            {{ anomaly.message }}
+          </li>
+        {% empty %}
+          <li>Nenhuma anomalia detectada.</li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <div>
+      <h3>Últimos snapshots</h3>
+      <table class="ops-table">
+        <thead>
+          <tr>
+            <th>Capturado em</th>
+            <th>Score</th>
+            <th>Status</th>
+            <th>Alertas</th>
+            <th>Falhas</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in runtime_trends.latest_snapshots %}
+            <tr>
+              <td>{{ item.captured_at }}</td>
+              <td>{{ item.runtime_score }}</td>
+              <td>{{ item.runtime_status }}</td>
+              <td>{{ item.active_alerts }}</td>
+              <td>{{ item.failed_jobs }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="5">Nenhum snapshot disponível.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
