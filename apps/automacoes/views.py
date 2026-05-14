@@ -29,6 +29,8 @@ from apps.automacoes.services.search_analytics import obter_search_analytics
 from apps.automacoes.services.km_index_jobs import executar_reindexacao_km_job
 from apps.automacoes.services.ops_center_service import OperationsCenterService
 from apps.automacoes.services.runtime_events import RuntimeEventStreamService
+from apps.automacoes.services.runtime_health_api import RuntimeHealthAPIService
+from apps.automacoes.services.runtime_retention import RuntimeRetentionService
 
 
 
@@ -2739,22 +2741,6 @@ def ops_center_live_partial(request):
         LiveOperationsService.build_payload(),
     )
 
-from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
-
-from apps.automacoes.services.runtime_health_api import RuntimeHealthAPIService
-from apps.automacoes.services.runtime_retention import RuntimeRetentionService
-
-
-
-
-
-
-
-
-
-    return JsonResponse(result)
-
 @login_required
 def runtime_health_api(request):
     return JsonResponse(RuntimeHealthAPIService.health())
@@ -2780,4 +2766,3 @@ def runtime_retention_dry_run_api(request):
     )
 
     return JsonResponse(result)
-

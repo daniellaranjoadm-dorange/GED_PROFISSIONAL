@@ -44,3 +44,4 @@ urlpatterns = [
         views.runtime_retention_dry_run_api,
         name="runtime_retention_dry_run_api",
     ),
+]
