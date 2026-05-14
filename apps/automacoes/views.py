@@ -2691,23 +2691,50 @@ def api_busca_global_ged(request):
 
 @login_required
 def ops_center(request):
-    contexto = {
+    context = {
         "ops": OperationsCenterService.build_dashboard(),
     }
 
     return render(
         request,
         "automacoes/ops_center.html",
-        contexto,
+        context,
     )
 
+
+@login_required
+def ops_center_runtime_partial(request):
+    context = {
+        "ops": OperationsCenterService.build_dashboard(),
+    }
+
+    return render(
+        request,
+        "automacoes/partials/_ops_runtime_observability.html",
+        context,
+    )
+
+
+@login_required
+def ops_center_events_partial(request):
+    return render(
+        request,
+        "automacoes/partials/_ops_runtime_events.html",
+        {
+            "runtime_events": RuntimeEventStreamService.build_stream(limit=20),
+            "runtime_events_summary": RuntimeEventStreamService.summary(),
+        },
+    )
 
 
 @login_required
 def ops_center_live_partial(request):
+    from apps.automacoes.services.live_operations import (
+        LiveOperationsService,
+    )
+
     return render(
         request,
         "automacoes/partials/_ops_live_operations.html",
         LiveOperationsService.build_payload(),
     )
-
