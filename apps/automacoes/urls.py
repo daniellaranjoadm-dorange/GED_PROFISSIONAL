@@ -1,6 +1,7 @@
 from django.urls import path
 
 from . import views
+from . import views_ops_center
 
 app_name = "automacoes"
 
@@ -89,9 +90,15 @@ urlpatterns = [
         views.abrir_arquivo_ld,
         name="abrir_arquivo_ld",
     ),
+
     path(
         "ops-center/",
         views.ops_center,
         name="ops_center",
+    ),
+    path(
+        "ops-center/partial/runtime/",
+        views_ops_center.ops_center_runtime_partial,
+        name="ops_center_runtime_partial",
     ),
 ]

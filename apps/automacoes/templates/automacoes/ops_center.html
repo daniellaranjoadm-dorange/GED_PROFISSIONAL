@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-<meta http-equiv="refresh" content="30">
+<script src="https://unpkg.com/htmx.org@1.9.12"></script>
 
 <style>
   .ops-shell {
@@ -95,6 +95,16 @@
     border-color: #f3bcbc;
   }
 
+  .ops-badge-success {
+    background: #e9f8ef;
+    border-color: #bfe8cd;
+  }
+
+  .ops-badge-info {
+    background: #eef6ff;
+    border-color: #bddcff;
+  }
+
   .ops-table {
     width: 100%;
     border-collapse: collapse;
@@ -160,6 +170,15 @@
       <a class="ops-btn" href="{% url 'automacoes:dashboard_search' %}">Search Dashboard</a>
       <a class="ops-btn" href="{% url 'automacoes:logs_automacoes' %}">Logs</a>
     </div>
+  </div>
+
+  <div
+    id="ops-runtime-observability"
+    hx-get="{% url 'automacoes:ops_center_runtime_partial' %}"
+    hx-trigger="load, every 15s"
+    hx-swap="innerHTML"
+  >
+    {% include "automacoes/partials/_ops_runtime_observability.html" %}
   </div>
 
   <div class="ops-grid">

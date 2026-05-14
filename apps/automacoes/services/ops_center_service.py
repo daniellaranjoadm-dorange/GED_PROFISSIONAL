@@ -36,6 +36,8 @@ class OperationsCenterService:
             "scheduler": cls.scheduler_status(),
             "jobs": cls.job_metrics(),
             "alerts": cls.alert_metrics(),
+            "telemetry": cls.scheduler_telemetry(),
+            "timeline": cls.runtime_timeline(),
             "kpis": cls.global_kpis(),
             "updated_at": timezone.now(),
         }
@@ -158,6 +160,158 @@ class OperationsCenterService:
             "date_field": order_field,
         }
 
+
+    @classmethod
+    def scheduler_telemetry(cls):
+        """
+        Runtime telemetry focused on scheduler freshness.
+        Read-only and field-tolerant.
+        """
+        qs = SchedulerState.objects.all()
+        heartbeat_field = cls._first_existing_field(
+            SchedulerState,
+            ("heartbeat", "last_heartbeat", "updated_at", "atualizado_em", "last_run_at"),
+        )
+        next_run_field = cls._first_existing_field(
+            SchedulerState,
+            ("next_run_at", "proxima_execucao", "scheduled_for"),
+        )
+        status_field = cls._first_existing_field(
+            SchedulerState,
+            ("last_status", "status", "estado"),
+        )
+
+        now = timezone.now()
+        stale_threshold = now - timezone.timedelta(minutes=15)
+
+        stale_count = 0
+        latest_heartbeat = None
+        next_run_at = None
+        rows = []
+
+        order_field = heartbeat_field or next_run_field or "pk"
+        states = qs.order_by(f"-{order_field}")[:10] if order_field != "pk" else qs.order_by("-pk")[:10]
+
+        for state in states:
+            heartbeat = cls._value(state, heartbeat_field)
+            next_run = cls._value(state, next_run_field)
+            status = cls._value(state, status_field, default="—")
+
+            is_stale = False
+            if heartbeat and hasattr(heartbeat, "tzinfo"):
+                is_stale = heartbeat < stale_threshold
+                if latest_heartbeat is None or heartbeat > latest_heartbeat:
+                    latest_heartbeat = heartbeat
+
+            if next_run and hasattr(next_run, "tzinfo"):
+                if next_run_at is None or next_run < next_run_at:
+                    next_run_at = next_run
+
+            if is_stale:
+                stale_count += 1
+
+            rows.append(
+                {
+                    "name": cls._value(
+                        state,
+                        cls._first_existing_field(SchedulerState, ("job_name", "name", "nome", "codigo", "code")),
+                        default=f"Scheduler #{state.pk}",
+                    ),
+                    "status": status,
+                    "heartbeat": heartbeat or "—",
+                    "next_run_at": next_run or "—",
+                    "is_stale": is_stale,
+                    "object": state,
+                }
+            )
+
+        lag_seconds = None
+        if latest_heartbeat:
+            lag_seconds = int((now - latest_heartbeat).total_seconds())
+
+        return {
+            "heartbeat_field": heartbeat_field,
+            "next_run_field": next_run_field,
+            "status_field": status_field,
+            "latest_heartbeat": latest_heartbeat,
+            "next_run_at": next_run_at,
+            "lag_seconds": lag_seconds,
+            "stale_count": stale_count,
+            "rows": rows,
+        }
+
+    @classmethod
+    def runtime_timeline(cls, limit=15):
+        """
+        Consolidated operational feed with recent jobs and runtime alerts.
+        This is intentionally read-only and small for SQLite/dev safety.
+        """
+        events = []
+
+        jobs = cls.job_metrics().get("latest_jobs_display", [])[:limit]
+        for job in jobs:
+            status = str(job.get("status") or "—")
+            events.append(
+                {
+                    "kind": "job",
+                    "severity": cls._severity_from_status(status),
+                    "title": job.get("name") or "Job",
+                    "description": f"Status: {status}",
+                    "timestamp": job.get("created_at"),
+                }
+            )
+
+        alerts = cls.alert_metrics().get("latest_alerts_display", [])[:limit]
+        for alert in alerts:
+            level = str(alert.get("level") or "warning")
+            events.append(
+                {
+                    "kind": "alert",
+                    "severity": cls._normalize_severity(level),
+                    "title": f"Runtime alert · {level}",
+                    "description": alert.get("message") or "—",
+                    "timestamp": alert.get("created_at"),
+                }
+            )
+
+        def sort_key(event):
+            value = event.get("timestamp")
+            return value if hasattr(value, "isoformat") else timezone.datetime.min.replace(tzinfo=timezone.get_current_timezone())
+
+        events.sort(key=sort_key, reverse=True)
+        return events[:limit]
+
+    @classmethod
+    def _severity_from_status(cls, status):
+        status = str(status or "").lower()
+
+        if status in cls.JOB_FAILED_STATUSES or "erro" in status or "fail" in status:
+            return "critical"
+
+        if status in cls.JOB_RUNNING_STATUSES or "running" in status or "execut" in status:
+            return "info"
+
+        if status in cls.JOB_SUCCESS_STATUSES or "success" in status or "ok" in status:
+            return "success"
+
+        return "warning"
+
+    @staticmethod
+    def _normalize_severity(value):
+        value = str(value or "").lower()
+
+        if value in {"critical", "critico", "crítico", "error", "erro", "fatal"}:
+            return "critical"
+
+        if value in {"warning", "warn", "aviso", "alerta"}:
+            return "warning"
+
+        if value in {"success", "ok", "healthy", "resolved"}:
+            return "success"
+
+        return "info"
+
+
     @classmethod
     def global_kpis(cls):
         return {
@@ -165,6 +319,7 @@ class OperationsCenterService:
             "total_scheduler_states": SchedulerState.objects.count(),
             "total_alerts": RuntimeAlert.objects.count(),
             "active_alerts": cls._active_alerts_qs().count(),
+            "scheduler_stale": cls.scheduler_telemetry().get("stale_count", 0),
         }
 
     @classmethod
