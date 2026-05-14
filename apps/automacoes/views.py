@@ -28,6 +28,8 @@ from apps.automacoes.services.search_engine import buscar_global_enterprise
 from apps.automacoes.services.search_analytics import obter_search_analytics
 from apps.automacoes.services.km_index_jobs import executar_reindexacao_km_job
 from apps.automacoes.services.ops_center_service import OperationsCenterService
+from apps.automacoes.services.runtime_events import RuntimeEventStreamService
+
 
 
 KM_DOCUMENTOS_BASE = Path(
