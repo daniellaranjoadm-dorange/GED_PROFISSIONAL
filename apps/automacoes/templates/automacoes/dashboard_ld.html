@@ -4,192 +4,448 @@
 
 {% block extra_head %}
 <style>
-  .dash-page { max-width: none !important; width: 100% !important; }
-  .dash-kpi {
-    border: 0;
-    border-radius: 16px;
-    overflow: hidden;
-    transition: transform .15s ease, box-shadow .15s ease;
+  .ld-dash {
+    width: min(100%, 1500px);
+    margin: 0 auto;
+    color: #e5e7eb;
   }
-  .dash-kpi:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 .75rem 1.5rem rgba(15, 23, 42, .12) !important;
-  }
-  .dash-kpi small { color: #64748b; }
-  .dash-kpi h2 { letter-spacing: -.04em; }
-  .dash-panel {
-    border-radius: 18px;
-    border: 1px solid rgba(148, 163, 184, .25);
-    background: rgba(255,255,255,.92);
-    box-shadow: 0 .35rem 1rem rgba(15, 23, 42, .06);
-  }
-  .dash-panel-title {
+
+  .ld-hero {
     display: flex;
-    align-items: center;
     justify-content: space-between;
+    align-items: flex-end;
+    gap: 1rem;
+    border: 1px solid rgba(56, 189, 248, .22);
+    border-radius: 24px;
+    padding: 1.15rem 1.25rem;
+    margin-bottom: 1rem;
+    background:
+      radial-gradient(circle at 0% 0%, rgba(56, 189, 248, .18), transparent 28rem),
+      radial-gradient(circle at 100% 0%, rgba(255, 138, 0, .12), transparent 24rem),
+      linear-gradient(135deg, rgba(15, 23, 42, .98), rgba(2, 6, 23, .92));
+    box-shadow: 0 18px 44px rgba(2, 8, 23, .28);
+  }
+
+  .ld-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    color: #38bdf8;
+    font-size: .72rem;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: .10em;
+    margin-bottom: .35rem;
+  }
+
+  .ld-hero h1 {
+    margin: 0;
+    color: #fff;
+    font-size: clamp(1.55rem, 2.4vw, 2.35rem);
+    font-weight: 950;
+    letter-spacing: -.045em;
+    line-height: 1;
+  }
+
+  .ld-hero p {
+    margin: .45rem 0 0;
+    color: #93c5fd;
+    max-width: 900px;
+  }
+
+  .ld-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: .55rem;
+  }
+
+  .ld-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .42rem;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, .24);
+    padding: .55rem .88rem;
+    color: #e5e7eb;
+    text-decoration: none;
+    font-size: .82rem;
+    font-weight: 900;
+    white-space: nowrap;
+    background: rgba(15, 23, 42, .70);
+  }
+
+  .ld-btn:hover {
+    color: #fff;
+    border-color: rgba(56, 189, 248, .56);
+  }
+
+  .ld-btn-primary {
+    color: #06111f;
+    background: linear-gradient(135deg, #38bdf8, #60a5fa);
+    border-color: rgba(125, 211, 252, .55);
+  }
+
+  .ld-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: .75rem;
     margin-bottom: 1rem;
   }
-  .dash-panel-title h4 { margin: 0; }
-  .dash-chip {
-    border-radius: 999px;
-    padding: .28rem .65rem;
-    background: #eef2ff;
-    color: #1e40af;
-    font-size: .78rem;
-    font-weight: 700;
+
+  .ld-kpi {
+    display: block;
+    min-height: 112px;
+    border: 1px solid rgba(148, 163, 184, .18);
+    border-radius: 20px;
+    padding: .9rem;
+    background: linear-gradient(180deg, rgba(15, 23, 42, .86), rgba(15, 23, 42, .62));
+    color: #e5e7eb;
+    text-decoration: none;
+    box-shadow: 0 14px 34px rgba(2, 8, 23, .18);
   }
-  .chart-wrap {
-    min-height: 310px;
-    position: relative;
+
+  .ld-kpi:hover {
+    color: #fff;
+    border-color: rgba(56, 189, 248, .42);
+    transform: translateY(-1px);
   }
-  .mini-progress {
-    height: 9px;
+
+  .ld-kpi span {
+    display: block;
+    color: #bfdbfe;
+    font-size: .68rem;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+  }
+
+  .ld-kpi strong {
+    display: block;
+    margin-top: .25rem;
+    color: #fff;
+    font-size: clamp(1.5rem, 2.1vw, 2.2rem);
+    line-height: 1;
+    letter-spacing: -.05em;
+  }
+
+  .ld-kpi small {
+    display: block;
+    margin-top: .35rem;
+    color: #94a3b8;
+  }
+
+  .ld-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: .75rem;
+    margin-bottom: 1rem;
+  }
+
+  .ld-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .9rem;
+    margin-bottom: 1rem;
+  }
+
+  .ld-grid-main {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(360px, .75fr);
+    gap: .9rem;
+  }
+
+  .ld-panel {
+    border: 1px solid rgba(148, 163, 184, .18);
+    border-radius: 22px;
+    padding: 1rem;
+    background: linear-gradient(180deg, rgba(15, 23, 42, .84), rgba(15, 23, 42, .64));
+    box-shadow: 0 16px 38px rgba(2, 8, 23, .20);
+  }
+
+  .ld-panel-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: .8rem;
+    margin-bottom: .8rem;
+  }
+
+  .ld-panel-head h2 {
+    margin: 0;
+    color: #fff;
+    font-size: 1.02rem;
+    font-weight: 950;
+    letter-spacing: -.025em;
+  }
+
+  .ld-panel-head p {
+    margin: .2rem 0 0;
+    color: #93c5fd;
+    font-size: .8rem;
+  }
+
+  .ld-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(56, 189, 248, .30);
     border-radius: 999px;
-    background: #e2e8f0;
+    padding: .3rem .65rem;
+    color: #bae6fd;
+    background: rgba(14, 165, 233, .14);
+    font-size: .68rem;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    white-space: nowrap;
+  }
+
+  .ld-chip-warn {
+    color: #fde68a;
+    background: rgba(245, 158, 11, .14);
+    border-color: rgba(245, 158, 11, .34);
+  }
+
+  .ld-chip-risk {
+    color: #fecaca;
+    background: rgba(220, 38, 38, .15);
+    border-color: rgba(248, 113, 113, .32);
+  }
+
+  .ld-progress {
+    height: 8px;
+    border-radius: 999px;
+    background: rgba(148, 163, 184, .20);
     overflow: hidden;
+    margin-top: .65rem;
   }
-  .mini-progress > span {
+
+  .ld-progress > span {
     display: block;
     height: 100%;
-    background: #0d6efd;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #38bdf8, #22c55e);
   }
-  .dash-list-item {
-    border: 1px solid rgba(148, 163, 184, .22);
-    border-radius: 12px;
-    padding: .8rem;
-    background: #fff;
-    text-decoration: none;
-    color: inherit;
+
+  .ld-panel small {
+    color: #94a3b8;
+  }
+
+  .chart-wrap {
+    min-height: 300px;
+    position: relative;
+  }
+
+  .ld-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid rgba(148, 163, 184, .14);
+    border-radius: 16px;
+  }
+
+  .ld-table {
+    width: 100%;
+    min-width: 620px;
+    border-collapse: collapse;
+  }
+
+  .ld-table th,
+  .ld-table td {
+    padding: .68rem .75rem;
+    border-bottom: 1px solid rgba(148, 163, 184, .12);
+    color: #dbeafe;
+    vertical-align: middle;
+    font-size: .82rem;
+  }
+
+  .ld-table th {
+    color: #93c5fd;
+    background: rgba(2, 6, 23, .34);
+    font-size: .68rem;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+  }
+
+  .ld-table tbody tr:hover {
+    background: rgba(56, 189, 248, .06);
+  }
+
+  .ld-table tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .ld-list {
+    display: flex;
+    flex-direction: column;
+    gap: .55rem;
+  }
+
+  .ld-list-item {
     display: block;
-    margin-bottom: .65rem;
+    border: 1px solid rgba(148, 163, 184, .16);
+    border-radius: 16px;
+    padding: .78rem;
+    background: rgba(2, 6, 23, .30);
+    color: #e5e7eb;
+    text-decoration: none;
   }
-  .dash-list-item:hover {
-    border-color: #0d6efd;
-    background: #f8fafc;
+
+  .ld-list-item:hover {
+    color: #fff;
+    border-color: rgba(56, 189, 248, .42);
   }
-  .dash-table td,
-  .dash-table th { vertical-align: middle; }
+
+  .ld-list-item strong {
+    display: block;
+    color: #fff;
+  }
+
+  .ld-muted {
+    color: #94a3b8;
+  }
+
+  @media (max-width: 1280px) {
+    .ld-kpi-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .ld-grid-main {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 900px) {
+    .ld-hero,
+    .ld-panel-head {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .ld-actions {
+      justify-content: flex-start;
+    }
+
+    .ld-grid-2,
+    .ld-grid-3 {
+      grid-template-columns: 1fr;
+    }
+
+    .ld-kpi-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 560px) {
+    .ld-kpi-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .ld-btn {
+      width: 100%;
+    }
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="ds-page dash-page">
-
-  <div class="ds-pagehead">
+<div class="ld-dash">
+  <section class="ld-hero">
     <div>
-      <h1 class="ds-title">📁 Dashboard LD</h1>
-      <p class="ds-subtitle">
-        Cockpit executivo da Lista de Documentos: origem, disciplina, status, GRD, PCF e pendências.
-      </p>
-    </div>
-
-    <div class="d-flex gap-2">
-      <a href="{% url 'automacoes:lista_ld' %}" class="btn btn-primary">Abrir Lista LD</a>
-      <a href="{% url 'automacoes:painel' %}" class="btn btn-secondary">Voltar</a>
-    </div>
-  </div>
-
-  <div class="row g-3 mb-4">
-    <div class="col-md">
-      <a href="{% url 'automacoes:lista_ld' %}" class="text-decoration-none text-dark">
-        <div class="card dash-kpi shadow-sm h-100">
-          <div class="card-body">
-            <small>Total linhas</small>
-            <h2 class="mb-0">{{ total }}</h2>
-          </div>
-        </div>
-      </a>
-    </div>
-
-    <div class="col-md">
-      <div class="card dash-kpi shadow-sm h-100">
-        <div class="card-body">
-          <small>Documentos únicos</small>
-          <h2 class="mb-0">{{ total_exclusivos }}</h2>
-        </div>
+      <div class="ld-eyebrow">
+        <i class="bi bi-folder2-open"></i>
+        LD Intelligence
       </div>
+      <h1>Dashboard LD</h1>
+      <p>Cockpit executivo da Lista de Documentos: origem, disciplina, status documental, GRD, PCF e pendências críticas.</p>
     </div>
 
-    <div class="col-md">
-      <a href="{% url 'automacoes:lista_ld' %}?status_doc=Recebido" class="text-decoration-none text-dark">
-        <div class="card dash-kpi shadow-sm h-100">
-          <div class="card-body">
-            <small>Recebidos</small>
-            <h2 class="mb-0 text-success">{{ total_recebidos }}</h2>
-          </div>
-        </div>
+    <div class="ld-actions">
+      <a href="{% url 'automacoes:lista_ld' %}" class="ld-btn ld-btn-primary">
+        <i class="bi bi-table"></i>
+        Abrir Lista LD
+      </a>
+      <a href="{% url 'automacoes:painel' %}" class="ld-btn">
+        <i class="bi bi-arrow-left"></i>
+        Voltar
       </a>
     </div>
+  </section>
 
-    <div class="col-md">
-      <a href="{% url 'automacoes:lista_ld' %}?status_doc=Aprovado" class="text-decoration-none text-dark">
-        <div class="card dash-kpi shadow-sm h-100">
-          <div class="card-body">
-            <small>Aprovados</small>
-            <h2 class="mb-0 text-success">{{ total_aprovados }}</h2>
-          </div>
-        </div>
-      </a>
+  <section class="ld-kpi-grid">
+    <a href="{% url 'automacoes:lista_ld' %}" class="ld-kpi">
+      <span>Total linhas</span>
+      <strong>{{ total }}</strong>
+      <small>registros LD</small>
+    </a>
+
+    <div class="ld-kpi">
+      <span>Documentos únicos</span>
+      <strong>{{ total_exclusivos }}</strong>
+      <small>sem duplicidade por revisão</small>
     </div>
 
-    <div class="col-md">
-      <a href="{% url 'automacoes:lista_ld' %}?status_grd=Emitido" class="text-decoration-none text-dark">
-        <div class="card dash-kpi shadow-sm h-100">
-          <div class="card-body">
-            <small>GRD emitido</small>
-            <h2 class="mb-0 text-primary">{{ total_emitidos }}</h2>
-          </div>
-        </div>
-      </a>
-    </div>
+    <a href="{% url 'automacoes:lista_ld' %}?status_doc=Recebido" class="ld-kpi">
+      <span>Recebidos</span>
+      <strong>{{ total_recebidos }}</strong>
+      <small>status documental</small>
+    </a>
 
-    <div class="col-md">
-      <a href="{% url 'automacoes:lista_ld' %}?status_pcf=NOT%20RELEASED" class="text-decoration-none text-dark">
-        <div class="card dash-kpi shadow-sm h-100">
-          <div class="card-body">
-            <small>Not Released</small>
-            <h2 class="mb-0 text-danger">{{ total_not_released }}</h2>
-          </div>
-        </div>
-      </a>
-    </div>
-  </div>
+    <a href="{% url 'automacoes:lista_ld' %}?status_doc=Aprovado" class="ld-kpi">
+      <span>Aprovados</span>
+      <strong>{{ total_aprovados }}</strong>
+      <small>documentos aprovados</small>
+    </a>
 
-  <div class="row g-3 mb-4">
-    <div class="col-lg-4">
-      <div class="dash-panel p-4 h-100">
-        <div class="dash-panel-title">
-          <h4>Taxa PCF</h4>
-          <span class="dash-chip">{{ taxa_pcf }}%</span>
+    <a href="{% url 'automacoes:lista_ld' %}?status_grd=Emitido" class="ld-kpi">
+      <span>GRD emitido</span>
+      <strong>{{ total_emitidos }}</strong>
+      <small>envios formalizados</small>
+    </a>
+
+    <a href="{% url 'automacoes:lista_ld' %}?status_pcf=NOT%20RELEASED" class="ld-kpi">
+      <span>Not Released</span>
+      <strong>{{ total_not_released }}</strong>
+      <small>pendência crítica</small>
+    </a>
+  </section>
+
+  <section class="ld-grid-3">
+    <div class="ld-panel">
+      <div class="ld-panel-head">
+        <div>
+          <h2>Taxa PCF</h2>
+          <p>Registros LD com PCF vinculado.</p>
         </div>
-        <div class="mini-progress mb-2"><span style="width: {{ taxa_pcf }}%;"></span></div>
-        <small class="text-muted">Registros LD com PCF vinculado.</small>
+        <span class="ld-chip">{{ taxa_pcf }}%</span>
       </div>
+      <div class="ld-progress"><span style="width: {{ taxa_pcf }}%;"></span></div>
     </div>
 
-    <div class="col-lg-4">
-      <div class="dash-panel p-4 h-100">
-        <div class="dash-panel-title">
-          <h4>Taxa GRD</h4>
-          <span class="dash-chip">{{ taxa_grd }}%</span>
+    <div class="ld-panel">
+      <div class="ld-panel-head">
+        <div>
+          <h2>Taxa GRD</h2>
+          <p>Registros LD com GRD emitido.</p>
         </div>
-        <div class="mini-progress mb-2"><span style="width: {{ taxa_grd }}%;"></span></div>
-        <small class="text-muted">Registros LD com GRD emitido.</small>
+        <span class="ld-chip">{{ taxa_grd }}%</span>
       </div>
+      <div class="ld-progress"><span style="width: {{ taxa_grd }}%;"></span></div>
     </div>
 
-    <div class="col-lg-4">
-      <div class="dash-panel p-4 h-100">
-        <div class="dash-panel-title">
-          <h4>Taxa Aprovação</h4>
-          <span class="dash-chip">{{ taxa_aprovacao }}%</span>
+    <div class="ld-panel">
+      <div class="ld-panel-head">
+        <div>
+          <h2>Taxa Aprovação</h2>
+          <p>Registros LD com status aprovado.</p>
         </div>
-        <div class="mini-progress mb-2"><span style="width: {{ taxa_aprovacao }}%;"></span></div>
-        <small class="text-muted">Registros LD com status aprovado.</small>
+        <span class="ld-chip">{{ taxa_aprovacao }}%</span>
       </div>
+      <div class="ld-progress"><span style="width: {{ taxa_aprovacao }}%;"></span></div>
     </div>
-  </div>
+  </section>
 
   {{ disciplina_labels|json_script:"ld-disciplina-labels" }}
   {{ disciplina_values|json_script:"ld-disciplina-values" }}
@@ -202,132 +458,140 @@
   {{ pcf_labels|json_script:"ld-pcf-labels" }}
   {{ pcf_values|json_script:"ld-pcf-values" }}
 
-  <div class="row g-4 mb-4">
-    <div class="col-lg-6">
-      <div class="dash-panel p-4 h-100">
-        <div class="dash-panel-title">
-          <h4>Documentos por Disciplina</h4>
-          <span class="dash-chip">Top 12</span>
+  <section class="ld-grid-2">
+    <div class="ld-panel">
+      <div class="ld-panel-head">
+        <div>
+          <h2>Documentos por Disciplina</h2>
+          <p>Top 12 disciplinas por volume documental.</p>
         </div>
-        <div class="chart-wrap">
-          <canvas id="ldDisciplinaChart"></canvas>
-        </div>
+        <span class="ld-chip">Clique para filtrar</span>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="ldDisciplinaChart"></canvas>
       </div>
     </div>
 
-    <div class="col-lg-6">
-      <div class="dash-panel p-4 h-100">
-        <div class="dash-panel-title">
-          <h4>Origem LD</h4>
-          <span class="dash-chip">LD / Marenova</span>
+    <div class="ld-panel">
+      <div class="ld-panel-head">
+        <div>
+          <h2>Origem LD</h2>
+          <p>Distribuição por origem da lista.</p>
         </div>
-        <div class="chart-wrap">
-          <canvas id="ldOrigemChart"></canvas>
-        </div>
+        <span class="ld-chip">LD / Marenova</span>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="ldOrigemChart"></canvas>
       </div>
     </div>
-  </div>
+  </section>
 
-  <div class="row g-4 mb-4">
-    <div class="col-lg-4">
-      <div class="dash-panel p-4 h-100">
-        <div class="dash-panel-title">
-          <h4>Status Documento</h4>
-          <span class="dash-chip">Operacional</span>
+  <section class="ld-grid-3">
+    <div class="ld-panel">
+      <div class="ld-panel-head">
+        <div>
+          <h2>Status Documento</h2>
+          <p>Visão operacional do status documental.</p>
         </div>
-        <div class="chart-wrap">
-          <canvas id="ldStatusDocChart"></canvas>
-        </div>
+        <span class="ld-chip">Operacional</span>
       </div>
-    </div>
-
-    <div class="col-lg-4">
-      <div class="dash-panel p-4 h-100">
-        <div class="dash-panel-title">
-          <h4>Status GRD</h4>
-          <span class="dash-chip">Emissão</span>
-        </div>
-        <div class="chart-wrap">
-          <canvas id="ldStatusGrdChart"></canvas>
-        </div>
+      <div class="chart-wrap">
+        <canvas id="ldStatusDocChart"></canvas>
       </div>
     </div>
 
-    <div class="col-lg-4">
-      <div class="dash-panel p-4 h-100">
-        <div class="dash-panel-title">
-          <h4>PCF / Respostas</h4>
-          <span class="dash-chip">Workflow</span>
+    <div class="ld-panel">
+      <div class="ld-panel-head">
+        <div>
+          <h2>Status GRD</h2>
+          <p>Status de emissão de GRD.</p>
         </div>
-        <div class="chart-wrap">
-          <canvas id="ldPcfChart"></canvas>
-        </div>
+        <span class="ld-chip">Emissão</span>
       </div>
-    </div>
-  </div>
-
-  <div class="row g-4">
-    <div class="col-lg-7">
-      <div class="dash-panel p-4 h-100">
-        <div class="dash-panel-title">
-          <h4>Top Disciplinas Sem PCF</h4>
-          <span class="dash-chip">Pendências</span>
-        </div>
-
-        <div class="table-responsive">
-          <table class="table table-hover align-middle dash-table">
-            <thead>
-              <tr>
-                <th>Disciplina</th>
-                <th>Total pendente</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for item in top_disciplinas_pendentes %}
-              <tr>
-                <td>{{ item.disciplina|default:"Sem disciplina" }}</td>
-                <td><span class="badge bg-warning text-dark">{{ item.total }}</span></td>
-                <td class="text-end">
-                  {% if item.disciplina %}
-                  <a href="{% url 'automacoes:lista_ld' %}?disciplina={{ item.disciplina|urlencode }}&sem_pcf=1"
-                     class="btn btn-sm btn-outline-primary">
-                    Abrir
-                  </a>
-                  {% endif %}
-                </td>
-              </tr>
-              {% empty %}
-              <tr><td colspan="3" class="text-center text-muted">Sem pendências.</td></tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
+      <div class="chart-wrap">
+        <canvas id="ldStatusGrdChart"></canvas>
       </div>
     </div>
 
-    <div class="col-lg-5">
-      <div class="dash-panel p-4 h-100">
-        <div class="dash-panel-title">
-          <h4>Not Released</h4>
-          <span class="dash-chip">Crítico</span>
+    <div class="ld-panel">
+      <div class="ld-panel-head">
+        <div>
+          <h2>PCF / Respostas</h2>
+          <p>Fluxo PCF e respostas vinculadas.</p>
         </div>
+        <span class="ld-chip">Workflow</span>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="ldPcfChart"></canvas>
+      </div>
+    </div>
+  </section>
 
+  <section class="ld-grid-main">
+    <div class="ld-panel">
+      <div class="ld-panel-head">
+        <div>
+          <h2>Top Disciplinas Sem PCF</h2>
+          <p>Maiores pendências de PCF por disciplina.</p>
+        </div>
+        <span class="ld-chip ld-chip-warn">Pendências</span>
+      </div>
+
+      <div class="ld-table-wrap">
+        <table class="ld-table">
+          <thead>
+            <tr>
+              <th>Disciplina</th>
+              <th>Total pendente</th>
+              <th>Ação</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in top_disciplinas_pendentes %}
+            <tr>
+              <td>{{ item.disciplina|default:"Sem disciplina" }}</td>
+              <td><span class="ld-chip ld-chip-warn">{{ item.total }}</span></td>
+              <td>
+                {% if item.disciplina %}
+                <a href="{% url 'automacoes:lista_ld' %}?disciplina={{ item.disciplina|urlencode }}&sem_pcf=1"
+                   class="ld-btn">
+                  Abrir
+                </a>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3" class="text-center ld-muted">Sem pendências.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <aside class="ld-panel">
+      <div class="ld-panel-head">
+        <div>
+          <h2>Not Released</h2>
+          <p>Documentos críticos com PCF não liberada.</p>
+        </div>
+        <span class="ld-chip ld-chip-risk">Crítico</span>
+      </div>
+
+      <div class="ld-list">
         {% for item in top_not_released %}
         <a href="{% url 'automacoes:lista_ld' %}?q={{ item.documento|urlencode }}"
-           class="dash-list-item">
-          <div class="fw-bold">{{ item.documento }}</div>
-          <small class="text-muted">
+           class="ld-list-item">
+          <strong>{{ item.documento }}</strong>
+          <small class="ld-muted">
             Rev {{ item.revisao|default:"—" }} · {{ item.disciplina|default:"—" }} · {{ item.status_final_pcf|default:"—" }}
           </small>
         </a>
         {% empty %}
-        <div class="text-muted">Nenhum documento NOT RELEASED.</div>
+        <div class="ld-muted">Nenhum documento NOT RELEASED.</div>
         {% endfor %}
       </div>
-    </div>
-  </div>
-
+    </aside>
+  </section>
 </div>
 {% endblock %}
 

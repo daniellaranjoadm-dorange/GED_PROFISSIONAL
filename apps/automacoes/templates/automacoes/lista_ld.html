@@ -4,194 +4,471 @@
 
 {% block extra_head %}
 <style>
-  .ld-page { max-width: none !important; width: 100% !important; }
-  .ld-kpi { border: 0; border-radius: 14px; }
-  .ld-kpi small { color: #64748b; }
-  .ld-filter-panel {
-    border-radius: 16px;
-    border: 1px solid rgba(148, 163, 184, .25);
-    background: rgba(255,255,255,.88);
-  }
-  .ld-card {
-    border-radius: 14px;
-    border: 1px solid rgba(148, 163, 184, .22);
-  }
-  .ld-doc-code { font-size: 1.05rem; letter-spacing: -0.01em; }
-  .ld-title { font-size: 1rem; line-height: 1.35; }
-  .ld-info-label {
-    font-size: .72rem;
-    text-transform: uppercase;
-    letter-spacing: .04em;
-    color: #64748b;
-  }
-  .ld-info-value { font-weight: 600; word-break: break-word; }
-  .ld-actions .btn { white-space: nowrap; }
-  .ld-chip-row { display: flex; gap: .5rem; flex-wrap: wrap; }
-  .ld-chip {
-    border: 1px solid #cbd5e1;
-    background: #fff;
-    color: #0f172a;
-    border-radius: 999px;
-    padding: .38rem .78rem;
-    font-size: .85rem;
-    text-decoration: none;
+  .ld-page {
+    width: min(100%, 1500px);
+    margin: 0 auto;
+    color: #e5e7eb;
   }
 
+  .ld-hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 1rem;
+    border: 1px solid rgba(56, 189, 248, .22);
+    border-radius: 24px;
+    padding: 1.15rem 1.25rem;
+    margin-bottom: 1rem;
+    background:
+      radial-gradient(circle at 0% 0%, rgba(56, 189, 248, .18), transparent 28rem),
+      radial-gradient(circle at 100% 0%, rgba(255, 138, 0, .12), transparent 24rem),
+      linear-gradient(135deg, rgba(15, 23, 42, .98), rgba(2, 6, 23, .92));
+    box-shadow: 0 18px 44px rgba(2, 8, 23, .28);
+  }
+
+  .ld-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    color: #38bdf8;
+    font-size: .72rem;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: .10em;
+    margin-bottom: .35rem;
+  }
+
+  .ld-hero h1 {
+    margin: 0;
+    color: #fff;
+    font-size: clamp(1.55rem, 2.4vw, 2.35rem);
+    font-weight: 950;
+    letter-spacing: -.045em;
+    line-height: 1;
+  }
+
+  .ld-hero p {
+    margin: .45rem 0 0;
+    color: #93c5fd;
+    max-width: 900px;
+  }
+
+  .ld-actions,
+  .ld-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .55rem;
+  }
+
+  .ld-actions {
+    justify-content: flex-end;
+  }
+
+  .ld-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .42rem;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, .24);
+    padding: .55rem .88rem;
+    color: #e5e7eb;
+    text-decoration: none;
+    font-size: .82rem;
+    font-weight: 900;
+    white-space: nowrap;
+    background: rgba(15, 23, 42, .70);
+  }
+
+  .ld-btn:hover {
+    color: #fff;
+    border-color: rgba(56, 189, 248, .56);
+  }
+
+  .ld-btn-primary {
+    color: #06111f;
+    background: linear-gradient(135deg, #38bdf8, #60a5fa);
+    border-color: rgba(125, 211, 252, .55);
+  }
+
+  .ld-btn-success {
+    color: #052e16;
+    background: linear-gradient(135deg, #22c55e, #86efac);
+    border-color: rgba(134, 239, 172, .55);
+  }
+
+  .ld-btn-warning {
+    color: #422006;
+    background: linear-gradient(135deg, #f59e0b, #fde68a);
+    border-color: rgba(253, 230, 138, .55);
+  }
+
+  .ld-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: .7rem;
+    margin-bottom: 1rem;
+  }
+
+  .ld-kpi {
+    border: 1px solid rgba(148, 163, 184, .18);
+    border-radius: 20px;
+    padding: .82rem;
+    background: linear-gradient(180deg, rgba(15, 23, 42, .86), rgba(15, 23, 42, .62));
+    color: #e5e7eb;
+    box-shadow: 0 14px 34px rgba(2, 8, 23, .18);
+    min-height: 102px;
+  }
+
+  .ld-kpi span {
+    display: block;
+    color: #bfdbfe;
+    font-size: .64rem;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+  }
+
+  .ld-kpi strong {
+    display: block;
+    margin-top: .25rem;
+    color: #fff;
+    font-size: clamp(1.35rem, 1.8vw, 2rem);
+    line-height: 1;
+    letter-spacing: -.05em;
+  }
+
+  .ld-filter-panel,
+  .ld-card,
   .ld-detail-panel {
-    margin-top: 1rem;
-    border: 1px solid rgba(148, 163, 184, .25);
-    border-radius: 14px;
-    background: #f8fafc;
+    border: 1px solid rgba(148, 163, 184, .18);
+    border-radius: 22px;
+    background: linear-gradient(180deg, rgba(15, 23, 42, .84), rgba(15, 23, 42, .64));
+    box-shadow: 0 16px 38px rgba(2, 8, 23, .20);
+  }
+
+  .ld-filter-panel {
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .ld-filter-grid {
+    display: grid;
+    grid-template-columns: minmax(280px, 2fr) repeat(4, minmax(150px, 1fr));
+    gap: .65rem;
+    align-items: end;
+  }
+
+  .ld-filter-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(160px, 1fr)) auto auto;
+    gap: .65rem;
+    align-items: end;
+    margin-top: .65rem;
+  }
+
+  .ld-filter-label {
+    display: block;
+    margin-bottom: .25rem;
+    color: #93c5fd;
+    font-size: .66rem;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    font-weight: 950;
+  }
+
+  .ld-check-row,
+  .ld-chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .45rem .75rem;
+  }
+
+  .ld-check-row {
+    align-items: center;
+    color: #dbeafe;
+    font-size: .82rem;
+    font-weight: 700;
+  }
+
+  .ld-chip-row {
+    border-top: 1px solid rgba(148, 163, 184, .14);
+    margin-top: .85rem;
+    padding-top: .85rem;
+  }
+
+  .ld-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(148, 163, 184, .22);
+    border-radius: 999px;
+    padding: .42rem .72rem;
+    background: rgba(15, 23, 42, .70);
+    color: #dbeafe;
+    font-size: .76rem;
+    font-weight: 900;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .ld-chip:hover,
+  .ld-chip.active {
+    color: #06111f;
+    background: linear-gradient(135deg, #38bdf8, #60a5fa);
+    border-color: rgba(125, 211, 252, .55);
+  }
+
+  .ld-card-list {
+    display: flex;
+    flex-direction: column;
+    gap: .85rem;
+  }
+
+  .ld-card {
     padding: 1rem;
   }
+
+  .ld-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: .85rem;
+    margin-bottom: .9rem;
+  }
+
+  .ld-doc-code {
+    color: #fff;
+    font-size: 1.05rem;
+    font-weight: 950;
+    letter-spacing: -.015em;
+  }
+
+  .ld-sub {
+    color: #94a3b8;
+    font-size: .8rem;
+    margin-top: .2rem;
+  }
+
+  .ld-title {
+    color: #dbeafe;
+    font-size: .95rem;
+    line-height: 1.35;
+    margin-top: .4rem;
+  }
+
+  .ld-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem;
+    justify-content: flex-end;
+  }
+
+  .ld-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, .20);
+    padding: .28rem .58rem;
+    font-size: .68rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: .035em;
+    color: #dbeafe;
+    background: rgba(15, 23, 42, .66);
+  }
+
+  .ld-badge-ok {
+    color: #bbf7d0;
+    background: rgba(22, 163, 74, .15);
+    border-color: rgba(34, 197, 94, .30);
+  }
+
+  .ld-badge-risk {
+    color: #fecaca;
+    background: rgba(220, 38, 38, .15);
+    border-color: rgba(248, 113, 113, .32);
+  }
+
+  .ld-badge-warn {
+    color: #fde68a;
+    background: rgba(245, 158, 11, .14);
+    border-color: rgba(245, 158, 11, .32);
+  }
+
+  .ld-info-grid,
   .ld-detail-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: .75rem;
+    gap: .65rem;
   }
+
+  .ld-info-grid {
+    margin-bottom: .85rem;
+  }
+
+  .ld-info-box,
   .ld-detail-box {
-    background: #fff;
-    border: 1px solid rgba(148, 163, 184, .22);
-    border-radius: 12px;
-    padding: .8rem;
+    border: 1px solid rgba(148, 163, 184, .15);
+    border-radius: 14px;
+    padding: .72rem;
+    background: rgba(15, 23, 42, .50);
   }
+
+  .ld-info-label,
   .ld-detail-title {
-    font-size: .72rem;
+    display: block;
+    margin-bottom: .34rem;
+    color: #93c5fd;
+    font-size: .66rem;
     text-transform: uppercase;
-    letter-spacing: .06em;
-    color: #64748b;
-    font-weight: 700;
-    margin-bottom: .5rem;
+    letter-spacing: .07em;
+    font-weight: 950;
   }
+
+  .ld-info-value {
+    color: #e5e7eb;
+    font-weight: 800;
+    word-break: break-word;
+  }
+
+  .ld-detail-panel {
+    margin-top: .9rem;
+    padding: .85rem;
+  }
+
   .ld-path {
-    font-size: .82rem;
-    color: #334155;
+    color: #bfdbfe;
+    font-size: .78rem;
     word-break: break-all;
     line-height: 1.35;
   }
+
   .ld-timeline {
-    display: flex;
-    gap: 1rem;
-    flex-wrap: wrap;
-  }
-  .ld-timeline-item {
-    border-left: 3px solid #0d6efd;
-    padding-left: .65rem;
-    min-width: 180px;
-  }
-  @media (max-width: 992px) {
-    .ld-detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  }
-  @media (max-width: 576px) {
-    .ld-detail-grid { grid-template-columns: 1fr; }
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: .65rem;
   }
 
-  .ld-chip.active,
-  .ld-chip:hover {
-    background: #0d6efd;
-    color: #fff;
-    border-color: #0d6efd;
+  .ld-timeline-item {
+    border-left: 3px solid #38bdf8;
+    padding: .35rem 0 .35rem .65rem;
+    background: rgba(2, 6, 23, .26);
+    border-radius: 0 12px 12px 0;
   }
-  .ld-detail-box {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 14px;
+
+  .ld-empty {
+    border: 1px dashed rgba(148, 163, 184, .26);
+    border-radius: 18px;
+    padding: 1rem;
+    color: #94a3b8;
+    text-align: center;
+  }
+
+  .ld-pagination .page-link {
+    background: rgba(15, 23, 42, .76);
+    color: #dbeafe;
+    border-color: rgba(148, 163, 184, .20);
+  }
+
+  .ld-pagination .active .page-link,
+  .ld-pagination .page-item.active .page-link {
+    background: linear-gradient(135deg, #38bdf8, #60a5fa);
+    color: #06111f;
+    border-color: rgba(125, 211, 252, .55);
+    font-weight: 900;
+  }
+
+  @media (max-width: 1320px) {
+    .ld-kpi-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .ld-filter-grid,
+    .ld-filter-grid-2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .ld-info-grid,
+    .ld-detail-grid,
+    .ld-timeline {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 760px) {
+    .ld-hero,
+    .ld-card-top {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .ld-actions,
+    .ld-badges {
+      justify-content: flex-start;
+    }
+
+    .ld-kpi-grid,
+    .ld-filter-grid,
+    .ld-filter-grid-2,
+    .ld-info-grid,
+    .ld-detail-grid,
+    .ld-timeline {
+      grid-template-columns: 1fr;
+    }
+
+    .ld-btn {
+      width: 100%;
+    }
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="ds-page ld-page">
-
-  <div class="ds-pagehead">
+<div class="ld-page">
+  <section class="ld-hero">
     <div>
-      <h1 class="ds-title">📁 Lista LD</h1>
-      <p class="ds-subtitle">
-        Dados da Lista de Documentos importados para o banco do GED. A planilha da rede permanece como backup.
-      </p>
+      <div class="ld-eyebrow">
+        <i class="bi bi-table"></i>
+        Lista de Documentos Enterprise
+      </div>
+      <h1>Lista LD</h1>
+      <p>Dados da Lista de Documentos importados para o banco do GED. A planilha da rede permanece como backup operacional.</p>
     </div>
 
-    <div class="d-flex gap-2">
+    <div class="ld-actions">
+      <a href="{% url 'automacoes:dashboard_ld' %}" class="ld-btn ld-btn-primary">
+        <i class="bi bi-pie-chart"></i>
+        Dashboard
+      </a>
       <a href="{% url 'automacoes:exportar_ld_excel' %}{% if query_string %}?{{ query_string }}{% endif %}"
-         class="btn btn-success">
+         class="ld-btn ld-btn-success">
+        <i class="bi bi-file-earmark-excel"></i>
         Exportar Excel
       </a>
-      <a href="{% url 'automacoes:painel' %}" class="btn btn-secondary">Voltar</a>
+      <a href="{% url 'automacoes:painel' %}" class="ld-btn">
+        <i class="bi bi-arrow-left"></i>
+        Voltar
+      </a>
     </div>
-  </div>
+  </section>
 
-  <div class="row g-3 mb-3">
-    <div class="col-md">
-      <div class="card ld-kpi shadow-sm">
-        <div class="card-body">
-          <small>Total linhas</small>
-          <h3 class="mb-0">{{ total }}</h3>
-        </div>
-      </div>
-    </div>
+  <section class="ld-kpi-grid">
+    <div class="ld-kpi"><span>Total linhas</span><strong>{{ total }}</strong></div>
+    <div class="ld-kpi"><span>Documentos únicos</span><strong>{{ total_exclusivos }}</strong></div>
+    <div class="ld-kpi"><span>Recebidos</span><strong>{{ total_recebidos }}</strong></div>
+    <div class="ld-kpi"><span>Aprovados</span><strong>{{ total_aprovados }}</strong></div>
+    <div class="ld-kpi"><span>Emitidos GRD</span><strong>{{ total_emitidos }}</strong></div>
+    <div class="ld-kpi"><span>Com PCF</span><strong>{{ total_com_pcf }}</strong></div>
+    <div class="ld-kpi"><span>Sem PCF</span><strong>{{ total_sem_pcf }}</strong></div>
+  </section>
 
-    <div class="col-md">
-      <div class="card ld-kpi shadow-sm">
-        <div class="card-body">
-          <small>Documentos únicos</small>
-          <h3 class="mb-0">{{ total_exclusivos }}</h3>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-md">
-      <div class="card ld-kpi shadow-sm">
-        <div class="card-body">
-          <small>Recebidos</small>
-          <h3 class="mb-0 text-success">{{ total_recebidos }}</h3>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-md">
-      <div class="card ld-kpi shadow-sm">
-        <div class="card-body">
-          <small>Aprovados</small>
-          <h3 class="mb-0 text-success">{{ total_aprovados }}</h3>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-md">
-      <div class="card ld-kpi shadow-sm">
-        <div class="card-body">
-          <small>Emitidos GRD</small>
-          <h3 class="mb-0 text-primary">{{ total_emitidos }}</h3>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-md">
-      <div class="card ld-kpi shadow-sm">
-        <div class="card-body">
-          <small>Com PCF</small>
-          <h3 class="mb-0">{{ total_com_pcf }}</h3>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-md">
-      <div class="card ld-kpi shadow-sm">
-        <div class="card-body">
-          <small>Sem PCF</small>
-          <h3 class="mb-0 text-warning">{{ total_sem_pcf }}</h3>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="ds-surface p-4 mb-4 ld-filter-panel">
+  <section class="ld-filter-panel">
     <form method="get">
-      <div class="row g-2 align-items-end">
-
-        <div class="col-lg-4">
-          <label class="form-label small text-muted">Busca geral</label>
+      <div class="ld-filter-grid">
+        <div>
+          <label class="ld-filter-label">Busca geral</label>
           <input type="text"
                  name="q"
                  value="{{ busca }}"
@@ -199,8 +476,8 @@
                  placeholder="Documento, título, disciplina, GRD, PCF ou resposta...">
         </div>
 
-        <div class="col-lg-2">
-          <label class="form-label small text-muted">Origem</label>
+        <div>
+          <label class="ld-filter-label">Origem</label>
           <select name="origem" class="form-select">
             <option value="">Todas</option>
             {% for o in origens %}
@@ -209,8 +486,8 @@
           </select>
         </div>
 
-        <div class="col-lg-2">
-          <label class="form-label small text-muted">Tipo Documento</label>
+        <div>
+          <label class="ld-filter-label">Tipo Documento</label>
           <select name="tipo_doc" class="form-select">
             <option value="">Todos</option>
             {% for tipo in tipos_documentais %}
@@ -219,8 +496,8 @@
           </select>
         </div>
 
-        <div class="col-lg-2">
-          <label class="form-label small text-muted">Disciplina</label>
+        <div>
+          <label class="ld-filter-label">Disciplina</label>
           <select name="disciplina" class="form-select">
             <option value="">Todas</option>
             {% for d in disciplinas %}
@@ -229,8 +506,8 @@
           </select>
         </div>
 
-        <div class="col-lg-2">
-          <label class="form-label small text-muted">Status Documento</label>
+        <div>
+          <label class="ld-filter-label">Status Documento</label>
           <select name="status_doc" class="form-select">
             <option value="">Todos</option>
             {% for s in status_documentos %}
@@ -238,9 +515,11 @@
             {% endfor %}
           </select>
         </div>
+      </div>
 
-        <div class="col-lg-2">
-          <label class="form-label small text-muted">Status GRD</label>
+      <div class="ld-filter-grid-2">
+        <div>
+          <label class="ld-filter-label">Status GRD</label>
           <select name="status_grd" class="form-select">
             <option value="">Todos</option>
             {% for s in status_grds %}
@@ -249,8 +528,8 @@
           </select>
         </div>
 
-        <div class="col-lg-2">
-          <label class="form-label small text-muted">Status PCF</label>
+        <div>
+          <label class="ld-filter-label">Status PCF</label>
           <input type="text"
                  name="status_pcf"
                  value="{{ status_pcf }}"
@@ -258,334 +537,263 @@
                  placeholder="NOT RELEASED...">
         </div>
 
-        <div class="col-lg-4">
-          <label class="form-label small text-muted">Filtros rápidos</label>
-          <div class="d-flex flex-wrap gap-3">
-            <div class="form-check">
-              <input class="form-check-input"
-                     type="checkbox"
-                     name="com_pcf"
-                     value="1"
-                     {% if com_pcf %}checked{% endif %}>
-              <label class="form-check-label">Com PCF</label>
-            </div>
-
-            <div class="form-check">
-              <input class="form-check-input"
-                     type="checkbox"
-                     name="sem_pcf"
-                     value="1"
-                     {% if sem_pcf %}checked{% endif %}>
-              <label class="form-check-label">Sem PCF</label>
-            </div>
-
-            <div class="form-check">
-              <input class="form-check-input"
-                     type="checkbox"
-                     name="com_resposta"
-                     value="1"
-                     {% if com_resposta %}checked{% endif %}>
-              <label class="form-check-label">Com resposta</label>
-            </div>
-
-            <div class="form-check">
-              <input class="form-check-input"
-                     type="checkbox"
-                     name="ultimas_revisoes"
-                     value="1"
-                     {% if ultimas_revisoes %}checked{% endif %}>
-              <label class="form-check-label">Últimas revisões</label>
-            </div>
+        <div>
+          <label class="ld-filter-label">Filtros rápidos</label>
+          <div class="ld-check-row">
+            <label><input class="form-check-input" type="checkbox" name="com_pcf" value="1" {% if com_pcf %}checked{% endif %}> Com PCF</label>
+            <label><input class="form-check-input" type="checkbox" name="sem_pcf" value="1" {% if sem_pcf %}checked{% endif %}> Sem PCF</label>
           </div>
         </div>
 
-        <div class="col-lg-2">
-          <button class="btn btn-primary w-100">Buscar</button>
+        <div>
+          <label class="ld-filter-label">&nbsp;</label>
+          <div class="ld-check-row">
+            <label><input class="form-check-input" type="checkbox" name="com_resposta" value="1" {% if com_resposta %}checked{% endif %}> Com resposta</label>
+            <label><input class="form-check-input" type="checkbox" name="ultimas_revisoes" value="1" {% if ultimas_revisoes %}checked{% endif %}> Últimas revisões</label>
+          </div>
         </div>
 
-        <div class="col-lg-2">
-          <a href="{% url 'automacoes:lista_ld' %}" class="btn btn-outline-secondary w-100">
-            Limpar
-          </a>
-        </div>
+        <button class="ld-btn ld-btn-primary" type="submit">
+          <i class="bi bi-search"></i>
+          Buscar
+        </button>
+
+        <a href="{% url 'automacoes:lista_ld' %}" class="ld-btn">
+          <i class="bi bi-x-circle"></i>
+          Limpar
+        </a>
       </div>
     </form>
 
-    <div class="ld-chip-row mt-3">
-      <a class="ld-chip {% if not query_string %}active{% endif %}"
-         href="{% url 'automacoes:lista_ld' %}">Todos</a>
-
-      <a class="ld-chip {% if filtro_rapido == 'recebidos' %}active{% endif %}"
-         href="{% url 'automacoes:lista_ld' %}?filtro=recebidos">Recebidos</a>
-
-      <a class="ld-chip {% if filtro_rapido == 'aprovados' %}active{% endif %}"
-         href="{% url 'automacoes:lista_ld' %}?filtro=aprovados">Aprovados</a>
-
-      <a class="ld-chip {% if filtro_rapido == 'grd_emitido' %}active{% endif %}"
-         href="{% url 'automacoes:lista_ld' %}?filtro=grd_emitido">GRD emitido</a>
-
-      <a class="ld-chip {% if filtro_rapido == 'com_pcf' %}active{% endif %}"
-         href="{% url 'automacoes:lista_ld' %}?filtro=com_pcf">Com PCF</a>
-
-      <a class="ld-chip {% if filtro_rapido == 'sem_pcf' %}active{% endif %}"
-         href="{% url 'automacoes:lista_ld' %}?filtro=sem_pcf">Sem PCF</a>
-
-      <a class="ld-chip {% if filtro_rapido == 'com_resposta' %}active{% endif %}"
-         href="{% url 'automacoes:lista_ld' %}?filtro=com_resposta">Com resposta</a>
-
-      <a class="ld-chip {% if filtro_rapido == 'not_released' %}active{% endif %}"
-         href="{% url 'automacoes:lista_ld' %}?filtro=not_released">Not Released</a>
-
-      <a class="ld-chip {% if filtro_rapido == 'ultimas_revisoes' %}active{% endif %}"
-         href="{% url 'automacoes:lista_ld' %}?filtro=ultimas_revisoes">Últimas revisões</a>
+    <div class="ld-chip-row">
+      <a class="ld-chip {% if not query_string %}active{% endif %}" href="{% url 'automacoes:lista_ld' %}">Todos</a>
+      <a class="ld-chip {% if filtro_rapido == 'recebidos' %}active{% endif %}" href="{% url 'automacoes:lista_ld' %}?filtro=recebidos">Recebidos</a>
+      <a class="ld-chip {% if filtro_rapido == 'aprovados' %}active{% endif %}" href="{% url 'automacoes:lista_ld' %}?filtro=aprovados">Aprovados</a>
+      <a class="ld-chip {% if filtro_rapido == 'grd_emitido' %}active{% endif %}" href="{% url 'automacoes:lista_ld' %}?filtro=grd_emitido">GRD emitido</a>
+      <a class="ld-chip {% if filtro_rapido == 'com_pcf' %}active{% endif %}" href="{% url 'automacoes:lista_ld' %}?filtro=com_pcf">Com PCF</a>
+      <a class="ld-chip {% if filtro_rapido == 'sem_pcf' %}active{% endif %}" href="{% url 'automacoes:lista_ld' %}?filtro=sem_pcf">Sem PCF</a>
+      <a class="ld-chip {% if filtro_rapido == 'com_resposta' %}active{% endif %}" href="{% url 'automacoes:lista_ld' %}?filtro=com_resposta">Com resposta</a>
+      <a class="ld-chip {% if filtro_rapido == 'not_released' %}active{% endif %}" href="{% url 'automacoes:lista_ld' %}?filtro=not_released">Not Released</a>
+      <a class="ld-chip {% if filtro_rapido == 'ultimas_revisoes' %}active{% endif %}" href="{% url 'automacoes:lista_ld' %}?filtro=ultimas_revisoes">Últimas revisões</a>
     </div>
-  </div>
+  </section>
 
-  <div class="row g-3">
+  <section class="ld-card-list">
     {% for item in registros %}
-    <div class="col-12">
-      <div class="card ld-card border-0 shadow-sm">
-        <div class="card-body">
-
-          <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
-            <div>
-              <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
-                <div class="fw-bold ld-doc-code">{{ item.documento }}</div>
-                <span class="badge bg-dark">Rev {{ item.revisao }}</span>
-                {% if item.origem_aba %}
-                  <span class="badge bg-secondary">{{ item.origem_aba }}</span>
-                {% endif %}
-              </div>
-
-              <div class="text-muted small mb-2">{{ item.disciplina }}</div>
-              <div class="ld-title">{{ item.titulo }}</div>
-            </div>
-
-            <div class="d-flex flex-wrap gap-1 justify-content-end">
-              {% if item.status_documento %}
-                {% if "Recebido" in item.status_documento or "Aprovado" in item.status_documento %}
-                  <span class="badge bg-success">{{ item.status_documento }}</span>
-                {% else %}
-                  <span class="badge bg-secondary">{{ item.status_documento }}</span>
-                {% endif %}
-              {% endif %}
-
-              {% if item.status_grd %}
-                {% if "Emitido" in item.status_grd %}
-                  <span class="badge bg-primary">{{ item.status_grd }}</span>
-                {% else %}
-                  <span class="badge bg-warning text-dark">{{ item.status_grd }}</span>
-                {% endif %}
-              {% endif %}
-
-              {% if item.status_final_pcf %}
-                {% if "NOT" in item.status_final_pcf|upper %}
-                  <span class="badge bg-danger">{{ item.status_final_pcf }}</span>
-                {% elif "RELEASED" in item.status_final_pcf|upper %}
-                  <span class="badge bg-success">{{ item.status_final_pcf }}</span>
-                {% else %}
-                  <span class="badge bg-secondary">{{ item.status_final_pcf }}</span>
-                {% endif %}
-              {% endif %}
-            </div>
+    <article class="ld-card">
+      <div class="ld-card-top">
+        <div>
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <div class="ld-doc-code">{{ item.documento }}</div>
+            <span class="ld-badge">Rev {{ item.revisao }}</span>
+            {% if item.origem_aba %}
+              <span class="ld-badge">{{ item.origem_aba }}</span>
+            {% endif %}
           </div>
 
-          <div class="row g-3 mb-3">
-            <div class="col-md-3">
-              <div class="ld-info-label">GRD</div>
-              <div class="ld-info-value">{{ item.grd|default:"—" }}</div>
-              {% if item.data_grd %}<small class="text-muted">{{ item.data_grd }}</small>{% endif %}
-            </div>
+          <div class="ld-sub">{{ item.disciplina|default:"Sem disciplina" }}</div>
+          <div class="ld-title">{{ item.titulo }}</div>
+        </div>
 
-            <div class="col-md-3">
-              <div class="ld-info-label">PCF</div>
-              <div class="ld-info-value">{{ item.pcf|default:"—" }}</div>
-              {% if item.data_pcf %}<small class="text-muted">{{ item.data_pcf }}</small>{% endif %}
-            </div>
-
-            <div class="col-md-3">
-              <div class="ld-info-label">Resposta PCF</div>
-              <div class="ld-info-value">{{ item.pcf_resposta|default:"—" }}</div>
-              {% if item.data_resposta %}<small class="text-muted">{{ item.data_resposta }}</small>{% endif %}
-            </div>
-
-            <div class="col-md-3">
-              <div class="ld-info-label">GRD Resposta</div>
-              <div class="ld-info-value">{{ item.grd_resposta|default:"—" }}</div>
-            </div>
-          </div>
-
-          <div class="d-flex flex-wrap gap-2 ld-actions">
-            {% if item.caminho_documento %}
-            <a href="{% url 'automacoes:abrir_arquivo_ld' item.id 'documento' %}"
-               target="_blank"
-               class="btn btn-outline-secondary btn-sm">
-              <i class="bi bi-folder2-open"></i> Abrir Documento
-            </a>
+        <div class="ld-badges">
+          {% if item.status_documento %}
+            {% if "Recebido" in item.status_documento or "Aprovado" in item.status_documento %}
+              <span class="ld-badge ld-badge-ok">{{ item.status_documento }}</span>
+            {% else %}
+              <span class="ld-badge">{{ item.status_documento }}</span>
             {% endif %}
+          {% endif %}
 
-            {% if item.caminho_grd %}
-            <a href="{% url 'automacoes:abrir_arquivo_ld' item.id 'grd' %}"
-               target="_blank"
-               class="btn btn-outline-primary btn-sm">
-              <i class="bi bi-folder2-open"></i> Abrir GRD
-            </a>
+          {% if item.status_grd %}
+            {% if "Emitido" in item.status_grd %}
+              <span class="ld-badge ld-badge-ok">{{ item.status_grd }}</span>
+            {% else %}
+              <span class="ld-badge ld-badge-warn">{{ item.status_grd }}</span>
             {% endif %}
+          {% endif %}
 
-            {% if item.caminho_pcf %}
-            <a href="{% url 'automacoes:abrir_arquivo_ld' item.id 'pcf' %}"
-               target="_blank"
-               class="btn btn-outline-success btn-sm">
-              <i class="bi bi-journal-text"></i> Abrir PCF
-            </a>
+          {% if item.status_final_pcf %}
+            {% if "NOT" in item.status_final_pcf|upper %}
+              <span class="ld-badge ld-badge-risk">{{ item.status_final_pcf }}</span>
+            {% elif "RELEASED" in item.status_final_pcf|upper %}
+              <span class="ld-badge ld-badge-ok">{{ item.status_final_pcf }}</span>
+            {% else %}
+              <span class="ld-badge">{{ item.status_final_pcf }}</span>
             {% endif %}
-
-            {% if item.caminho_resposta %}
-            <a href="{% url 'automacoes:abrir_arquivo_ld' item.id 'resposta' %}"
-               target="_blank"
-               class="btn btn-outline-warning btn-sm">
-              <i class="bi bi-reply"></i> Abrir Resposta
-            </a>
-            {% endif %}
-
-            {% if item.caminho_grd_resposta %}
-            <a href="{% url 'automacoes:abrir_arquivo_ld' item.id 'grd-resposta' %}"
-               target="_blank"
-               class="btn btn-outline-info btn-sm">
-              <i class="bi bi-folder-check"></i> GRD Resposta
-            </a>
-            {% endif %}
-
-            <button class="btn btn-dark btn-sm"
-                    type="button"
-                    data-bs-toggle="collapse"
-                    data-bs-target="#detalhes-{{ item.id }}">
-              <i class="bi bi-eye"></i> Detalhes
-            </button>
-          </div>
-
-          <div class="collapse mt-3" id="detalhes-{{ item.id }}">
-            <div class="ld-detail-box">
-              <div class="row g-3">
-                <div class="col-md-6">
-                  <div class="ld-info-label">Caminho Documento</div>
-                  <div class="small">{{ item.caminho_documento|default:"—" }}</div>
-                </div>
-                <div class="col-md-6">
-                  <div class="ld-info-label">Caminho GRD</div>
-                  <div class="small">{{ item.caminho_grd|default:"—" }}</div>
-                </div>
-                <div class="col-md-6">
-                  <div class="ld-info-label">Caminho PCF</div>
-                  <div class="small">{{ item.caminho_pcf|default:"—" }}</div>
-                </div>
-                <div class="col-md-6">
-                  <div class="ld-info-label">Caminho Resposta</div>
-                  <div class="small">{{ item.caminho_resposta|default:"—" }}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="collapse mt-3 show" id="ld-detalhes-{{ item.id }}">
-            <div class="ld-detail-panel">
-              <div class="ld-detail-grid mb-3">
-                <div class="ld-detail-box">
-                  <div class="ld-detail-title">Identificação</div>
-                  <div><strong>ID banco:</strong> {{ item.id }}</div>
-                  <div><strong>Documento:</strong> {{ item.documento }}</div>
-                  <div><strong>Revisão:</strong> {{ item.revisao|default:"—" }}</div>
-                  <div><strong>Origem:</strong> {{ item.origem_aba|default:"—" }}</div>
-                </div>
-
-                <div class="ld-detail-box">
-                  <div class="ld-detail-title">Status</div>
-                  <div><strong>Documento:</strong> {{ item.status_documento|default:"—" }}</div>
-                  <div><strong>GRD:</strong> {{ item.status_grd|default:"—" }}</div>
-                  <div><strong>PCF:</strong> {{ item.status_final_pcf|default:"—" }}</div>
-                </div>
-
-                <div class="ld-detail-box">
-                  <div class="ld-detail-title">Datas</div>
-                  <div><strong>Data GRD:</strong> {{ item.data_grd|default:"—" }}</div>
-                  <div><strong>Data PCF:</strong> {{ item.data_pcf|default:"—" }}</div>
-                  <div><strong>Data resposta:</strong> {{ item.data_resposta|default:"—" }}</div>
-                </div>
-
-                <div class="ld-detail-box">
-                  <div class="ld-detail-title">Referências</div>
-                  <div><strong>GRD:</strong> {{ item.grd|default:"—" }}</div>
-                  <div><strong>PCF:</strong> {{ item.pcf|default:"—" }}</div>
-                  <div><strong>Resposta:</strong> {{ item.pcf_resposta|default:"—" }}</div>
-                  <div><strong>GRD resposta:</strong> {{ item.grd_resposta|default:"—" }}</div>
-                </div>
-              </div>
-
-              <div class="ld-detail-box mb-3">
-                <div class="ld-detail-title">Timeline documental</div>
-                <div class="ld-timeline">
-                  <div class="ld-timeline-item">
-                    <div class="ld-info-label">GRD</div>
-                    <div class="ld-info-value">{{ item.grd|default:"—" }}</div>
-                    <small class="text-muted">{{ item.data_grd|default:"Sem data" }}</small>
-                  </div>
-
-                  <div class="ld-timeline-item">
-                    <div class="ld-info-label">PCF</div>
-                    <div class="ld-info-value">{{ item.pcf|default:"—" }}</div>
-                    <small class="text-muted">{{ item.data_pcf|default:"Sem data" }}</small>
-                  </div>
-
-                  <div class="ld-timeline-item">
-                    <div class="ld-info-label">Resposta PCF</div>
-                    <div class="ld-info-value">{{ item.pcf_resposta|default:"—" }}</div>
-                    <small class="text-muted">{{ item.data_resposta|default:"Sem data" }}</small>
-                  </div>
-
-                  <div class="ld-timeline-item">
-                    <div class="ld-info-label">GRD Resposta</div>
-                    <div class="ld-info-value">{{ item.grd_resposta|default:"—" }}</div>
-                    <small class="text-muted">Referência final</small>
-                  </div>
-                </div>
-              </div>
-
-              <div class="ld-detail-grid">
-                <div class="ld-detail-box">
-                  <div class="ld-detail-title">Caminho Documento</div>
-                  <div class="ld-path">{{ item.caminho_documento|default:"—" }}</div>
-                </div>
-
-                <div class="ld-detail-box">
-                  <div class="ld-detail-title">Caminho GRD</div>
-                  <div class="ld-path">{{ item.caminho_grd|default:"—" }}</div>
-                </div>
-
-                <div class="ld-detail-box">
-                  <div class="ld-detail-title">Caminho PCF</div>
-                  <div class="ld-path">{{ item.caminho_pcf|default:"—" }}</div>
-                </div>
-
-                <div class="ld-detail-box">
-                  <div class="ld-detail-title">Caminho Resposta</div>
-                  <div class="ld-path">{{ item.caminho_resposta|default:"—" }}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
+          {% endif %}
         </div>
       </div>
-    </div>
+
+      <div class="ld-info-grid">
+        <div class="ld-info-box">
+          <span class="ld-info-label">GRD</span>
+          <div class="ld-info-value">{{ item.grd|default:"—" }}</div>
+          {% if item.data_grd %}<small class="ld-sub">{{ item.data_grd }}</small>{% endif %}
+        </div>
+
+        <div class="ld-info-box">
+          <span class="ld-info-label">PCF</span>
+          <div class="ld-info-value">{{ item.pcf|default:"—" }}</div>
+          {% if item.data_pcf %}<small class="ld-sub">{{ item.data_pcf }}</small>{% endif %}
+        </div>
+
+        <div class="ld-info-box">
+          <span class="ld-info-label">Resposta PCF</span>
+          <div class="ld-info-value">{{ item.pcf_resposta|default:"—" }}</div>
+          {% if item.data_resposta %}<small class="ld-sub">{{ item.data_resposta }}</small>{% endif %}
+        </div>
+
+        <div class="ld-info-box">
+          <span class="ld-info-label">GRD Resposta</span>
+          <div class="ld-info-value">{{ item.grd_resposta|default:"—" }}</div>
+        </div>
+      </div>
+
+      <div class="ld-card-actions">
+        {% if item.caminho_documento %}
+        <a href="{% url 'automacoes:abrir_arquivo_ld' item.id 'documento' %}"
+           target="_blank"
+           class="ld-btn">
+          <i class="bi bi-folder2-open"></i> Documento
+        </a>
+        {% endif %}
+
+        {% if item.caminho_grd %}
+        <a href="{% url 'automacoes:abrir_arquivo_ld' item.id 'grd' %}"
+           target="_blank"
+           class="ld-btn">
+          <i class="bi bi-folder2-open"></i> GRD
+        </a>
+        {% endif %}
+
+        {% if item.caminho_pcf %}
+        <a href="{% url 'automacoes:abrir_arquivo_ld' item.id 'pcf' %}"
+           target="_blank"
+           class="ld-btn">
+          <i class="bi bi-journal-text"></i> PCF
+        </a>
+        {% endif %}
+
+        {% if item.caminho_resposta %}
+        <a href="{% url 'automacoes:abrir_arquivo_ld' item.id 'resposta' %}"
+           target="_blank"
+           class="ld-btn ld-btn-warning">
+          <i class="bi bi-reply"></i> Resposta
+        </a>
+        {% endif %}
+
+        {% if item.caminho_grd_resposta %}
+        <a href="{% url 'automacoes:abrir_arquivo_ld' item.id 'grd-resposta' %}"
+           target="_blank"
+           class="ld-btn">
+          <i class="bi bi-folder-check"></i> GRD Resposta
+        </a>
+        {% endif %}
+
+        <button class="ld-btn"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#ld-detalhes-{{ item.id }}"
+                aria-expanded="false"
+                aria-controls="ld-detalhes-{{ item.id }}">
+          <i class="bi bi-eye"></i> Detalhes
+        </button>
+      </div>
+
+      <div class="collapse" id="ld-detalhes-{{ item.id }}">
+        <div class="ld-detail-panel">
+          <div class="ld-detail-grid mb-3">
+            <div class="ld-detail-box">
+              <div class="ld-detail-title">Identificação</div>
+              <div><strong>ID banco:</strong> {{ item.id }}</div>
+              <div><strong>Documento:</strong> {{ item.documento }}</div>
+              <div><strong>Revisão:</strong> {{ item.revisao|default:"—" }}</div>
+              <div><strong>Origem:</strong> {{ item.origem_aba|default:"—" }}</div>
+            </div>
+
+            <div class="ld-detail-box">
+              <div class="ld-detail-title">Status</div>
+              <div><strong>Documento:</strong> {{ item.status_documento|default:"—" }}</div>
+              <div><strong>GRD:</strong> {{ item.status_grd|default:"—" }}</div>
+              <div><strong>PCF:</strong> {{ item.status_final_pcf|default:"—" }}</div>
+            </div>
+
+            <div class="ld-detail-box">
+              <div class="ld-detail-title">Datas</div>
+              <div><strong>Data GRD:</strong> {{ item.data_grd|default:"—" }}</div>
+              <div><strong>Data PCF:</strong> {{ item.data_pcf|default:"—" }}</div>
+              <div><strong>Data resposta:</strong> {{ item.data_resposta|default:"—" }}</div>
+            </div>
+
+            <div class="ld-detail-box">
+              <div class="ld-detail-title">Referências</div>
+              <div><strong>GRD:</strong> {{ item.grd|default:"—" }}</div>
+              <div><strong>PCF:</strong> {{ item.pcf|default:"—" }}</div>
+              <div><strong>Resposta:</strong> {{ item.pcf_resposta|default:"—" }}</div>
+              <div><strong>GRD resposta:</strong> {{ item.grd_resposta|default:"—" }}</div>
+            </div>
+          </div>
+
+          <div class="ld-detail-box mb-3">
+            <div class="ld-detail-title">Timeline documental</div>
+            <div class="ld-timeline">
+              <div class="ld-timeline-item">
+                <div class="ld-info-label">GRD</div>
+                <div class="ld-info-value">{{ item.grd|default:"—" }}</div>
+                <small class="ld-sub">{{ item.data_grd|default:"Sem data" }}</small>
+              </div>
+
+              <div class="ld-timeline-item">
+                <div class="ld-info-label">PCF</div>
+                <div class="ld-info-value">{{ item.pcf|default:"—" }}</div>
+                <small class="ld-sub">{{ item.data_pcf|default:"Sem data" }}</small>
+              </div>
+
+              <div class="ld-timeline-item">
+                <div class="ld-info-label">Resposta PCF</div>
+                <div class="ld-info-value">{{ item.pcf_resposta|default:"—" }}</div>
+                <small class="ld-sub">{{ item.data_resposta|default:"Sem data" }}</small>
+              </div>
+
+              <div class="ld-timeline-item">
+                <div class="ld-info-label">GRD Resposta</div>
+                <div class="ld-info-value">{{ item.grd_resposta|default:"—" }}</div>
+                <small class="ld-sub">Referência final</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="ld-detail-grid">
+            <div class="ld-detail-box">
+              <div class="ld-detail-title">Caminho Documento</div>
+              <div class="ld-path">{{ item.caminho_documento|default:"—" }}</div>
+            </div>
+
+            <div class="ld-detail-box">
+              <div class="ld-detail-title">Caminho GRD</div>
+              <div class="ld-path">{{ item.caminho_grd|default:"—" }}</div>
+            </div>
+
+            <div class="ld-detail-box">
+              <div class="ld-detail-title">Caminho PCF</div>
+              <div class="ld-path">{{ item.caminho_pcf|default:"—" }}</div>
+            </div>
+
+            <div class="ld-detail-box">
+              <div class="ld-detail-title">Caminho Resposta</div>
+              <div class="ld-path">{{ item.caminho_resposta|default:"—" }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
     {% empty %}
-    <div class="col-12">
-      <div class="alert alert-secondary">Nenhum registro encontrado.</div>
-    </div>
+    <div class="ld-empty">Nenhum registro encontrado.</div>
     {% endfor %}
-  </div>
+  </section>
 
   {% if page_obj.paginator.num_pages > 1 %}
-  <nav class="mt-4">
+  <nav class="mt-4 ld-pagination">
     <ul class="pagination justify-content-center">
       {% if page_obj.has_previous %}
       <li class="page-item">
@@ -611,6 +819,5 @@
     </ul>
   </nav>
   {% endif %}
-
 </div>
 {% endblock %}
