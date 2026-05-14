@@ -34,4 +34,13 @@ urlpatterns = [
     path("grd-ghenova/", views.executar_grd_ghenova, name="grd_ghenova"),
     path("indexar-km/", views.executar_indice_km, name="indexar_km"),
     path("logs/", views.logs_automacoes, name="logs_automacoes"),
-]
+
+    # Runtime APIs
+    path("api/runtime/health/", views.runtime_health_api, name="runtime_health_api"),
+    path("api/runtime/metrics/", views.runtime_metrics_api, name="runtime_metrics_api"),
+    path("api/runtime/events/", views.runtime_events_api, name="runtime_events_api"),
+    path(
+        "api/runtime/retention/dry-run/",
+        views.runtime_retention_dry_run_api,
+        name="runtime_retention_dry_run_api",
+    ),

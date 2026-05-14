@@ -2746,6 +2746,15 @@ from apps.automacoes.services.runtime_health_api import RuntimeHealthAPIService
 from apps.automacoes.services.runtime_retention import RuntimeRetentionService
 
 
+
+
+
+
+
+
+
+    return JsonResponse(result)
+
 @login_required
 def runtime_health_api(request):
     return JsonResponse(RuntimeHealthAPIService.health())
@@ -2764,6 +2773,11 @@ def runtime_events_api(request):
 @login_required
 def runtime_retention_dry_run_api(request):
     days = request.GET.get("days") or 90
-    result = RuntimeRetentionService.cleanup_all(days=int(days), dry_run=True)
+
+    result = RuntimeRetentionService.cleanup_all(
+        days=int(days),
+        dry_run=True,
+    )
 
     return JsonResponse(result)
+

@@ -35,7 +35,7 @@ class RuntimeRetentionService:
         days = int(days or cls.DEFAULT_SNAPSHOT_DAYS)
         cutoff = timezone.now() - timedelta(days=days)
 
-        queryset = RuntimeMetricSnapshot.objects.filter(created_at__lt=cutoff)
+        queryset = RuntimeMetricSnapshot.objects.filter(captured_at__lt=cutoff)
         count = queryset.count()
 
         if not dry_run and count:

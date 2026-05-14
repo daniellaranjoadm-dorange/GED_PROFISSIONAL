@@ -17,7 +17,7 @@ class RuntimeRetentionServiceTests(TestCase):
             stale_scheduler_states=0,
         )
         RuntimeMetricSnapshot.objects.filter(pk=snapshot.pk).update(
-            created_at=timezone.now() - timedelta(days=120)
+            captured_at=timezone.now() - timedelta(days=120)
         )
 
         result = RuntimeRetentionService.cleanup_snapshots(days=90, dry_run=True)
@@ -34,7 +34,7 @@ class RuntimeRetentionServiceTests(TestCase):
             stale_scheduler_states=0,
         )
         RuntimeMetricSnapshot.objects.filter(pk=snapshot.pk).update(
-            created_at=timezone.now() - timedelta(days=120)
+            captured_at=timezone.now() - timedelta(days=120)
         )
 
         result = RuntimeRetentionService.cleanup_snapshots(days=90, dry_run=False)
