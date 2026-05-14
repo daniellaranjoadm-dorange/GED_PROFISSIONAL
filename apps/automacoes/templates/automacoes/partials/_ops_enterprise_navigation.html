@@ -1,8 +1,20 @@
-<nav class="ops-enterprise-nav">
-  <a href="{% url 'automacoes:ops_center' %}">Operations</a>
-  <a href="{% url 'automacoes:dashboard_search' %}">Search</a>
-  <a href="{% url 'automacoes:dashboard_jobs' %}">Jobs</a>
-  <a href="{% url 'automacoes:dashboard_scheduler' %}">Scheduler</a>
-  <a href="{% url 'automacoes:logs_automacoes' %}">Logs</a>
-  <a href="{% url 'automacoes:painel' %}">Automações</a>
+<nav class="ops-enterprise-nav" aria-label="Operations navigation">
+  <a href="{% url 'automacoes:ops_center' %}">
+    <i class="bi bi-speedometer2"></i> Operations
+  </a>
+  <a href="{% url 'automacoes:dashboard_search' %}">
+    <i class="bi bi-search"></i> Search
+  </a>
+  <a href="{% url 'automacoes:dashboard_jobs' %}">
+    <i class="bi bi-cpu"></i> Jobs
+  </a>
+  <a href="{% url 'automacoes:dashboard_scheduler' %}">
+    <i class="bi bi-clock-history"></i> Scheduler
+  </a>
+  <a href="{% url 'automacoes:logs_automacoes' %}">
+    <i class="bi bi-activity"></i> Logs
+  </a>
+  <a href="{% url 'automacoes:painel' %}">
+    <i class="bi bi-robot"></i> Automações
+  </a>
 </nav>

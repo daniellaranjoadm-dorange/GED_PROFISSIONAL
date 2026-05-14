@@ -2,15 +2,17 @@
   <div class="ops-card-header">
     <div>
       <h2>Executive Operations Summary</h2>
-      <p>Visão executiva consolidada da operação runtime.</p>
+      <p>Runtime, risco, alertas e scheduler em uma visão compacta.</p>
     </div>
-    <span class="ops-badge">{{ ops.runtime.status|upper }}</span>
+    <span class="ops-badge ops-badge-{{ ops.runtime.status|default:'healthy' }}">
+      {{ ops.runtime.status|upper|default:"HEALTHY" }}
+    </span>
   </div>
 
   <div class="ops-grid ops-grid-5">
     <div class="ops-metric">
       <span>Runtime Score</span>
-      <strong>{{ ops.runtime.score }}</strong>
+      <strong>{{ ops.runtime.score|default:0 }}</strong>
       <small>health index</small>
     </div>
 
@@ -22,13 +24,13 @@
 
     <div class="ops-metric">
       <span>Active Alerts</span>
-      <strong>{{ ops.runtime.active_alerts }}</strong>
+      <strong>{{ ops.runtime.active_alerts|default:0 }}</strong>
       <small>alertas ativos</small>
     </div>
 
     <div class="ops-metric">
       <span>Running Jobs</span>
-      <strong>{{ ops.runtime.running_jobs }}</strong>
+      <strong>{{ ops.runtime.running_jobs|default:0 }}</strong>
       <small>execuções</small>
     </div>
 

@@ -1,96 +1,139 @@
-<div class="ops-grid">
-  <section class="ops-card">
-    <h2>Scheduler Telemetry</h2>
-    <p class="ops-kpi">{{ ops.telemetry.stale_count }}</p>
-    <div class="ops-muted">Schedulers stale</div>
-    <div class="ops-muted">Último heartbeat: {{ ops.telemetry.latest_heartbeat|default:"—" }}</div>
-    <div class="ops-muted">Próxima execução: {{ ops.telemetry.next_run_at|default:"—" }}</div>
-    <div class="ops-muted">Lag: {{ ops.telemetry.lag_seconds|default:"—" }}s</div>
-  </section>
+<section class="ops-runtime-panel">
+  <div class="ops-grid ops-grid-4">
+    <article class="ops-mini-card">
+      <div>
+        <span>Scheduler stale</span>
+        <strong>{{ ops.telemetry.stale_count|default:0 }}</strong>
+      </div>
+      <small>Lag {{ ops.telemetry.lag_seconds|default:"—" }}s</small>
+    </article>
 
-  <section class="ops-card">
-    <h2>Runtime Health</h2>
-    <span class="ops-badge ops-badge-{{ ops.runtime.status }}">{{ ops.runtime.status }}</span>
-    <p class="ops-kpi">{{ ops.runtime.score }}</p>
-    <div class="ops-muted">Score operacional</div>
-  </section>
+    <article class="ops-mini-card">
+      <div>
+        <span>Runtime Health</span>
+        <strong>{{ ops.runtime.score|default:0 }}</strong>
+      </div>
+      <small>{{ ops.runtime.status|upper|default:"HEALTHY" }}</small>
+    </article>
 
-  <section class="ops-card">
-    <h2>Alertas</h2>
-    <p class="ops-kpi">{{ ops.alerts.active_total }}</p>
-    <div class="ops-muted">Ativos agora</div>
-  </section>
+    <article class="ops-mini-card">
+      <div>
+        <span>Alertas</span>
+        <strong>{{ ops.alerts.active_total|default:0 }}</strong>
+      </div>
+      <small>ativos agora</small>
+    </article>
 
-  <section class="ops-card">
-    <h2>Jobs</h2>
-    <p class="ops-kpi">{{ ops.jobs.running }}</p>
-    <div class="ops-muted">Em execução</div>
-  </section>
-</div>
+    <article class="ops-mini-card">
+      <div>
+        <span>Jobs</span>
+        <strong>{{ ops.jobs.running|default:0 }}</strong>
+      </div>
+      <small>em execução</small>
+    </article>
+  </div>
 
-<div class="ops-grid">
-  <section class="ops-card ops-wide">
-    <h2>Runtime Timeline</h2>
-    <table class="ops-table">
-      <thead>
-        <tr>
-          <th>Tipo</th>
-          <th>Severidade</th>
-          <th>Evento</th>
-          <th>Quando</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for event in ops.timeline %}
-          <tr>
-            <td>{{ event.kind }}</td>
-            <td><span class="ops-badge ops-badge-{{ event.severity }}">{{ event.severity }}</span></td>
-            <td>
-              <strong>{{ event.title }}</strong>
-              <div class="ops-muted">{{ event.description }}</div>
-            </td>
-            <td>{{ event.timestamp|default:"—" }}</td>
-          </tr>
-        {% empty %}
-          <tr>
-            <td colspan="4">Nenhum evento operacional recente.</td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </section>
+  <div class="ops-grid ops-grid-2 ops-stack">
+    <section class="ops-card ops-card-compact">
+      <div class="ops-card-header">
+        <div>
+          <h2>Runtime Timeline</h2>
+          <p>Eventos operacionais recentes.</p>
+        </div>
+        <span class="ops-badge">live</span>
+      </div>
 
-  <section class="ops-card ops-wide">
-    <h2>Scheduler Runtime States</h2>
-    <table class="ops-table">
-      <thead>
-        <tr>
-          <th>Scheduler</th>
-          <th>Status</th>
-          <th>Heartbeat</th>
-          <th>Next run</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for row in ops.telemetry.rows %}
-          <tr>
-            <td>{{ row.name }}</td>
-            <td>
-              {% if row.is_stale %}
-                <span class="ops-badge ops-badge-warning">stale</span>
-              {% else %}
-                {{ row.status }}
-              {% endif %}
-            </td>
-            <td>{{ row.heartbeat }}</td>
-            <td>{{ row.next_run_at }}</td>
-          </tr>
-        {% empty %}
-          <tr>
-            <td colspan="4">Nenhum scheduler state encontrado.</td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </section>
-</div>
+      <div class="ops-table-wrap">
+        <table class="ops-table">
+          <thead>
+            <tr>
+              <th>Tipo</th>
+              <th>Severidade</th>
+              <th>Evento</th>
+              <th>Quando</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for event in ops.timeline %}
+              <tr>
+                <td>{{ event.kind|default:"—" }}</td>
+                <td>
+                  <span class="ops-badge ops-badge-{{ event.severity|default:'info'|lower }}">
+                    {{ event.severity|default:"—" }}
+                  </span>
+                </td>
+                <td>
+                  <strong>{{ event.title|default:"Evento runtime" }}</strong>
+                  <div class="ops-muted">{{ event.description|default:"—" }}</div>
+                </td>
+                <td>{{ event.timestamp|default:"—" }}</td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="4" class="ops-empty">Nenhum evento operacional recente.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="ops-card ops-card-compact">
+      <div class="ops-card-header">
+        <div>
+          <h2>Scheduler Telemetry</h2>
+          <p>Heartbeat, próxima execução e estados stale.</p>
+        </div>
+        <span class="ops-badge ops-badge-warning">{{ ops.telemetry.stale_count|default:0 }} stale</span>
+      </div>
+
+      <div class="ops-telemetry-strip">
+        <div>
+          <span>Último heartbeat</span>
+          <strong>{{ ops.telemetry.latest_heartbeat|default:"—" }}</strong>
+        </div>
+        <div>
+          <span>Próxima execução</span>
+          <strong>{{ ops.telemetry.next_run_at|default:"—" }}</strong>
+        </div>
+        <div>
+          <span>Lag</span>
+          <strong>{{ ops.telemetry.lag_seconds|default:"—" }}s</strong>
+        </div>
+      </div>
+
+      <div class="ops-table-wrap">
+        <table class="ops-table ops-table-compact">
+          <thead>
+            <tr>
+              <th>Scheduler</th>
+              <th>Status</th>
+              <th>Heartbeat</th>
+              <th>Next run</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in ops.telemetry.rows %}
+              <tr>
+                <td><strong>{{ row.name|default:"—" }}</strong></td>
+                <td>
+                  {% if row.is_stale %}
+                    <span class="ops-badge ops-badge-warning">stale</span>
+                  {% else %}
+                    {{ row.status|default:"—" }}
+                  {% endif %}
+                </td>
+                <td>{{ row.heartbeat|default:"—" }}</td>
+                <td>{{ row.next_run_at|default:"—" }}</td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="4" class="ops-empty">Nenhum scheduler state encontrado.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</section>

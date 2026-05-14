@@ -1,12 +1,16 @@
 <div class="ops-ribbon ops-ribbon-{{ ops.runtime.status|default:'healthy' }}">
-  <div>
-    <strong>GED Operational Intelligence</strong>
-    <span>{{ ops.runtime.status|upper }} · Score {{ ops.runtime.score }}</span>
+  <div class="ops-ribbon-main">
+    <div class="ops-ribbon-eyebrow">GED Operational Intelligence</div>
+    <strong>Operations Center</strong>
+    <span>
+      {{ ops.runtime.status|upper|default:"HEALTHY" }} · Score {{ ops.runtime.score|default:0 }}
+      · Atualizado em {{ ops.updated_at|default:"—" }}
+    </span>
   </div>
 
   <div class="ops-ribbon-actions">
-    <span>Alerts {{ ops.runtime.active_alerts }}</span>
-    <span>Jobs {{ ops.runtime.running_jobs }}</span>
+    <span>Alerts {{ ops.runtime.active_alerts|default:0 }}</span>
+    <span>Jobs {{ ops.runtime.running_jobs|default:0 }}</span>
     <span>Risk {{ predictive_runtime.risk.label|default:"STABLE" }}</span>
   </div>
 </div>

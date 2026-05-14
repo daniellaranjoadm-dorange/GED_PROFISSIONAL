@@ -1,187 +1,32 @@
 {% extends "documentos/base.html" %}
 {% load static %}
 
-{% block title %}Operations Center · GED Enterprise{% endblock %}
-
-{% block extra_head %}
-  {{ block.super }}
-  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
-  <link rel="stylesheet" href="{% static 'automacoes/css/ops_enterprise.css' %}?v=1400">
-{% endblock %}
-
 {% block content %}
+<script src="https://unpkg.com/htmx.org@1.9.12"></script>
+<link rel="stylesheet" href="{% static 'automacoes/css/ops_enterprise.css' %}?v=1401">
+
 <div class="ops-shell">
-
   {% include "automacoes/partials/_ops_enterprise_ribbon.html" %}
-
   {% include "automacoes/partials/_ops_enterprise_navigation.html" %}
-
   {% include "automacoes/partials/_ops_executive_summary.html" %}
 
-  <header class="ops-header">
-    <div class="ops-title">
-      <div class="ops-eyebrow">
-        <i class="bi bi-command"></i>
-        Unified Operations Center
-      </div>
-      <h1>Centro Operacional GED_PROFISSIONAL</h1>
-      <p>
-        Observabilidade runtime, scheduler, jobs, alertas e sinais operacionais consolidados em uma visão enterprise.
-      </p>
-      <div class="ops-meta-row">
-        <span>
-          <i class="bi bi-arrow-repeat"></i>
-          Atualização automática a cada 15 segundos
-        </span>
-        <span>
-          <i class="bi bi-clock-history"></i>
-          Última atualização: {{ ops.updated_at|default:"—" }}
-        </span>
-      </div>
-    </div>
-
-    <nav class="ops-actions" aria-label="Ações rápidas do Operations Center">
-      <a class="ops-btn ops-btn-primary" href="{% url 'automacoes:painel' %}">
-        <i class="bi bi-grid-1x2"></i>
-        Painel
-      </a>
-      <a class="ops-btn" href="{% url 'automacoes:dashboard_search' %}">
-        <i class="bi bi-search"></i>
-        Search Dashboard
-      </a>
-      <a class="ops-btn" href="{% url 'automacoes:logs_automacoes' %}">
-        <i class="bi bi-activity"></i>
-        Logs
-      </a>
-    </nav>
-  </header>
-
-  <section
+  <div
     id="ops-runtime-observability"
-    class="ops-live-region"
     hx-get="{% url 'automacoes:ops_center_runtime_partial' %}"
     hx-trigger="load, every 15s"
     hx-swap="innerHTML"
   >
     {% include "automacoes/partials/_ops_runtime_observability.html" %}
-  </section>
+  </div>
 
-  <section class="ops-kpi-grid" aria-label="Indicadores principais de runtime">
-    <article class="ops-card ops-kpi-card">
-      <div class="ops-card-topline">
-        <span class="ops-card-icon"><i class="bi bi-shield-check"></i></span>
-        <span class="ops-badge ops-badge-{{ ops.runtime.status|default:'info' }}">
-          {{ ops.runtime.status|default:"unknown" }}
-        </span>
-      </div>
-      <h2>Runtime Health</h2>
-      <p class="ops-kpi">{{ ops.runtime.score|default:"—" }}</p>
-      <div class="ops-muted">Score operacional consolidado</div>
-    </article>
-
-    <article class="ops-card ops-kpi-card">
-      <div class="ops-card-topline">
-        <span class="ops-card-icon"><i class="bi bi-exclamation-triangle"></i></span>
-        <span class="ops-badge ops-badge-warning">Alertas</span>
-      </div>
-      <h2>Alertas Ativos</h2>
-      <p class="ops-kpi">{{ ops.runtime.active_alerts|default:0 }}</p>
-      <div class="ops-muted">Deduplicados pelo runtime</div>
-    </article>
-
-    <article class="ops-card ops-kpi-card">
-      <div class="ops-card-topline">
-        <span class="ops-card-icon"><i class="bi bi-cpu"></i></span>
-        <span class="ops-badge ops-badge-info">Jobs</span>
-      </div>
-      <h2>Jobs em Execução</h2>
-      <p class="ops-kpi">{{ ops.runtime.running_jobs|default:0 }}</p>
-      <div class="ops-muted">Processos ativos agora</div>
-    </article>
-
-    <article class="ops-card ops-kpi-card">
-      <div class="ops-card-topline">
-        <span class="ops-card-icon"><i class="bi bi-hourglass-split"></i></span>
-        <span class="ops-badge ops-badge-critical">Stale</span>
-      </div>
-      <h2>Scheduler Stale</h2>
-      <p class="ops-kpi">{{ ops.runtime.stale_scheduler_states|default:0 }}</p>
-      <div class="ops-muted">Estados com indício de atraso</div>
-    </article>
-  </section>
-
-  <section class="ops-summary-grid" aria-label="Resumo operacional">
-    <article class="ops-card">
-      <div class="ops-card-header">
-        <div>
-          <h2>Scheduler</h2>
-          <p>Estados e disponibilidade das rotinas programadas.</p>
-        </div>
-        <i class="bi bi-calendar2-week ops-section-icon"></i>
-      </div>
-      <div class="ops-metric-list">
-        <div><span>Total</span><strong>{{ ops.scheduler.total|default:0 }}</strong></div>
-        <div><span>Ativos</span><strong>{{ ops.scheduler.enabled|default:0 }}</strong></div>
-        <div><span>Desativados</span><strong>{{ ops.scheduler.disabled|default:0 }}</strong></div>
-      </div>
-    </article>
-
-    <article class="ops-card">
-      <div class="ops-card-header">
-        <div>
-          <h2>Jobs Hoje</h2>
-          <p>Execuções registradas no dia operacional.</p>
-        </div>
-        <i class="bi bi-play-circle ops-section-icon"></i>
-      </div>
-      <div class="ops-metric-list">
-        <div><span>Total</span><strong>{{ ops.jobs.total_today|default:0 }}</strong></div>
-        <div><span>Sucesso</span><strong>{{ ops.jobs.success_today|default:0 }}</strong></div>
-        <div><span>Falha</span><strong>{{ ops.jobs.failed_today|default:0 }}</strong></div>
-        <div><span>Success rate</span><strong>{{ ops.jobs.success_rate|default:0 }}%</strong></div>
-      </div>
-    </article>
-
-    <article class="ops-card">
-      <div class="ops-card-header">
-        <div>
-          <h2>KPIs Globais</h2>
-          <p>Volume consolidado de runtime, scheduler e alertas.</p>
-        </div>
-        <i class="bi bi-bar-chart-line ops-section-icon"></i>
-      </div>
-      <div class="ops-metric-list">
-        <div><span>Total de jobs</span><strong>{{ ops.kpis.total_jobs|default:0 }}</strong></div>
-        <div><span>Scheduler states</span><strong>{{ ops.kpis.total_scheduler_states|default:0 }}</strong></div>
-        <div><span>Total alertas</span><strong>{{ ops.kpis.total_alerts|default:0 }}</strong></div>
-        <div><span>Alertas ativos</span><strong>{{ ops.kpis.active_alerts|default:0 }}</strong></div>
-      </div>
-    </article>
-
-    <article class="ops-card">
-      <div class="ops-card-header">
-        <div>
-          <h2>Runtime Summary</h2>
-          <p>Sinais rápidos para tomada de decisão técnica.</p>
-        </div>
-        <i class="bi bi-speedometer2 ops-section-icon"></i>
-      </div>
-      <div class="ops-metric-list">
-        <div><span>Jobs falhos</span><strong>{{ ops.runtime.failed_jobs|default:0 }}</strong></div>
-        <div><span>Jobs rodando</span><strong>{{ ops.runtime.running_jobs|default:0 }}</strong></div>
-        <div><span>Duração média hoje</span><strong>{{ ops.jobs.avg_duration|default:"—" }}</strong></div>
-      </div>
-    </article>
-  </section>
-
-  <section class="ops-data-grid" aria-label="Tabelas operacionais principais">
-    <article class="ops-card ops-wide">
+  <div class="ops-grid ops-grid-2 ops-stack">
+    <section class="ops-card ops-card-compact">
       <div class="ops-card-header">
         <div>
           <h2>Últimos Jobs</h2>
-          <p>Fila recente de execuções com status e duração.</p>
+          <p>Execuções recentes registradas no runtime.</p>
         </div>
-        <i class="bi bi-list-check ops-section-icon"></i>
+        <span class="ops-badge ops-badge-info">{{ ops.jobs.total_today|default:0 }} hoje</span>
       </div>
 
       <div class="ops-table-wrap">
@@ -197,8 +42,14 @@
           <tbody>
             {% for job in ops.jobs.latest_jobs_display %}
               <tr>
-                <td><strong>{{ job.name|default:"—" }}</strong></td>
-                <td><span class="ops-status-pill">{{ job.status|default:"—" }}</span></td>
+                <td>
+                  <strong>{{ job.name }}</strong>
+                </td>
+                <td>
+                  <span class="ops-status-pill ops-status-{{ job.status|default:'unknown'|lower }}">
+                    {{ job.status|default:"—" }}
+                  </span>
+                </td>
                 <td>{{ job.duration|default:"—" }}</td>
                 <td>{{ job.created_at|default:"—" }}</td>
               </tr>
@@ -210,15 +61,17 @@
           </tbody>
         </table>
       </div>
-    </article>
+    </section>
 
-    <article class="ops-card ops-wide">
+    <section class="ops-card ops-card-compact">
       <div class="ops-card-header">
         <div>
           <h2>Alertas Runtime</h2>
-          <p>Últimos alertas emitidos pelo runtime operacional.</p>
+          <p>Alertas operacionais recentes e ativos.</p>
         </div>
-        <i class="bi bi-bell ops-section-icon"></i>
+        <span class="ops-badge ops-badge-{{ ops.runtime.status|default:'healthy' }}">
+          {{ ops.runtime.active_alerts|default:0 }} ativos
+        </span>
       </div>
 
       <div class="ops-table-wrap">
@@ -233,7 +86,11 @@
           <tbody>
             {% for alert in ops.alerts.latest_alerts_display %}
               <tr>
-                <td><span class="ops-status-pill">{{ alert.level|default:"—" }}</span></td>
+                <td>
+                  <span class="ops-badge ops-badge-{{ alert.level|default:'info'|lower }}">
+                    {{ alert.level|default:"—" }}
+                  </span>
+                </td>
                 <td>{{ alert.message|default:"—" }}</td>
                 <td>{{ alert.created_at|default:"—" }}</td>
               </tr>
@@ -245,17 +102,17 @@
           </tbody>
         </table>
       </div>
-    </article>
-  </section>
+    </section>
+  </div>
 
-  <section class="ops-data-grid" aria-label="Scheduler e alertas ativos">
-    <article class="ops-card ops-wide">
+  <div class="ops-grid ops-grid-2 ops-stack">
+    <section class="ops-card ops-card-compact">
       <div class="ops-card-header">
         <div>
           <h2>Scheduler Runtime States</h2>
-          <p>Estado atual das rotinas monitoradas pelo scheduler.</p>
+          <p>Estados recentes do scheduler operacional.</p>
         </div>
-        <i class="bi bi-diagram-3 ops-section-icon"></i>
+        <span class="ops-badge">states {{ ops.kpis.total_scheduler_states|default:0 }}</span>
       </div>
 
       <div class="ops-table-wrap">
@@ -272,8 +129,10 @@
           <tbody>
             {% for state in ops.scheduler.latest_states %}
               <tr>
-                <td><strong>{{ state.job_code|default:state.pk }}</strong></td>
-                <td><span class="ops-status-pill">{{ state.last_status|default:"—" }}</span></td>
+                <td>
+                  <strong>{{ state.job_code|default:state.pk }}</strong>
+                </td>
+                <td>{{ state.last_status|default:"—" }}</td>
                 <td>{{ state.enabled|default:"—" }}</td>
                 <td>{{ state.heartbeat|default:state.updated_at|default:"—" }}</td>
                 <td>{{ state.next_run_at|default:"—" }}</td>
@@ -286,15 +145,15 @@
           </tbody>
         </table>
       </div>
-    </article>
+    </section>
 
-    <article class="ops-card ops-wide">
+    <section class="ops-card ops-card-compact">
       <div class="ops-card-header">
         <div>
           <h2>Distribuição de Alertas Ativos</h2>
-          <p>Agrupamento dos alertas ativos por nível operacional.</p>
+          <p>Classificação atual por nível/severidade.</p>
         </div>
-        <i class="bi bi-pie-chart ops-section-icon"></i>
+        <span class="ops-badge">total {{ ops.kpis.active_alerts|default:0 }}</span>
       </div>
 
       <div class="ops-table-wrap">
@@ -309,11 +168,11 @@
             {% for item in ops.alerts.by_level %}
               <tr>
                 <td>
-                  <span class="ops-status-pill">
+                  <span class="ops-badge ops-badge-{{ item.level|default:item.severity|default:item.nivel|default:item.tipo|default:'info'|lower }}">
                     {{ item.level|default:item.severity|default:item.nivel|default:item.tipo|default:"—" }}
                   </span>
                 </td>
-                <td><strong>{{ item.total|default:0 }}</strong></td>
+                <td><strong>{{ item.total }}</strong></td>
               </tr>
             {% empty %}
               <tr>
@@ -323,8 +182,7 @@
           </tbody>
         </table>
       </div>
-    </article>
-  </section>
-
+    </section>
+  </div>
 </div>
 {% endblock %}
