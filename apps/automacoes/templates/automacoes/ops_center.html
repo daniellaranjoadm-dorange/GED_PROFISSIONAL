@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "documentos/base.html" %}
 {% load static %}
 
 {% block content %}
@@ -327,7 +327,7 @@
         <tbody>
           {% for state in ops.scheduler.latest_states %}
             <tr>
-              <td>{{ state.job_code|default:state.name|default:state.pk }}</td>
+              <td>{{ state.job_code|default:state.pk }}</td>
               <td>{{ state.last_status|default:"—" }}</td>
               <td>{{ state.enabled|default:"—" }}</td>
               <td>{{ state.heartbeat|default:state.updated_at|default:"—" }}</td>

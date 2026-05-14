@@ -1,262 +1,68 @@
 {% extends "documentos/base.html" %}
 {% load static %}
 
-{% block title %}D'ORANGE — Automações GED{% endblock %}
-
-{% block extra_head %}
-<style>
-  .auto-page { max-width: none !important; width: 100% !important; }
-
-  .auto-hero {
-    border-radius: 22px;
-    border: 1px solid rgba(148, 163, 184, .24);
-    background:
-      radial-gradient(circle at 0% 0%, rgba(255, 138, 0, .18), transparent 35%),
-      radial-gradient(circle at 85% 20%, rgba(56, 189, 248, .18), transparent 35%),
-      linear-gradient(135deg, rgba(11, 18, 32, .98), rgba(17, 26, 46, .96));
-    color: #fff;
-    box-shadow: 0 18px 45px rgba(15, 23, 42, .22);
-    overflow: hidden;
-    position: relative;
-  }
-
-  .auto-hero::after {
-    content: "";
-    position: absolute;
-    inset: auto 0 0 0;
-    height: 3px;
-    background: linear-gradient(90deg, #38BDF8, #FF8A00);
-  }
-
-  .auto-hero-title {
-    font-size: clamp(1.6rem, 2.5vw, 2.45rem);
-    font-weight: 800;
-    letter-spacing: -.04em;
-    margin: 0;
-  }
-
-  .auto-hero-subtitle {
-    color: rgba(226, 232, 240, .82);
-    margin: .35rem 0 0;
-  }
-
-  .auto-health {
-    display: inline-flex;
-    align-items: center;
-    gap: .5rem;
-    border-radius: 999px;
-    padding: .45rem .8rem;
-    background: rgba(34, 197, 94, .14);
-    border: 1px solid rgba(34, 197, 94, .35);
-    color: #bbf7d0;
-    font-weight: 700;
-    font-size: .85rem;
-  }
-
-  .auto-health-dot {
-    width: .6rem;
-    height: .6rem;
-    border-radius: 999px;
-    background: #22c55e;
-    box-shadow: 0 0 0 .3rem rgba(34, 197, 94, .14);
-  }
-
-  .auto-kpi {
-    border: 0;
-    border-radius: 18px;
-    background: rgba(255, 255, 255, .94);
-    box-shadow: 0 .6rem 1.35rem rgba(15, 23, 42, .08);
-    transition: transform .15s ease, box-shadow .15s ease;
-    overflow: hidden;
-  }
-
-  .auto-kpi:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 .85rem 1.75rem rgba(15, 23, 42, .13);
-  }
-
-  .auto-kpi small {
-    color: #64748b;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .04em;
-  }
-
-  .auto-kpi h2 {
-    margin: .25rem 0 0;
-    letter-spacing: -.05em;
-  }
-
-  .auto-card {
-    border: 1px solid rgba(148, 163, 184, .24);
-    border-radius: 20px;
-    background: rgba(255, 255, 255, .94);
-    box-shadow: 0 .55rem 1.25rem rgba(15, 23, 42, .07);
-    transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
-    overflow: hidden;
-  }
-
-  .auto-card:hover {
-    transform: translateY(-2px);
-    border-color: rgba(56, 189, 248, .45);
-    box-shadow: 0 .9rem 1.8rem rgba(15, 23, 42, .12);
-  }
-
-  .auto-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 16px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, rgba(56, 189, 248, .14), rgba(255, 138, 0, .16));
-    color: #0f172a;
-    font-size: 1.45rem;
-  }
-
-  .auto-card-title {
-    font-weight: 800;
-    margin: 0;
-    letter-spacing: -.03em;
-  }
-
-  .auto-card-subtitle {
-    color: #64748b;
-    font-size: .88rem;
-  }
-
-  .auto-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: .4rem;
-    border-radius: 999px;
-    padding: .32rem .7rem;
-    font-size: .75rem;
-    font-weight: 800;
-    white-space: nowrap;
-  }
-
-  .auto-badge-success { background: rgba(22, 163, 74, .12); color: #15803d; }
-  .auto-badge-warning { background: rgba(245, 158, 11, .16); color: #92400e; }
-  .auto-badge-info { background: rgba(14, 165, 233, .14); color: #0369a1; }
-  .auto-badge-neutral { background: rgba(100, 116, 139, .14); color: #334155; }
-
-  .auto-status {
-    display: inline-flex;
-    align-items: center;
-    gap: .4rem;
-    border-radius: 999px;
-    padding: .34rem .72rem;
-    font-size: .74rem;
-    font-weight: 900;
-    white-space: nowrap;
-  }
-
-  .auto-status-online { background: rgba(22, 163, 74, .12); color: #15803d; }
-  .auto-status-running { background: rgba(14, 165, 233, .14); color: #0369a1; }
-  .auto-status-error { background: rgba(220, 38, 38, .12); color: #991b1b; }
-  .auto-status-idle { background: rgba(100, 116, 139, .14); color: #334155; }
-
-  .auto-metrics {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: .65rem;
-  }
-
-  .auto-metric {
-    border: 1px solid rgba(148, 163, 184, .22);
-    border-radius: 14px;
-    padding: .75rem;
-    background: #f8fafc;
-  }
-
-  .auto-metric-label {
-    color: #64748b;
-    font-size: .74rem;
-    text-transform: uppercase;
-    letter-spacing: .04em;
-    font-weight: 800;
-  }
-
-  .auto-metric-value {
-    font-size: 1.15rem;
-    font-weight: 800;
-    margin-top: .15rem;
-  }
-
-  .auto-panel {
-    border-radius: 20px;
-    border: 1px solid rgba(148, 163, 184, .24);
-    background: rgba(255, 255, 255, .94);
-    box-shadow: 0 .55rem 1.25rem rgba(15, 23, 42, .07);
-  }
-
-  .auto-list-item {
-    border: 1px solid rgba(148, 163, 184, .22);
-    border-radius: 14px;
-    padding: .8rem;
-    background: #fff;
-    text-decoration: none;
-    color: inherit;
-    display: block;
-    margin-bottom: .65rem;
-  }
-
-  .auto-list-item:hover {
-    border-color: #0d6efd;
-    background: #f8fafc;
-  }
-
-  .auto-btn-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: .5rem;
-  }
-
-  @media (max-width: 768px) {
-    .auto-metrics { grid-template-columns: 1fr; }
-  }
-</style>
-{% endblock %}
+{% block title %}D'ORANGE — Operations Automation{% endblock %}
 
 {% block content %}
-<div class="ds-page auto-page">
-  <div class="auto-hero p-4 mb-4">
-    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
-      <div>
-        <div class="auto-health mb-3">
-          <span class="auto-health-dot"></span>
-          GED Automations Online
-        </div>
-        <h1 class="auto-hero-title">🤖 Painel Executivo de Automações</h1>
-        <p class="auto-hero-subtitle">
-          Cockpit operacional das rotinas corporativas integradas ao GED Enterprise.
-        </p>
+<div class="ged-home">
+
+  <section class="ged-hero">
+    <div class="ged-hero-main">
+      <div class="ged-eyebrow">
+        <span class="ged-status-dot"></span>
+        GED Operational Automation Center
       </div>
 
-      <div class="text-end">
-        <small class="d-block text-white-50">Última execução de automação</small>
-        <strong>
-          {% if ultima_execucao %}
-            {{ ultima_execucao.nome }} · {{ ultima_execucao.iniciado_em }}
-          {% elif ultima_atualizacao %}
-            {{ ultima_atualizacao }}
-          {% else %}
-            Sem histórico disponível
-          {% endif %}
-        </strong>
-        <div class="mt-3">
-          <a href="{% url 'automacoes:logs_automacoes' %}" class="btn btn-outline-light btn-sm">
-            <i class="bi bi-activity"></i>
-            Ver logs executivos
-          </a>
-        </div>
+      <h1>Centro Executivo de Automações</h1>
+
+      <p>
+        Cockpit corporativo para automações, documentos, PCFs, transmittals,
+        índice KM, runtime intelligence e observabilidade operacional.
+      </p>
+
+      <div class="ged-hero-actions">
+        <a href="{% url 'automacoes:ops_center' %}" class="ged-btn ged-btn-primary">
+          <i class="bi bi-speedometer2"></i>
+          Operations Center
+        </a>
+
+        <a href="{% url 'automacoes:logs_automacoes' %}" class="ged-btn ged-btn-ghost">
+          <i class="bi bi-activity"></i>
+          Logs Operacionais
+        </a>
+
+        <a href="{% url 'automacoes:busca_global' %}" class="ged-btn ged-btn-ghost">
+          <i class="bi bi-search"></i>
+          Busca Global
+        </a>
       </div>
     </div>
-  </div>
+
+    <div class="ged-hero-side">
+      <span>Última execução</span>
+      <strong>
+        {% if ultima_execucao %}
+          {{ ultima_execucao.nome }}
+        {% elif ultima_atualizacao %}
+          GED atualizado
+        {% else %}
+          Sem histórico
+        {% endif %}
+      </strong>
+      <small>
+        {% if ultima_execucao %}
+          {{ ultima_execucao.iniciado_em }}
+        {% elif ultima_atualizacao %}
+          {{ ultima_atualizacao }}
+        {% else %}
+          aguardando primeira execução
+        {% endif %}
+      </small>
+    </div>
+  </section>
 
   {% if messages %}
-    <div class="mb-4">
+    <div class="ged-alert-stack">
       {% for message in messages %}
         <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm">
           {{ message }}
@@ -270,299 +76,204 @@
     ⏳ Automação em execução. Aguarde o processamento finalizar. Não feche esta janela.
   </div>
 
-  <div class="row g-3 mb-4">
-    <div class="col-md">
-      <a href="{% url 'automacoes:lista_ld' %}" class="text-decoration-none text-dark">
-        <div class="card auto-kpi h-100">
-          <div class="card-body">
-            <small>Linhas LD</small>
-            <h2>{{ total_ld }}</h2>
-          </div>
-        </div>
-      </a>
-    </div>
+  <section class="ged-kpi-grid">
+    <a href="{% url 'automacoes:lista_ld' %}" class="ged-kpi-card">
+      <span>Linhas LD</span>
+      <strong>{{ total_ld }}</strong>
+      <small>base documental</small>
+    </a>
 
-    <div class="col-md">
-      <a href="{% url 'automacoes:pcfs_timeline' %}" class="text-decoration-none text-dark">
-        <div class="card auto-kpi h-100">
-          <div class="card-body">
-            <small>PCFs</small>
-            <h2>{{ total_pcfs }}</h2>
-          </div>
-        </div>
-      </a>
-    </div>
+    <a href="{% url 'automacoes:pcfs_timeline' %}" class="ged-kpi-card">
+      <span>PCFs</span>
+      <strong>{{ total_pcfs }}</strong>
+      <small>timeline técnica</small>
+    </a>
 
-    <div class="col-md">
-      <a href="{% url 'automacoes:pcfs_timeline' %}?somente_open=1" class="text-decoration-none text-dark">
-        <div class="card auto-kpi h-100">
-          <div class="card-body">
-            <small>Open Comments</small>
-            <h2 class="text-warning">{{ total_pcfs_open }}</h2>
-          </div>
-        </div>
-      </a>
-    </div>
+    <a href="{% url 'automacoes:pcfs_timeline' %}?somente_open=1" class="ged-kpi-card">
+      <span>Open Comments</span>
+      <strong>{{ total_pcfs_open }}</strong>
+      <small>pendências abertas</small>
+    </a>
 
-    <div class="col-md">
-      <a href="{% url 'automacoes:pcfs_timeline' %}?status=NOT%20RELEASED" class="text-decoration-none text-dark">
-        <div class="card auto-kpi h-100">
-          <div class="card-body">
-            <small>Not Released</small>
-            <h2 class="text-danger">{{ total_pcfs_not_released }}</h2>
-          </div>
-        </div>
-      </a>
-    </div>
+    <a href="{% url 'automacoes:pcfs_timeline' %}?status=NOT%20RELEASED" class="ged-kpi-card">
+      <span>Not Released</span>
+      <strong>{{ total_pcfs_not_released }}</strong>
+      <small>atenção operacional</small>
+    </a>
 
-    <div class="col-md">
-      <a href="{% url 'automacoes:transmittals_km' %}" class="text-decoration-none text-dark">
-        <div class="card auto-kpi h-100">
-          <div class="card-body">
-            <small>Transmittals KM</small>
-            <h2 class="text-primary">{{ total_transmittals_unicos }}</h2>
-          </div>
-        </div>
-      </a>
-    </div>
-    <div class="col-md">
-      <a href="{% url 'automacoes:logs_automacoes' %}" class="text-decoration-none text-dark">
-        <div class="card auto-kpi h-100">
-          <div class="card-body">
-            <small>Execuções</small>
-            <h2>{{ total_execucoes|default:0 }}</h2>
-          </div>
-        </div>
-      </a>
-    </div>
+    <a href="{% url 'automacoes:transmittals_km' %}" class="ged-kpi-card">
+      <span>Transmittals KM</span>
+      <strong>{{ total_transmittals_unicos }}</strong>
+      <small>pacotes únicos</small>
+    </a>
 
-    <div class="col-md">
-      <a href="{% url 'automacoes:logs_automacoes' %}?status=erro" class="text-decoration-none text-dark">
-        <div class="card auto-kpi h-100">
-          <div class="card-body">
-            <small>Falhas</small>
-            <h2 class="text-danger">{{ total_falhas|default:0 }}</h2>
-          </div>
-        </div>
-      </a>
-    </div>
+    <a href="{% url 'automacoes:transmittals_km' %}" class="ged-kpi-card">
+      <span>Índice KM</span>
+      <strong>{{ total_km_index }}</strong>
+      <small>arquivos ativos</small>
+    </a>
+  </section>
 
-    <div class="col-md">
-      <a href="{% url 'automacoes:logs_automacoes' %}" class="text-decoration-none text-dark">
-        <div class="card auto-kpi h-100">
-          <div class="card-body">
-            <small>Sucesso %</small>
-            <h2 class="text-success">{{ taxa_sucesso_global|default:0 }}%</h2>
-          </div>
-        </div>
-      </a>
+  <section class="ged-section-head">
+    <div>
+      <h2>Rotinas Operacionais</h2>
+      <p>Execução controlada, rastreabilidade e acesso rápido aos dados processados.</p>
     </div>
+  </section>
 
-    <div class="col-md">
-      <a href="{% url 'automacoes:logs_automacoes' %}?status=erro" class="text-decoration-none text-dark">
-        <div class="card auto-kpi h-100">
-          <div class="card-body">
-            <small>Falhas hoje</small>
-            <h2 class="text-danger">{{ falhas_hoje|default:0 }}</h2>
-          </div>
-        </div>
-      </a>
-    </div>
-  </div>
-
-  <div class="row g-4 mb-4">
+  <section class="ged-module-grid">
     {% for rotina in automacoes %}
-      <div class="col-xl-6">
-        <div class="auto-card h-100">
-          <div class="card-body p-4">
-            <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
-              <div class="d-flex align-items-center gap-3">
-                <div class="auto-icon">
-                  <i class="bi {{ rotina.icone }}"></i>
-                </div>
-                <div>
-                  <h4 class="auto-card-title">{{ rotina.nome }}</h4>
-                  <div class="auto-card-subtitle">{{ rotina.subtitulo }}</div>
-                </div>
-              </div>
+      <article class="ged-module-card">
+        <div class="ged-module-top">
+          <div class="ged-module-icon">
+            <i class="bi {{ rotina.icone }}"></i>
+          </div>
 
-              <div class="d-flex flex-column align-items-end gap-2">
-                <span class="auto-badge {{ rotina.badge_class }}">
-                  ● {{ rotina.badge }}
-                </span>
-                <span class="auto-status {{ rotina.health.classe|default:'auto-status-idle' }}">
-                  <i class="bi {{ rotina.health.icone|default:'bi-circle' }}"></i>
-                  {{ rotina.health.estado|default:"OCIOSO" }}
-                </span>
-              </div>
-            </div>
+          <div class="ged-module-title">
+            <h3>{{ rotina.nome }}</h3>
+            <span>{{ rotina.subtitulo }}</span>
+          </div>
 
-            <p class="text-muted mb-3">{{ rotina.descricao }}</p>
-
-            <div class="auto-metrics mb-4">
-              {% for metrica in rotina.metricas %}
-                <div class="auto-metric">
-                  <div class="auto-metric-label">{{ metrica.label }}</div>
-                  <div class="auto-metric-value">{{ metrica.valor }}</div>
-                </div>
-              {% endfor %}
-            </div>
-
-            <div class="auto-metrics mb-4">
-              <div class="auto-metric">
-                <div class="auto-metric-label">Sucesso</div>
-                <div class="auto-metric-value">{{ rotina.health.taxa_sucesso|default:0 }}%</div>
-              </div>
-              <div class="auto-metric">
-                <div class="auto-metric-label">Tempo médio</div>
-                <div class="auto-metric-value">{{ rotina.health.duracao_media_fmt|default:"0s" }}</div>
-              </div>
-              <div class="auto-metric">
-                <div class="auto-metric-label">Erros</div>
-                <div class="auto-metric-value">{{ rotina.health.total_erros|default:0 }}</div>
-              </div>
-            </div>
-
-            <div class="auto-btn-row">
-              <form method="post" action="{% url rotina.form_url %}" class="auto-form">
-                {% csrf_token %}
-                <button type="submit" class="btn {{ rotina.botao_class }} executar-btn">
-                  <i class="bi bi-play-fill"></i>
-                  {{ rotina.botao }}
-                </button>
-              </form>
-
-              {% if rotina.dashboard_url %}
-                <a href="{% url rotina.dashboard_url %}" class="btn btn-outline-primary">
-                  <i class="bi bi-graph-up-arrow"></i>
-                  Analytics
-                </a>
-              {% endif %}
-
-              {% if rotina.registros_url %}
-                <a href="{% url rotina.registros_url %}" class="btn btn-outline-secondary">
-                  <i class="bi bi-table"></i>
-                  Registros
-                </a>
-              {% endif %}
-
-              <a href="{% url 'automacoes:logs_automacoes' %}?nome={{ rotina.nome|urlencode }}" class="btn btn-outline-dark">
-                <i class="bi bi-activity"></i>
-                Logs
-              </a>
-            </div>
+          <div class="ged-module-badges">
+            <span class="ged-badge">{{ rotina.badge }}</span>
+            {% if rotina.health %}
+              <span class="ged-badge ged-badge-health">
+                <i class="bi {{ rotina.health.icone|default:'bi-circle' }}"></i>
+                {{ rotina.health.estado|default:'OCIOSO' }}
+              </span>
+            {% endif %}
           </div>
         </div>
-      </div>
-    {% endfor %}
-  </div>
 
-  <div class="auto-panel p-4 mb-4">
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-      <div>
-        <h4 class="mb-0">Últimas execuções</h4>
-        <small class="text-muted">Rastreabilidade operacional das rotinas GED.</small>
-      </div>
-      <a href="{% url 'automacoes:logs_automacoes' %}" class="btn btn-sm btn-outline-primary">
-        Abrir auditoria
-      </a>
-    </div>
+        <p class="ged-module-description">{{ rotina.descricao }}</p>
 
-    <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0">
-        <thead>
-          <tr>
-            <th>Automação</th>
-            <th>Status</th>
-            <th>Usuário</th>
-            <th>Qtd.</th>
-            <th>Duração</th>
-            <th>Início</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for log in ultimas_execucoes %}
-            <tr>
-              <td class="fw-bold">{{ log.nome }}</td>
-              <td>
-                {% if log.sucesso %}
-                  <span class="auto-badge auto-badge-success">● Sucesso</span>
-                {% elif log.status == "iniciado" %}
-                  <span class="auto-badge auto-badge-info">● Iniciado</span>
-                {% else %}
-                  <span class="auto-badge auto-badge-warning">● Erro</span>
-                {% endif %}
-              </td>
-              <td>{{ log.usuario|default:"Sistema" }}</td>
-              <td>{{ log.quantidade_processada|default:0 }}</td>
-              <td>{{ log.duracao_segundos|default:0 }}s</td>
-              <td>{{ log.iniciado_em }}</td>
-            </tr>
-          {% empty %}
-            <tr>
-              <td colspan="6" class="text-center text-muted">Nenhuma execução registrada.</td>
-            </tr>
+        <div class="ged-metric-strip">
+          {% for metrica in rotina.metricas %}
+            <div>
+              <span>{{ metrica.label }}</span>
+              <strong>{{ metrica.valor }}</strong>
+            </div>
           {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="row g-4">
-    <div class="col-lg-6">
-      <div class="auto-panel p-4 h-100">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h4 class="mb-0">PCFs recentes</h4>
-          <a href="{% url 'automacoes:pcfs_timeline' %}" class="btn btn-sm btn-outline-primary">Abrir Timeline</a>
         </div>
 
-        {% for item in ultimos_pcfs %}
-          <a href="{% url 'automacoes:pcfs_timeline' %}?q={{ item.numero_documento|urlencode }}" class="auto-list-item">
-            <div class="fw-bold">{{ item.numero_documento|default:"Documento sem código" }}</div>
-            <small class="text-muted">
-              {{ item.tipo|default:"Sem tipo" }} · Rev {{ item.revisao_pcf|default:"—" }} · Open {{ item.open_comments|default:0 }}
-            </small>
-          </a>
+        {% if rotina.health %}
+          <div class="ged-health-row">
+            <span>Taxa de sucesso</span>
+            <strong>{{ rotina.health.taxa_sucesso }}%</strong>
+            <small>Duração média: {{ rotina.health.duracao_media_fmt }}</small>
+          </div>
+        {% endif %}
+
+        <div class="ged-card-actions">
+          <form method="post" action="{% url rotina.form_url %}" class="ged-action-form">
+            {% csrf_token %}
+            <button type="submit" class="ged-btn ged-btn-primary ged-run-btn">
+              <i class="bi bi-play-fill"></i>
+              {{ rotina.botao }}
+            </button>
+          </form>
+
+          {% if rotina.dashboard_url %}
+            <a href="{% url rotina.dashboard_url %}" class="ged-btn ged-btn-ghost">
+              <i class="bi bi-bar-chart"></i>
+              Dashboard
+            </a>
+          {% endif %}
+
+          {% if rotina.registros_url %}
+            <a href="{% url rotina.registros_url %}" class="ged-btn ged-btn-ghost">
+              <i class="bi bi-table"></i>
+              Registros
+            </a>
+          {% endif %}
+        </div>
+      </article>
+    {% endfor %}
+  </section>
+
+  <section class="ged-two-col">
+    <div class="ged-panel">
+      <div class="ged-panel-head">
+        <div>
+          <h2>Últimas Execuções</h2>
+          <p>Histórico operacional recente.</p>
+        </div>
+        <a href="{% url 'automacoes:logs_automacoes' %}" class="ged-link">Ver todos</a>
+      </div>
+
+      <div class="ged-timeline">
+        {% for execucao in ultimas_execucoes %}
+          <div class="ged-timeline-item">
+            <div class="ged-timeline-dot"></div>
+            <div>
+              <strong>{{ execucao.nome }}</strong>
+              <span>{{ execucao.status }} · {{ execucao.iniciado_em }}</span>
+              <small>{{ execucao.mensagem|default:"Sem mensagem" }}</small>
+            </div>
+          </div>
         {% empty %}
-          <div class="text-muted">Sem PCFs recentes.</div>
+          <div class="ged-empty">Nenhuma execução registrada.</div>
         {% endfor %}
       </div>
     </div>
 
-    <div class="col-lg-6">
-      <div class="auto-panel p-4 h-100">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h4 class="mb-0">Transmittals recentes</h4>
-          <a href="{% url 'automacoes:transmittals_km' %}" class="btn btn-sm btn-outline-primary">Abrir Registros</a>
+    <div class="ged-panel">
+      <div class="ged-panel-head">
+        <div>
+          <h2>Operational Snapshot</h2>
+          <p>Indicadores rápidos da operação.</p>
         </div>
+      </div>
 
-        {% for item in ultimos_transmittals %}
-          <a href="{% url 'automacoes:transmittals_km' %}?q={{ item.documento|urlencode }}" class="auto-list-item">
-            <div class="fw-bold">{{ item.documento|default:"Documento sem código" }}</div>
-            <small class="text-muted">
-              {{ item.transmittal_numero|default:"Sem transmittal" }} · {{ item.emissao|default:"—" }}
-            </small>
-          </a>
-        {% empty %}
-          <div class="text-muted">Sem transmittals recentes.</div>
-        {% endfor %}
+      <div class="ged-snapshot-grid">
+        <div>
+          <span>Execuções</span>
+          <strong>{{ total_execucoes }}</strong>
+        </div>
+        <div>
+          <span>Sucessos</span>
+          <strong>{{ total_sucessos }}</strong>
+        </div>
+        <div>
+          <span>Falhas</span>
+          <strong>{{ total_falhas }}</strong>
+        </div>
+        <div>
+          <span>Taxa Global</span>
+          <strong>{{ taxa_sucesso_global }}%</strong>
+        </div>
+        <div>
+          <span>Hoje</span>
+          <strong>{{ execucoes_hoje }}</strong>
+        </div>
+        <div>
+          <span>Falhas Hoje</span>
+          <strong>{{ falhas_hoje }}</strong>
+        </div>
+      </div>
+
+      <div class="ged-panel-actions">
+        <a href="{% url 'automacoes:ops_center' %}" class="ged-btn ged-btn-primary">
+          <i class="bi bi-cpu"></i>
+          Abrir Runtime
+        </a>
+        <a href="{% url 'automacoes:dashboard_search' %}" class="ged-btn ged-btn-ghost">
+          <i class="bi bi-search"></i>
+          Search Analytics
+        </a>
       </div>
     </div>
-  </div>
+  </section>
 </div>
 
 <script>
-document.querySelectorAll(".auto-form").forEach(form => {
-  form.addEventListener("submit", function () {
-    const alertBox = document.getElementById("loading-alert");
-    if (alertBox) alertBox.classList.remove("d-none");
-
-    const button = form.querySelector(".executar-btn");
-    if (button) {
+  document.querySelectorAll(".ged-run-btn").forEach(function(button) {
+    button.closest("form").addEventListener("submit", function() {
+      const alertBox = document.getElementById("loading-alert");
+      if (alertBox) alertBox.classList.remove("d-none");
       button.disabled = true;
-      button.innerText = "⏳ Processando...";
-    }
+      button.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Executando...';
+    });
   });
-});
 </script>
 {% endblock %}

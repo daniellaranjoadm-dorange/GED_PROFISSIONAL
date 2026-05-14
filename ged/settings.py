@@ -1,4 +1,4 @@
-﻿"""
+"""
 Django settings for ged project – versão profissional otimizada para Railway.
 """
 
@@ -85,6 +85,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
 
     "storages",
+    "django_extensions",
 
     "apps.documentos",
     "apps.contas",

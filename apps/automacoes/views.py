@@ -2687,6 +2687,45 @@ def api_busca_global_ged(request):
 
 
 
+
+
+@login_required
+def busca_global(request):
+    """
+    Legacy global search route compatibility.
+
+    Keeps /automacoes/busca-global/ alive and delegates to the current
+    enterprise search implementation when a query is provided.
+    """
+    termo = request.GET.get("q", "").strip()
+    resultados = []
+    analytics = {}
+
+    if termo:
+        try:
+            resultados = buscar_global_enterprise(termo)
+        except TypeError:
+            resultados = buscar_global_enterprise(request)
+        except Exception:
+            resultados = []
+
+        try:
+            analytics = obter_search_analytics()
+        except Exception:
+            analytics = {}
+
+    return render(
+        request,
+        "automacoes/busca_global.html",
+        {
+            "q": termo,
+            "termo": termo,
+            "resultados": resultados,
+            "analytics": analytics,
+        },
+    )
+
+
 # ============================================================
 # UNIFIED OPERATIONS CENTER
 # ============================================================

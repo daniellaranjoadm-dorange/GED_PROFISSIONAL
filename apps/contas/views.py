@@ -1,4 +1,4 @@
-﻿from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -16,7 +16,14 @@ logger = logging.getLogger(__name__)
 
 
 def landing(request):
-    return render(request, "contas/landing.html")
+    """
+    Entrada principal do sistema.
+
+    A landing institucional antiga foi descontinuada do fluxo operacional.
+    Usuários autenticados e visitantes são direcionados ao painel enterprise.
+    O login_required da rota de destino cuida do redirecionamento para login.
+    """
+    return redirect("automacoes:painel")
 
 
 def login_view(request):
@@ -38,7 +45,7 @@ def login_view(request):
             next_url = (
                 request.POST.get("next")
                 or request.GET.get("next")
-                or reverse("documentos:listar_documentos")
+                or reverse("automacoes:painel")
             )
 
             if not url_has_allowed_host_and_scheme(
@@ -46,7 +53,7 @@ def login_view(request):
                 allowed_hosts={request.get_host()},
                 require_https=request.is_secure(),
             ):
-                next_url = reverse("documentos:listar_documentos")
+                next_url = reverse("automacoes:painel")
 
             return redirect(next_url)
 

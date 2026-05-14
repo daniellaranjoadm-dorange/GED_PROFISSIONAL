@@ -1,3 +1,467 @@
+/* ==========================================================
+   GED ENTERPRISE PANEL SKIN — MUST LOAD FIRST — v1300
+   Corrige /automacoes/ e telas .ged-* mesmo se houver CSS legado abaixo.
+   ========================================================== */
+
+body.ged-enterprise-shell {
+  background:
+    radial-gradient(circle at 0% 0%, rgba(255,138,0,.12), transparent 34rem),
+    radial-gradient(circle at 92% 10%, rgba(56,189,248,.12), transparent 34rem),
+    linear-gradient(135deg, #020617 0%, #050b18 48%, #08111f 100%) !important;
+  color: #e5e7eb !important;
+}
+
+body.ged-enterprise-shell .content {
+  background: transparent !important;
+  padding: 1.2rem 1.4rem 1.8rem !important;
+}
+
+body.ged-enterprise-shell .content-inner {
+  max-width: 1680px !important;
+  margin: 0 auto !important;
+  color: #e5e7eb !important;
+}
+
+body.ged-enterprise-shell .page-area {
+  color: #e5e7eb !important;
+}
+
+.ged-home {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1rem !important;
+  width: 100% !important;
+  color: #e5e7eb !important;
+}
+
+.ged-hero {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 340px !important;
+  gap: 1rem !important;
+  border: 1px solid rgba(148,163,184,.18) !important;
+  border-radius: 28px !important;
+  padding: clamp(1.15rem, 2vw, 1.8rem) !important;
+  background:
+    radial-gradient(circle at 8% 0%, rgba(255,138,0,.24), transparent 30rem),
+    radial-gradient(circle at 95% 10%, rgba(56,189,248,.20), transparent 26rem),
+    linear-gradient(135deg, rgba(15,23,42,.98), rgba(2,6,23,.95)) !important;
+  box-shadow: 0 24px 70px rgba(0,0,0,.30) !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.ged-hero::after {
+  content: "" !important;
+  position: absolute !important;
+  inset: auto 0 0 0 !important;
+  height: 3px !important;
+  background: linear-gradient(90deg, #38BDF8, #FF8A00) !important;
+}
+
+.ged-eyebrow {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: .5rem !important;
+  width: fit-content !important;
+  border-radius: 999px !important;
+  padding: .42rem .72rem !important;
+  border: 1px solid rgba(34,197,94,.30) !important;
+  background: rgba(34,197,94,.10) !important;
+  color: #bbf7d0 !important;
+  font-size: .78rem !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .05em !important;
+  margin-bottom: .85rem !important;
+}
+
+.ged-status-dot {
+  width: .58rem !important;
+  height: .58rem !important;
+  border-radius: 999px !important;
+  background: #22c55e !important;
+  box-shadow: 0 0 0 .28rem rgba(34,197,94,.12) !important;
+}
+
+.ged-hero h1 {
+  color: #f8fafc !important;
+  font-weight: 950 !important;
+  letter-spacing: -.06em !important;
+  line-height: .98 !important;
+  font-size: clamp(2rem, 4vw, 4.4rem) !important;
+  margin: 0 !important;
+}
+
+.ged-hero p {
+  color: rgba(226,232,240,.76) !important;
+  max-width: 820px !important;
+  margin: .9rem 0 0 !important;
+  font-size: 1rem !important;
+}
+
+.ged-hero-actions,
+.ged-card-actions,
+.ged-panel-actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: .62rem !important;
+  margin-top: 1.05rem !important;
+}
+
+.ged-hero-side {
+  border: 1px solid rgba(148,163,184,.18) !important;
+  border-radius: 22px !important;
+  padding: 1rem !important;
+  background: rgba(15,23,42,.66) !important;
+  backdrop-filter: blur(10px) !important;
+  align-self: stretch !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+}
+
+.ged-hero-side span,
+.ged-hero-side small {
+  color: rgba(226,232,240,.62) !important;
+}
+
+.ged-hero-side strong {
+  color: #fff !important;
+  font-size: 1.35rem !important;
+  line-height: 1.05 !important;
+  margin: .45rem 0 !important;
+}
+
+.ged-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: .5rem !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(148,163,184,.22) !important;
+  padding: .56rem .9rem !important;
+  font-size: .84rem !important;
+  font-weight: 900 !important;
+  text-decoration: none !important;
+  transition: transform .16s ease, filter .16s ease, border-color .16s ease !important;
+  cursor: pointer !important;
+}
+
+.ged-btn-primary {
+  background: linear-gradient(135deg, #FF8A00, #FDBA74) !important;
+  color: #111827 !important;
+  border-color: rgba(253,186,116,.55) !important;
+}
+
+.ged-btn-ghost {
+  background: rgba(15,23,42,.68) !important;
+  color: #e5e7eb !important;
+  border-color: rgba(148,163,184,.24) !important;
+}
+
+.ged-kpi-grid {
+  display: grid !important;
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: .8rem !important;
+}
+
+.ged-kpi-card {
+  border: 1px solid rgba(148,163,184,.16) !important;
+  border-radius: 20px !important;
+  padding: 1rem !important;
+  background: linear-gradient(145deg, rgba(15,23,42,.94), rgba(11,18,32,.76)) !important;
+  color: #e5e7eb !important;
+  box-shadow: 0 14px 34px rgba(0,0,0,.20) !important;
+  text-decoration: none !important;
+  min-height: 118px !important;
+}
+
+.ged-kpi-card span {
+  color: rgba(226,232,240,.62) !important;
+  font-size: .74rem !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .05em !important;
+}
+
+.ged-kpi-card strong {
+  display: block !important;
+  color: #fff !important;
+  font-size: clamp(1.55rem, 2vw, 2.25rem) !important;
+  letter-spacing: -.05em !important;
+  margin-top: .2rem !important;
+}
+
+.ged-kpi-card small {
+  color: rgba(226,232,240,.58) !important;
+}
+
+.ged-section-head {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: flex-end !important;
+  gap: 1rem !important;
+  margin-top: .25rem !important;
+}
+
+.ged-section-head h2,
+.ged-panel h2 {
+  color: #f8fafc !important;
+  font-size: 1.25rem !important;
+  font-weight: 950 !important;
+  letter-spacing: -.04em !important;
+  margin: 0 !important;
+}
+
+.ged-section-head p,
+.ged-panel-head p {
+  color: rgba(226,232,240,.60) !important;
+  margin: .2rem 0 0 !important;
+}
+
+.ged-module-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: .9rem !important;
+}
+
+.ged-module-card,
+.ged-panel {
+  border: 1px solid rgba(148,163,184,.16) !important;
+  border-radius: 24px !important;
+  background: linear-gradient(145deg, rgba(15,23,42,.94), rgba(11,18,32,.80)) !important;
+  box-shadow: 0 18px 48px rgba(0,0,0,.22) !important;
+  padding: 1rem !important;
+  color: #e5e7eb !important;
+}
+
+.ged-module-top,
+.ged-panel-head {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: .8rem !important;
+}
+
+.ged-module-icon {
+  width: 50px !important;
+  height: 50px !important;
+  flex: 0 0 auto !important;
+  border-radius: 17px !important;
+  display: grid !important;
+  place-items: center !important;
+  background: linear-gradient(135deg, rgba(56,189,248,.18), rgba(255,138,0,.18)) !important;
+  color: #7dd3fc !important;
+  font-size: 1.35rem !important;
+}
+
+.ged-module-title {
+  flex: 1 !important;
+}
+
+.ged-module-title h3 {
+  color: #fff !important;
+  font-size: 1.08rem !important;
+  font-weight: 950 !important;
+  letter-spacing: -.03em !important;
+  margin: 0 !important;
+}
+
+.ged-module-title span,
+.ged-module-description,
+.ged-health-row,
+.ged-timeline-item span,
+.ged-timeline-item small {
+  color: rgba(226,232,240,.62) !important;
+}
+
+.ged-module-badges {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  justify-content: flex-end !important;
+  gap: .35rem !important;
+}
+
+.ged-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: .35rem !important;
+  border-radius: 999px !important;
+  padding: .32rem .58rem !important;
+  background: rgba(56,189,248,.10) !important;
+  color: #bae6fd !important;
+  border: 1px solid rgba(56,189,248,.20) !important;
+  font-size: .68rem !important;
+  font-weight: 950 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .04em !important;
+}
+
+.ged-badge-health {
+  background: rgba(34,197,94,.10) !important;
+  color: #bbf7d0 !important;
+  border-color: rgba(34,197,94,.22) !important;
+}
+
+.ged-module-description {
+  margin: .85rem 0 !important;
+}
+
+.ged-metric-strip,
+.ged-snapshot-grid {
+  display: grid !important;
+  gap: .6rem !important;
+}
+
+.ged-metric-strip {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+.ged-snapshot-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+.ged-metric-strip div,
+.ged-snapshot-grid div {
+  border: 1px solid rgba(148,163,184,.13) !important;
+  border-radius: 16px !important;
+  padding: .74rem !important;
+  background: rgba(2,6,23,.42) !important;
+}
+
+.ged-metric-strip span,
+.ged-snapshot-grid span {
+  display: block !important;
+  color: rgba(226,232,240,.58) !important;
+  font-size: .70rem !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .05em !important;
+}
+
+.ged-metric-strip strong,
+.ged-snapshot-grid strong {
+  color: #fff !important;
+  font-size: 1.12rem !important;
+  font-weight: 950 !important;
+}
+
+.ged-health-row {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: .5rem .9rem !important;
+  align-items: center !important;
+  border-top: 1px solid rgba(148,163,184,.14) !important;
+  margin-top: .85rem !important;
+  padding-top: .75rem !important;
+}
+
+.ged-health-row strong {
+  color: #bbf7d0 !important;
+}
+
+.ged-action-form {
+  display: inline !important;
+}
+
+.ged-two-col {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.25fr) minmax(360px, .75fr) !important;
+  gap: .9rem !important;
+}
+
+.ged-link {
+  color: #7dd3fc !important;
+  text-decoration: none !important;
+  font-weight: 900 !important;
+}
+
+.ged-timeline {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: .68rem !important;
+  margin-top: .9rem !important;
+}
+
+.ged-timeline-item {
+  display: grid !important;
+  grid-template-columns: 14px 1fr !important;
+  gap: .7rem !important;
+  border: 1px solid rgba(148,163,184,.12) !important;
+  border-radius: 16px !important;
+  padding: .72rem !important;
+  background: rgba(2,6,23,.36) !important;
+}
+
+.ged-timeline-dot {
+  width: .65rem !important;
+  height: .65rem !important;
+  border-radius: 999px !important;
+  background: #38BDF8 !important;
+  margin-top: .35rem !important;
+  box-shadow: 0 0 0 .28rem rgba(56,189,248,.12) !important;
+}
+
+.ged-timeline-item strong {
+  display: block !important;
+  color: #f8fafc !important;
+}
+
+.ged-timeline-item span,
+.ged-timeline-item small {
+  display: block !important;
+}
+
+.ged-empty {
+  color: rgba(226,232,240,.62) !important;
+  border: 1px dashed rgba(148,163,184,.20) !important;
+  border-radius: 16px !important;
+  padding: 1rem !important;
+}
+
+@media (max-width: 1280px) {
+  .ged-kpi-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+  .ged-hero {
+    grid-template-columns: 1fr !important;
+  }
+  .ged-two-col {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .ged-module-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .ged-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  .ged-metric-strip,
+  .ged-snapshot-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .ged-module-top,
+  .ged-panel-head {
+    flex-direction: column !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .ged-kpi-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .ged-hero-actions,
+  .ged-card-actions,
+  .ged-panel-actions {
+    flex-direction: column !important;
+  }
+  .ged-btn {
+    width: 100% !important;
+  }
+}
+
 :root{
   --sidebar-width: 240px;
 
@@ -321,7 +785,9 @@ body {
 ================================= */
 
 /* evita scroll horizontal */
+html, body, .layout { max-width: 100%; overflow-x: hidden; }
 
+.content, .content-inner { min-width: 0; } /* essencial com flex */
 
 /* MOBILE / TABLET */
 @media (max-width: 991.98px) {
@@ -579,6 +1045,7 @@ body[data-theme="light"]{
   --dash-shadow: 0 14px 34px rgba(10,20,40,.12);
 }
 
+.dash-muted{ color: var(--dash-muted) !important; }
 
 /* Header (título + ações) */
 .dash-header{
@@ -613,6 +1080,8 @@ body[data-theme="light"]{
   backdrop-filter: blur(8px);
 }
 
+.dash-surface.pad{ padding: 16px; }
+.dash-surface-flat{ box-shadow:none !important; backdrop-filter:none !important; }
 
 /* Botões */
 .dash-btn{
@@ -628,6 +1097,8 @@ body[data-theme="light"]{
   align-items:center;
 }
 
+body[data-theme="light"] .dash-btn{ background: rgba(11,18,32,.06); }
+.dash-btn:hover{ filter: brightness(1.06); color: var(--dash-text); }
 
 .dash-btn-primary{
   border-color: rgba(255,177,60,.45);
@@ -651,6 +1122,10 @@ body[data-theme="light"]{
   border: 1px solid var(--dash-border);
 }
 
+.dash-badge-success{ background: rgba(52,211,153,.16); border-color: rgba(52,211,153,.35); }
+.dash-badge-danger{  background: rgba(251,113,133,.16); border-color: rgba(251,113,133,.35); }
+.dash-badge-warning{ background: rgba(255,177,60,.16); border-color: rgba(255,177,60,.35); }
+.dash-badge-info{    background: rgba(34,211,238,.14); border-color: rgba(34,211,238,.32); }
 
 /* Inputs (somente dentro de .dash-surface) */
 .dash-surface .form-control,
@@ -796,6 +1271,7 @@ body[data-theme="light"]{
   --dash-shadow: 0 14px 34px rgba(10,20,40,.12);
 }
 
+.dash-muted{ color: var(--dash-muted) !important; }
 
 /* Header (título + ações) */
 .dash-header{
@@ -830,6 +1306,8 @@ body[data-theme="light"]{
   backdrop-filter: blur(8px);
 }
 
+.dash-surface.pad{ padding: 16px; }
+.dash-surface-flat{ box-shadow:none !important; backdrop-filter:none !important; }
 
 /* Botões */
 .dash-btn{
@@ -845,6 +1323,8 @@ body[data-theme="light"]{
   align-items:center;
 }
 
+body[data-theme="light"] .dash-btn{ background: rgba(11,18,32,.06); }
+.dash-btn:hover{ filter: brightness(1.06); color: var(--dash-text); }
 
 .dash-btn-primary{
   border-color: rgba(255,177,60,.45);
@@ -868,6 +1348,10 @@ body[data-theme="light"]{
   border: 1px solid var(--dash-border);
 }
 
+.dash-badge-success{ background: rgba(52,211,153,.16); border-color: rgba(52,211,153,.35); }
+.dash-badge-danger{  background: rgba(251,113,133,.16); border-color: rgba(251,113,133,.35); }
+.dash-badge-warning{ background: rgba(255,177,60,.16); border-color: rgba(255,177,60,.35); }
+.dash-badge-info{    background: rgba(34,211,238,.14); border-color: rgba(34,211,238,.32); }
 
 /* Inputs (somente dentro de .dash-surface) */
 .dash-surface .form-control,
@@ -1122,1142 +1606,342 @@ body.change-form textarea:focus{
 }
 
 /* Filtro (direita) */
-/* =========================================================
-   MEDI??O ? BLOCO ?NICO FINAL (FIX DEFINITIVO)
-   Escopo: somente Medi??o
-   Motivo: eliminar conflitos + garantir layout Bootstrap intacto
-========================================================= */
+#changelist-filter{
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: linear-
 
-body.page-medicao .medicao-page{
-  color: #0f172a !important;
-}
-
-/* Se aparecer uma linha colorida (HR/placeholder), matar na Medi??o */
-body.page-medicao hr{ display:none !important; }
-
-/* Cards base (container de filtros / resumo / charts) */
-body.page-medicao .medicao-card{
-  background: #ffffff !important;
-  border: 1px solid rgba(15,23,42,.12) !important;
-  border-radius: 14px !important;
-  box-shadow: 0 10px 28px rgba(15,23,42,.08) !important;
-  padding: 16px !important;
-}
-
-/* DARK */
-html[data-theme="dark"] body.page-medicao .medicao-page,
-body[data-theme="dark"].page-medicao .medicao-page,
-body.dark.page-medicao .medicao-page{
-  color: #e5e7eb !important;
-}
-html[data-theme="dark"] body.page-medicao .medicao-card,
-body[data-theme="dark"].page-medicao .medicao-card,
-body.dark.page-medicao .medicao-card{
-  background: rgba(15,23,42,.45) !important;
-  border-color: rgba(148,163,184,.22) !important;
-  box-shadow: 0 10px 28px rgba(0,0,0,.35) !important;
-}
-
-/* =======================
-   FILTROS (grid real)
-======================= */
-body.page-medicao form.medicao-filtros{
-  display:grid !important;
-  grid-template-columns: repeat(4, minmax(220px, 1fr)) !important;
-  gap:12px !important;
-  align-items:end !important;
-}
-@media (max-width:1200px){
-  body.page-medicao form.medicao-filtros{ grid-template-columns: repeat(2, minmax(240px, 1fr)) !important; }
-}
-@media (max-width:720px){
-  body.page-medicao form.medicao-filtros{ grid-template-columns: 1fr !important; }
-}
-
-body.page-medicao form.medicao-filtros label{
-  font-weight:700 !important;
-  color: rgba(15,23,42,.78) !important;
-}
-body.page-medicao form.medicao-filtros select,
-body.page-medicao form.medicao-filtros input{
-  width:100% !important;
-}
-html[data-theme="dark"] body.page-medicao form.medicao-filtros label,
-body[data-theme="dark"].page-medicao form.medicao-filtros label,
-body.dark.page-medicao form.medicao-filtros label{
-  color: rgba(229,231,235,.82) !important;
-}
-
-/* Bot?es: alinhar ? direita e n?o quebrar layout */
-body.page-medicao .medicao-actions{
-  display:flex !important;
-  gap:8px !important;
-  justify-content:flex-end !important;
-  flex-wrap:wrap !important;
-  grid-column:1 / -1 !important;
-}
-
-/* =======================
-   KPIs (cards em grid)
-======================= */
-body.page-medicao #medicao-kpis .medicao-kpis{
-  display:grid !important;
-  grid-template-columns: repeat(3, minmax(240px, 1fr)) !important;
-  gap:12px !important;
-  margin-top:14px !important;
-}
-@media (max-width:1200px){
-  body.page-medicao #medicao-kpis .medicao-kpis{ grid-template-columns: repeat(2, minmax(240px, 1fr)) !important; }
-}
-@media (max-width:720px){
-  body.page-medicao #medicao-kpis .medicao-kpis{ grid-template-columns: 1fr !important; }
-}
-
-body.page-medicao #medicao-kpis .totais-box{
-  display:flex !important;
-  flex-direction:column !important;
-  justify-content:center !important;
-  background:#f8fafc !important;
-  border:1px solid rgba(15,23,42,.12) !important;
-  border-radius:14px !important;
-  padding:14px 14px 12px !important;
-}
-
-html[data-theme="dark"] body.page-medicao #medicao-kpis .totais-box,
-body[data-theme="dark"].page-medicao #medicao-kpis .totais-box,
-body.dark.page-medicao #medicao-kpis .totais-box{
-  background: rgba(15,23,42,.38) !important;
-  border-color: rgba(148,163,184,.22) !important;
-}
-
-body.page-medicao #medicao-kpis .medicao-kpi-label,
-body.page-medicao #medicao-kpis .kpi-label{
-  font-size:12px !important;
-  font-weight:800 !important;
-  letter-spacing:.2px !important;
-  text-transform:uppercase !important;
-  color: rgba(15,23,42,.72) !important;
-}
-
-body.page-medicao #medicao-kpis .medicao-kpi-value,
-body.page-medicao #medicao-kpis .kpi-value{
-  margin-top:6px !important;
-  font-size:20px !important;
-  font-weight:900 !important;
-  color:#0f172a !important;
-  opacity:1 !important;
-}
-
-html[data-theme="dark"] body.page-medicao #medicao-kpis .medicao-kpi-label,
-body[data-theme="dark"].page-medicao #medicao-kpis .medicao-kpi-label,
-body.dark.page-medicao #medicao-kpis .medicao-kpi-label,
-html[data-theme="dark"] body.page-medicao #medicao-kpis .kpi-label,
-body[data-theme="dark"].page-medicao #medicao-kpis .kpi-label,
-body.dark.page-medicao #medicao-kpis .kpi-label{
-  color: rgba(229,231,235,.74) !important;
-}
-
-html[data-theme="dark"] body.page-medicao #medicao-kpis .medicao-kpi-value,
-body[data-theme="dark"].page-medicao #medicao-kpis .medicao-kpi-value,
-body.dark.page-medicao #medicao-kpis .medicao-kpi-value,
-html[data-theme="dark"] body.page-medicao #medicao-kpis .kpi-value,
-body[data-theme="dark"].page-medicao #medicao-kpis .kpi-value,
-body.dark.page-medicao #medicao-kpis .kpi-value{
-  color:#e5e7eb !important;
-}
-
-/* =======================
-   TABELA RESUMO (sem cortar)
-======================= */
-body.page-medicao #medicao-resumo .table-responsive{ overflow-x:auto !important; }
-
-body.page-medicao #medicao-resumo table.medicao-table{
-  width:100% !important;
-  min-width:980px !important;
-  border-collapse:separate !important;
-  border-spacing:0 !important;
-}
-
-body.page-medicao #medicao-resumo table.medicao-table th{
-  background: rgba(56,189,248,.10) !important;
-  color:#0f172a !important;
-  font-weight:900 !important;
-  font-size:12px !important;
-  padding:10px 12px !important;
-  border-bottom:1px solid rgba(15,23,42,.12) !important;
-  white-space:nowrap !important;
-}
-
-body.page-medicao #medicao-resumo table.medicao-table td{
-  color:#0f172a !important;
-  padding:10px 12px !important;
-  border-bottom:1px solid rgba(15,23,42,.08) !important;
-  white-space:nowrap !important;
-}
-
-html[data-theme="dark"] body.page-medicao #medicao-resumo table.medicao-table th,
-body[data-theme="dark"].page-medicao #medicao-resumo table.medicao-table th,
-body.dark.page-medicao #medicao-resumo table.medicao-table th{
-  background: rgba(56,189,248,.14) !important;
-  color:#e5e7eb !important;
-  border-bottom-color: rgba(148,163,184,.22) !important;
-}
-html[data-theme="dark"] body.page-medicao #medicao-resumo table.medicao-table td,
-body[data-theme="dark"].page-medicao #medicao-resumo table.medicao-table td,
-body.dark.page-medicao #medicao-resumo table.medicao-table td{
-  color:#e5e7eb !important;
-  border-bottom-color: rgba(148,163,184,.16) !important;
-}
-
-body.page-medicao #medicao-resumo table.medicao-table tr.total td{
-  font-weight:900 !important;
-  background: rgba(56,189,248,.10) !important;
-}
-
-*/
-
-body.page-medicao .medicao-card{
-  padding: 18px !important;
-}
-
-body.page-medicao .medicao-title{
-  margin: 0 0 10px 0 !important;
-}
-
-body.page-medicao .medicao-card + #medicao-kpis{
-  margin-top: 14px !important;
-}
-
-body.page-medicao form.medicao-filtros{
-  padding: 2px 2px 6px !important;
-}
-
-body.page-medicao form.medicao-filtros select,
-body.page-medicao form.medicao-filtros input{
-  height: 38px !important;
-  border-radius: 10px !important;
-}
-
-body.page-medicao .medicao-actions{
-  margin-top: 8px !important;
-}
-
-body.page-medicao .medicao-actions .btn{
-  height: 36px !important;
-  border-radius: 10px !important;
-  padding: 0 12px !important;
-  font-weight: 800 !important;
-}
-
-body.page-medicao #medicao-kpis .totais-box{
-  background: #ffffff !important;
-  box-shadow: 0 10px 22px rgba(15,23,42,.08) !important;
-  border: 1px solid rgba(15,23,42,.10) !important;
-  min-height: 82px !important;
-}
-
-html[data-theme="dark"] body.page-medicao #medicao-kpis .totais-box,
-body[data-theme="dark"].page-medicao #medicao-kpis .totais-box,
-body.dark.page-medicao #medicao-kpis .totais-box{
-  background: rgba(15,23,42,.55) !important;
-  box-shadow: 0 10px 22px rgba(0,0,0,.35) !important;
-}
-
-body.page-medicao #medicao-kpis .medicao-kpi-label,
-body.page-medicao #medicao-kpis .kpi-label{
-  font-size: 11px !important;
-  opacity: .92 !important;
-}
-
-body.page-medicao #medicao-kpis .medicao-kpi-value,
-body.page-medicao #medicao-kpis .kpi-value{
-  font-size: 22px !important;
-  line-height: 1.1 !important;
-  letter-spacing: .2px !important;
-}
-
-body.page-medicao #medicao-resumo .medicao-card{
-  padding: 14px 14px 10px !important;
-}
-
-body.page-medicao #medicao-resumo table.medicao-table{
-  border-radius: 12px !important;
-  overflow: hidden !important;
-}
-
-body.page-medicao #medicao-resumo table.medicao-table th{
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 2 !important;
-}
-
-body.page-medicao #medicao-resumo table.medicao-table tr.total td{
-  font-size: 13px !important;
-}
-
-body.page-medicao #medicao-resumo{
-  margin-top: 14px !important;
-}
-
-body.page-medicao #medicao-graficos{
-  margin-top: 16px !important;
-}
-
-/* ===== MEDI??O ? GRAFICOS: remover linhas/artefatos quando n?o h? chart ===== */
-body.page-medicao #medicao-graficos{
-  overflow: hidden !important;
-}
-
-body.page-medicao #medicao-graficos hr{
-  display: none !important;
-  height: 0 !important;
-  margin: 0 !important;
-  border: 0 !important;
-}
-
-body.page-medicao #medicao-graficos .medicao-chart-placeholder{
-  border: 0 !important;
-  box-shadow: none !important;
-  background: transparent !important;
-  padding: 0 !important;
-  margin: 6px 0 10px 0 !important;
-}
-
-body.page-medicao #medicao-graficos canvas{
-  border: 0 !important;
-  outline: 0 !important;
-  box-shadow: none !important;
-  background: transparent !important;
-  display: block !important;
-  width: 100% !important;
-  /* evita canvas ?colapsar? em 1px e parecer uma linha */
-  min-height: 220px !important;
-}
-
-body.page-medicao #medicao-graficos .chart-container,
-body.page-medicao #medicao-graficos .grafico-container,
-body.page-medicao #medicao-graficos .grafico-box,
-body.page-medicao #medicao-graficos .medicao-card{
-  border-top: 0 !important;
-  overflow: hidden !important;
-}
-
-/* ===== MEDI??O ? CHART SLOTS (canvas reais) ===== */
-body.page-medicao #medicao-graficos,
-body.page-medicao .medicao-graficos{
-  overflow: hidden !important;
-}
-
-body.page-medicao #medicao-graficos .medicao-chart-wrap{
-  width: 100% !important;
-  border-radius: 12px !important;
-  overflow: hidden !important;
-  background: rgba(255,255,255,.65) !important;
-  border: 1px solid rgba(15,23,42,.10) !important;
-  box-shadow: 0 10px 22px rgba(15,23,42,.06) !important;
-  padding: 10px 12px !important;
-  margin: 8px 0 14px 0 !important;
-}
-
-html[data-theme="dark"] body.page-medicao #medicao-graficos .medicao-chart-wrap,
-body[data-theme="dark"].page-medicao #medicao-graficos .medicao-chart-wrap,
-body.dark.page-medicao #medicao-graficos .medicao-chart-wrap{
-  background: rgba(15,23,42,.35) !important;
-  border: 1px solid rgba(255,255,255,.10) !important;
-  box-shadow: 0 10px 22px rgba(0,0,0,.30) !important;
-}
-
-body.page-medicao #medicao-graficos canvas.medicao-chart{
-  display: block !important;
-  width: 100% !important;
-  height: 280px !important;  /* evita colapsar em linha */
-  max-height: 280px !important;
-}
-
-body.page-medicao #medicao-graficos .medicao-chart-fallback{
-  font-size: 12px !important;
-  opacity: .75 !important;
-  padding: 8px 2px !important;
-}
-
-/* ===== MEDI??O ? FIX HARD: matar linhas/dividers na ?rea de gr?ficos ===== */
-body.page-medicao #medicao-graficos{
-  overflow: hidden !important;
-}
-
-/* Qualquer separador t?pico */
-body.page-medicao #medicao-graficos hr,
-body.page-medicao #medicao-graficos .hr,
-body.page-medicao #medicao-graficos [role="separator"],
-body.page-medicao #medicao-graficos .divider,
-body.page-medicao #medicao-graficos .separator,
-body.page-medicao #medicao-graficos .line,
-body.page-medicao #medicao-graficos .chart-divider{
-  display: none !important;
-  height: 0 !important;
-  margin: 0 !important;
-  border: 0 !important;
-  background: transparent !important;
-}
-
-/* Pseudo-elementos s?o fonte comum dessas ?linhas? */
-body.page-medicao #medicao-graficos *::before,
-body.page-medicao #medicao-graficos *::after{
-  background: transparent !important;
-  box-shadow: none !important;
-  border: 0 !important;
-  outline: 0 !important;
-}
-
-/* Se a linha estiver vindo como border-top em algum container */
-body.page-medicao #medicao-graficos *{
-  border-top-color: transparent !important;
-}
-
-/* Canvas/SVG nunca devem ter borda/outline */
-body.page-medicao #medicao-graficos canvas,
-body.page-medicao #medicao-graficos svg{
-  border: 0 !important;
-  outline: 0 !important;
-  box-shadow: none !important;
-  background: transparent !important;
-}
-
-/* Chart.js size monitor (?s vezes aparece como ?linha? em layouts) */
-body.page-medicao #medicao-graficos .chartjs-size-monitor,
-body.page-medicao #medicao-graficos .chartjs-size-monitor-expand,
-body.page-medicao #medicao-graficos .chartjs-size-monitor-shrink{
-  display: none !important;
-}
-
-/* Mant?m o card do gr?fico com borda neutra (sem borda colorida) */
-body.page-medicao #medicao-graficos .medicao-chart-wrap{
-  border-color: rgba(15,23,42,.10) !important;
-  border-top-color: rgba(15,23,42,.10) !important;
-}
-
-/* ===== MEDI??O ? SUPER RESET VISUAL: ?rea de gr?ficos ===== */
-body.page-medicao #medicao-graficos{
-  position: relative !important;
-  overflow: hidden !important;
-  background: transparent !important;
-  background-image: none !important;
-  box-shadow: none !important;
-  filter: none !important;
-}
-
-body.page-medicao #medicao-graficos *{
-  background-image: none !important;
-  box-shadow: none !important;
-  filter: none !important;
-  outline: 0 !important;
-}
-
-/* mata qualquer overlay absoluto de 1px */
-body.page-medicao #medicao-graficos *{
-  border: 0 !important;
-}
-body.page-medicao #medicao-graficos *::before,
-body.page-medicao #medicao-graficos *::after{
-  content: none !important;
-  display: none !important;
-  background: transparent !important;
-}
-
-/* garante que canvas/svg n?o mostrem ?resto? */
-body.page-medicao #medicao-graficos canvas,
-body.page-medicao #medicao-graficos svg{
-  border: 0 !important;
-  outline: 0 !important;
-  background: transparent !important;
-}
-
-/* ===== MEDI??O ? DASHBOARD LOOK (premium dark cards) ===== */
-body.page-medicao .medicao-hero{
-  margin: 8px 0 12px 0 !important;
-}
-
-body.page-medicao .medicao-h1{
-  font-weight: 900 !important;
-  letter-spacing: -.2px !important;
-  margin: 0 0 6px 0 !important;
-}
-
-body.page-medicao .medicao-subtitle{
-  opacity: .85 !important;
-  margin: 0 0 10px 0 !important;
-}
-
-/* Card base premium (similar ao dashboard) */
-body.page-medicao .medicao-card--dark{
-  background: linear-gradient(180deg, rgba(15,23,42,.92), rgba(2,6,23,.92)) !important;
-  border: 1px solid rgba(255,255,255,.10) !important;
-  box-shadow: 0 18px 40px rgba(0,0,0,.28) !important;
-  border-radius: 16px !important;
-}
-
-body.page-medicao .medicao-card--dark *{
-  color: rgba(255,255,255,.94);
-}
-
-body.page-medicao .medicao-card--dark label,
-body.page-medicao .medicao-card--dark .label,
-body.page-medicao .medicao-card--dark .muted{
-  color: rgba(255,255,255,.78) !important;
-}
-
-/* Inputs no dark card */
-body.page-medicao .medicao-card--dark select,
-body.page-medicao .medicao-card--dark input{
-  background: rgba(255,255,255,.08) !important;
-  border: 1px solid rgba(255,255,255,.14) !important;
-  color: rgba(255,255,255,.92) !important;
-}
-
-body.page-medicao .medicao-card--dark select:focus,
-body.page-medicao .medicao-card--dark input:focus{
-  outline: 0 !important;
-  box-shadow: 0 0 0 4px rgba(59,130,246,.25) !important;
-  border-color: rgba(59,130,246,.55) !important;
-}
-
-/* Bot?es dentro do card */
-body.page-medicao .medicao-card--dark .medicao-actions .btn{
-  height: 36px !important;
-  border-radius: 10px !important;
-  padding: 0 12px !important;
-  font-weight: 800 !important;
-}
-
-body.page-medicao .medicao-card--dark .btn.btn-outline-secondary{
-  border-color: rgba(255,255,255,.18) !important;
-  color: rgba(255,255,255,.90) !important;
-}
 
-body.page-medicao .medicao-card--dark .btn.btn-outline-secondary:hover{
-  background: rgba(255,255,255,.08) !important;
-}
-
-/* KPIs com cara de dashboard */
-body.page-medicao #medicao-kpis .kpi-card,
-body.page-medicao #medicao-kpis .totais-box{
-  background: linear-gradient(180deg, rgba(15,23,42,.88), rgba(2,6,23,.88)) !important;
-  border: 1px solid rgba(255,255,255,.10) !important;
-  box-shadow: 0 16px 34px rgba(0,0,0,.22) !important;
-  border-radius: 16px !important;
-  min-height: 84px !important;
-}
-
-body.page-medicao #medicao-kpis .kpi-label,
-body.page-medicao #medicao-kpis .medicao-kpi-label{
-  font-size: 11px !important;
-  letter-spacing: .35px !important;
-  text-transform: uppercase !important;
-  opacity: .80 !important;
-}
-
-body.page-medicao #medicao-kpis .kpi-value,
-body.page-medicao #medicao-kpis .medicao-kpi-value{
-  font-size: 24px !important;
-  line-height: 1.1 !important;
-  font-weight: 900 !important;
-}
-
-/* Tabela (relat?rio) no card dark */
-body.page-medicao #medicao-resumo table.medicao-table{
-  border-radius: 12px !important;
-  overflow: hidden !important;
-  background: rgba(255,255,255,.03) !important;
-}
-
-body.page-medicao #medicao-resumo table.medicao-table th{
-  background: rgba(255,255,255,.06) !important;
-  color: rgba(255,255,255,.92) !important;
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 2 !important;
-}
-
-body.page-medicao #medicao-resumo table.medicao-table td{
-  color: rgba(255,255,255,.90) !important;
-  border-color: rgba(255,255,255,.10) !important;
-}
-
-body.page-medicao #medicao-resumo table.medicao-table tr.total td{
-  background: rgba(255,255,255,.06) !important;
-  font-weight: 900 !important;
-}
-
-/* ===== Charts: cards premium como dashboard ===== */
-body.page-medicao #medicao-graficos{
-  margin-top: 16px !important;
-}
-
-body.page-medicao .medicao-chart-card{
-  background: linear-gradient(180deg, rgba(15,23,42,.92), rgba(2,6,23,.92)) !important;
-  border: 1px solid rgba(255,255,255,.10) !important;
-  box-shadow: 0 18px 40px rgba(0,0,0,.28) !important;
-  border-radius: 16px !important;
-  padding: 12px 14px !important;
-  margin: 10px 0 14px 0 !important;
-}
-
-body.page-medicao .medicao-chart-head{
-  display: flex !important;
-  align-items: baseline !important;
-  justify-content: space-between !important;
-  gap: 12px !important;
-  margin-bottom: 8px !important;
-}
-
-body.page-medicao .medicao-chart-title{
-  font-weight: 900 !important;
-  letter-spacing: -.1px !important;
-  color: rgba(255,255,255,.94) !important;
-}
-
-body.page-medicao .medicao-chart-meta{
-  font-size: 12px !important;
-  opacity: .70 !important;
-  color: rgba(255,255,255,.85) !important;
-}
-
-body.page-medicao .medicao-chart-body{
-  background: rgba(255,255,255,.03) !important;
-  border: 1px solid rgba(255,255,255,.08) !important;
-  border-radius: 14px !important;
-  padding: 10px !important;
-}
-
-body.page-medicao canvas.medicao-chart{
-  display: block !important;
-  width: 100% !important;
-  height: 100% !important;
-}
-
-/* Espa?amento geral */
-body.page-medicao #medicao-resumo{ margin-top: 14px !important; }
-body.page-medicao #medicao-graficos{ margin-top: 16px !important; }
-
-/* ===== MEDI??O ? FIX CONTRASTE (KPIs + cards dark) ===== */
-body.page-medicao .medicao-card--dark,
-body.page-medicao .medicao-card--dark *{
-  color: rgba(255,255,255,.92) !important;
-}
-
-body.page-medicao .medicao-card--dark .text-muted,
-body.page-medicao .medicao-card--dark small,
-body.page-medicao .medicao-card--dark .small,
-body.page-medicao .medicao-card--dark .form-text{
-  color: rgba(255,255,255,.70) !important;
-}
-
-body.page-medicao #medicao-kpis .kpi-card,
-body.page-medicao #medicao-kpis .totais-box{
-  color: rgba(255,255,255,.92) !important;
-}
-
-body.page-medicao #medicao-kpis .kpi-value,
-body.page-medicao #medicao-kpis .medicao-kpi-value{
-  color: rgba(255,255,255,.96) !important;
-}
-
-/* ===== MEDI??O ? FIX TABELA (remover miolo branco) ===== */
-body.page-medicao #medicao-resumo table.medicao-table{
-  background: rgba(255,255,255,.03) !important;
-}
-
-body.page-medicao #medicao-resumo table.medicao-table thead,
-body.page-medicao #medicao-resumo table.medicao-table tbody,
-body.page-medicao #medicao-resumo table.medicao-table tfoot{
-  background: transparent !important;
-}
-
-body.page-medicao #medicao-resumo table.medicao-table th{
-  background: rgba(255,255,255,.06) !important;
-  color: rgba(255,255,255,.92) !important;
-  border-color: rgba(255,255,255,.12) !important;
-}
-
-body.page-medicao #medicao-resumo table.medicao-table td{
-  background: transparent !important;
-  color: rgba(255,255,255,.90) !important;
-  border-color: rgba(255,255,255,.10) !important;
-}
-
-body.page-medicao #medicao-resumo table.medicao-table tr:hover td{
-  background: rgba(255,255,255,.04) !important;
-}
-
-/* ===== MEDI??O ? FIX GRAFICOS (card dark + ?linhas? e fundo claro) ===== */
-body.page-medicao .medicao-chart-card{
-  overflow: hidden !important;
-}
-
-body.page-medicao .medicao-chart-body{
-  background: rgba(255,255,255,.03) !important;
-  border: 1px solid rgba(255,255,255,.10) !important;
-}
-
-/* O canvas do Chart.js n?o deve trazer fundo claro; for?a transpar?ncia */
-body.page-medicao .medicao-chart-body canvas{
-  background: transparent !important;
-}
-
-/* Remove qualquer hr/divisor acidental dentro do bloco de gr?ficos */
-body.page-medicao #medicao-graficos hr,
-body.page-medicao #medicao-graficos .divider,
-body.page-medicao #medicao-graficos [role="separator"]{
-  display: none !important;
-  height: 0 !important;
-  border: 0 !important;
-  margin: 0 !important;
-}
-
-/* Se a ?linha? vier como border-top de algum container interno */
-body.page-medicao #medicao-graficos *{
-  border-top-color: transparent !important;
-}
-
-/* t?tulos do gr?fico: garantir contraste */
-body.page-medicao #medicao-graficos,
-body.page-medicao #medicao-graficos *{
-  color: rgba(255,255,255,.92) !important;
-}
-
-body.page-medicao .medicao-chart-meta{
-  color: rgba(255,255,255,.70) !important;
-  opacity: 1 !important;
-}
-
-/* ===== MEDI??O ? KILL STRIPE: linha laranja/verde na ?rea de gr?ficos ===== */
-body.page-medicao #medicao-graficos{
-  position: relative !important;
-  overflow: hidden !important;
-  background: transparent !important;
-  background-image: none !important;
-  border: 0 !important;
-  box-shadow: none !important;
-}
-
-/* mata qualquer pseudo-elemento que pode estar desenhando ?linha? */
-body.page-medicao #medicao-graficos::before,
-body.page-medicao #medicao-graficos::after{
-  content: none !important;
-  display: none !important;
-}
-
-/* neutraliza bordas/topo/gradientes em QUALQUER filho (onde geralmente nasce essa faixa) */
-body.page-medicao #medicao-graficos *{
-  background-image: none !important;
-  border-top: 0 !important;
-  border-top-color: transparent !important;
-  outline: 0 !important;
-  box-shadow: none !important;
-}
-
-/* remove separadores comuns */
-body.page-medicao #medicao-graficos hr,
-body.page-medicao #medicao-graficos .divider,
-body.page-medicao #medicao-graficos .separator,
-body.page-medicao #medicao-graficos [role="separator"]{
-  display: none !important;
-  height: 0 !important;
-  margin: 0 !important;
-  border: 0 !important;
-}
-
-/* ===== Fundo dark REAL atr?s dos charts (evita ?cinza claro? aparecendo) ===== */
-body.page-medicao #medicao-graficos .medicao-chart-card{
-  background: linear-gradient(180deg, rgba(15,23,42,.92), rgba(2,6,23,.92)) !important;
-  border: 1px solid rgba(255,255,255,.10) !important;
-  border-radius: 16px !important;
-  box-shadow: 0 18px 40px rgba(0,0,0,.28) !important;
-  overflow: hidden !important;
-}
-
-body.page-medicao #medicao-graficos .medicao-chart-body{
-  background: rgba(255,255,255,.03) !important;
-  border: 1px solid rgba(255,255,255,.10) !important;
-  border-radius: 14px !important;
-}
-
-/* canvas sempre transparente para respeitar o card dark */
-body.page-medicao #medicao-graficos canvas{
-  background: transparent !important;
-  border: 0 !important;
-  outline: 0 !important;
-}
-
-/* ===== MEDI??O ? KILL LAST ORANGE LINE (transi??o resumo -> gr?ficos) ===== */
-
-/* 1) Se houver HR/dividers globais dentro do conte?do da p?gina, mata s? na Medi??o */
-body.page-medicao .page-area hr,
-body.page-medicao .page-area .divider,
-body.page-medicao .page-area .separator,
-body.page-medicao .page-area [role="separator"]{
-  display: none !important;
-  height: 0 !important;
-  border: 0 !important;
-  margin: 0 !important;
-  background: transparent !important;
-}
-
-/* 2) Zera qualquer border-top ?solto? em elementos logo ap?s o resumo */
-body.page-medicao #medicao-resumo + *{
-  border-top: 0 !important;
-  border-top-color: transparent !important;
-  background-image: none !important;
-}
-
-/* 3) Zera qualquer ?linha? desenhada por pseudo-elementos na ?rea abaixo do resumo */
-body.page-medicao #medicao-resumo + *::before,
-body.page-medicao #medicao-resumo + *::after{
-  content: none !important;
-  display: none !important;
-}
-
-/* 4) Refor?o: nada dentro do bloco de gr?ficos pode ter border-top/background-image */
-body.page-medicao #medicao-graficos,
-body.page-medicao #medicao-graficos *{
-  border-top: 0 !important;
-  border-top-color: transparent !important;
-  background-image: none !important;
-}
-
-body.page-medicao #medicao-graficos::before,
-body.page-medicao #medicao-graficos::after{
-  content: none !important;
-  display: none !important;
-}
-
-/* =========================
-   MEDI??O ? FIX FILTROS DARK
-   (Bootstrap estava vencendo)
-========================= */
-
-/* Labels/t?tulos dos campos sempre vis?veis */
-body.page-medicao .medicao-card--dark label,
-body.page-medicao .medicao-card--dark .form-label,
-body.page-medicao .medicao-card--dark .field-label,
-body.page-medicao .medicao-card--dark .medicao-label,
-body.page-medicao .medicao-card--dark .medicao-title{
-  color: rgba(255,255,255,.88) !important;
-  opacity: 1 !important;
-  mix-blend-mode: normal !important;
-  text-shadow: none !important;
-}
-
-/* Garante que nada ?apague? label at? hover */
-body.page-medicao .medicao-card--dark label:hover,
-body.page-medicao .medicao-card--dark .form-label:hover{
-  color: rgba(255,255,255,.92) !important;
-  opacity: 1 !important;
-}
-
-/* Inputs/selects do Bootstrap (form-control / form-select) no dark card */
-body.page-medicao .medicao-card--dark .form-control,
-body.page-medicao .medicao-card--dark .form-select,
-body.page-medicao .medicao-card--dark input,
-body.page-medicao .medicao-card--dark select{
-  background-color: rgba(255,255,255,.08) !important;
-  background-image: none !important;
-  border-color: rgba(255,255,255,.16) !important;
-  color: rgba(255,255,255,.92) !important;
-  -webkit-text-fill-color: rgba(255,255,255,.92) !important; /* corrige ?texto some? no Chrome */
-}
-
-/* Placeholder leg?vel no dark */
-body.page-medicao .medicao-card--dark input::placeholder{
-  color: rgba(255,255,255,.55) !important;
-  opacity: 1 !important;
-}
-
-/* Foco padr?o enterprise */
-body.page-medicao .medicao-card--dark .form-control:focus,
-body.page-medicao .medicao-card--dark .form-select:focus,
-body.page-medicao .medicao-card--dark input:focus,
-body.page-medicao .medicao-card--dark select:focus{
-  outline: 0 !important;
-  box-shadow: 0 0 0 4px rgba(59,130,246,.22) !important;
-  border-color: rgba(59,130,246,.55) !important;
-}
-
-/* Bot?es no card dark (evita contraste ruim) */
-body.page-medicao .medicao-card--dark .btn{
-  color: rgba(255,255,255,.92) !important;
-}
-body.page-medicao .medicao-card--dark .btn.btn-outline-secondary{
-  border-color: rgba(255,255,255,.18) !important;
-  background: transparent !important;
-}
-body.page-medicao .medicao-card--dark .btn.btn-outline-secondary:hover{
-  background: rgba(255,255,255,.08) !important;
-}
-
-/* =========================
-   MEDI??O ? KILL ORANGE STRIPE (GARANTIDO)
-   Cobre qualquer ?divider? global na borda superior do bloco de gr?ficos
-========================= */
-
-body.page-medicao #medicao-graficos{
-  position: relative !important;
-  isolation: isolate !important;
-}
-
-/* ?tampa? a faixa onde aparece a linha (pinta por cima) */
-body.page-medicao #medicao-graficos::before{
-  content: "" !important;
-  position: absolute !important;
-  left: -2000px !important;
-  right: -2000px !important;
-  top: -10px !important;
-  height: 14px !important;
-  background: #f3f5f8 !important;  /* cor do fundo da p?gina (light) */
-  z-index: 10 !important;
-  pointer-events: none !important;
-}
 
-/* Se voc? estiver em tema dark, mant?m coerente */
-html[data-theme="dark"] body.page-medicao #medicao-graficos::before,
-body[data-theme="dark"].page-medicao #medicao-graficos::before,
-body.dark.page-medicao #medicao-graficos::before{
-  background: rgba(2,6,23,.92) !important;
-}
-
-/* garante que os cards/gr?ficos fiquem acima do fundo, mas abaixo do ?tampa faixa? s? no topo */
-body.page-medicao #medicao-graficos .medicao-chart-card{
-  position: relative !important;
-  z-index: 1 !important;
-}
-
-/* ===== MEDI??O ? SELECT DROPDOWN DARK (lista aberta) ===== */
-body.page-medicao .medicao-card--dark select,
-body.page-medicao .medicao-card--dark .form-select{
-  color-scheme: dark !important;           /* for?a UI nativa dark (Chrome/Edge) */
-  background-color: rgba(255,255,255,.08) !important;
-  color: rgba(255,255,255,.92) !important;
-  border-color: rgba(255,255,255,.16) !important;
-}
-
-/* tenta for?ar op??es (quando o browser permite) */
-body.page-medicao .medicao-card--dark select option,
-body.page-medicao .medicao-card--dark .form-select option,
-body.page-medicao .medicao-card--dark select optgroup,
-body.page-medicao .medicao-card--dark .form-select optgroup{
-  background-color: rgba(2,6,23,.98) !important;
-  color: rgba(255,255,255,.92) !important;
-}
-
-/* hover/selecionado */
-body.page-medicao .medicao-card--dark select option:checked,
-body.page-medicao .medicao-card--dark .form-select option:checked{
-  background-color: rgba(59,130,246,.35) !important;
-  color: rgba(255,255,255,.95) !important;
-}
-
-
-/* ===== MEDI??O ? CUSTOM SELECT (cross-browser) ===== */
-body.page-medicao select.medicao-native-select{
-  position: absolute !important;
-  width: 1px !important;
-  height: 1px !important;
-  padding: 0 !important;
-  margin: -1px !important;
-  overflow: hidden !important;
-  clip: rect(0,0,0,0) !important;
-  white-space: nowrap !important;
-  border: 0 !important;
-}
-
-body.page-medicao .medicao-select{
-  position: relative !important;
-}
-
-body.page-medicao .medicao-select-btn{
-  width: 100% !important;
-  height: 38px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  gap: 10px !important;
-  padding: 0 12px !important;
-  border-radius: 12px !important;
-  border: 1px solid rgba(255,255,255,.16) !important;
-  background: rgba(255,255,255,.08) !important;
-  color: rgba(255,255,255,.92) !important;
-}
-
-body.page-medicao .medicao-select-btn:focus{
-  outline: 0 !important;
-  box-shadow: 0 0 0 4px rgba(59,130,246,.22) !important;
-  border-color: rgba(59,130,246,.55) !important;
-}
+/* Auto theme: follow OS preference */
+@media (prefers-color-scheme: light){
+  body[data-theme="auto"]{
+    --bg: #f4f6fa;
+    --bg-card: #ffffff;
+    --bg-sidebar: #0C1220;
 
-body.page-medicao .medicao-select-caret{
-  width: 10px !important;
-  height: 10px !important;
-  border-right: 2px solid rgba(255,255,255,.75) !important;
-  border-bottom: 2px solid rgba(255,255,255,.75) !important;
-  transform: rotate(45deg) !important;
-  margin-top: -2px !important;
-}
-
-body.page-medicao .medicao-select-pop{
-  position: absolute !important;
-  left: 0 !important;
-  right: 0 !important;
-  top: calc(100% + 8px) !important;
-  background: rgba(2,6,23,.98) !important;
-  border: 1px solid rgba(255,255,255,.12) !important;
-  border-radius: 14px !important;
-  box-shadow: 0 18px 40px rgba(0,0,0,.45) !important;
-  padding: 6px !important;
-  max-height: 280px !important;
-  overflow: auto !important;
-  display: none !important;
-  z-index: 50 !important;
-}
-
-body.page-medicao .medicao-select.is-open .medicao-select-pop{
-  display: block !important;
-}
-
-body.page-medicao .medicao-select-opt{
-  width: 100% !important;
-  text-align: left !important;
-  border: 0 !important;
-  background: transparent !important;
-  color: rgba(255,255,255,.88) !important;
-  padding: 10px 10px !important;
-  border-radius: 10px !important;
-}
-
-body.page-medicao .medicao-select-opt:hover{
-  background: rgba(255,255,255,.08) !important;
-}
+    /* keep chrome text readable on dark sidebar */
+    --text: #ffffff;
+    --text-soft: #b9c3d6;
 
-body.page-medicao .medicao-select-opt.is-selected{
-  background: rgba(59,130,246,.24) !important;
-  color: rgba(255,255,255,.95) !important;
-}
-
-body.page-medicao .medicao-select-opt:disabled{
-  opacity: .45 !important;
-}
-
-/* ===========================
-   CROSS-BROWSER HARDENING
-   (Chrome/Edge/Win) — SAFE
-   =========================== */
+    --content-text: #0b1220;
+    --content-muted: rgba(11,18,32,.68);
 
-/* evita layout shift quando aparece scrollbar (Edge/Chrome) */
-html { scrollbar-gutter: stable; }
-.table-responsive { scrollbar-gutter: stable both-edges; }
+    --field-bg: #ffffff;
+    --field-text: #0b1220;
+    --field-border: rgba(11,18,32,.16);
+    --field-placeholder: rgba(11,18,32,.50);
 
-@media (max-width: 576px){
-  :root{ --ds-gutter: 16px; }
+    --border: #d0d7e4;
+    --shadow: rgba(0,0,0,.15);
+  }
 }
 
-
-
-
-
-html{
-  scrollbar-gutter: stable both-edges;
-}
+/* ==========================================================
+   THEME FIX — separa cores do CONTEÚDO da SIDEBAR/TOPBAR
+   Corrige sumiço de textos em light/dark/auto
+   ========================================================== */
 
-/* ===========================
-   DS PAGE CONTAINER (RESPONSIVO)
-   =========================== */
+/* Conteúdo (não mexe na sidebar/topbar) */
 :root{
-  --ds-page-max: 1440px;
-  --ds-page-pad: 24px;
-}
-@media (max-width: 768px){
-  :root{ --ds-page-pad: 16px; }
-}
-.ds-page{
-  width: 100%;
-  max-width: var(--ds-page-max);
-  margin: 0 auto;
-  padding-left: var(--ds-page-pad);
-  padding-right: var(--ds-page-pad);
+  --content-text: var(--text, #eaf1ff);
+  --content-muted: var(--text-soft, rgba(234,241,255,.72));
+  --content-border: var(--border, rgba(255,255,255,.10));
 }
 
+/* Light: conteúdo escuro (sidebar continua escura porque seus links já são #fff) */
+body[data-theme="light"]{
+  --content-text: #0b1220;
+  --content-muted: rgba(11,18,32,.68);
+  --content-border: rgba(11,18,32,.14);
+  color-scheme: light;
+}
 
-/* SELECT/OPTION no DARK — evita dropdown branco e texto sumindo */
-html[data-theme="dark"] select.form-select,
-body[data-theme="dark"] select.form-select,
-body.dark select.form-select,
-html[data-theme="dark"] select.form-control,
-body[data-theme="dark"] select.form-control,
-body.dark select.form-control{
-  background-color: rgba(15,23,42,.72) !important;
+/* Dark: conteúdo claro */
+body[data-theme="dark"]{
+  --content-text: rgba(234,241,255,.92);
+  --content-muted: rgba(234,241,255,.72);
+  --content-border: rgba(255,255,255,.10);
+  color-scheme: dark;
+}
+
+/* Auto: segue sistema */
+body[data-theme="auto"]{
+  --content-text: rgba(234,241,255,.92);
+  --content-muted: rgba(234,241,255,.72);
+  --content-border: rgba(255,255,255,.10);
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: light){
+  body[data-theme="auto"]{
+    --content-text: #0b1220;
+    --content-muted: rgba(11,18,32,.68);
+    --content-border: rgba(11,18,32,.14);
+  }
+}
+
+/* Aplica o “conteúdo padrão” em todas as páginas internas */
+.page-area{
+  color: var(--content-text) !important;
+}
+
+/* Corrige utilitários Bootstrap que detonam no tema (sem quebrar sidebar) */
+body[data-theme="dark"] .page-area .text-dark{ color: var(--content-text) !important; }
+body[data-theme="light"] .page-area .text-white{ color: var(--content-text) !important; }
+.page-area .text-muted{ color: var(--content-muted) !important; }
+
+/* Labels e textos de formulário (Novo Documento / Importar LDP) */
+.page-area label,
+.page-area .form-label,
+.page-area .form-check-label,
+.page-area small,
+.page-area .form-text{
+  color: var(--content-text) !important;
+  opacity: 1 !important;
+}
+
+/* Inputs (só no conteúdo, não pega a topbar) */
+.page-area .form-control,
+.page-area .form-select,
+.page-area textarea,
+.page-area input[type="text"],
+.page-area input[type="email"],
+.page-area input[type="number"],
+.page-area input[type="search"]{
+  color: var(--content-text) !important;
+  border-color: var(--content-border) !important;
+}
+
+body[data-theme="dark"] .page-area .form-control,
+body[data-theme="dark"] .page-area .form-select,
+body[data-theme="dark"] .page-area textarea{
+  background: rgba(0,0,0,.18) !important;
+}
+
+body[data-theme="light"] .page-area .form-control,
+body[data-theme="light"] .page-area .form-select,
+body[data-theme="light"] .page-area textarea{
+  background: rgba(11,18,32,.04) !important;
+}
+
+/* Placeholders */
+.page-area .form-control::placeholder,
+.page-area textarea::placeholder{
+  color: var(--content-muted) !important;
+}
+
+/* Tabelas (Medição) */
+.page-area table,
+.page-area .table{
+  color: var(--content-text) !important;
+}
+.page-area .table thead th{
+  color: var(--content-muted) !important;
+}
+/* ==========================================================
+   OVERRIDES ROBUSTOS — garante legibilidade em templates antigos
+   (Medição / Upload / Importar LDP) mesmo com classes Bootstrap.
+   ========================================================== */
+
+/* Dark/Auto: impede textos "text-dark" sumirem em fundo escuro */
+body[data-theme="dark"] .page-area .text-dark,
+body[data-theme="dark"] .page-area .text-body,
+body[data-theme="dark"] .page-area .text-black,
+body[data-theme="auto"] .page-area .text-dark,
+body[data-theme="auto"] .page-area .text-body,
+body[data-theme="auto"] .page-area .text-black{
+  color: var(--content-text) !important;
+}
+
+body[data-theme="dark"] .page-area .text-muted,
+body[data-theme="auto"] .page-area .text-muted{
+  color: var(--content-muted) !important;
+}
+
+/* Light: impede textos "text-white" sumirem em fundo claro */
+body[data-theme="light"] .page-area .text-white,
+body[data-theme="light"] .page-area .text-light{
+  color: var(--content-text) !important;
+}
+body[data-theme="light"] .page-area .text-muted{
+  color: var(--content-muted) !important;
+}
+
+/* Links do conteúdo */
+.page-area a{ color: var(--accent-blue) !important; }
+.page-area a:hover{ filter: brightness(1.06); }
+
+/* ==========================================================
+   AUTO DE VERDADE — segue o tema do sistema operacional
+   ========================================================== */
+@media (prefers-color-scheme: light){
+  body[data-theme="auto"]{
+    --bg: #f4f6fa;
+    --bg-card: #ffffff;
+    --bg-sidebar: #0C1220;
+
+    --text: #ffffff;
+    --text-soft: #b9c3d6;
+
+    --border: #d0d7e4;
+    --shadow: rgba(0,0,0,.15);
+
+    --content-text: #0b1220;
+    --content-muted: rgba(11,18,32,.68);
+
+    --field-bg: #ffffff;
+    --field-text: #0b1220;
+    --field-border: rgba(11,18,32,.16);
+    --field-placeholder: rgba(11,18,32,.50);
+
+    --dash-border: rgba(10,20,40,.12);
+    --dash-text: #0b1220;
+    --dash-muted: rgba(11,18,32,.68);
+    --dash-surface-1: rgba(255,255,255,.92);
+    --dash-surface-2: rgba(245,248,255,.92);
+    --dash-shadow: 0 14px 34px rgba(10,20,40,.12);
+  }
+}
+
+/* ==========================================================
+   DJANGO ADMIN — layout e cores (Usuários & Permissões)
+   Corrige: "caixa pequena no meio", linhas brancas, sidebar clara.
+   ========================================================== */
+
+body.change-list #content,
+body.change-form #content,
+body.dashboard #content{
+  max-width: none !important;
+  width: auto !important;
+  margin: 0 !important;
+  padding: 18px 24px !important;
+}
+
+body.change-list #content-main,
+body.change-form #content-main{
+  float: none !important;
+  width: auto !important;
+}
+
+body.change-list #changelist{
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 16px;
+  align-items: start;
+}
+
+body.change-list #changelist-form{ min-width: 0; }
+body.change-list #changelist-filter{
+  width: auto !important;
+  margin: 0 !important;
+  position: sticky;
+  top: 14px;
+}
+
+/* Results container */
+body.change-list .results,
+body.change-list .results table,
+body.change-list #result_list{
+  background: transparent !important;
+}
+
+/* Table header + links */
+body.change-list #result_list thead th,
+body.change-list #result_list thead th a{
+  background: rgba(0,0,0,.14) !important;
+  color: rgba(234,241,255,.78) !important;
+  border-bottom: 1px solid rgba(255,255,255,.10) !important;
+}
+body.change-list #result_list thead th a:hover{
   color: rgba(255,255,255,.92) !important;
-  border: 1px solid rgba(255,255,255,.14) !important;
 }
 
-html[data-theme="dark"] select.form-select option,
-body[data-theme="dark"] select.form-select option,
-body.dark select.form-select option,
-html[data-theme="dark"] select.form-control option,
-body[data-theme="dark"] select.form-control option,
-body.dark select.form-control option{
-  background-color: #0b1220 !important;
-  color: rgba(255,255,255,.92) !important;
+/* Table body */
+body.change-list #result_list tbody td,
+body.change-list #result_list tbody th{
+  background: transparent !important;
+  color: rgba(234,241,255,.92) !important;
+  border-bottom: 1px solid rgba(255,255,255,.08) !important;
+}
+body.change-list #result_list tbody tr:nth-child(even){
+  background: rgba(255,255,255,.03) !important;
+}
+body.change-list #result_list tbody tr:hover{
+  background: rgba(255,255,255,.06) !important;
 }
 
-/* =========================================================
-   NOVO DOCUMENTO — PREMIUM
-   escopo: .page-novo-documento
-   ========================================================= */
-.page-novo-documento .form-label{
-  font-weight: 700;
-  color: rgba(15,23,42,.85);
+/* Actions/toolbar */
+body.change-list #changelist #toolbar,
+body.change-list #changelist .actions,
+body.change-list #changelist .paginator{
+  background: rgba(0,0,0,.12) !important;
+  border-top: 1px solid rgba(255,255,255,.10) !important;
+  border-bottom: 1px solid rgba(255,255,255,.10) !important;
+  color: rgba(234,241,255,.72) !important;
 }
-.page-novo-documento .form-text{
-  color: rgba(15,23,42,.60);
+
+/* Left nav sidebar */
+#nav-sidebar{
+  background: rgba(0,0,0,.14) !important;
+  border-right: 1px solid rgba(255,255,255,.10) !important;
 }
-.page-novo-documento input,
-.page-novo-documento select,
-.page-novo-documento textarea{
-  height: 40px;
-  border-radius: 12px;
-  border: 1px solid rgba(15,23,42,.14);
-  background: #ffffff;
-  color: rgba(15,23,42,.95);
+#nav-sidebar table,
+#nav-sidebar th,
+#nav-sidebar td{
+  background: transparent !important;
 }
-.page-novo-documento textarea{
-  height: auto;
-  min-height: 110px;
+#nav-sidebar th{
+  background: rgba(0,0,0,.18) !important;
+  color: rgba(234,241,255,.72) !important;
+  border-bottom: 1px solid rgba(255,255,255,.10) !important;
 }
-.page-novo-documento input::placeholder,
-.page-novo-documento textarea::placeholder{
-  color: rgba(15,23,42,.45);
+#nav-sidebar a{ color: rgba(234,241,255,.92) !important; }
+#nav-sidebar a:hover{ filter: brightness(1.08); }
+
+/* Mobile: evita quebrar layout do admin */
+@media (max-width: 991.98px){
+  body.change-list #changelist{
+    grid-template-columns: 1fr;
+  }
+  body.change-list #changelist-filter{
+    position: static;
+  }
 }
-.page-novo-documento input:focus-visible,
-.page-novo-documento select:focus-visible,
-.page-novo-documento textarea:focus-visible{
-  outline: 0;
-  box-shadow: 0 0 0 4px rgba(59,130,246,.22);
-  border-color: rgba(59,130,246,.55);
+
+/* === DORANGE DS: Importar LDP (opt-in) === */
+/* Opt-in styles for Importar LDP screen */
+.ldp-wrap{ max-width: 1160px; margin: 0 auto; }
+.ldp-surface{ padding: 18px; }
+
+.ldp-dropzone{
+  position: relative;
+  border-radius: var(--dash-radius);
+  border: 2px dashed color-mix(in srgb, var(--dash-border) 80%, transparent);
+  background: color-mix(in srgb, var(--dash-surface-2) 70%, transparent);
+  padding: 16px 18px;
+  transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
 }
-.page-novo-documento select option{
-  background-color: #0b1220;
-  color: #e5e7eb;
+body[data-theme="light"] .ldp-dropzone{ background: rgba(11,18,32,.03); }
+.ldp-dropzone:hover{ border-color: color-mix(in srgb, var(--dash-accent) 55%, var(--dash-border)); }
+.ldp-dropzone.is-dragover{
+  border-color: var(--dash-accent);
+  background: color-mix(in srgb, var(--dash-accent) 12%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--dash-accent) 18%, transparent);
 }
-.page-novo-documento input:-webkit-autofill,
-.page-novo-documento textarea:-webkit-autofill,
-.page-novo-documento select:-webkit-autofill{
-  -webkit-text-fill-color: rgba(15,23,42,.95);
-  box-shadow: 0 0 0px 1000px #ffffff inset;
-  transition: background-color 9999s ease-in-out 0s;
-}
-.page-novo-documento .upload-dropzone{
+
+/* Dropzones: o input file invisível só pode existir DENTRO do container */
+.ent-root .ldp-dropzone,
+.ent-root .upload-dropzone,
+.ent-root .dropzone,
+.ent-root .dz-area{
   position: relative;
 }
-.page-novo-documento .ldp-file-input{
+
+/* input file invisível: apenas dentro do dropzone */
+.ent-root .ldp-dropzone .ldp-file-input,
+.ent-root .upload-dropzone .ldp-file-input,
+.ent-root .dropzone .ldp-file-input,
+.ent-root .dz-area .ldp-file-input{
   position: absolute;
   inset: 0;
   width: 100%;
@@ -2265,1055 +1949,2856 @@ body.dark select.form-control option{
   opacity: 0;
   cursor: pointer;
 }
-html[data-theme="dark"] .page-novo-documento .form-label,
-body[data-theme="dark"] .page-novo-documento .form-label,
-body.dark .page-novo-documento .form-label{
-  color: rgba(255,255,255,.88);
-}
-html[data-theme="dark"] .page-novo-documento .form-text,
-body[data-theme="dark"] .page-novo-documento .form-text,
-body.dark .page-novo-documento .form-text{
-  color: rgba(255,255,255,.65);
-}
-html[data-theme="dark"] .page-novo-documento input,
-html[data-theme="dark"] .page-novo-documento select,
-html[data-theme="dark"] .page-novo-documento textarea,
-body[data-theme="dark"] .page-novo-documento input,
-body[data-theme="dark"] .page-novo-documento select,
-body[data-theme="dark"] .page-novo-documento textarea,
-body.dark .page-novo-documento input,
-body.dark .page-novo-documento select,
-body.dark .page-novo-documento textarea{
-  background: rgba(255,255,255,.08);
-  border: 1px solid rgba(255,255,255,.16);
-  color: rgba(255,255,255,.92);
-}
-html[data-theme="dark"] .page-novo-documento input::placeholder,
-body[data-theme="dark"] .page-novo-documento input::placeholder,
-body.dark .page-novo-documento input::placeholder{
-  color: rgba(255,255,255,.55);
-}
-html[data-theme="dark"] .page-novo-documento select option,
-body[data-theme="dark"] .page-novo-documento select option,
-body.dark .page-novo-documento select option{
-  background-color: rgba(2,6,23,.98);
-  color: rgba(255,255,255,.92);
-}
-html[data-theme="dark"] .page-novo-documento input:-webkit-autofill,
-html[data-theme="dark"] .page-novo-documento textarea:-webkit-autofill,
-body[data-theme="dark"] .page-novo-documento input:-webkit-autofill,
-body[data-theme="dark"] .page-novo-documento textarea:-webkit-autofill{
-  -webkit-text-fill-color: rgba(255,255,255,.92);
-  box-shadow: 0 0 0px 1000px rgba(15,23,42,.70) inset;
+
+/* Segurança: se .ldp-file-input aparecer fora de dropzone, NÃO pode cobrir a tela */
+.ent-root .ldp-file-input{
+  position: static !important;
+  inset: auto !important;
+  width: auto !important;
+  height: auto !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
 }
 
-/* =========================================================
-   REVISOES — PREMIUM
-   escopo: .page-revisoes
-   ========================================================= */
-.page-revisoes .dash-surface{
-  border-radius: 18px;
-  border: 1px solid rgba(15,23,42,.10);
-  box-shadow: 0 18px 45px rgba(2,6,23,.08);
-}
-.page-revisoes table{
-  border-collapse: separate !important;
-  border-spacing: 0 !important;
-}
-.page-revisoes thead th{
-  background: rgba(15,23,42,.04);
-  border-bottom: 1px solid rgba(15,23,42,.12);
-  border-top: none;
-  font-weight: 900;
-  font-size: 12px;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  padding: 12px 14px;
-}
-.page-revisoes tbody td{
-  border-bottom: 1px solid rgba(15,23,42,.08);
-  padding: 12px 14px;
-  vertical-align: middle;
-}
-.page-revisoes .table-hover tbody tr:hover{
-  background: rgba(59,130,246,.06);
-}
-html[data-theme="dark"] .page-revisoes .dash-surface,
-body[data-theme="dark"] .page-revisoes .dash-surface,
-body.dark .page-revisoes .dash-surface{
-  background: rgba(15,23,42,.70);
-  border: 1px solid rgba(255,255,255,.10);
-  box-shadow: 0 18px 45px rgba(0,0,0,.35);
-}
-html[data-theme="dark"] .page-revisoes thead th,
-body[data-theme="dark"] .page-revisoes thead th,
-body.dark .page-revisoes thead th{
-  background: rgba(255,255,255,.06);
-  border-bottom: 1px solid rgba(255,255,255,.12);
-  color: rgba(255,255,255,.92);
-}
-html[data-theme="dark"] .page-revisoes tbody td,
-body[data-theme="dark"] .page-revisoes tbody td,
-body.dark .page-revisoes tbody td{
-  border-bottom: 1px solid rgba(255,255,255,.08);
-  color: rgba(255,255,255,.90);
-}
+.ldp-title{ font-weight: 900; display:flex; align-items:center; gap:10px; }
+.ldp-title i{ color: var(--dash-accent); font-size: 1.1rem; }
+.ldp-sub{ color: var(--dash-muted); font-weight: 650; margin-top: 2px; }
+.ldp-meta{ color: var(--dash-muted); font-size: .85rem; margin-top: 6px; }
 
-/* =========================================================
-   DATATABLES — PREMIUM
-   escopo: .page-lista-documentos
-   ========================================================= */
-.page-lista-documentos .dataTables_wrapper{
-  width: 100%;
-}
-.page-lista-documentos .dataTables_filter input{
-  height: 38px;
-  border-radius: 10px;
-  border: 1px solid rgba(15,23,42,.14);
-  background: #ffffff;
-  color: rgba(15,23,42,.92);
-  padding: 0 10px;
-}
-.page-lista-documentos .dataTables_filter input::placeholder{
-  color: rgba(15,23,42,.45);
-}
-.page-lista-documentos .dataTables_filter input:focus-visible{
-  outline: 0;
-  box-shadow: 0 0 0 4px rgba(59,130,246,.22);
-  border-color: rgba(59,130,246,.55);
-}
-.page-lista-documentos .dt-buttons .btn{
-  border-radius: 10px;
-  font-weight: 800;
+.ldp-chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top: 10px; }
+.ldp-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
   padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--dash-border);
+  background: rgba(0,0,0,.18);
+  max-width: 100%;
 }
-.page-lista-documentos table.dataTable tbody tr:nth-child(even){
-  background: rgba(15,23,42,.02);
+body[data-theme="light"] .ldp-chip{ background: rgba(11,18,32,.05); }
+.ldp-chip-name{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width: 56ch; }
+.ldp-chip-remove{ border:0; background:transparent; padding:0; line-height:1; color: var(--dash-muted); }
+.ldp-chip-remove:hover{ color: var(--dash-text); }
+
+.ldp-actions{ display:flex; justify-content:flex-start; gap:10px; flex-wrap:wrap; margin-top: 14px; }
+
+.ldp-progress{ margin-top: 14px; padding: 14px 16px; border-radius: var(--dash-radius); border: 1px solid var(--dash-border); background: rgba(0,0,0,.08); }
+body[data-theme="light"] .ldp-progress{ background: rgba(11,18,32,.03); }
+
+.ldp-progress-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom: 10px; }
+.ldp-progress-title{ font-weight: 850; }
+.ldp-progress-sub{ color: var(--dash-muted); font-weight: 650; font-size: .9rem; }
+.ldp-percent{ font-variant-numeric: tabular-nums; font-weight: 900; }
+
+.ldp-bar{
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(148,163,184,.22);
+  overflow:hidden;
 }
-.page-lista-documentos table.dataTable tbody tr:hover{
-  background: rgba(59,130,246,.06);
-}
-.page-lista-documentos .dataTables_paginate .pagination .page-link{
-  border-radius: 10px;
-  margin: 0 2px;
-  border: 1px solid rgba(15,23,42,.12);
-}
-.page-lista-documentos .dataTables_paginate .pagination .page-item.active .page-link{
-  background: rgba(59,130,246,.90);
-  border-color: rgba(59,130,246,.90);
-}
-.page-lista-documentos select option{
-  background-color: #0b1220;
-  color: #e5e7eb;
-}
-.page-lista-documentos input:-webkit-autofill{
-  -webkit-text-fill-color: rgba(15,23,42,.95);
-  box-shadow: 0 0 0px 1000px #ffffff inset;
-  transition: background-color 9999s ease-in-out 0s;
-}
-html[data-theme="dark"] .page-lista-documentos .dataTables_filter input,
-body[data-theme="dark"] .page-lista-documentos .dataTables_filter input,
-body.dark .page-lista-documentos .dataTables_filter input{
-  background: rgba(255,255,255,.08);
-  border: 1px solid rgba(255,255,255,.16);
-  color: rgba(255,255,255,.92);
-}
-html[data-theme="dark"] .page-lista-documentos .dataTables_paginate .pagination .page-link,
-body[data-theme="dark"] .page-lista-documentos .dataTables_paginate .pagination .page-link,
-body.dark .page-lista-documentos .dataTables_paginate .pagination .page-link{
-  border: 1px solid rgba(255,255,255,.12);
-  color: rgba(255,255,255,.90);
-}
-html[data-theme="dark"] .page-lista-documentos table.dataTable tbody tr:nth-child(even),
-body[data-theme="dark"] .page-lista-documentos table.dataTable tbody tr:nth-child(even),
-body.dark .page-lista-documentos table.dataTable tbody tr:nth-child(even){
-  background: rgba(255,255,255,.03);
+.ldp-bar > #progressBar{
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--dash-accent) 88%, #fff), var(--dash-accent));
+  transition: width .12s ease;
 }
 
-/* ===========================
-   PUBLIC FORMS — TOP5 (Solicitar Acesso)
-   Escopo: páginas públicas (dash-surface + body[data-theme])
-   =========================== */
-body[data-theme] .dash-surface form .form-label,
-body[data-theme] .dash-surface form label{
-  color: var(--dash-text, #0f172a) !important;
-  font-weight: 800 !important;
-}
+.ldp-log{ white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
 
-body[data-theme="dark"] .dash-surface form .form-label,
-body[data-theme="dark"] .dash-surface form label{
-  color: rgba(255,255,255,.92) !important;
-}
+/* === /DORANGE DS: Importar LDP (opt-in) === */
 
-body[data-theme] .dash-surface form input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
-body[data-theme] .dash-surface form select,
-body[data-theme] .dash-surface form textarea{
-  width: 100% !important;
-  border-radius: 12px !important;
-  padding: 10px 12px !important;
-  border: 1px solid rgba(15,23,42,.14) !important;
-  background: rgba(255,255,255,.92) !important;
-  color: #0f172a !important;
-  transition: box-shadow .15s ease, border-color .15s ease, background .15s ease !important;
+/* === FIX: Legibilidade no tema claro (sidebar + links) === */
+:root[data-theme="light"] .sidebar,
+body.theme-light .sidebar,
+html.light .sidebar,
+body.light .sidebar {
+  color: #0b1220;
 }
-
-body[data-theme] .dash-surface form input::placeholder,
-body[data-theme] .dash-surface form textarea::placeholder{
-  color: rgba(15,23,42,.55) !important;
+:root[data-theme="light"] .sidebar a,
+body.theme-light .sidebar a,
+html.light .sidebar a,
+body.light .sidebar a,
+:root[data-theme="light"] .sidebar .nav-link,
+body.theme-light .sidebar .nav-link,
+html.light .sidebar .nav-link,
+body.light .sidebar .nav-link {
+  color: #0b1220 !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+}
+:root[data-theme="light"] .sidebar .nav-link:hover,
+body.theme-light .sidebar .nav-link:hover,
+html.light .sidebar .nav-link:hover,
+body.light .sidebar .nav-link:hover {
+  color: #0b1220 !important;
+  opacity: 1 !important;
+}
+:root[data-theme="light"] .sidebar .muted,
+body.theme-light .sidebar .muted,
+html.light .sidebar .muted,
+body.light .sidebar .muted {
+  color: #334155 !important;
   opacity: 1 !important;
 }
 
-body[data-theme] .dash-surface form input:focus,
-body[data-theme] .dash-surface form select:focus,
-body[data-theme] .dash-surface form textarea:focus{
-  outline: none !important;
-  border-color: rgba(59,130,246,.65) !important;
-  box-shadow: 0 0 0 4px rgba(59,130,246,.18) !important;
-  background: #fff !important;
+:root[data-theme="light"] .page-area,
+body.theme-light .page-area,
+html.light .page-area,
+body.light .page-area {
+  color: #0b1220;
 }
-
-body[data-theme="dark"] .dash-surface form input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
-body[data-theme="dark"] .dash-surface form select,
-body[data-theme="dark"] .dash-surface form textarea{
-  border: 1px solid rgba(255,255,255,.14) !important;
-  background: rgba(15,23,42,.55) !important;
-  color: rgba(255,255,255,.92) !important;
+:root[data-theme="light"] .page-area h1,
+:root[data-theme="light"] .page-area h2,
+:root[data-theme="light"] .page-area label,
+body.theme-light .page-area h1,
+body.theme-light .page-area h2,
+body.theme-light .page-area label,
+html.light .page-area h1,
+html.light .page-area h2,
+html.light .page-area label,
+body.light .page-area h1,
+body.light .page-area h2,
+body.light .page-area label {
+  color: #0b1220 !important;
 }
-
-body[data-theme="dark"] .dash-surface form input::placeholder,
-body[data-theme="dark"] .dash-surface form textarea::placeholder{
-  color: rgba(255,255,255,.55) !important;
-}
-
-body[data-theme="dark"] .dash-surface form select{
-  color-scheme: dark !important;
-}
-body[data-theme="dark"] .dash-surface form select option{
-  background: #0b1220 !important;
-  color: rgba(255,255,255,.92) !important;
-}
-
-body[data-theme] .dash-surface form input:-webkit-autofill,
-body[data-theme] .dash-surface form textarea:-webkit-autofill,
-body[data-theme] .dash-surface form select:-webkit-autofill{
-  -webkit-text-fill-color: #0f172a !important;
-  box-shadow: 0 0 0px 1000px rgba(255,255,255,.92) inset !important;
-  transition: background-color 9999s ease-in-out 0s !important;
-}
-body[data-theme="dark"] .dash-surface form input:-webkit-autofill,
-body[data-theme="dark"] .dash-surface form textarea:-webkit-autofill,
-body[data-theme="dark"] .dash-surface form select:-webkit-autofill{
-  -webkit-text-fill-color: rgba(255,255,255,.92) !important;
-  box-shadow: 0 0 0px 1000px rgba(15,23,42,.55) inset !important;
-}
-
-body[data-theme="dark"] .dash-surface form .text-danger{
-  color: #ff6b6b !important;
-}
-body[data-theme="dark"] .dash-surface form .form-text{
-  color: rgba(255,255,255,.62) !important;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* ===========================
-   SOLICITAES  LAYOUT FIX (FULL WIDTH + RESPONSIVO)
-   Escopo: .page-solicitacoes, .page-solicitacao-detalhe
-   =========================== */
-
-.page-solicitacoes .solicitacoes-shell,
-.page-solicitacao-detalhe .solicitacoes-shell{
-  width: 100% !important;
-  max-width: none !important;         /* mata ilha central */
-  margin: 0 !important;
-  padding-left: clamp(12px, 2vw, 28px) !important;
-  padding-right: clamp(12px, 2vw, 28px) !important;
-}
-
-.page-solicitacoes .solicitacoes-surface{
-  width: 100% !important;
-  border-radius: 18px !important;
-  overflow: hidden !important;
-  border: 1px solid rgba(15,23,42,.10) !important;
-  box-shadow: 0 18px 45px rgba(2,6,23,.08) !important;
-  background: #fff !important;
-}
-
-.page-solicitacoes .solicitacoes-surface > .table-responsive{
-  width: 100% !important;
-  overflow-x: auto !important;
-}
-
-/* DETALHE: grid responsivo de verdade */
-.page-solicitacao-detalhe .solicitacao-grid{
-  display: grid !important;
-  grid-template-columns: 1fr !important; /* mobile */
-  gap: 16px !important;
-  align-items: start !important;
-}
-
-@media (min-width: 1100px){
-  .page-solicitacao-detalhe .solicitacao-grid{
-    grid-template-columns: minmax(520px, 2fr) minmax(360px, 1fr) !important;
-  }
-}
-
-.page-solicitacao-detalhe .solicitacao-col--main,
-.page-solicitacao-detalhe .solicitacao-col--side{
-  min-width: 0 !important; /* evita overflow/ilha */
-}
-
-.page-solicitacao-detalhe .solicitacao-col--side{
-  position: sticky !important;
-  top: 16px !important;
-}
-
-/* Dark mode (escopado) */
-html[data-theme="dark"] .page-solicitacoes .solicitacoes-surface,
-body[data-theme="dark"] .page-solicitacoes .solicitacoes-surface,
-body.dark .page-solicitacoes .solicitacoes-surface{
-  background: rgba(15,23,42,.70) !important;
-  border: 1px solid rgba(255,255,255,.10) !important;
-  box-shadow: 0 18px 45px rgba(0,0,0,.35) !important;
-}
-
-/* =========================================================
-   SOLICITAR ACESSO PUBLIC — PREMIUM
-   escopo: .page-solicitacoes-public
-   ========================================================= */
-.page-solicitacoes-public{
-  color: var(--dash-text, #0f172a);
-}
-.page-solicitacoes-public .dash-surface{
-  border-radius: 18px;
-  border: 1px solid rgba(15,23,42,.10);
-  box-shadow: 0 18px 45px rgba(2,6,23,.08);
-}
-.page-solicitacoes-public label,
-.page-solicitacoes-public .form-label{
-  font-weight: 700;
-  color: rgba(15,23,42,.85);
-}
-.page-solicitacoes-public .form-text{
-  color: rgba(15,23,42,.60);
-}
-.page-solicitacoes-public .text-danger{
-  color: #dc2626 !important;
-}
-.page-solicitacoes-public input,
-.page-solicitacoes-public select,
-.page-solicitacoes-public textarea{
-  height: 40px;
-  border-radius: 12px;
-  border: 1px solid rgba(15,23,42,.14);
-  background: #ffffff;
-  color: rgba(15,23,42,.95);
-}
-.page-solicitacoes-public textarea{
-  min-height: 120px;
-  height: auto;
-}
-.page-solicitacoes-public input::placeholder,
-.page-solicitacoes-public textarea::placeholder{
-  color: rgba(15,23,42,.45);
-}
-.page-solicitacoes-public input:focus-visible,
-.page-solicitacoes-public select:focus-visible,
-.page-solicitacoes-public textarea:focus-visible{
-  outline: 0;
-  box-shadow: 0 0 0 4px rgba(59,130,246,.22);
-  border-color: rgba(59,130,246,.55);
-}
-.page-solicitacoes-public select option{
-  background-color: #0b1220;
-  color: #e5e7eb;
-}
-.page-solicitacoes-public input:-webkit-autofill,
-.page-solicitacoes-public textarea:-webkit-autofill,
-.page-solicitacoes-public select:-webkit-autofill{
-  -webkit-text-fill-color: rgba(15,23,42,.95);
-  box-shadow: 0 0 0px 1000px #ffffff inset;
-  transition: background-color 9999s ease-in-out 0s;
-}
-html[data-theme="dark"] .page-solicitacoes-public,
-body[data-theme="dark"] .page-solicitacoes-public,
-body.dark .page-solicitacoes-public{
-  color: #e5e7eb;
-}
-html[data-theme="dark"] .page-solicitacoes-public .dash-surface,
-body[data-theme="dark"] .page-solicitacoes-public .dash-surface,
-body.dark .page-solicitacoes-public .dash-surface{
-  background: rgba(15,23,42,.70);
-  border: 1px solid rgba(255,255,255,.10);
-  box-shadow: 0 18px 45px rgba(0,0,0,.35);
-}
-html[data-theme="dark"] .page-solicitacoes-public label,
-body[data-theme="dark"] .page-solicitacoes-public label,
-body.dark .page-solicitacoes-public label{
-  color: rgba(255,255,255,.88);
-}
-html[data-theme="dark"] .page-solicitacoes-public .form-text,
-body[data-theme="dark"] .page-solicitacoes-public .form-text,
-body.dark .page-solicitacoes-public .form-text{
-  color: rgba(255,255,255,.65);
-}
-html[data-theme="dark"] .page-solicitacoes-public input,
-html[data-theme="dark"] .page-solicitacoes-public select,
-html[data-theme="dark"] .page-solicitacoes-public textarea,
-body[data-theme="dark"] .page-solicitacoes-public input,
-body[data-theme="dark"] .page-solicitacoes-public select,
-body[data-theme="dark"] .page-solicitacoes-public textarea,
-body.dark .page-solicitacoes-public input,
-body.dark .page-solicitacoes-public select,
-body.dark .page-solicitacoes-public textarea{
-  background: rgba(255,255,255,.08);
-  border: 1px solid rgba(255,255,255,.16);
-  color: rgba(255,255,255,.92);
-}
-html[data-theme="dark"] .page-solicitacoes-public input::placeholder,
-body[data-theme="dark"] .page-solicitacoes-public input::placeholder,
-body.dark .page-solicitacoes-public input::placeholder{
-  color: rgba(255,255,255,.55);
-}
-html[data-theme="dark"] .page-solicitacoes-public select option,
-body[data-theme="dark"] .page-solicitacoes-public select option,
-body.dark .page-solicitacoes-public select option{
-  background-color: rgba(2,6,23,.98);
-  color: rgba(255,255,255,.92);
-}
-html[data-theme="dark"] .page-solicitacoes-public input:-webkit-autofill,
-html[data-theme="dark"] .page-solicitacoes-public textarea:-webkit-autofill,
-body[data-theme="dark"] .page-solicitacoes-public input:-webkit-autofill,
-body[data-theme="dark"] .page-solicitacoes-public textarea:-webkit-autofill{
-  -webkit-text-fill-color: rgba(255,255,255,.92);
-  box-shadow: 0 0 0px 1000px rgba(15,23,42,.70) inset;
-}
-
-/* ===========================
-   DASH CONTAINER UTILITIES
-   =========================== */
-.dash-container{
-  width: 100%;
-  margin: 0 auto;
-  padding: 0 16px;
-}
-
-.dash-container--wide{
-  max-width: 1400px;
-}
-
-/* DASH CONTAINER UTILITIES (EXTENSÃO) */
-.dash-container--full{ max-width: none !important; }
-.dash-container--full .dash-card,
-.dash-container--full form{
-  max-width: none !important;
-  width: 100%;
-}
-
-/* ===========================
-   SOLICITACOES  DETALHE (PREMIUM)
-   Escopo: .page-solicitacoes--detalhe
-   =========================== */
-.page-solicitacoes--detalhe .solicitacoes-card{
-  border-radius: 18px;
-  box-shadow: 0 18px 45px rgba(2,6,23,.08);
-  border: 1px solid rgba(15,23,42,.10);
-  background: #ffffff;
-  padding: 16px;
-}
-
-.page-solicitacoes--detalhe .kv-grid{
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px 18px;
-}
-
-.page-solicitacoes--detalhe .kv-item--span2{
-  grid-column: 1 / -1;
-}
-
-.page-solicitacoes--detalhe .kv-k{
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  opacity: .68;
-  margin-bottom: 4px;
-}
-
-.page-solicitacoes--detalhe .kv-v{
-  font-weight: 800;
-  font-size: 14px;
-  line-height: 1.35;
-  word-break: break-word;
-}
-
-@media (max-width: 991.98px){
-  .page-solicitacoes--detalhe .kv-grid{
-    grid-template-columns: 1fr;
-  }
-}
-
-.page-solicitacoes--detalhe textarea{
-  width: 100%;
-  min-height: 180px;
-  resize: vertical;
-}
-
-.page-solicitacoes--detalhe .solicitacoes-actions{
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-top: 12px;
-}
-
-.page-solicitacoes--detalhe .solicitacoes-actions .dash-btn{
-  flex: 1 1 220px;
-}
-
-@media (max-width: 575.98px){
-  .page-solicitacoes--detalhe .solicitacoes-actions .dash-btn{
-    flex-basis: 100%;
-  }
-}
-
-html[data-theme="dark"] .page-solicitacoes--detalhe .solicitacoes-card,
-body[data-theme="dark"] .page-solicitacoes--detalhe .solicitacoes-card,
-body.dark .page-solicitacoes--detalhe .solicitacoes-card{
-  background: rgba(15,23,42,.70);
-  border: 1px solid rgba(255,255,255,.10);
-  box-shadow: 0 18px 45px rgba(0,0,0,.35);
-}
-
-html[data-theme="dark"] .page-solicitacoes--detalhe .kv-k,
-body[data-theme="dark"] .page-solicitacoes--detalhe .kv-k,
-body.dark .page-solicitacoes--detalhe .kv-k{
-  opacity: .75;
-}
-
-/* IMPORTAR LDP - LAYOUT WIDE (escopado) */
-.page-importar-ldp { width:100%; }
-.page-importar-ldp .dash-container { width:100%; margin:0 auto; padding:0 24px; }
-.page-importar-ldp .dash-container--wide { max-width: 1680px; }
-@media (max-width: 575.98px){ .page-importar-ldp .dash-container{ padding:0 14px; } }
-
-.page-importar-ldp .dash-card,
-.page-importar-ldp form,
-.page-importar-ldp .ldp-card,
-.page-importar-ldp .ldp-dropzone,
-.page-importar-ldp .upload-area { width:100%; max-width:none !important; }
-
-.page-importar-ldp .ldp-actions{
-  display:flex;
-  gap:12px;
-  justify-content:flex-start;
-  flex-wrap:wrap;
-  margin-top:12px;
-}
-.page-importar-ldp .ldp-actions .btn{ min-width: 180px; }
-@media (max-width: 575.98px){
-  .page-importar-ldp .ldp-actions .btn{ width:100%; min-width:0; }
-}
-
-/* NOVO DOCUMENTO - LAYOUT WIDE (escopado) */
-.page-upload-doc { width:100%; }
-.page-upload-doc .dash-container{ width:100%; margin:0 auto; padding:0 24px; }
-.page-upload-doc .dash-container--wide{ max-width: 1680px; }
-@media (max-width: 575.98px){ .page-upload-doc .dash-container{ padding:0 14px; } }
-
-.page-upload-doc .dash-card{ width:100%; max-width:none !important; }
-
-.page-upload-doc .upload-card{
-  border-radius:16px;
-  box-shadow:0 10px 30px rgba(0,0,0,.08);
-  padding:18px;
-}
-
-
-.page-upload-doc .upload-header .dash-title{ margin:0; }
-.page-upload-doc .upload-header .dash-subtitle{ opacity:.85; }
-
-.page-upload-doc .upload-grid{
-  display:grid;
-  gap:14px 16px;
-  align-items:start;
-}
-.page-upload-doc .upload-grid--3{ grid-template-columns:repeat(3, minmax(0, 1fr)); }
-.page-upload-doc .upload-grid--1{ grid-template-columns:1fr; }
-
-@media (max-width:1199.98px){
-  .page-upload-doc .upload-grid--3{ grid-template-columns:repeat(2, minmax(0, 1fr)); }
-}
-@media (max-width:767.98px){
-  .page-upload-doc .upload-grid--3{ grid-template-columns:1fr; }
-}
-
-.page-upload-doc .upload-field label{ font-weight:600; }
-.page-upload-doc .upload-field .helptext,
-.page-upload-doc .upload-field small{ opacity:.8; }
-
-.page-upload-doc .upload-dropzone{ width:100%; border-radius:12px; }
-
-.page-upload-doc .form-control,
-.page-upload-doc .form-select{ width:100%; }
-
-.page-upload-doc .upload-actions{
-  display:flex;
-  gap:12px;
-  flex-wrap:wrap;
-  margin-top:12px;
-}
-.page-upload-doc .upload-actions .btn{ min-width: 200px; }
-@media (max-width: 575.98px){
-  .page-upload-doc .upload-actions .btn{ width:100%; min-width:0; }
-}
-
 
 /* ==========================================================
-   DJANGO ADMIN — CHANGE LIST WIDE (escopado)
-   Escopo: body.django-admin.change-list — NÃO afeta o site
+   FIX THEME LIGHT: sidebar text + tables visibility
    ========================================================== */
-body.django-admin.change-list #container,
-body.django-admin.change-list #content{
-  width: 100%;
-  max-width: none;
+
+/* Detectores de tema claro (cobre várias implementações) */
+html[data-theme="light"], body[data-theme="light"],
+.theme-light, body.theme-light, body.light, html.light,
+[data-theme="light"]{
+  /* fallback geral para texto legível */
+  --text: #101214;
+  --content-text: #101214;
+  --muted: rgba(16,18,20,.72);
+
+  /* sidebar */
+  --sidebar-text: #0f1216;
+  --sidebar-muted: rgba(15,18,22,.70);
+  --sidebar-link: #0f1216;
+  --sidebar-link-hover: #000;
 }
 
-body.django-admin.change-list #content{
-  padding-left: 18px;
-  padding-right: 18px;
+/* Sidebar: texto do menu, ícones e títulos */
+html[data-theme="light"] .sidebar,
+body[data-theme="light"] .sidebar,
+.theme-light .sidebar,
+body.theme-light .sidebar,
+body.light .sidebar,
+html.light .sidebar,
+[data-theme="light"] .sidebar{
+  color: var(--sidebar-text, #0f1216) !important;
 }
 
-body.django-admin.change-list #content > h1,
-body.django-admin.change-list #content-main,
-body.django-admin.change-list #changelist{
-  max-width: 1400px;
-  margin-left: auto;
-  margin-right: auto;
+/* Links e textos dentro do menu */
+html[data-theme="light"] .sidebar a,
+body[data-theme="light"] .sidebar a,
+.theme-light .sidebar a,
+body.theme-light .sidebar a,
+body.light .sidebar a,
+html.light .sidebar a,
+[data-theme="light"] .sidebar a{
+  color: var(--sidebar-link, #0f1216) !important;
 }
 
-/* Remove "fumacê" no miolo */
-body.django-admin.change-list #content,
-body.django-admin.change-list #content-main,
-body.django-admin.change-list .module,
-body.django-admin.change-list .results{
-  backdrop-filter: none !important;
+/* Itens comuns do sidebar (cobre variações de markup) */
+html[data-theme="light"] .sidebar .nav-link,
+html[data-theme="light"] .sidebar .menu-link,
+html[data-theme="light"] .sidebar .sidebar-link,
+html[data-theme="light"] .sidebar .menu-item,
+html[data-theme="light"] .sidebar .nav-item,
+html[data-theme="light"] .sidebar .menu-title,
+html[data-theme="light"] .sidebar .sidebar-title,
+html[data-theme="light"] .sidebar .small,
+html[data-theme="light"] .sidebar .text-muted,
+body[data-theme="light"] .sidebar .nav-link,
+body[data-theme="light"] .sidebar .menu-link,
+body[data-theme="light"] .sidebar .sidebar-link,
+body[data-theme="light"] .sidebar .menu-item,
+body[data-theme="light"] .sidebar .nav-item,
+body[data-theme="light"] .sidebar .menu-title,
+body[data-theme="light"] .sidebar .sidebar-title,
+body[data-theme="light"] .sidebar .small,
+body[data-theme="light"] .sidebar .text-muted,
+.theme-light .sidebar .nav-link,
+.theme-light .sidebar .menu-link,
+.theme-light .sidebar .sidebar-link,
+.theme-light .sidebar .menu-item,
+.theme-light .sidebar .nav-item,
+.theme-light .sidebar .menu-title,
+.theme-light .sidebar .sidebar-title,
+.theme-light .sidebar .small,
+.theme-light .sidebar .text-muted,
+body.theme-light .sidebar .nav-link,
+body.theme-light .sidebar .menu-link,
+body.theme-light .sidebar .sidebar-link,
+body.theme-light .sidebar .menu-item,
+body.theme-light .sidebar .nav-item,
+body.theme-light .sidebar .menu-title,
+body.theme-light .sidebar .sidebar-title,
+body.theme-light .sidebar .small,
+body.theme-light .sidebar .text-muted,
+body.light .sidebar .nav-link,
+body.light .sidebar .menu-link,
+body.light .sidebar .sidebar-link,
+body.light .sidebar .menu-item,
+body.light .sidebar .nav-item,
+body.light .sidebar .menu-title,
+body.light .sidebar .sidebar-title,
+body.light .sidebar .small,
+body.light .sidebar .text-muted,
+html.light .sidebar .nav-link,
+html.light .sidebar .menu-link,
+html.light .sidebar .sidebar-link,
+html.light .sidebar .menu-item,
+html.light .sidebar .nav-item,
+html.light .sidebar .menu-title,
+html.light .sidebar .sidebar-title,
+html.light .sidebar .small,
+html.light .sidebar .text-muted,
+[data-theme="light"] .sidebar .nav-link,
+[data-theme="light"] .sidebar .menu-link,
+[data-theme="light"] .sidebar .sidebar-link,
+[data-theme="light"] .sidebar .menu-item,
+[data-theme="light"] .sidebar .nav-item,
+[data-theme="light"] .sidebar .menu-title,
+[data-theme="light"] .sidebar .sidebar-title,
+[data-theme="light"] .sidebar .small,
+[data-theme="light"] .sidebar .text-muted{
+  color: var(--sidebar-text, #0f1216) !important;
 }
 
-/* Layout do changelist: main + filter */
-body.django-admin.change-list #changelist{
-  display: grid;
-  grid-template-columns: 1fr 300px;
-  gap: 16px;
-  align-items: start;
+/* Hover/active */
+html[data-theme="light"] .sidebar a:hover,
+body[data-theme="light"] .sidebar a:hover,
+.theme-light .sidebar a:hover,
+body.theme-light .sidebar a:hover,
+body.light .sidebar a:hover,
+html.light .sidebar a:hover,
+[data-theme="light"] .sidebar a:hover{
+  color: var(--sidebar-link-hover, #000) !important;
 }
 
-body.django-admin.change-list #content-main{
-  width: 100%;
-  min-width: 0;
+/* Tabelas / DataTables no light: garantir texto visível */
+html[data-theme="light"] .page-area,
+body[data-theme="light"] .page-area,
+.theme-light .page-area,
+body.theme-light .page-area,
+body.light .page-area,
+html.light .page-area,
+[data-theme="light"] .page-area{
+  color: var(--text, #101214) !important;
 }
 
-/* Sidebar filtro menor e sticky */
-body.django-admin.change-list #changelist-filter{
-  width: 300px;
-  max-width: 300px;
-  position: sticky;
-  top: 12px;
-  align-self: start;
+html[data-theme="light"] table,
+html[data-theme="light"] .table,
+html[data-theme="light"] th,
+html[data-theme="light"] td,
+body[data-theme="light"] table,
+body[data-theme="light"] .table,
+body[data-theme="light"] th,
+body[data-theme="light"] td,
+.theme-light table,
+.theme-light .table,
+.theme-light th,
+.theme-light td,
+body.theme-light table,
+body.theme-light .table,
+body.theme-light th,
+body.theme-light td,
+body.light table,
+body.light .table,
+body.light th,
+body.light td,
+html.light table,
+html.light .table,
+html.light th,
+html.light td,
+[data-theme="light"] table,
+[data-theme="light"] .table,
+[data-theme="light"] th,
+[data-theme="light"] td{
+  color: var(--text, #101214) !important;
 }
 
-/* Responsivo: filter vira bloco em cima */
-@media (max-width: 992px){
-  body.django-admin.change-list #changelist{
-    grid-template-columns: 1fr;
-  }
-  body.django-admin.change-list #changelist-filter{
-    width: 100%;
-    max-width: none;
-    position: static;
-  }
+/* Inputs/paginação DataTables */
+html[data-theme="light"] .dataTables_wrapper,
+html[data-theme="light"] .dataTables_wrapper label,
+html[data-theme="light"] .dataTables_wrapper .dataTables_info,
+html[data-theme="light"] .dataTables_wrapper .dataTables_paginate,
+body[data-theme="light"] .dataTables_wrapper,
+body[data-theme="light"] .dataTables_wrapper label,
+body[data-theme="light"] .dataTables_wrapper .dataTables_info,
+body[data-theme="light"] .dataTables_wrapper .dataTables_paginate,
+.theme-light .dataTables_wrapper,
+.theme-light .dataTables_wrapper label,
+.theme-light .dataTables_wrapper .dataTables_info,
+.theme-light .dataTables_wrapper .dataTables_paginate,
+[data-theme="light"] .dataTables_wrapper,
+[data-theme="light"] .dataTables_wrapper label,
+[data-theme="light"] .dataTables_wrapper .dataTables_info,
+[data-theme="light"] .dataTables_wrapper .dataTables_paginate{
+  color: var(--text, #101214) !important;
 }
 
-/* Tabela ocupa 100% e melhora legibilidade */
-body.django-admin.change-list #result_list,
-body.django-admin.change-list .results,
-body.django-admin.change-list .results table{
+/* Pills/status: evitar texto branco no light */
+html[data-theme="light"] .status-pill,
+body[data-theme="light"] .status-pill,
+.theme-light .status-pill,
+[data-theme="light"] .status-pill{
+  color: #0f1216 !important;
+}
+
+/* FIX: impedir input[type=file] global invisível cobrindo a tela (cliques abrindo seletor) */
+.ent-root input[type="file"]{
+  position: static !important;
+  inset: auto !important;
+  width: auto !important;
+  height: auto !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+/* Se existir dropzone, aí sim o input pode ser invisível, mas só dentro do container */
+.ent-root .dropzone,
+.ent-root .dz-area,
+.ent-root .upload-dropzone{
+  position: relative;
+}
+
+.ent-root .dropzone input[type="file"],
+.ent-root .dz-area input[type="file"],
+.ent-root .upload-dropzone input[type="file"]{
+  position: absolute !important;
+  inset: 0 !important;
   width: 100% !important;
-  max-width: none !important;
+  height: 100% !important;
+  opacity: 0 !important;
+  cursor: pointer;
 }
 
-body.django-admin.change-list #result_list th,
-body.django-admin.change-list #result_list td{
+/* Medicao: garantir contraste nos KPIs */
+.page-area .medicao-kpis .kpi-value{
+  font-weight: 700;
+  opacity: 1;
+  color: inherit;
+}
+
+/* =========================
+   MEDIÇÃO — Legibilidade / Contraste
+   ========================= */
+.page-medicao{
+  color: #111827;
+}
+
+.page-medicao h1,
+.page-medicao h2,
+.page-medicao .page-title,
+.page-medicao .section-title{
+  color: #0b5ed7;
+}
+
+.page-medicao .kpi-label{
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .2px;
+  color: #374151;
+  opacity: 1 !important;
+}
+
+.page-medicao .kpi-value{
+  font-size: 22px;
+  font-weight: 800;
+  color: #111827;
+  opacity: 1 !important;
+}
+
+.page-medicao .card,
+.page-medicao .kpi-card,
+.page-medicao .filter-card{
+  color: #111827;
+}
+
+.page-medicao table,
+.page-medicao .table{
+  color: #111827;
+}
+
+.page-medicao table thead th,
+.page-medicao .table thead th{
+  color: #111827;
+  font-weight: 700;
+}
+
+.page-medicao table tbody td,
+.page-medicao .table tbody td{
+  color: #111827;
+  font-weight: 500;
+}
+
+.page-medicao .text-muted,
+.page-medicao .muted,
+.page-medicao .subtle{
+  color: #374151 !important;
+  opacity: 1 !important;
+}
+
+body.dark .page-medicao,
+[data-theme="dark"] .page-medicao{
+  color: #e5e7eb;
+}
+
+body.dark .page-medicao .kpi-label,
+[data-theme="dark"] .page-medicao .kpi-label{
+  color: #cbd5e1;
+}
+
+body.dark .page-medicao .kpi-value,
+[data-theme="dark"] .page-medicao .kpi-value{
+  color: #f9fafb;
+}
+
+body.dark .page-medicao table,
+[data-theme="dark"] .page-medicao table,
+body.dark .page-medicao .table,
+[data-theme="dark"] .page-medicao .table{
+  color: #e5e7eb;
+}
+
+body.dark .page-medicao table thead th,
+[data-theme="dark"] .page-medicao table thead th{
+  color: #f9fafb;
+}
+
+/* =========================
+   MEDICAO — CONTRASTE / LEGIBILIDADE
+   ========================= */
+.medicao-page h1,
+.medicao-page h2,
+.medicao-page h3 {
+  color: #0b2239;
+  font-weight: 700;
+}
+
+.medicao-page .text-muted,
+.medicao-page small {
+  color: #4b5563;
+}
+
+/* KPIs */
+.medicao-page .kpi-value,
+.medicao-page .kpi-number,
+.medicao-page .kpi-card .value,
+.medicao-page .card .kpi {
+  color: #0b2239 !important;
+  font-weight: 800 !important;
+  opacity: 1 !important;
+}
+
+.medicao-page .kpi-label,
+.medicao-page .kpi-title,
+.medicao-page .card-title {
+  color: #334155;
+  font-weight: 600;
+  opacity: 1;
+}
+
+/* Tabela */
+.medicao-page table {
+  color: #0f172a;
+}
+
+.medicao-page thead th {
+  color: #0b2239;
+  font-weight: 700;
+}
+
+.medicao-page tbody td {
+  color: #0f172a;
+  font-weight: 500;
+}
+
+/* Inputs/filters */
+.medicao-page label {
+  color: #0b2239;
+  font-weight: 600;
+}
+
+.medicao-page input::placeholder {
+  color: #64748b;
+  opacity: 1;
+}
+
+/* =========================
+   MEDICAO — CONTRASTE / TIPOGRAFIA
+   ========================= */
+.page-medicao,
+.page-medicao * {
+  opacity: 1 !important;
+}
+
+.page-medicao {
+  color: var(--text, var(--text-color, #111827));
+}
+
+.page-medicao h1,
+.page-medicao h2,
+.page-medicao h3,
+.page-medicao .page-title,
+.page-medicao .section-title {
+  color: var(--text-strong, var(--text, #0f172a));
+  opacity: 1 !important;
+}
+
+.page-medicao .text-muted,
+.page-medicao .muted,
+.page-medicao small,
+.page-medicao .helptext {
+  color: var(--text-muted, rgba(17,24,39,.75)) !important;
+  opacity: 1 !important;
+}
+
+/* KPIs (cards) */
+.page-medicao .kpi-card,
+.page-medicao .card,
+.page-medicao .panel {
+  color: var(--text, var(--text-color, #111827));
+}
+
+.page-medicao .kpi-value,
+.page-medicao .kpi-number,
+.page-medicao .stat-value {
+  color: var(--text-strong, var(--text, #0f172a)) !important;
+  font-weight: 800;
+  opacity: 1 !important;
+}
+
+.page-medicao .kpi-label,
+.page-medicao .stat-label {
+  color: var(--text-muted, rgba(17,24,39,.75)) !important;
+  font-weight: 600;
+  opacity: 1 !important;
+}
+
+/* Form controls (select/input) */
+.page-medicao input,
+.page-medicao select,
+.page-medicao textarea {
+  color: var(--text-strong, var(--text, #0f172a)) !important;
+  opacity: 1 !important;
+}
+
+.page-medicao input::placeholder {
+  color: var(--text-muted, rgba(17,24,39,.6)) !important;
+  opacity: 1 !important;
+}
+
+.page-medicao label {
+  color: var(--text-strong, var(--text, #0f172a)) !important;
+  font-weight: 600;
+  opacity: 1 !important;
+}
+
+/* Tabela resumo */
+.page-medicao table,
+.page-medicao .table {
+  color: var(--text-strong, var(--text, #0f172a)) !important;
+}
+
+.page-medicao th {
+  color: var(--text-strong, var(--text, #0f172a)) !important;
+  font-weight: 800;
+}
+
+.page-medicao td {
+  color: var(--text, var(--text-color, #111827)) !important;
+  opacity: 1 !important;
+}
+
+/* =========================
+   MEDICAO - TIPOGRAFIA / CONTRASTE (v2)
+   ========================= */
+.page-medicao {
+  --med-text: var(--ds-text, #111827);
+  --med-muted: var(--ds-text-muted, #4b5563);
+  --med-card: var(--ds-card-bg, #ffffff);
+  --med-border: var(--ds-border, #e5e7eb);
+}
+
+/* KPIs: titulos e valores nao podem ficar "apagados" */
+.page-medicao .kpi-card,
+.page-medicao .kpi,
+.page-medicao .kpi-box,
+.page-medicao .card.kpi,
+.page-medicao .card.kpi-card {
+  background: var(--med-card) !important;
+  border: 1px solid var(--med-border) !important;
+}
+
+.page-medicao .kpi-title,
+.page-medicao .kpi-label,
+.page-medicao .kpi .label,
+.page-medicao .kpi-box .label,
+.page-medicao .card.kpi .label,
+.page-medicao .card.kpi-card .label {
+  color: var(--med-muted) !important;
+  font-weight: 600 !important;
+  opacity: 1 !important;
+}
+
+.page-medicao .kpi-value,
+.page-medicao .kpi-number,
+.page-medicao .kpi .value,
+.page-medicao .kpi-box .value,
+.page-medicao .card.kpi .value,
+.page-medicao .card.kpi-card .value {
+  color: var(--med-text) !important;
+  font-weight: 800 !important;
+  font-size: 1.35rem !important;
+  line-height: 1.15 !important;
+  letter-spacing: 0.2px !important;
+  opacity: 1 !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+/* Quando os KPIs estao dentro de bootstrap .text-muted ou opacity herdada */
+.page-medicao .kpi-card *,
+.page-medicao .kpi *,
+.page-medicao .kpi-box *,
+.page-medicao .card.kpi *,
+.page-medicao .card.kpi-card * {
+  opacity: 1;
+}
+
+/* Tabela do resumo: aumentar legibilidade geral */
+.page-medicao table,
+.page-medicao .table {
+  color: var(--med-text) !important;
+  font-size: 13.5px !important;
+}
+
+.page-medicao thead th {
+  color: var(--med-text) !important;
+  font-weight: 700 !important;
+  opacity: 1 !important;
+}
+
+.page-medicao tbody td {
+  color: var(--med-text) !important;
+  opacity: 1 !important;
+}
+
+/* Numeros alinhados e "tabular" */
+.page-medicao td:nth-last-child(-n+6),
+.page-medicao th:nth-last-child(-n+6) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Badges nao apagadas */
+.page-medicao .badge,
+.page-medicao .pill,
+.page-medicao .status-badge {
+  font-weight: 700 !important;
+  opacity: 1 !important;
+}
+
+/* Inputs e selects: texto mais forte */
+.page-medicao input,
+.page-medicao select {
+  color: var(--med-text) !important;
+}
+
+/* =========================
+   MEDIÇÃO — CONTRASTE / TIPOGRAFIA (v3 ultra-robusto)
+   ========================= */
+.page-medicao{
+  --m-text:#0f172a;
+  --m-muted:#334155;
+  --m-border:#e2e8f0;
+  --m-bg:#ffffff;
+}
+
+/* Neutraliza “apagado” herdado (text-muted/opacity) */
+.page-medicao,
+.page-medicao *{
+  opacity: 1;
+}
+
+/* Faixa de KPIs (os 6 cards) — pega por padrões comuns de layout */
+.page-medicao .kpi,
+.page-medicao .kpi-card,
+.page-medicao .kpi-box,
+.page-medicao .kpi-grid,
+.page-medicao .cards,
+.page-medicao .cards-row{
+  color: var(--m-text);
+}
+
+/* Cards: fundo e borda consistentes */
+.page-medicao .card{
+  background: var(--m-bg) !important;
+  border: 1px solid var(--m-border) !important;
+}
+
+/* Títulos/labels (inclui bootstrap card-title / small / text-muted) */
+.page-medicao .card .card-title,
+.page-medicao .card .title,
+.page-medicao .card .label,
+.page-medicao .card small,
+.page-medicao .card .text-muted,
+.page-medicao .card [class*="muted"],
+.page-medicao .filters label{
+  color: var(--m-muted) !important;
+  font-weight: 650 !important;
+  opacity: 1 !important;
+}
+
+/* Valores (números grandes): tenta cobrir qualquer markup */
+.page-medicao .card .card-text,
+.page-medicao .card .value,
+.page-medicao .card .valor,
+.page-medicao .card .number,
+.page-medicao .card .kpi-value,
+.page-medicao .card strong,
+.page-medicao .card b{
+  color: var(--m-text) !important;
+  font-weight: 800 !important;
+  opacity: 1 !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+/* Se o número estiver em h1/h2/h3 dentro do card */
+.page-medicao .card h1,
+.page-medicao .card h2,
+.page-medicao .card h3{
+  color: var(--m-text) !important;
+  font-weight: 850 !important;
+  opacity: 1 !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+/* Inputs/selects */
+.page-medicao input,
+.page-medicao select{
+  color: var(--m-text) !important;
+}
+
+/* Tabela resumo */
+.page-medicao table,
+.page-medicao .table{
+  color: var(--m-text) !important;
+  font-size: 13.5px !important;
+}
+.page-medicao thead th{
+  color: var(--m-text) !important;
+  font-weight: 750 !important;
+  opacity: 1 !important;
+}
+.page-medicao tbody td{
+  color: var(--m-text) !important;
+  opacity: 1 !important;
+}
+
+/* Números da tabela alinhados à direita (colunas de valores) */
+.page-medicao td,
+.page-medicao th{
+  font-variant-numeric: tabular-nums;
+}
+.page-medicao td:nth-last-child(-n+6),
+.page-medicao th:nth-last-child(-n+6){
+  text-align: right;
+}
+
+/* Botão Exportar (quando desabilitado) manter legível */
+.page-medicao .btn:disabled,
+.page-medicao button:disabled{
+  opacity: .55 !important;
+}
+
+/* KPI labels/values (quando marcados explicitamente) */
+.page-medicao .kpi-label{
+  color: var(--m-muted) !important;
+  font-weight: 650 !important;
+}
+.page-medicao .kpi-value{
+  color: var(--m-text) !important;
+  font-weight: 850 !important;
+  font-size: 1.35rem !important;
+}
+
+.page-medicao .medicao-kpis,
+.page-medicao .medicao-kpis *{
+  opacity: 1 !important;
+  filter: none !important;
+}
+
+.page-medicao .medicao-kpis .card{
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+.page-medicao .medicao-kpis .medicao-kpi-label{
+  color: #334155 !important;
+  font-weight: 700 !important;
+  font-size: 12px !important;
+  letter-spacing: .2px !important;
+  opacity: 1 !important;
+}
+
+.page-medicao .medicao-kpis .medicao-kpi-value{
+  color: #0f172a !important;
+  font-weight: 900 !important;
+  font-size: 18px !important;
+  line-height: 1.2 !important;
+  font-variant-numeric: tabular-nums !important;
+  opacity: 1 !important;
+}
+
+/* Se algum trecho ainda vier "muted", forçar dentro dos KPIs */
+.page-medicao .medicao-kpis .text-muted,
+.page-medicao .medicao-kpis [class*="muted"],
+.page-medicao .medicao-kpis [class*="opacity"]{
+  color: #334155 !important;
+  opacity: 1 !important;
+}
+
+/* ===== Medição (tipografia + tabela) ===== */
+.medicao-page{
+}
+
+.medicao-page .kpi-card .kpi-label{
+  font-size: 12px;
+  color: #334155;
+  font-weight: 600;
+}
+.medicao-page .kpi-card .kpi-value{
+  font-size: 18px;
+  color: #0f172a;
+  font-weight: 800;
+  letter-spacing: .2px;
+}
+
+.medicao-page .medicao-table-wrap{
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 12px;
+}
+.medicao-page .medicao-table{
+  width: 100%;
+  min-width: 1100px;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: auto;
+  background: transparent;
+}
+.medicao-page .medicao-table thead{ display: table-header-group; }
+.medicao-page .medicao-table tbody{ display: table-row-group; }
+.medicao-page .medicao-table tfoot{ display: table-footer-group; }
+.medicao-page .medicao-table tr{ display: table-row; }
+.medicao-page .medicao-table th,
+.medicao-page .medicao-table td{
+  display: table-cell;
+  vertical-align: middle;
+}
+
+.medicao-page .medicao-table th{
+  font-size: 12px;
+  font-weight: 800;
+  color: #0f172a;
+  background: #e6f3fb;
   padding: 10px 12px;
+  white-space: nowrap;
+  border-bottom: 1px solid #cfe7f7;
+}
+.medicao-page .medicao-table td{
+  font-size: 13px;
+  color: #0f172a;
+  padding: 10px 12px;
+  border-bottom: 1px solid #e2e8f0;
   white-space: nowrap;
 }
 
-body.django-admin.change-list #result_list thead th{
-  position: sticky;
-  top: 0;
-  z-index: 2;
+.medicao-page .medicao-col-left{ text-align: left; }
+.medicao-page .medicao-col-center{ text-align: center; }
+.medicao-page .medicao-col-right{
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
-/* Reduz scroll horizontal artificial do wrapper */
-body.django-admin.change-list .results{
+.medicao-page .medicao-total-row td{
+  background: #dff1fb;
+  font-weight: 900;
+  border-top: 2px solid #8fd0f5;
+}
+
+body.dark .medicao-page .kpi-card .kpi-label,
+body.theme-dark .medicao-page .kpi-card .kpi-label,
+[data-theme="dark"] .medicao-page .kpi-card .kpi-label{
+  color: #cbd5e1;
+}
+
+body.dark .medicao-page .kpi-card .kpi-value,
+body.theme-dark .medicao-page .kpi-card .kpi-value,
+[data-theme="dark"] .medicao-page .kpi-card .kpi-value{
+  color: #f1f5f9;
+}
+
+body.dark .medicao-page .medicao-table th,
+body.theme-dark .medicao-page .medicao-table th,
+[data-theme="dark"] .medicao-page .medicao-table th{
+  color: #e2e8f0;
+  background: rgba(56, 189, 248, .14);
+  border-bottom-color: rgba(148, 163, 184, .25);
+}
+
+body.dark .medicao-page .medicao-table td,
+body.theme-dark .medicao-page .medicao-table td,
+[data-theme="dark"] .medicao-page .medicao-table td{
+  color: #e2e8f0;
+  border-bottom-color: rgba(148, 163, 184, .25);
+}
+
+body.dark .medicao-page .medicao-total-row td,
+body.theme-dark .medicao-page .medicao-total-row td,
+[data-theme="dark"] .medicao-page .medicao-total-row td{
+  background: rgba(56, 189, 248, .12);
+  border-top-color: rgba(56, 189, 248, .35);
+}
+
+/* =========================
+   MEDIÇÃO — FIX TIPOGRAFIA / CONTRASTE / TABELA
+   Escopo: somente quando body tiver class="page-medicao"
+   ========================= */
+
+body.page-medicao {
+  /* variáveis locais */
+  --medicao-fg: #0f172a;
+  --medicao-muted: #475569;
+  --medicao-card-bg: #f8fafc;
+  --medicao-card-bd: rgba(15, 23, 42, 0.12);
+}
+
+/* suportar dark theme mesmo sem saber o nome exato: cobrimos os padrões comuns */
+html.dark body.page-medicao,
+body.dark.page-medicao,
+body.theme-dark.page-medicao,
+html[data-theme="dark"] body.page-medicao,
+body[data-theme="dark"].page-medicao {
+  --medicao-fg: #e5e7eb;
+  --medicao-muted: #94a3b8;
+  --medicao-card-bg: rgba(15, 23, 42, 0.45);
+  --medicao-card-bd: rgba(148, 163, 184, 0.22);
+}
+
+/* TÍTULOS / TEXTOS */
+body.page-medicao h1,
+body.page-medicao h2,
+body.page-medicao h3,
+body.page-medicao .page-title,
+body.page-medicao .section-title {
+  color: var(--medicao-fg) !important;
+}
+
+body.page-medicao .page-subtitle,
+body.page-medicao .text-muted,
+body.page-medicao small {
+  color: var(--medicao-muted) !important;
+}
+
+/* KPI CARDS — aqui está o bug principal (números brancos/apagados) */
+body.page-medicao .kpi-card,
+body.page-medicao .kpi-box,
+body.page-medicao .kpi-item,
+body.page-medicao .kpi {
+  background: var(--medicao-card-bg) !important;
+  border: 1px solid var(--medicao-card-bd) !important;
+  border-radius: 12px !important;
+}
+
+body.page-medicao .kpi-title,
+body.page-medicao .kpi-label,
+body.page-medicao .kpi-card .label,
+body.page-medicao .kpi-card .title {
+  color: var(--medicao-muted) !important;
+  font-weight: 700 !important;
+  letter-spacing: .2px;
+}
+
+body.page-medicao .kpi-value,
+body.page-medicao .kpi-number,
+body.page-medicao .kpi-card .value,
+body.page-medicao .kpi-card .number,
+body.page-medicao .kpi-card strong {
+  color: var(--medicao-fg) !important;
+  opacity: 1 !important;
+  filter: none !important;
+  text-shadow: none !important;
+  font-weight: 800 !important;
+}
+
+/* Se algum estilo global estiver reduzindo opacidade do conteúdo do card */
+body.page-medicao .kpi-card *,
+body.page-medicao .kpi-box *,
+body.page-medicao .kpi-item * {
+  opacity: 1;
+}
+
+/* TABELA DO RESUMO — evitar “desconfigurar” com mudanças globais */
+body.page-medicao .table,
+body.page-medicao table {
+  color: var(--medicao-fg) !important;
+}
+
+body.page-medicao .table thead th,
+body.page-medicao table thead th {
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  color: var(--medicao-fg) !important;
+  vertical-align: middle !important;
+  white-space: nowrap;
+}
+
+body.page-medicao .table tbody td,
+body.page-medicao table tbody td {
+  font-size: 13px !important;
+  vertical-align: middle !important;
+}
+
+body.page-medicao .table th,
+body.page-medicao .table td,
+body.page-medicao table th,
+body.page-medicao table td {
+  padding: 10px 12px !important;
+}
+
+/* garantir que a tabela não estoure e que a sombra/borda fiquem estáveis */
+body.page-medicao .table-responsive,
+body.page-medicao .table-wrap,
+body.page-medicao .table-container {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
-/* ================================
-   DJANGO ADMIN — WIDE + RESPONSIVO
-   (CHANGELIST / LISTA)
-   Escopo: body.django-admin para não afetar o app
-   ================================ */
+/* CARD DOS GRÁFICOS / PLACEHOLDERS */
+body.page-medicao .chart-card,
+body.page-medicao .chart-box,
+body.page-medicao .chart-container {
+  background: var(--medicao-card-bg) !important;
+  border: 1px solid var(--medicao-card-bd) !important;
+  border-radius: 12px !important;
+}
 
-body.django-admin #container,
-body.django-admin #content,
-body.django-admin .content { max-width: none !important; }
-body.django-admin #content { width: 100% !important; }
+body.page-medicao .chart-card .title,
+body.page-medicao .chart-box .title {
+  color: var(--medicao-fg) !important;
+  font-weight: 800 !important;
+}
 
-/* Área do changelist ocupar mais largura útil */
-body.django-admin.change-list #content-main {
-  float: none !important;
+body.page-medicao .chart-card .subtitle,
+body.page-medicao .chart-box .subtitle {
+  color: var(--medicao-muted) !important;
+}
+
+/* FIM MEDIÇÃO */
+
+/* =========================
+   MEDIÇÃO — MARTELLO DE CONTRASTE / OPACIDADE / TABELA
+   ========================= */
+
+body.page-medicao #medicao-kpis,
+body.page-medicao #medicao-resumo,
+body.page-medicao #medicao-graficos {
+  opacity: 1 !important;
+  filter: none !important;
+}
+
+body.page-medicao #medicao-kpis * {
+  opacity: 1 !important;
+  filter: none !important;
+}
+
+body.page-medicao #medicao-kpis .card,
+body.page-medicao #medicao-kpis .kpi-card,
+body.page-medicao #medicao-kpis .kpi-box,
+body.page-medicao #medicao-kpis .kpi-item {
+  background: rgba(248, 250, 252, 1) !important;
+  border: 1px solid rgba(15, 23, 42, 0.14) !important;
+  border-radius: 12px !important;
+}
+
+body.page-medicao #medicao-kpis .card-title,
+body.page-medicao #medicao-kpis .kpi-title,
+body.page-medicao #medicao-kpis .kpi-label,
+body.page-medicao #medicao-kpis .label,
+body.page-medicao #medicao-kpis small {
+  color: #475569 !important;
+  font-weight: 700 !important;
+}
+
+body.page-medicao #medicao-kpis .kpi-value,
+body.page-medicao #medicao-kpis .kpi-number,
+body.page-medicao #medicao-kpis .value,
+body.page-medicao #medicao-kpis .number,
+body.page-medicao #medicao-kpis strong,
+body.page-medicao #medicao-kpis b {
+  color: #0f172a !important;
+  font-weight: 900 !important;
+  text-shadow: none !important;
+}
+
+body.page-medicao #medicao-kpis .text-white,
+body.page-medicao #medicao-kpis .text-light,
+body.page-medicao #medicao-kpis .opacity-50,
+body.page-medicao #medicao-kpis .opacity-25,
+body.page-medicao #medicao-kpis .opacity-75 {
+  color: #0f172a !important;
+  opacity: 1 !important;
+}
+
+/* RESUMO — tabela estável e alinhada */
+body.page-medicao #medicao-resumo .table,
+body.page-medicao #medicao-resumo table {
   width: 100% !important;
+  border-collapse: collapse !important;
+  color: #0f172a !important;
+  background: transparent !important;
 }
 
-/* Layout em 2 colunas: tabela (flex) + filtro (fixo) */
-body.django-admin.change-list #changelist {
-  display: grid !important;
-  grid-template-columns: 1fr 320px;
-  gap: 16px;
-  align-items: start;
+body.page-medicao #medicao-resumo .table thead th,
+body.page-medicao #medicao-resumo table thead th {
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  color: #0f172a !important;
+  white-space: nowrap !important;
+  padding: 10px 12px !important;
+  vertical-align: middle !important;
 }
 
-/* Filtro menor e consistente */
-body.django-admin.change-list #changelist-filter {
-  float: none !important;
-  width: 320px !important;
-  margin: 0 !important;
-  position: sticky;
-  top: 16px; /* ajusta se tiver header fixo */
-  max-height: calc(100vh - 32px);
-  overflow: auto;
+body.page-medicao #medicao-resumo .table tbody td,
+body.page-medicao #medicao-resumo table tbody td {
+  font-size: 13px !important;
+  color: #0f172a !important;
+  padding: 10px 12px !important;
+  vertical-align: middle !important;
 }
 
-/* Tabela não pode ficar presa em width pequeno */
-body.django-admin.change-list #changelist-form,
-body.django-admin.change-list .results,
-body.django-admin.change-list .results table {
+body.page-medicao #medicao-resumo .table td:last-child,
+body.page-medicao #medicao-resumo .table th:last-child {
+  padding-right: 16px !important;
+}
+
+/* se tiver overflow/estouro, garante scroll horizontal */
+body.page-medicao #medicao-resumo .table-responsive,
+body.page-medicao #medicao-resumo .table-wrap,
+body.page-medicao #medicao-resumo .table-container {
+  overflow-x: auto !important;
+}
+
+/* GRÁFICOS — garantir legibilidade */
+body.page-medicao #medicao-graficos .card,
+body.page-medicao #medicao-graficos .chart-card,
+body.page-medicao #medicao-graficos .chart-box {
+  background: rgba(248, 250, 252, 1) !important;
+  border: 1px solid rgba(15, 23, 42, 0.14) !important;
+  border-radius: 12px !important;
+}
+
+body.page-medicao #medicao-graficos * {
+  opacity: 1 !important;
+  color: #0f172a;
+}
+
+/* =========================
+   MEDIÇÃO — PATCH DE GUERRA (contraste + anti-opacidade + tabela estável)
+   ========================= */
+
+body.page-medicao,
+body.page-medicao main,
+body.page-medicao .page-area,
+body.page-medicao .page-area *,
+body.page-medicao .container,
+body.page-medicao .container-fluid,
+body.page-medicao .content,
+body.page-medicao .content * {
+  opacity: 1 !important;
+  filter: none !important;
+}
+
+/* KPIs: números e labels SEMPRE legíveis */
+body.page-medicao .kpi-card,
+body.page-medicao .kpi-box,
+body.page-medicao .kpi-item,
+body.page-medicao .card {
+  background: #f8fafc !important;
+  border: 1px solid rgba(15, 23, 42, 0.14) !important;
+  border-radius: 12px !important;
+}
+
+body.page-medicao .kpi-title,
+body.page-medicao .kpi-label,
+body.page-medicao .card-title,
+body.page-medicao small,
+body.page-medicao label {
+  color: #475569 !important;
+  font-weight: 700 !important;
+}
+
+body.page-medicao .kpi-value,
+body.page-medicao .kpi-number,
+body.page-medicao .value,
+body.page-medicao .number,
+body.page-medicao .metric,
+body.page-medicao strong,
+body.page-medicao b {
+  color: #0f172a !important;
+  font-weight: 900 !important;
+}
+
+/* Mata classes que “embranquecem” texto */
+body.page-medicao .text-white,
+body.page-medicao .text-light,
+body.page-medicao .opacity-25,
+body.page-medicao .opacity-50,
+body.page-medicao .opacity-75 {
+  color: #0f172a !important;
+  opacity: 1 !important;
+}
+
+/* TABELA DO RESUMO: não “desconfigurar” */
+body.page-medicao table {
   width: 100% !important;
-  max-width: none !important;
+  border-collapse: collapse !important;
+  table-layout: auto !important;
 }
 
-/* Evita scroll horizontal desnecessário (mas permite se faltar espaço) */
-body.django-admin.change-list .results { overflow-x: auto; }
-body.django-admin.change-list .results table { table-layout: auto; }
+body.page-medicao table thead th {
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  color: #0f172a !important;
+  padding: 10px 12px !important;
+  white-space: nowrap !important;
+  vertical-align: middle !important;
+}
 
-/* Responsivo: no mobile empilha filtro abaixo */
+body.page-medicao table tbody td {
+  font-size: 13px !important;
+  color: #0f172a !important;
+  padding: 10px 12px !important;
+  vertical-align: middle !important;
+}
+
+body.page-medicao .table-responsive,
+body.page-medicao .table-wrap,
+body.page-medicao .table-container {
+  overflow-x: auto !important;
+}
+
+/* Cards dos gráficos: coerentes e legíveis */
+body.page-medicao .chart-card,
+body.page-medicao .chart-box {
+  background: #f8fafc !important;
+  border: 1px solid rgba(15, 23, 42, 0.14) !important;
+  border-radius: 12px !important;
+}
+
+/* =========================
+   MEDIÇÃO (escopado)
+   ========================= */
+
+.medicao-page .medicao-kpis{
+  display:grid;
+  grid-template-columns: repeat(3, minmax(240px, 1fr));
+  gap:12px;
+  margin: 10px 0 14px;
+}
+
 @media (max-width: 1100px){
-  body.django-admin.change-list #changelist{
-    grid-template-columns: 1fr;
-  }
-  body.django-admin.change-list #changelist-filter{
-    width: 100% !important;
-    position: static;
-    max-height: none;
-  }
+  .medicao-page .medicao-kpis{ grid-template-columns: repeat(2, minmax(240px, 1fr)); }
+}
+@media (max-width: 720px){
+  .medicao-page .medicao-kpis{ grid-template-columns: 1fr; }
 }
 
-/* =========================================
-   ADMIN — CHANGELIST WIDE (V3) — ESCOPADO
-   ========================================= */
-body.change-list #container,
-body.change-list #content,
-body.change-list .content {
-  max-width: none !important;
-  width: 100% !important;
+.medicao-page .medicao-kpi{
+  background: rgba(255,255,255,0.90);
+  border: 1px solid rgba(15,23,42,0.10);
+  border-radius: 14px;
+  padding: 12px 14px;
+  box-shadow: 0 8px 20px rgba(2,6,23,0.06);
 }
 
-/* remove centralização/margens herdadas */
-body.change-list #content {
-  margin: 0 !important;
-  padding-left: 24px !important;
-  padding-right: 24px !important;
+.medicao-page .medicao-kpi-label{
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: rgba(15,23,42,0.80) !important;
+  margin-bottom: 4px;
 }
 
-/* garante que o miolo não fique preso em float/width antigo */
-body.change-list #content-main {
-  float: none !important;
-  width: 100% !important;
-  max-width: none !important;
-  margin: 0 !important;
+.medicao-page .medicao-kpi-value{
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.15;
+  color: var(--enterprise-text, #0b1220) !important;
+  opacity: 1 !important;
+  filter: none !important;
 }
 
-/* o bloco inteiro do changelist deve ser wide */
-body.change-list #changelist {
-  width: 100% !important;
-  max-width: 1600px;       /* aumenta a largura útil */
-  margin: 0 auto !important;
-  padding: 0 !important;
-
-  display: grid !important;
-  grid-template-columns: minmax(0, 1fr) 300px; /* tabela cresce, filtro fixo */
-  gap: 16px;
-  align-items: start;
+.medicao-page .medicao-kpi-value *{
+  color: inherit !important;
+  opacity: 1 !important;
 }
 
-/* tabela ocupa o máximo possível */
-body.change-list #changelist-form,
-body.change-list .results,
-body.change-list .results table {
-  width: 100% !important;
-  max-width: none !important;
+/* Tema escuro — suporte a múltiplos padrões de classe/atributo */
+[data-theme="dark"] .medicao-page .medicao-kpi,
+.theme-dark .medicao-page .medicao-kpi,
+body.dark .medicao-page .medicao-kpi{
+  background: rgba(2,6,23,0.55);
+  border-color: rgba(148,163,184,0.22);
 }
 
-/* filtro menor e sem “roubar tela” */
-body.change-list #changelist-filter {
-  float: none !important;
-  width: 300px !important;
-  margin: 0 !important;
-
-  position: sticky;
-  top: 16px;
-  max-height: calc(100vh - 32px);
-  overflow: auto;
+[data-theme="dark"] .medicao-page .medicao-kpi-label,
+.theme-dark .medicao-page .medicao-kpi-label,
+body.dark .medicao-page .medicao-kpi-label{
+  color: rgba(226,232,240,0.75);
 }
 
-/* botão add user e ferramentas não devem empurrar layout */
-body.change-list .object-tools {
-  float: none !important;
-  justify-self: end;
+[data-theme="dark"] .medicao-page .medicao-kpi-value,
+.theme-dark .medicao-page .medicao-kpi-value,
+body.dark .medicao-page .medicao-kpi-value{
+  color: var(--enterprise-text-invert, #f8fafc) !important;
 }
 
-/* responsivo: empilha filtro */
-@media (max-width: 1100px) {
-  body.change-list #changelist {
-    grid-template-columns: 1fr;
-    max-width: none;
-  }
-  body.change-list #changelist-filter {
-    width: 100% !important;
-    position: static;
-    max-height: none;
-  }
-  body.change-list #content {
-    padding-left: 16px !important;
-    padding-right: 16px !important;
-  }
-}
-
-/* === PROVA DE CARGA DO CSS (REMOVER DEPOIS) === */
-body.change-list::before{
-  content:"ADMIN CSS CUSTOM CARREGADO ✅";
-  position:fixed;
-  top:10px;
-  left:10px;
-  z-index:999999;
-  background:#ff2d2d;
-  color:#fff;
-  padding:10px 14px;
-  border-radius:10px;
-  font-weight:800;
-  letter-spacing:.3px;
-  box-shadow:0 10px 30px rgba(0,0,0,.35);
-}
-
-/* Badge não pode cobrir header nem bloquear clique */
-.admin-css-badge, #adminCssBadge, .admin-css-loaded,
-body.change-list::before{
-  position: fixed !important;
-  top: 10px !important;
-  left: 10px !important;
-  z-index: 99999 !important;
-  pointer-events: none !important;
-  max-width: calc(100vw - 20px) !important;
-}
-
-/* IMPORTAR LDP — FULL WIDTH (escopado) */
-.page-importar-ldp .dash-container--full{ max-width:none !important; }
-.page-importar-ldp .ldp-wrap{ max-width:none !important; width:100%; }
-.page-importar-ldp .ldp-wrap,
-.page-importar-ldp .ldp-card,
-.page-importar-ldp form,
-.page-importar-ldp .ldp-dropzone,
-.page-importar-ldp .upload-area,
-.page-importar-ldp .dropzone{
-  width:100% !important;
-  max-width:none !important;
-}
-
-/* NOVO DOCUMENTO (UPLOAD) — WIDE (escopado) */
-.page-upload-documento{ width:100%; }
-.page-upload-documento .dash-container{
+/* Tabela do resumo */
+.medicao-page .medicao-table{
   width:100%;
-  margin:0 auto;
-  padding:0 24px;
-}
-.page-upload-documento .dash-container--wide{ max-width: 1680px; }
-
-/* derruba travas comuns de largura dentro do card/form */
-.page-upload-documento form,
-.page-upload-documento .dash-card,
-.page-upload-documento .card,
-.page-upload-documento .container,
-.page-upload-documento .container-sm,
-.page-upload-documento .container-md{
-  width:100%;
-  max-width:none !important;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow:hidden;
+  border-radius: 12px;
 }
 
-@media (max-width: 575.98px){
-  .page-upload-documento .dash-container{ padding:0 14px; }
+.medicao-page .medicao-table th{
+  font-size: 12px;
+  font-weight: 800;
+  color: #0f172a !important;
+  background: rgba(56,189,248,0.12);
+  border-bottom: 1px solid rgba(15,23,42,0.10);
+  padding: 10px 12px;
+  text-align: left;
+  white-space: nowrap;
 }
 
-/* ADMIN — CONTAS/USUARIO changelist full-width (escopado) */
-body.app-contas.model-usuario.change-list #content,
-body.app-contas.model-usuario.change-list #container,
-body.app-contas.model-usuario.change-list .content{
-  max-width: none !important;
-  width: 100% !important;
+.medicao-page .medicao-table td{
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(15,23,42,0.92) !important;
+  border-bottom: 1px solid rgba(15,23,42,0.08);
+  padding: 10px 12px;
+  vertical-align: middle;
 }
 
-body.app-contas.model-usuario.change-list #changelist{
-  width: 100% !important;
-  max-width: none !important;
-  display: grid;
-  grid-template-columns: 1fr 280px;
-  gap: 16px;
-  align-items: start;
+.medicao-page .medicao-table tr:last-child td{
+  border-bottom: 0;
 }
 
-body.app-contas.model-usuario.change-list #changelist-form{
-  min-width: 0;
+.medicao-page .medicao-table tr.total,
+.medicao-page .medicao-table tr.total td{
+  background: rgba(56,189,248,0.10);
+  font-weight: 900;
+  color: rgba(15,23,42,0.92);
 }
 
-body.app-contas.model-usuario.change-list #changelist-filter{
-  width: 280px;
-  position: sticky;
-  top: 16px;
+[data-theme="dark"] .medicao-page .medicao-table th,
+.theme-dark .medicao-page .medicao-table th,
+body.dark .medicao-page .medicao-table th{
+  color: rgba(226,232,240,0.92);
+  background: rgba(56,189,248,0.14);
+  border-bottom-color: rgba(148,163,184,0.18);
 }
 
-body.app-contas.model-usuario.change-list .results,
-body.app-contas.model-usuario.change-list #result_list{
+[data-theme="dark"] .medicao-page .medicao-table td,
+.theme-dark .medicao-page .medicao-table td,
+body.dark .medicao-page .medicao-table td{
+  color: rgba(226,232,240,0.86);
+  border-bottom-color: rgba(148,163,184,0.14);
+}
+
+/* =========================
+   MEDIÇÃO — FIX TIPOGRAFIA/CONTRASTE (NÍVEL 2)
+   ========================= */
+
+body.page-medicao .medicao-page,
+.medicao-page {
+  color: #0f172a;
+}
+
+/* KPIs */
+body.page-medicao .medicao-page .medicao-kpi-card,
+.medicao-page .medicao-kpi-card {
+  background: rgba(255,255,255,0.92);
+  border: 1px solid rgba(15,23,42,0.10);
+  border-radius: 12px;
+}
+
+body.page-medicao .medicao-page .medicao-kpi-label,
+.medicao-page .medicao-kpi-label {
+  color: rgba(15,23,42,0.80) !important;
+  opacity: 1 !important;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+body.page-medicao .medicao-page .medicao-kpi-value,
+.medicao-page .medicao-kpi-value {
+  color: #0f172a !important;
+  opacity: 1 !important;
+  font-weight: 800;
+  font-size: 18px;
+  line-height: 1.15;
+  text-shadow: none;
+}
+
+/* evita valor “apagado” por herança */
+body.page-medicao .medicao-page .medicao-kpi-card * {
+  opacity: 1;
+}
+
+/* Tabela resumo */
+body.page-medicao .medicao-page .medicao-table-wrap,
+.medicao-page .medicao-table-wrap {
   width: 100%;
-  max-width: none;
-}
-
-body.app-contas.model-usuario.change-list .results{
   overflow-x: auto;
+  border-radius: 12px;
 }
 
-@media (max-width: 1100px){
-  body.app-contas.model-usuario.change-list #changelist{
-    grid-template-columns: 1fr;
-  }
-  body.app-contas.model-usuario.change-list #changelist-filter{
-    width: 100%;
-    position: static;
-  }
+body.page-medicao .medicao-page .medicao-table,
+.medicao-page .medicao-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: auto;
 }
+
+body.page-medicao .medicao-page .medicao-table th,
+.medicao-page .medicao-table th {
+  color: #0f172a !important;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 10px 12px;
+  background: rgba(56,189,248,0.12);
+  border-bottom: 1px solid rgba(15,23,42,0.10);
+  white-space: nowrap;
+}
+
+body.page-medicao .medicao-page .medicao-table td,
+.medicao-page .medicao-table td {
+  color: rgba(15,23,42,0.92) !important;
+  font-size: 13px;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(15,23,42,0.08);
+  vertical-align: middle;
+}
+
+body.page-medicao .medicao-page .medicao-table tr:last-child td,
+.medicao-page .medicao-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* alinhar números à direita sem “esticar” visual */
+body.page-medicao .medicao-page .medicao-table td.num,
+.medicao-page .medicao-table td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Gráficos / placeholders */
+body.page-medicao .medicao-page #medicao-graficos p,
+.medicao-page #medicao-graficos p {
+  color: rgba(15,23,42,0.78) !important;
+}
+
+/* Dark mode (se existir classe/atributo no seu projeto) */
+body.theme-dark.page-medicao .medicao-page,
+html[data-theme="dark"] body.page-medicao .medicao-page,
+body.dark.page-medicao .medicao-page {
+  color: rgba(226,232,240,0.94);
+}
+
+body.theme-dark.page-medicao .medicao-kpi-card,
+html[data-theme="dark"] body.page-medicao .medicao-kpi-card,
+body.dark.page-medicao .medicao-kpi-card {
+  background: rgba(2,6,23,0.55);
+  border: 1px solid rgba(148,163,184,0.18);
+}
+
+body.theme-dark.page-medicao .medicao-kpi-label,
+html[data-theme="dark"] body.page-medicao .medicao-kpi-label,
+body.dark.page-medicao .medicao-kpi-label {
+  color: rgba(226,232,240,0.78) !important;
+}
+
+body.theme-dark.page-medicao .medicao-kpi-value,
+html[data-theme="dark"] body.page-medicao .medicao-kpi-value,
+body.dark.page-medicao .medicao-kpi-value {
+  color: rgba(241,245,249,0.96) !important;
+}
+
+body.theme-dark.page-medicao .medicao-table th,
+html[data-theme="dark"] body.page-medicao .medicao-table th,
+body.dark.page-medicao .medicao-table th {
+  color: rgba(241,245,249,0.96) !important;
+  background: rgba(56,189,248,0.14);
+  border-bottom: 1px solid rgba(148,163,184,0.18);
+}
+
+body.theme-dark.page-medicao .medicao-table td,
+html[data-theme="dark"] body.page-medicao .medicao-table td,
+body.dark.page-medicao .medicao-table td {
+  color: rgba(226,232,240,0.92) !important;
+  border-bottom: 1px solid rgba(148,163,184,0.12);
+}
+
 
 /* =========================================================
-   ADMIN — CONTAS/USUARIOS — CHANGE LIST (FULL WIDTH + GRID)
-   Escopo: somente /admin/contas/usuario/ (changelist)
+   MEDI??O (N?VEL 2) ? FIX TIPOGRAFIA / CONTRASTE / LAYOUT
+   Escopo: .medicao-page (n?o depende de body class)
    ========================================================= */
-
-body.app-contas.model-usuario.change-list #container,
-body.app-contas.model-usuario.change-list #content,
-body.app-contas.model-usuario.change-list .content,
-body.app-contas.model-usuario.change-list #content-main {
-  max-width: none !important;
-  width: 100% !important;
+.medicao-page{
+  --m-ink: #0f172a;
+  --m-muted: rgba(15,23,42,.72);
+  --m-soft: rgba(15,23,42,.10);
+  --m-bg: #ffffff;
 }
 
-body.app-contas.model-usuario.change-list #content {
-  padding-left: 18px !important;
-  padding-right: 18px !important;
+.medicao-page .medicao-kpis{
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 14px 0 10px;
+}
+@media (max-width: 1100px){
+  .medicao-page .medicao-kpis{ grid-template-columns: 1fr; }
 }
 
-body.app-contas.model-usuario.change-list #content-main {
-  float: none !important;
+.medicao-page .kpi-card{
+  background: var(--m-bg);
+  border: 1px solid var(--m-soft);
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: 0 10px 25px rgba(2,6,23,.08);
+  min-height: 64px;
 }
 
-body.app-contas.model-usuario.change-list #changelist {
-  width: 100% !important;
-  max-width: none !important;
-  margin: 0 !important;
+.medicao-page .kpi-label{
+  font-size: .82rem;
+  font-weight: 800;
+  color: var(--m-muted);
+  letter-spacing: .02em;
+  text-transform: none;
+  margin: 0;
+}
 
+.medicao-page .kpi-value{
+  margin-top: 6px;
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: var(--m-ink) !important;     /* <- aqui mata o ?branco/apagado? */
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums; /* <- n?meros alinhados */
+}
+
+/* TABELA RESUMO ? evita ?desconfig? e d? legibilidade */
+.medicao-page .medicao-table-wrap{
+  width: 100%;
+  overflow-x: auto;
+  border-radius: 14px;
+}
+
+.medicao-page .medicao-table{
+  width: 100%;
+  min-width: 980px; /* mant?m colunas est?veis; wrapper d? scroll se precisar */
+  border-collapse: separate;
+  border-spacing: 0;
+  background: #fff;
+  border: 1px solid var(--m-soft);
+  border-radius: 14px;
+}
+
+.medicao-page .medicao-table th,
+.medicao-page .medicao-table td{
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(15,23,42,.08);
+  vertical-align: middle;
+  font-size: .90rem;
+  color: var(--m-ink);
+}
+
+.medicao-page .medicao-table th{
+  font-weight: 900;
+  background: rgba(56,189,248,.10);
+}
+
+.medicao-page .medicao-table td{
+  font-variant-numeric: tabular-nums;
+}
+
+.medicao-page .medicao-table tr:last-child td{
+  border-bottom: 0;
+}
+
+/* Totais: refor?o visual */
+.medicao-page .medicao-table .row-total td,
+.medicao-page .medicao-table tfoot td{
+  font-weight: 900;
+}
+
+/* GR?FICOS */
+.medicao-page .medicao-charts{
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 10px;
+}
+@media (max-width: 1100px){
+  .medicao-page .medicao-charts{ grid-template-columns: 1fr; }
+}
+
+.medicao-page .medicao-chart-card{
+  background: #fff;
+  border: 1px solid var(--m-soft);
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: 0 10px 25px rgba(2,6,23,.06);
+}
+
+.medicao-page .medicao-chart-card h4,
+.medicao-page .medicao-chart-card h5,
+.medicao-page .medicao-chart-card p{
+  color: var(--m-ink);
+}
+
+
+/* =====================================================================
+   MEDI??O ? FINAL OVERRIDE (FONTE/CONTRASTE) ? ?LTIMA PALAVRA
+   - Resolve n?meros brancos no light
+   - N?o mexe em .row/.col/.card (n?o quebra layout)
+   Escopo: somente quando body tem class="page-medicao"
+===================================================================== */
+
+body.page-medicao{
+  --medicao-fg: #0f172a;
+  --medicao-muted: #475569;
+  --medicao-card-bg: #ffffff;
+  --medicao-card-bd: rgba(15,23,42,.12);
+}
+
+html.dark body.page-medicao,
+body.dark.page-medicao,
+body.theme-dark.page-medicao,
+html[data-theme="dark"] body.page-medicao,
+body[data-theme="dark"].page-medicao{
+  --medicao-fg: #e5e7eb;
+  --medicao-muted: #94a3b8;
+  --medicao-card-bg: rgba(15,23,42,.45);
+  --medicao-card-bd: rgba(148,163,184,.22);
+}
+
+/* KPIs: aplica nos cards reais da Medi??o */
+body.page-medicao #medicao-kpis .medicao-kpi-card,
+body.page-medicao #medicao-kpis .totais-box{
+  background: var(--medicao-card-bg) !important;
+  border: 1px solid var(--medicao-card-bd) !important;
+}
+
+/* Labels e valores (classes reais do medicao.html) */
+body.page-medicao #medicao-kpis .medicao-kpi-label{
+  color: var(--medicao-muted) !important;
+  opacity: 1 !important;
+}
+
+body.page-medicao #medicao-kpis .medicao-kpi-value{
+  color: var(--medicao-fg) !important;
+  opacity: 1 !important;
+  font-weight: 800;
+}
+
+/* Se algum estilo global aplicar text-white/text-light nos KPIs */
+body.page-medicao #medicao-kpis .text-white,
+body.page-medicao #medicao-kpis .text-light{
+  color: var(--medicao-fg) !important;
+}
+
+/* Tabela do resumo (classes reais) */
+body.page-medicao #medicao-resumo .medicao-table th,
+body.page-medicao #medicao-resumo .medicao-table td{
+  color: var(--medicao-fg) !important;
+  opacity: 1 !important;
+}
+
+body.page-medicao #medicao-resumo .medicao-table th{
+  background: rgba(56,189,248,.10);
+}
+
+/* Total row */
+body.page-medicao #medicao-resumo .medicao-total-row td,
+body.page-medicao #medicao-resumo .row-total td{
+  color: var(--medicao-fg) !important;
+  font-weight: 700;
+}
+
+
+/* =====================================================================
+   MEDI??O ? FINAL FIX (LAYOUT + CONTRASTE) ? ?LTIMA PALAVRA
+   Escopo: .medicao-page (funciona mesmo se body_attrs falhar)
+   + body.page-medicao (quando existir)
+===================================================================== */
+
+body.page-medicao, .medicao-page{
+  --med-fg: #0f172a;
+  --med-muted: #475569;
+  --med-card-bg: #ffffff;
+  --med-card-bd: rgba(15,23,42,.12);
+  --med-surface: #f8fafc;
+}
+
+html.dark body.page-medicao,
+body.dark.page-medicao,
+body.theme-dark.page-medicao,
+html[data-theme="dark"] body.page-medicao,
+body[data-theme="dark"].page-medicao,
+html.dark .medicao-page,
+body.dark .medicao-page,
+body.theme-dark .medicao-page,
+html[data-theme="dark"] .medicao-page,
+body[data-theme="dark"] .medicao-page{
+  --med-fg: #e5e7eb;
+  --med-muted: #94a3b8;
+  --med-card-bg: rgba(15,23,42,.45);
+  --med-card-bd: rgba(148,163,184,.22);
+  --med-surface: rgba(15,23,42,.25);
+}
+
+/* Base tipografia */
+body.page-medicao .medicao-page,
+.medicao-page{
+  color: var(--med-fg) !important;
+}
+body.page-medicao .medicao-page .text-muted,
+.medicao-page .text-muted,
+body.page-medicao .medicao-page small,
+.medicao-page small{
+  color: var(--med-muted) !important;
+  opacity: 1 !important;
+}
+
+/* ===== FILTROS: grid enterprise ===== */
+body.page-medicao .medicao-filtros,
+.medicao-page .medicao-filtros{
   display: grid !important;
-  grid-template-columns: minmax(0, 1fr) 340px !important;
-  gap: 16px !important;
-  align-items: start !important;
+  grid-template-columns: repeat(4, minmax(220px, 1fr));
+  gap: 12px;
+  align-items: end;
 }
 
-/* tabela não pode estourar */
-body.app-contas.model-usuario.change-list #changelist-form { min-width: 0 !important; }
-body.app-contas.model-usuario.change-list .results { overflow-x: auto !important; }
-body.app-contas.model-usuario.change-list #result_list { width: 100% !important; }
-
-/* filtro na coluna direita, “colado” ao topo do miolo */
-body.app-contas.model-usuario.change-list #changelist-filter {
-  width: 340px !important;
-  float: none !important;
-  position: sticky !important;
-  top: 16px !important;
-  align-self: start !important;
-}
-
-/* responsivo: filtro vai pra baixo */
 @media (max-width: 1200px){
-  body.app-contas.model-usuario.change-list #changelist {
-    grid-template-columns: 1fr !important;
-  }
-  body.app-contas.model-usuario.change-list #changelist-filter {
-    width: 100% !important;
-    position: static !important;
+  body.page-medicao .medicao-filtros,
+  .medicao-page .medicao-filtros{
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
   }
 }
-
-/* fallback seguro para qualquer change-list */
-body.change-list #content,
-body.change-list #content-main {
-  max-width: none !important;
+@media (max-width: 700px){
+  body.page-medicao .medicao-filtros,
+  .medicao-page .medicao-filtros{
+    grid-template-columns: 1fr;
+  }
 }
 
-/* ADMIN — FULL WIDTH (sem travas) */
-#container, #content{
-  max-width:none !important;
-  width:100% !important;
-}
-#content{
-  margin:0 !important;
-  padding: 0 24px !important;
-  box-sizing: border-box;
-}
-#content-main{
-  float:none !important;
-  width:100% !important;
+body.page-medicao .medicao-actions,
+.medicao-page .medicao-actions{
+  display: flex !important;
+  gap: 10px;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
-/* CHANGE LIST — garante tabela ocupando a largura */
-.change-list #changelist,
-.change-list #changelist-form,
-.change-list #result_list{
-  width:100% !important;
-  max-width:none !important;
+/* ===== KPI CARDS: grid + cards ===== */
+body.page-medicao #medicao-kpis .medicao-kpis,
+.medicao-page #medicao-kpis .medicao-kpis{
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+  gap: 12px;
 }
 
-/* Banner vermelho — não pode capturar clique */
-#admin-css-custom-carregado,
-.admin-css-custom-carregado,
-.admin-css-toast,
-#adminCssToast{
-  pointer-events:none !important;
-  user-select:none !important;
+@media (max-width: 1100px){
+  body.page-medicao #medicao-kpis .medicao-kpis,
+  .medicao-page #medicao-kpis .medicao-kpis{
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+  }
 }
+@media (max-width: 700px){
+  body.page-medicao #medicao-kpis .medicao-kpis,
+  .medicao-page #medicao-kpis .medicao-kpis{
+    grid-template-columns: 1fr;
+  }
+}
+
+/* for?a que N?O vire ?texto corrido? */
+body.page-medicao #medicao-kpis .medicao-kpi-card,
+body.page-medicao #medicao-kpis .totais-box,
+.medicao-page #medicao-kpis .medicao-kpi-card,
+.medicao-page #medicao-kpis .totais-box{
+  display: block !important;
+  background: var(--med-card-bg) !important;
+  border: 1px solid var(--med-card-bd) !important;
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+
+body.page-medicao #medicao-kpis .medicao-kpi-label,
+.medicao-page #medicao-kpis .medicao-kpi-label{
+  color: var(--med-muted) !important;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  opacity: 1 !important;
+}
+
+body.page-medicao #medicao-kpis .medicao-kpi-value,
+.medicao-page #medicao-kpis .medicao-kpi-value{
+  color: var(--med-fg) !important;
+  font-size: 22px;
+  font-weight: 800;
+  margin-top: 6px;
+  opacity: 1 !important;
+}
+
+/* ===== RESUMO / TABELA: est?vel e leg?vel ===== */
+body.page-medicao #medicao-resumo .medicao-table-wrap,
+.medicao-page #medicao-resumo .medicao-table-wrap{
+  overflow-x: auto;
+}
+
+body.page-medicao #medicao-resumo .medicao-table,
+.medicao-page #medicao-resumo .medicao-table{
+  width: 100% !important;
+  table-layout: auto !important;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--med-card-bg) !important;
+  border: 1px solid var(--med-card-bd) !important;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+body.page-medicao #medicao-resumo .medicao-table th,
+body.page-medicao #medicao-resumo .medicao-table td,
+.medicao-page #medicao-resumo .medicao-table th,
+.medicao-page #medicao-resumo .medicao-table td{
+  color: var(--med-fg) !important;
+  opacity: 1 !important;
+  vertical-align: middle;
+  padding: 10px 12px;
+}
+
+body.page-medicao #medicao-resumo .medicao-table thead th,
+.medicao-page #medicao-resumo .medicao-table thead th{
+  background: rgba(56,189,248,.10) !important;
+  font-weight: 800;
+  border-bottom: 1px solid var(--med-card-bd) !important;
+}
+
+body.page-medicao #medicao-resumo .medicao-total-row td,
+body.page-medicao #medicao-resumo .row-total td,
+.medicao-page #medicao-resumo .medicao-total-row td,
+.medicao-page #medicao-resumo .row-total td{
+  font-weight: 800;
+}
+
+/* ===== GR?FICOS: cards coerentes ===== */
+body.page-medicao #medicao-graficos .medicao-chart-card,
+.medicao-page #medicao-graficos .medicao-chart-card{
+  background: var(--med-card-bg) !important;
+  border: 1px solid var(--med-card-bd) !important;
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+
+/* =====================================================================
+   MEDI??O ? FINAL FIX (LAYOUT + CONTRASTE) ? ?LTIMA PALAVRA
+   Escopo: .medicao-page (funciona mesmo se body_class falhar)
+   + body.page-medicao (quando existir)
+===================================================================== */
+
+body.page-medicao, .medicao-page{
+  --med-fg: #0f172a;
+  --med-muted: #475569;
+  --med-card-bg: #ffffff;
+  --med-card-bd: rgba(15,23,42,.12);
+  --med-surface: #f8fafc;
+}
+
+html.dark body.page-medicao,
+body.dark.page-medicao,
+body.theme-dark.page-medicao,
+html[data-theme="dark"] body.page-medicao,
+body[data-theme="dark"].page-medicao,
+html.dark .medicao-page,
+body.dark .medicao-page,
+body.theme-dark .medicao-page,
+html[data-theme="dark"] .medicao-page,
+body[data-theme="dark"] .medicao-page{
+  --med-fg: #e5e7eb;
+  --med-muted: #94a3b8;
+  --med-card-bg: rgba(15,23,42,.45);
+  --med-card-bd: rgba(148,163,184,.22);
+  --med-surface: rgba(15,23,42,.25);
+}
+
+body.page-medicao .medicao-page,
+.medicao-page{
+  color: var(--med-fg) !important;
+}
+
+body.page-medicao .medicao-page .text-muted,
+.medicao-page .text-muted,
+body.page-medicao .medicao-page small,
+.medicao-page small{
+  color: var(--med-muted) !important;
+  opacity: 1 !important;
+}
+
+/* FILTROS (grid) */
+body.page-medicao .medicao-filtros,
+.medicao-page .medicao-filtros{
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(220px, 1fr));
+  gap: 12px !important;
+  align-items: end;
+}
+
+@media (max-width: 1200px){
+  body.page-medicao .medicao-filtros,
+  .medicao-page .medicao-filtros{
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+  }
+}
+
+@media (max-width: 700px){
+  body.page-medicao .medicao-filtros,
+  .medicao-page .medicao-filtros{
+    grid-template-columns: 1fr;
+  }
+}
+
+body.page-medicao .medicao-actions,
+.medicao-page .medicao-actions{
+  display: flex !important;
+  gap: 10px !important;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* KPI GRID */
+body.page-medicao #medicao-kpis .medicao-kpis,
+.medicao-page #medicao-kpis .medicao-kpis{
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+  gap: 12px !important;
+}
+
+@media (max-width: 1100px){
+  body.page-medicao #medicao-kpis .medicao-kpis,
+  .medicao-page #medicao-kpis .medicao-kpis{
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+  }
+}
+
+@media (max-width: 700px){
+  body.page-medicao #medicao-kpis .medicao-kpis,
+  .medicao-page #medicao-kpis .medicao-kpis{
+    grid-template-columns: 1fr;
+  }
+}
+
+/* KPI CARD (for?a virar card) */
+body.page-medicao #medicao-kpis .medicao-kpi-card,
+body.page-medicao #medicao-kpis .totais-box,
+.medicao-page #medicao-kpis .medicao-kpi-card,
+.medicao-page #medicao-kpis .totais-box{
+  display: block !important;
+  background: var(--med-card-bg) !important;
+  border: 1px solid var(--med-card-bd) !important;
+  border-radius: 14px !important;
+  padding: 14px 16px !important;
+}
+
+body.page-medicao #medicao-kpis .medicao-kpi-label,
+.medicao-page #medicao-kpis .medicao-kpi-label{
+  color: var(--med-muted) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: .02em !important;
+  opacity: 1 !important;
+}
+
+body.page-medicao #medicao-kpis .medicao-kpi-value,
+.medicao-page #medicao-kpis .medicao-kpi-value{
+  color: var(--med-fg) !important;
+  font-size: 22px !important;
+  font-weight: 800 !important;
+  margin-top: 6px !important;
+  opacity: 1 !important;
+}
+
+/* TABELA RESUMO (est?vel) */
+body.page-medicao #medicao-resumo .medicao-table-wrap,
+.medicao-page #medicao-resumo .medicao-table-wrap{
+  overflow-x: auto !important;
+}
+
+body.page-medicao #medicao-resumo .medicao-table,
+.medicao-page #medicao-resumo .medicao-table{
+  width: 100% !important;
+  table-layout: auto !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  background: var(--med-card-bg) !important;
+  border: 1px solid var(--med-card-bd) !important;
+  border-radius: 14px !important;
+  overflow: hidden !important;
+}
+
+body.page-medicao #medicao-resumo .medicao-table th,
+body.page-medicao #medicao-resumo .medicao-table td,
+.medicao-page #medicao-resumo .medicao-table th,
+.medicao-page #medicao-resumo .medicao-table td{
+  color: var(--med-fg) !important;
+  opacity: 1 !important;
+  vertical-align: middle !important;
+  padding: 10px 12px !important;
+}
+
+body.page-medicao #medicao-resumo .medicao-table thead th,
+.medicao-page #medicao-resumo .medicao-table thead th{
+  background: rgba(56,189,248,.10) !important;
+  font-weight: 800 !important;
+  border-bottom: 1px solid var(--med-card-bd) !important;
+}
+
+body.page-medicao #medicao-resumo .medicao-total-row td,
+body.page-medicao #medicao-resumo .row-total td,
+.medicao-page #medicao-resumo .medicao-total-row td,
+.medicao-page #medicao-resumo .row-total td{
+  font-weight: 800 !important;
+}
+
+/* GR?FICOS (card) */
+body.page-medicao #medicao-graficos .medicao-chart-card,
+.medicao-page #medicao-graficos .medicao-chart-card{
+  background: var(--med-card-bg) !important;
+  border: 1px solid var(--med-card-bd) !important;
+  border-radius: 14px !important;
+  padding: 14px 16px !important;
+}
+
+/* =====================================================================
+   MEDI??O ? OVERRIDE FINAL (SEM body.page-medicao)
+   Usa somente .medicao-page / .doc-wrapper.page-medicao e IDs do template
+===================================================================== */
+
+.medicao-page,
+.doc-wrapper.page-medicao{
+  --med-fg: #0f172a;
+  --med-muted: #475569;
+  --med-card-bg: #ffffff;
+  --med-card-bd: rgba(15,23,42,.12);
+}
+
+html[data-theme="dark"] .medicao-page,
+body[data-theme="dark"] .medicao-page,
+html.dark .medicao-page,
+body.dark .medicao-page,
+html[data-theme="dark"] .doc-wrapper.page-medicao,
+body[data-theme="dark"] .doc-wrapper.page-medicao{
+  --med-fg: #e5e7eb;
+  --med-muted: #94a3b8;
+  --med-card-bg: rgba(15,23,42,.45);
+  --med-card-bd: rgba(148,163,184,.22);
+}
+
+.medicao-page * ,
+.doc-wrapper.page-medicao *{
+  opacity: 1 !important;
+}
+
+.medicao-page .text-muted,
+.medicao-page small,
+.doc-wrapper.page-medicao .text-muted,
+.doc-wrapper.page-medicao small{
+  color: var(--med-muted) !important;
+}
+
+/* =======================
+   FILTROS (grid)
+======================= */
+.medicao-page .medicao-filtros{
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(220px, 1fr)) !important;
+  gap: 12px !important;
+  align-items: end !important;
+}
+@media (max-width: 1200px){
+  .medicao-page .medicao-filtros{ grid-template-columns: repeat(2, minmax(220px, 1fr)) !important; }
+}
+@media (max-width: 700px){
+  .medicao-page .medicao-filtros{ grid-template-columns: 1fr !important; }
+}
+
+.medicao-page .medicao-actions{
+  display: flex !important;
+  gap: 10px !important;
+  justify-content: flex-end !important;
+  flex-wrap: wrap !important;
+}
+
+/* =======================
+   KPIs (6 cards)
+======================= */
+#medicao-kpis .medicao-kpis{
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(220px, 1fr)) !important;
+  gap: 12px !important;
+}
+@media (max-width: 1100px){
+  #medicao-kpis .medicao-kpis{ grid-template-columns: repeat(2, minmax(220px, 1fr)) !important; }
+}
+@media (max-width: 700px){
+  #medicao-kpis .medicao-kpis{ grid-template-columns: 1fr !important; }
+}
+
+#medicao-kpis .medicao-kpi-card,
+#medicao-kpis .totais-box{
+  background: var(--med-card-bg) !important;
+  border: 1px solid var(--med-card-bd) !important;
+  border-radius: 14px !important;
+  padding: 14px 16px !important;
+  box-shadow: 0 10px 25px rgba(2,6,23,.08) !important;
+}
+
+#medicao-kpis .medicao-kpi-label{
+  color: var(--med-muted) !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  letter-spacing: .02em !important;
+}
+
+#medicao-kpis .medicao-kpi-value{
+  color: var(--med-fg) !important;
+  font-size: 22px !important;
+  font-weight: 900 !important;
+  margin-top: 6px !important;
+}
+
+/* Mata qualquer ?texto branco? herdado */
+#medicao-kpis .text-white,
+#medicao-kpis .text-light{
+  color: var(--med-fg) !important;
+}
+
+/* =======================
+   TABELA RESUMO (est?vel)
+======================= */
+#medicao-resumo .medicao-table-wrap{
+  overflow-x: auto !important;
+}
+
+#medicao-resumo .medicao-table{
+  width: 100% !important;
+  table-layout: auto !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  background: var(--med-card-bg) !important;
+  border: 1px solid var(--med-card-bd) !important;
+  border-radius: 14px !important;
+  overflow: hidden !important;
+}
+
+#medicao-resumo .medicao-table th,
+#medicao-resumo .medicao-table td{
+  color: var(--med-fg) !important;
+  padding: 10px 12px !important;
+  vertical-align: middle !important;
+}
+
+#medicao-resumo .medicao-table thead th{
+  background: rgba(56,189,248,.10) !important;
+  font-weight: 900 !important;
+  border-bottom: 1px solid var(--med-card-bd) !important;
+}
+
+#medicao-resumo .medicao-total-row td,
+#medicao-resumo .row-total td,
+#medicao-resumo tr.total td{
+  font-weight: 900 !important;
+}
+
+/* =======================
+   GR?FICOS (cards)
+======================= */
+#medicao-graficos .medicao-charts{
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(320px, 1fr)) !important;
+  gap: 14px !important;
+}
+@media (max-width: 900px){
+  #medicao-graficos .medicao-charts{ grid-template-columns: 1fr !important; }
+}
+
+#medicao-graficos .medicao-chart-card{
+  background: var(--med-card-bg) !important;
+  border: 1px solid var(--med-card-bd) !important;
+  border-radius: 14px !important;
+  padding: 14px 16px !important;
+}
+
+#medicao-graficos .medicao-chart-card h6,
+#medicao-graficos .medicao-chart-card p{
+  color: var(--med-fg) !important;
+}
+
+/* === MEDICAO OVERRIDE FINAL ? MARKER v110 (NAO REMOVER) === */
+.medicao-page { outline: 4px solid rgba(255,0,0,.35) !important; outline-offset: -2px !important; }
+#medicao-kpis { outline: 3px dashed rgba(0,128,255,.35) !important; }
+
+/* Badge de prova (se isso n?o aparecer, n?o est? pegando o CSS certo) */
+#medicao-kpis::before{
+  content: "CSS OK: enterprise.css v110 (Medi??o override ativo)";
+  display: block;
+  font: 800 12px/1.2 system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  color: #0f172a;
+  background: rgba(56,189,248,.18);
+  border: 1px solid rgba(15,23,42,.12);
+  border-radius: 10px;
+  padding: 8px 10px;
+  margin: 0 0 10px 0;
+}
+
+/* ---------- Filtros em grid ---------- */
+.medicao-page .medicao-filtros{
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(220px, 1fr)) !important;
+  gap: 12px !important;
+  align-items: end !important;
+}
+@media (max-width: 1200px){
+  .medicao-page .medicao-filtros{ grid-template-columns: repeat(2, minmax(220px, 1fr)) !important; }
+}
+@media (max-width: 700px){
+  .medicao-page .medicao-filtros{ grid-template-columns: 1fr !important; }
+}
+.medicao-page .medicao-actions{
+  display: flex !important;
+  gap: 10px !important;
+  justify-content: flex-end !important;
+  flex-wrap: wrap !important;
+}
+
+/* ---------- KPIs em cards (6) ---------- */
+#medicao-kpis .medicao-kpis{
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(220px, 1fr)) !important;
+  gap: 12px !important;
+}
+@media (max-width: 1100px){
+  #medicao-kpis .medicao-kpis{ grid-template-columns: repeat(2, minmax(220px, 1fr)) !important; }
+}
+@media (max-width: 700px){
+  #medicao-kpis .medicao-kpis{ grid-template-columns: 1fr !important; }
+}
+#medicao-kpis .medicao-kpi-card,
+#medicao-kpis .totais-box{
+  background: #ffffff !important;
+  border: 1px solid rgba(15,23,42,.12) !important;
+  border-radius: 14px !important;
+  padding: 14px 16px !important;
+  box-shadow: 0 10px 25px rgba(2,6,23,.08) !important;
+}
+#medicao-kpis .medicao-kpi-label{
+  color: rgba(15,23,42,.72) !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  letter-spacing: .02em !important;
+}
+#medicao-kpis .medicao-kpi-value{
+  color: #0f172a !important;
+  font-size: 22px !important;
+  font-weight: 900 !important;
+  margin-top: 6px !important;
+}
+#medicao-kpis .text-white,
+#medicao-kpis .text-light{
+  color: #0f172a !important;
+}
+#medicao-kpis *{ opacity: 1 !important; }
+
+/* ---------- Tabela do resumo est?vel ---------- */
+#medicao-resumo .medicao-table-wrap{ overflow-x: auto !important; }
+#medicao-resumo .medicao-table{
+  width: 100% !important;
+  table-layout: auto !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(15,23,42,.12) !important;
+  border-radius: 14px !important;
+  overflow: hidden !important;
+}
+#medicao-resumo .medicao-table th,
+#medicao-resumo .medicao-table td{
+  color: #0f172a !important;
+  padding: 10px 12px !important;
+  vertical-align: middle !important;
+}
+#medicao-resumo .medicao-table thead th{
+  background: rgba(56,189,248,.10) !important;
+  font-weight: 900 !important;
+  border-bottom: 1px solid rgba(15,23,42,.12) !important;
+}
+#medicao-resumo .medicao-total-row td,
+#medicao-resumo .row-total td,
+#medicao-resumo tr.total td{ font-weight: 900 !important; }
+
+
+/* ==========================================================
+   GED ENTERPRISE UI FOUNDATION — Sprint Visual Consolidation
+   Homepage / Automations / Shared Operational Components
+   ========================================================== */
+
+body.ged-enterprise-shell {
+  background:
+    radial-gradient(circle at 0% 0%, rgba(255,138,0,.11), transparent 34rem),
+    radial-gradient(circle at 90% 10%, rgba(56,189,248,.10), transparent 32rem),
+    linear-gradient(135deg, #020617 0%, #050b18 45%, #08111f 100%) !important;
+}
+
+body.ged-enterprise-shell .content {
+  padding: 1.2rem 1.4rem 1.8rem;
+}
+
+body.ged-enterprise-shell .content-inner {
+  max-width: 1680px;
+  margin: 0 auto;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  margin-bottom: 1.25rem;
+}
+
+.sidebar-nav {
+  list-style: none;
+  padding-left: 0;
+  margin: 0 0 1rem;
+}
+
+.sidebar-link {
+  text-decoration: none !important;
+}
+
+.topbar-enterprise {
+  position: relative;
+  overflow: hidden;
+}
+
+.topbar-title {
+  font-weight: 900;
+  letter-spacing: .04em;
+  font-size: .78rem;
+}
+
+.topbar-sub {
+  color: rgba(226,232,240,.68);
+  font-size: .78rem;
+}
+
+.topbar-user {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+}
+
+.topbar-user-name {
+  font-weight: 900;
+  font-size: .86rem;
+}
+
+.topbar-user-role {
+  color: rgba(226,232,240,.62);
+  font-size: .72rem;
+}
+
+.ged-home {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.ged-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 1rem;
+  border: 1px solid rgba(148,163,184,.18);
+  border-radius: 28px;
+  padding: clamp(1.15rem, 2vw, 1.7rem);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(255,138,0,.23), transparent 30rem),
+    radial-gradient(circle at 95% 10%, rgba(56,189,248,.19), transparent 26rem),
+    linear-gradient(135deg, rgba(15,23,42,.96), rgba(2,6,23,.94));
+  box-shadow: 0 24px 70px rgba(0,0,0,.30);
+  position: relative;
+  overflow: hidden;
+}
+
+.ged-hero::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 3px;
+  background: linear-gradient(90deg, #38BDF8, #FF8A00);
+}
+
+.ged-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  width: fit-content;
+  border-radius: 999px;
+  padding: .42rem .72rem;
+  border: 1px solid rgba(34,197,94,.28);
+  background: rgba(34,197,94,.10);
+  color: #bbf7d0;
+  font-size: .78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-bottom: .85rem;
+}
+
+.ged-status-dot {
+  width: .58rem;
+  height: .58rem;
+  border-radius: 999px;
+  background: #22c55e;
+  box-shadow: 0 0 0 .28rem rgba(34,197,94,.12);
+}
+
+.ged-hero h1 {
+  color: #f8fafc;
+  font-weight: 950;
+  letter-spacing: -.06em;
+  line-height: .98;
+  font-size: clamp(2rem, 4vw, 4.4rem);
+  margin: 0;
+}
+
+.ged-hero p {
+  color: rgba(226,232,240,.76);
+  max-width: 820px;
+  margin: .9rem 0 0;
+  font-size: 1rem;
+}
+
+.ged-hero-actions,
+.ged-card-actions,
+.ged-panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .62rem;
+  margin-top: 1.05rem;
+}
+
+.ged-hero-side {
+  border: 1px solid rgba(148,163,184,.18);
+  border-radius: 22px;
+  padding: 1rem;
+  background: rgba(15,23,42,.66);
+  backdrop-filter: blur(10px);
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.ged-hero-side span,
+.ged-hero-side small {
+  color: rgba(226,232,240,.62);
+}
+
+.ged-hero-side strong {
+  color: #fff;
+  font-size: 1.35rem;
+  line-height: 1.05;
+  margin: .45rem 0;
+}
+
+.ged-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  border-radius: 999px;
+  border: 1px solid rgba(148,163,184,.22);
+  padding: .56rem .9rem;
+  font-size: .84rem;
+  font-weight: 900;
+  text-decoration: none !important;
+  transition: transform .16s ease, filter .16s ease, border-color .16s ease;
+  cursor: pointer;
+}
+
+.ged-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+}
+
+.ged-btn-primary {
+  background: linear-gradient(135deg, #FF8A00, #FDBA74);
+  color: #111827 !important;
+  border-color: rgba(253,186,116,.55);
+}
+
+.ged-btn-ghost {
+  background: rgba(15,23,42,.68);
+  color: #e5e7eb !important;
+  border-color: rgba(148,163,184,.24);
+}
+
+.ged-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: .8rem;
+}
+
+.ged-kpi-card {
+  border: 1px solid rgba(148,163,184,.16);
+  border-radius: 20px;
+  padding: 1rem;
+  background:
+    linear-gradient(145deg, rgba(15,23,42,.92), rgba(11,18,32,.74));
+  color: #e5e7eb !important;
+  box-shadow: 0 14px 34px rgba(0,0,0,.20);
+  text-decoration: none !important;
+  min-height: 118px;
+  transition: transform .16s ease, border-color .16s ease;
+}
+
+.ged-kpi-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(56,189,248,.42);
+}
+
+.ged-kpi-card span {
+  color: rgba(226,232,240,.62);
+  font-size: .74rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+.ged-kpi-card strong {
+  display: block;
+  color: #fff;
+  font-size: clamp(1.55rem, 2vw, 2.25rem);
+  letter-spacing: -.05em;
+  margin-top: .2rem;
+}
+
+.ged-kpi-card small {
+  color: rgba(226,232,240,.58);
+}
+
+.ged-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+  margin-top: .25rem;
+}
+
+.ged-section-head h2,
+.ged-panel h2 {
+  color: #f8fafc;
+  font-size: 1.25rem;
+  font-weight: 950;
+  letter-spacing: -.04em;
+  margin: 0;
+}
+
+.ged-section-head p,
+.ged-panel-head p {
+  color: rgba(226,232,240,.60);
+  margin: .2rem 0 0;
+}
+
+.ged-module-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .9rem;
+}
+
+.ged-module-card,
+.ged-panel {
+  border: 1px solid rgba(148,163,184,.16);
+  border-radius: 24px;
+  background:
+    linear-gradient(145deg, rgba(15,23,42,.92), rgba(11,18,32,.78));
+  box-shadow: 0 18px 48px rgba(0,0,0,.22);
+  padding: 1rem;
+}
+
+.ged-module-top,
+.ged-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: .8rem;
+}
+
+.ged-module-icon {
+  width: 50px;
+  height: 50px;
+  flex: 0 0 auto;
+  border-radius: 17px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, rgba(56,189,248,.18), rgba(255,138,0,.18));
+  color: #7dd3fc;
+  font-size: 1.35rem;
+}
+
+.ged-module-title {
+  flex: 1;
+}
+
+.ged-module-title h3 {
+  color: #fff;
+  font-size: 1.08rem;
+  font-weight: 950;
+  letter-spacing: -.03em;
+  margin: 0;
+}
+
+.ged-module-title span,
+.ged-module-description,
+.ged-health-row,
+.ged-timeline-item span,
+.ged-timeline-item small {
+  color: rgba(226,232,240,.62);
+}
+
+.ged-module-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: .35rem;
+}
+
+.ged-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  border-radius: 999px;
+  padding: .32rem .58rem;
+  background: rgba(56,189,248,.10);
+  color: #bae6fd;
+  border: 1px solid rgba(56,189,248,.20);
+  font-size: .68rem;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.ged-badge-health {
+  background: rgba(34,197,94,.10);
+  color: #bbf7d0;
+  border-color: rgba(34,197,94,.22);
+}
+
+.ged-module-description {
+  margin: .85rem 0;
+}
+
+.ged-metric-strip,
+.ged-snapshot-grid {
+  display: grid;
+  gap: .6rem;
+}
+
+.ged-metric-strip {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.ged-snapshot-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.ged-metric-strip div,
+.ged-snapshot-grid div {
+  border: 1px solid rgba(148,163,184,.13);
+  border-radius: 16px;
+  padding: .74rem;
+  background: rgba(2,6,23,.42);
+}
+
+.ged-metric-strip span,
+.ged-snapshot-grid span {
+  display: block;
+  color: rgba(226,232,240,.58);
+  font-size: .70rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+.ged-metric-strip strong,
+.ged-snapshot-grid strong {
+  color: #fff;
+  font-size: 1.12rem;
+  font-weight: 950;
+}
+
+.ged-health-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem .9rem;
+  align-items: center;
+  border-top: 1px solid rgba(148,163,184,.14);
+  margin-top: .85rem;
+  padding-top: .75rem;
+}
+
+.ged-health-row strong {
+  color: #bbf7d0;
+}
+
+.ged-action-form {
+  display: inline;
+}
+
+.ged-two-col {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(360px, .75fr);
+  gap: .9rem;
+}
+
+.ged-link {
+  color: #7dd3fc !important;
+  text-decoration: none !important;
+  font-weight: 900;
+}
+
+.ged-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: .68rem;
+  margin-top: .9rem;
+}
+
+.ged-timeline-item {
+  display: grid;
+  grid-template-columns: 14px 1fr;
+  gap: .7rem;
+  border: 1px solid rgba(148,163,184,.12);
+  border-radius: 16px;
+  padding: .72rem;
+  background: rgba(2,6,23,.36);
+}
+
+.ged-timeline-dot {
+  width: .65rem;
+  height: .65rem;
+  border-radius: 999px;
+  background: #38BDF8;
+  margin-top: .35rem;
+  box-shadow: 0 0 0 .28rem rgba(56,189,248,.12);
+}
+
+.ged-timeline-item strong {
+  display: block;
+  color: #f8fafc;
+}
+
+.ged-timeline-item span,
+.ged-timeline-item small {
+  display: block;
+}
+
+.ged-empty {
+  color: rgba(226,232,240,.62);
+  border: 1px dashed rgba(148,163,184,.20);
+  border-radius: 16px;
+  padding: 1rem;
+}
+
+@media (max-width: 1280px) {
+  .ged-kpi-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .ged-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .ged-two-col {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .ged-module-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ged-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ged-metric-strip,
+  .ged-snapshot-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ged-module-top,
+  .ged-panel-head {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 560px) {
+  .ged-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ged-hero-actions,
+  .ged-card-actions,
+  .ged-panel-actions {
+    flex-direction: column;
+  }
+
+  .ged-btn {
+    width: 100%;
+  }
+}
+
