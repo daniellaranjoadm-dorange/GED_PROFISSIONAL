@@ -1,0 +1,41 @@
+<section class="ops-card ops-executive-summary">
+  <div class="ops-card-header">
+    <div>
+      <h2>Executive Operations Summary</h2>
+      <p>Visão executiva consolidada da operação runtime.</p>
+    </div>
+    <span class="ops-badge">{{ ops.runtime.status|upper }}</span>
+  </div>
+
+  <div class="ops-grid ops-grid-5">
+    <div class="ops-metric">
+      <span>Runtime Score</span>
+      <strong>{{ ops.runtime.score }}</strong>
+      <small>health index</small>
+    </div>
+
+    <div class="ops-metric">
+      <span>Risk Score</span>
+      <strong>{{ predictive_runtime.risk.score|default:0 }}</strong>
+      <small>{{ predictive_runtime.risk.label|default:"STABLE" }}</small>
+    </div>
+
+    <div class="ops-metric">
+      <span>Active Alerts</span>
+      <strong>{{ ops.runtime.active_alerts }}</strong>
+      <small>alertas ativos</small>
+    </div>
+
+    <div class="ops-metric">
+      <span>Running Jobs</span>
+      <strong>{{ ops.runtime.running_jobs }}</strong>
+      <small>execuções</small>
+    </div>
+
+    <div class="ops-metric">
+      <span>Scheduler Stale</span>
+      <strong>{{ ops.runtime.stale_scheduler_states|default:0 }}</strong>
+      <small>states</small>
+    </div>
+  </div>
+</section>

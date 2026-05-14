@@ -1,0 +1,12 @@
+<div class="ops-ribbon ops-ribbon-{{ ops.runtime.status|default:'healthy' }}">
+  <div>
+    <strong>GED Operational Intelligence</strong>
+    <span>{{ ops.runtime.status|upper }} · Score {{ ops.runtime.score }}</span>
+  </div>
+
+  <div class="ops-ribbon-actions">
+    <span>Alerts {{ ops.runtime.active_alerts }}</span>
+    <span>Jobs {{ ops.runtime.running_jobs }}</span>
+    <span>Risk {{ predictive_runtime.risk.label|default:"STABLE" }}</span>
+  </div>
+</div>
