@@ -3,20 +3,21 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.conf.urls.i18n import set_language
-from django.shortcuts import render
 from apps.contas import views as contas_views
 
 urlpatterns = [
     path("admin/", admin.site.urls),
 
-    # 🌍 Portal público
-    path("", lambda request: render(request, "contas/portal.html"), name="portal"),
+    # Entrada oficial do sistema
+    # A landing antiga foi descontinuada.
+    # A raiz agora redireciona para o painel enterprise de automações.
+    path("", contas_views.landing, name="portal"),
 
-    # 🔐 Login / Logout
+    # Login / Logout
     path("login/", contas_views.login_view, name="login"),
     path("logout/", contas_views.logout_view, name="logout"),
 
-    # 🌐 Troca de idioma
+    # Troca de idioma
     path("set-language/", set_language, name="set_language"),
 
     # Apps
@@ -25,7 +26,7 @@ urlpatterns = [
     path("dashboard/", include(("apps.dashboard.urls", "dashboard"), namespace="dashboard")),
     path("automacoes/", include(("apps.automacoes.urls", "automacoes"), namespace="automacoes")),
 
-    # ✅ Solicitações de Acesso (IMPORTANTE: registra o namespace "solicitacoes")
+    # Solicitações de Acesso
     path("solicitar/", include(("apps.solicitacoes.urls", "solicitacoes"), namespace="solicitacoes")),
 ]
 

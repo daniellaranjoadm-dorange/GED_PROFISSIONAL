@@ -17,6 +17,7 @@ class PortalTemplateTests(SimpleTestCase):
         source = template_path.read_text(encoding="utf-8")
         self.assertLessEqual(source.count("{% block sidebar %}"), 1)
 
-    def test_root_route_renders_successfully(self):
+    def test_root_route_redirects_to_enterprise_painel(self):
         response = self.client.get("/")
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response["Location"], "/automacoes/")
