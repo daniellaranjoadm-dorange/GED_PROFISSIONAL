@@ -198,6 +198,28 @@ class RuntimeTrendAnalyticsService:
             ],
         }
 
+
+    @staticmethod
+    def _chronological_snapshots(
+        snapshots: list[RuntimeMetricSnapshot],
+    ) -> list[RuntimeMetricSnapshot]:
+        """
+        Normaliza a ordem antes de calcular tendência.
+
+        O dashboard envia snapshots em ordem decrescente por captured_at,
+        enquanto testes e chamadas diretas podem enviar em ordem cronológica.
+        Ordenar aqui evita inverter improving/degrading.
+        """
+        return sorted(
+            snapshots,
+            key=lambda snapshot: (
+                snapshot.captured_at or timezone.datetime.min.replace(
+                    tzinfo=timezone.get_current_timezone(),
+                ),
+                snapshot.pk or 0,
+            ),
+        )
+
     @classmethod
     def _trend(
         cls,
@@ -215,15 +237,23 @@ class RuntimeTrendAnalyticsService:
                 "label": "Sem dados suficientes",
             }
 
-        current = float(getattr(snapshots[0], field, 0) or 0)
-        previous = float(getattr(snapshots[1], field, 0) or 0)
+        ordered_snapshots = cls._chronological_snapshots(snapshots)
+        previous_snapshot = ordered_snapshots[-2]
+        current_snapshot = ordered_snapshots[-1]
+
+        current = float(getattr(current_snapshot, field, 0) or 0)
+        previous = float(getattr(previous_snapshot, field, 0) or 0)
         delta = round(current - previous, 2)
 
         if abs(delta) <= stable_threshold:
             direction = "stable"
             label = "Estável"
         else:
-            improved = delta > 0 if higher_is_better else delta < 0
+            if higher_is_better:
+                improved = current > previous
+            else:
+                improved = current < previous
+
             direction = "improving" if improved else "degrading"
             label = "Melhorando" if improved else "Degradando"
 
