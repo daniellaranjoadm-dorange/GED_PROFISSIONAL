@@ -28,8 +28,6 @@ from apps.automacoes.services.search_engine import buscar_global_enterprise
 from apps.automacoes.services.search_analytics import obter_search_analytics
 from apps.automacoes.services.km_index_jobs import executar_reindexacao_km_job
 from apps.automacoes.services.ops_center_service import OperationsCenterService
-from apps.automacoes.services.runtime_events import RuntimeEventStreamService
-from apps.automacoes.services.runtime_metrics import RuntimeMetricsService
 
 
 KM_DOCUMENTOS_BASE = Path(
@@ -2693,9 +2691,6 @@ def api_busca_global_ged(request):
 def ops_center(request):
     contexto = {
         "ops": OperationsCenterService.build_dashboard(),
-        "runtime_events": RuntimeEventStreamService.build_stream(limit=20),
-        "runtime_events_summary": RuntimeEventStreamService.summary(),
-        "metrics": RuntimeMetricsService.trend_summary(limit=24),
     }
 
     return render(
@@ -2705,38 +2700,12 @@ def ops_center(request):
     )
 
 
-@login_required
-def ops_center_runtime_partial(request):
-    return render(
-        request,
-        "automacoes/partials/_ops_runtime_observability.html",
-        {
-            "ops": OperationsCenterService.build_dashboard(),
-            "runtime_events": RuntimeEventStreamService.build_stream(limit=20),
-            "runtime_events_summary": RuntimeEventStreamService.summary(),
-            "metrics": RuntimeMetricsService.trend_summary(limit=24),
-        },
-    )
-
 
 @login_required
-def ops_center_events_partial(request):
+def ops_center_live_partial(request):
     return render(
         request,
-        "automacoes/partials/_ops_runtime_events.html",
-        {
-            "runtime_events": RuntimeEventStreamService.build_stream(limit=30),
-            "runtime_events_summary": RuntimeEventStreamService.summary(),
-        },
+        "automacoes/partials/_ops_live_operations.html",
+        LiveOperationsService.build_payload(),
     )
 
-
-@login_required
-def ops_center_metrics_partial(request):
-    return render(
-        request,
-        "automacoes/partials/_ops_runtime_metrics.html",
-        {
-            "metrics": RuntimeMetricsService.trend_summary(limit=24),
-        },
-    )
