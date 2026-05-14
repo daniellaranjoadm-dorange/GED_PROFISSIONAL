@@ -2,137 +2,458 @@
 
 {% block title %}Analytics de Busca GED{% endblock %}
 
-{% block content %}
-<div class="ds-page">
+{% block extra_head %}
+<style>
+  .obs-page {
+    width: min(100%, 1500px);
+    margin: 0 auto;
+    color: #e5e7eb;
+  }
 
-  <div class="d-flex justify-content-between flex-wrap gap-3 align-items-center mb-4">
+  .obs-hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 1rem;
+    border: 1px solid rgba(56, 189, 248, .22);
+    border-radius: 24px;
+    padding: 1.15rem 1.25rem;
+    margin-bottom: 1rem;
+    background:
+      radial-gradient(circle at 0% 0%, rgba(56, 189, 248, .18), transparent 28rem),
+      radial-gradient(circle at 100% 0%, rgba(255, 138, 0, .12), transparent 24rem),
+      linear-gradient(135deg, rgba(15, 23, 42, .98), rgba(2, 6, 23, .92));
+    box-shadow: 0 18px 44px rgba(2, 8, 23, .28);
+  }
+
+  .obs-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    color: #38bdf8;
+    font-size: .72rem;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: .10em;
+    margin-bottom: .35rem;
+  }
+
+  .obs-hero h1 {
+    margin: 0;
+    color: #fff;
+    font-size: clamp(1.55rem, 2.4vw, 2.35rem);
+    font-weight: 950;
+    letter-spacing: -.045em;
+    line-height: 1;
+  }
+
+  .obs-hero p {
+    margin: .45rem 0 0;
+    color: #93c5fd;
+    max-width: 900px;
+  }
+
+  .obs-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: .55rem;
+  }
+
+  .obs-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .42rem;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, .24);
+    padding: .55rem .88rem;
+    color: #e5e7eb;
+    text-decoration: none;
+    font-size: .82rem;
+    font-weight: 900;
+    white-space: nowrap;
+    background: rgba(15, 23, 42, .70);
+  }
+
+  .obs-btn:hover {
+    color: #fff;
+    border-color: rgba(56, 189, 248, .56);
+  }
+
+  .obs-btn-primary {
+    color: #06111f;
+    background: linear-gradient(135deg, #38bdf8, #60a5fa);
+    border-color: rgba(125, 211, 252, .55);
+  }
+
+  .obs-btn-warning {
+    color: #422006;
+    background: linear-gradient(135deg, #f59e0b, #fde68a);
+    border-color: rgba(253, 230, 138, .55);
+  }
+
+  .obs-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: .75rem;
+    margin-bottom: 1rem;
+  }
+
+  .obs-kpi-grid-6 {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .obs-kpi-grid-7 {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+
+  .obs-kpi {
+    display: block;
+    min-height: 106px;
+    border: 1px solid rgba(148, 163, 184, .18);
+    border-radius: 20px;
+    padding: .9rem;
+    background: linear-gradient(180deg, rgba(15, 23, 42, .86), rgba(15, 23, 42, .62));
+    color: #e5e7eb;
+    text-decoration: none;
+    box-shadow: 0 14px 34px rgba(2, 8, 23, .18);
+  }
+
+  .obs-kpi:hover {
+    color: #fff;
+    border-color: rgba(56, 189, 248, .42);
+    transform: translateY(-1px);
+  }
+
+  .obs-kpi span {
+    display: block;
+    color: #bfdbfe;
+    font-size: .66rem;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+  }
+
+  .obs-kpi strong {
+    display: block;
+    margin-top: .25rem;
+    color: #fff;
+    font-size: clamp(1.35rem, 1.9vw, 2.1rem);
+    line-height: 1;
+    letter-spacing: -.05em;
+  }
+
+  .obs-kpi small {
+    display: block;
+    margin-top: .35rem;
+    color: #94a3b8;
+  }
+
+  .obs-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .9rem;
+    margin-bottom: 1rem;
+  }
+
+  .obs-panel {
+    border: 1px solid rgba(148, 163, 184, .18);
+    border-radius: 22px;
+    padding: 1rem;
+    background: linear-gradient(180deg, rgba(15, 23, 42, .84), rgba(15, 23, 42, .64));
+    box-shadow: 0 16px 38px rgba(2, 8, 23, .20);
+  }
+
+  .obs-panel-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: .8rem;
+    margin-bottom: .8rem;
+  }
+
+  .obs-panel-head h2 {
+    margin: 0;
+    color: #fff;
+    font-size: 1.02rem;
+    font-weight: 950;
+    letter-spacing: -.025em;
+  }
+
+  .obs-panel-head p {
+    margin: .2rem 0 0;
+    color: #93c5fd;
+    font-size: .8rem;
+  }
+
+  .obs-chip,
+  .obs-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(56, 189, 248, .30);
+    border-radius: 999px;
+    padding: .3rem .65rem;
+    color: #bae6fd;
+    background: rgba(14, 165, 233, .14);
+    font-size: .68rem;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    white-space: nowrap;
+  }
+
+  .obs-badge-success {
+    color: #bbf7d0;
+    background: rgba(22, 163, 74, .15);
+    border-color: rgba(34, 197, 94, .30);
+  }
+
+  .obs-badge-danger {
+    color: #fecaca;
+    background: rgba(220, 38, 38, .15);
+    border-color: rgba(248, 113, 113, .32);
+  }
+
+  .obs-badge-warning {
+    color: #fde68a;
+    background: rgba(245, 158, 11, .14);
+    border-color: rgba(245, 158, 11, .32);
+  }
+
+  .obs-muted {
+    color: #94a3b8;
+  }
+
+  .obs-list {
+    display: flex;
+    flex-direction: column;
+    gap: .55rem;
+  }
+
+  .obs-list-item,
+  .obs-result {
+    display: block;
+    border: 1px solid rgba(148, 163, 184, .16);
+    border-radius: 16px;
+    padding: .78rem;
+    background: rgba(2, 6, 23, .30);
+    color: #e5e7eb;
+    text-decoration: none;
+  }
+
+  .obs-list-item:hover,
+  .obs-result:hover {
+    color: #fff;
+    border-color: rgba(56, 189, 248, .42);
+  }
+
+  .obs-list-item strong,
+  .obs-result strong {
+    color: #fff;
+  }
+
+  .obs-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid rgba(148, 163, 184, .14);
+    border-radius: 16px;
+  }
+
+  .obs-table {
+    width: 100%;
+    min-width: 880px;
+    border-collapse: collapse;
+  }
+
+  .obs-table th,
+  .obs-table td {
+    padding: .68rem .75rem;
+    border-bottom: 1px solid rgba(148, 163, 184, .12);
+    color: #dbeafe;
+    vertical-align: middle;
+    font-size: .82rem;
+  }
+
+  .obs-table th {
+    color: #93c5fd;
+    background: rgba(2, 6, 23, .34);
+    font-size: .68rem;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+  }
+
+  .obs-table tbody tr:hover {
+    background: rgba(56, 189, 248, .06);
+  }
+
+  .obs-table tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .obs-form-grid {
+    display: grid;
+    grid-template-columns: minmax(260px, 1fr) auto;
+    gap: .65rem;
+    align-items: end;
+  }
+
+  .obs-filter-grid {
+    display: grid;
+    grid-template-columns: minmax(260px, 1.6fr) minmax(160px, 1fr) minmax(150px, .8fr) auto auto;
+    gap: .65rem;
+    align-items: end;
+  }
+
+  .obs-filter-label {
+    display: block;
+    margin-bottom: .25rem;
+    color: #93c5fd;
+    font-size: .66rem;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    font-weight: 950;
+  }
+
+  .obs-chart-wrap {
+    min-height: 280px;
+    position: relative;
+  }
+
+  .obs-message {
+    max-width: 520px;
+    white-space: normal;
+  }
+
+  .obs-pagination .page-link {
+    background: rgba(15, 23, 42, .76);
+    color: #dbeafe;
+    border-color: rgba(148, 163, 184, .20);
+  }
+
+  .obs-pagination .page-item.disabled .page-link,
+  .obs-pagination .active .page-link {
+    background: linear-gradient(135deg, #38bdf8, #60a5fa);
+    color: #06111f;
+    border-color: rgba(125, 211, 252, .55);
+    font-weight: 900;
+  }
+
+  @media (max-width: 1280px) {
+    .obs-kpi-grid,
+    .obs-kpi-grid-6,
+    .obs-kpi-grid-7 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 900px) {
+    .obs-hero,
+    .obs-panel-head {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .obs-actions {
+      justify-content: flex-start;
+    }
+
+    .obs-grid-2,
+    .obs-form-grid,
+    .obs-filter-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .obs-kpi-grid,
+    .obs-kpi-grid-6,
+    .obs-kpi-grid-7 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 560px) {
+    .obs-kpi-grid,
+    .obs-kpi-grid-6,
+    .obs-kpi-grid-7 {
+      grid-template-columns: 1fr;
+    }
+
+    .obs-btn {
+      width: 100%;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="obs-page">
+  <section class="obs-hero">
     <div>
-      <h1 class="mb-1">📊 Analytics de Busca GED</h1>
-      <div class="text-muted">Observabilidade operacional das pesquisas globais.</div>
+      <div class="obs-eyebrow"><i class="bi bi-search"></i> Search Analytics</div>
+      <h1>Analytics de Busca GED</h1>
+      <p>Observabilidade operacional das pesquisas globais: volume, sucesso, termos sem resultado e usuários mais ativos.</p>
     </div>
 
-    <form method="get" class="d-flex gap-2">
+    <form method="get" class="obs-actions">
       <select name="dias" class="form-select">
         <option value="7" {% if periodo_dias == 7 %}selected{% endif %}>7 dias</option>
         <option value="30" {% if periodo_dias == 30 %}selected{% endif %}>30 dias</option>
         <option value="90" {% if periodo_dias == 90 %}selected{% endif %}>90 dias</option>
         <option value="365" {% if periodo_dias == 365 %}selected{% endif %}>365 dias</option>
       </select>
-      <button class="btn btn-primary">Atualizar</button>
+      <button class="obs-btn obs-btn-primary" type="submit"><i class="bi bi-arrow-repeat"></i> Atualizar</button>
     </form>
-  </div>
+  </section>
 
-  <div class="row g-3 mb-4">
-    <div class="col-md">
-      <div class="card shadow-sm border-0">
-        <div class="card-body">
-          <small class="text-muted fw-bold">BUSCAS</small>
-          <h2>{{ total_buscas }}</h2>
-        </div>
-      </div>
-    </div>
-    <div class="col-md">
-      <div class="card shadow-sm border-0">
-        <div class="card-body">
-          <small class="text-muted fw-bold">COM RESULTADO</small>
-          <h2>{{ buscas_com_resultado }}</h2>
-        </div>
-      </div>
-    </div>
-    <div class="col-md">
-      <div class="card shadow-sm border-0">
-        <div class="card-body">
-          <small class="text-muted fw-bold">SEM RESULTADO</small>
-          <h2>{{ buscas_sem_resultado }}</h2>
-        </div>
-      </div>
-    </div>
-    <div class="col-md">
-      <div class="card shadow-sm border-0">
-        <div class="card-body">
-          <small class="text-muted fw-bold">TAXA DE SUCESSO</small>
-          <h2>{{ taxa_sucesso_resultado }}%</h2>
-        </div>
-      </div>
-    </div>
-    <div class="col-md">
-      <div class="card shadow-sm border-0">
-        <div class="card-body">
-          <small class="text-muted fw-bold">TEMPO MÉDIO</small>
-          <h2>{{ duracao_media_ms }} ms</h2>
-        </div>
-      </div>
-    </div>
-  </div>
+  <section class="obs-kpi-grid">
+    <div class="obs-kpi"><span>Buscas</span><strong>{{ total_buscas }}</strong><small>no período</small></div>
+    <div class="obs-kpi"><span>Com resultado</span><strong>{{ buscas_com_resultado }}</strong><small>retornaram itens</small></div>
+    <div class="obs-kpi"><span>Sem resultado</span><strong>{{ buscas_sem_resultado }}</strong><small>sem match</small></div>
+    <div class="obs-kpi"><span>Taxa de sucesso</span><strong>{{ taxa_sucesso_resultado }}%</strong><small>efetividade</small></div>
+    <div class="obs-kpi"><span>Tempo médio</span><strong>{{ duracao_media_ms }} ms</strong><small>latência média</small></div>
+  </section>
 
-  <div class="row g-4">
-    <div class="col-lg-6">
-      <div class="card shadow-sm border-0 h-100">
-        <div class="card-header bg-white fw-bold">Top pesquisas</div>
-        <div class="card-body">
-          {% for item in top_termos %}
-            <div class="d-flex justify-content-between border-bottom py-2">
-              <div>
-                <strong>{{ item.termo }}</strong>
-                <div class="small text-muted">Média resultados: {{ item.media_resultados|floatformat:1 }}</div>
-              </div>
-              <span class="badge bg-primary align-self-center">{{ item.total }}</span>
-            </div>
-          {% empty %}
-            <div class="text-muted">Nenhuma busca registrada no período.</div>
-          {% endfor %}
-        </div>
+  <section class="obs-grid-2">
+    <div class="obs-panel">
+      <div class="obs-panel-head"><div><h2>Top pesquisas</h2><p>Termos mais buscados no período.</p></div><span class="obs-chip">Termos</span></div>
+      <div class="obs-list">
+        {% for item in top_termos %}
+          <div class="obs-list-item d-flex justify-content-between gap-3">
+            <div><strong>{{ item.termo }}</strong><div class="obs-muted small">Média resultados: {{ item.media_resultados|floatformat:1 }}</div></div>
+            <span class="obs-badge">{{ item.total }}</span>
+          </div>
+        {% empty %}<div class="obs-muted">Nenhuma busca registrada no período.</div>{% endfor %}
       </div>
     </div>
 
-    <div class="col-lg-6">
-      <div class="card shadow-sm border-0 h-100">
-        <div class="card-header bg-white fw-bold">Buscas sem resultado</div>
-        <div class="card-body">
-          {% for item in sem_resultado %}
-            <div class="d-flex justify-content-between border-bottom py-2">
-              <strong>{{ item.termo }}</strong>
-              <span class="badge bg-warning text-dark">{{ item.total }}</span>
-            </div>
-          {% empty %}
-            <div class="text-muted">Nenhuma busca sem resultado no período.</div>
-          {% endfor %}
-        </div>
+    <div class="obs-panel">
+      <div class="obs-panel-head"><div><h2>Buscas sem resultado</h2><p>Termos que precisam de atenção ou indexação.</p></div><span class="obs-badge obs-badge-warning">Sem match</span></div>
+      <div class="obs-list">
+        {% for item in sem_resultado %}
+          <div class="obs-list-item d-flex justify-content-between gap-3"><strong>{{ item.termo }}</strong><span class="obs-badge obs-badge-warning">{{ item.total }}</span></div>
+        {% empty %}<div class="obs-muted">Nenhuma busca sem resultado no período.</div>{% endfor %}
       </div>
     </div>
 
-    <div class="col-lg-6">
-      <div class="card shadow-sm border-0 h-100">
-        <div class="card-header bg-white fw-bold">Volume por tipo</div>
-        <div class="card-body">
-          {% for item in por_tipo %}
-            <div class="d-flex justify-content-between border-bottom py-2">
-              <strong>{{ item.tipo|default:"todos"|upper }}</strong>
-              <span class="badge bg-secondary">{{ item.total }}</span>
-            </div>
-          {% empty %}
-            <div class="text-muted">Sem dados.</div>
-          {% endfor %}
-        </div>
+    <div class="obs-panel">
+      <div class="obs-panel-head"><div><h2>Volume por tipo</h2><p>Distribuição das buscas por origem.</p></div><span class="obs-chip">Tipo</span></div>
+      <div class="obs-list">
+        {% for item in por_tipo %}
+          <div class="obs-list-item d-flex justify-content-between gap-3"><strong>{{ item.tipo|default:"todos"|upper }}</strong><span class="obs-badge">{{ item.total }}</span></div>
+        {% empty %}<div class="obs-muted">Sem dados.</div>{% endfor %}
       </div>
     </div>
 
-    <div class="col-lg-6">
-      <div class="card shadow-sm border-0 h-100">
-        <div class="card-header bg-white fw-bold">Usuários mais ativos</div>
-        <div class="card-body">
-          {% for item in usuarios_ativos %}
-            <div class="d-flex justify-content-between border-bottom py-2">
-              <strong>{{ item.usuario__username }}</strong>
-              <span class="badge bg-dark">{{ item.total }}</span>
-            </div>
-          {% empty %}
-            <div class="text-muted">Sem usuários registrados no período.</div>
-          {% endfor %}
-        </div>
+    <div class="obs-panel">
+      <div class="obs-panel-head"><div><h2>Usuários mais ativos</h2><p>Usuários com maior volume de pesquisa.</p></div><span class="obs-chip">Usuários</span></div>
+      <div class="obs-list">
+        {% for item in usuarios_ativos %}
+          <div class="obs-list-item d-flex justify-content-between gap-3"><strong>{{ item.usuario__username }}</strong><span class="obs-badge">{{ item.total }}</span></div>
+        {% empty %}<div class="obs-muted">Sem usuários registrados no período.</div>{% endfor %}
       </div>
     </div>
-  </div>
-
+  </section>
 </div>
 {% endblock %}

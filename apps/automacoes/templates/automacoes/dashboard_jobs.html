@@ -4,152 +4,464 @@
 
 {% block extra_head %}
 <style>
-  .jobs-hero {
-    border-radius: 22px;
-    background: linear-gradient(135deg, #0f172a, #1e293b);
-    color: #fff;
-    padding: 1.6rem;
-    box-shadow: 0 16px 38px rgba(15, 23, 42, .18);
-    border-bottom: 3px solid #ff8a00;
+  .obs-page {
+    width: min(100%, 1500px);
+    margin: 0 auto;
+    color: #e5e7eb;
   }
-  .jobs-card {
-    border: 1px solid rgba(148, 163, 184, .25);
-    border-radius: 18px;
-    background: #fff;
-    box-shadow: 0 .45rem 1.15rem rgba(15, 23, 42, .07);
+
+  .obs-hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 1rem;
+    border: 1px solid rgba(56, 189, 248, .22);
+    border-radius: 24px;
+    padding: 1.15rem 1.25rem;
+    margin-bottom: 1rem;
+    background:
+      radial-gradient(circle at 0% 0%, rgba(56, 189, 248, .18), transparent 28rem),
+      radial-gradient(circle at 100% 0%, rgba(255, 138, 0, .12), transparent 24rem),
+      linear-gradient(135deg, rgba(15, 23, 42, .98), rgba(2, 6, 23, .92));
+    box-shadow: 0 18px 44px rgba(2, 8, 23, .28);
   }
-  .jobs-kpi small {
-    color: #64748b;
-    text-transform: uppercase;
-    letter-spacing: .04em;
-    font-weight: 800;
-  }
-  .jobs-kpi h2 {
-    font-weight: 900;
-    color: #0f172a;
-  }
-  .status-pill {
-    border-radius: 999px;
-    padding: .28rem .65rem;
+
+  .obs-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    color: #38bdf8;
     font-size: .72rem;
-    font-weight: 800;
-    display: inline-block;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: .10em;
+    margin-bottom: .35rem;
   }
-  .status-success { background: #dcfce7; color: #166534; }
-  .status-failed { background: #fee2e2; color: #991b1b; }
-  .status-running { background: #dbeafe; color: #1d4ed8; }
-  .status-pending { background: #fef3c7; color: #92400e; }
-  .status-default { background: #e5e7eb; color: #374151; }
+
+  .obs-hero h1 {
+    margin: 0;
+    color: #fff;
+    font-size: clamp(1.55rem, 2.4vw, 2.35rem);
+    font-weight: 950;
+    letter-spacing: -.045em;
+    line-height: 1;
+  }
+
+  .obs-hero p {
+    margin: .45rem 0 0;
+    color: #93c5fd;
+    max-width: 900px;
+  }
+
+  .obs-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: .55rem;
+  }
+
+  .obs-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .42rem;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, .24);
+    padding: .55rem .88rem;
+    color: #e5e7eb;
+    text-decoration: none;
+    font-size: .82rem;
+    font-weight: 900;
+    white-space: nowrap;
+    background: rgba(15, 23, 42, .70);
+  }
+
+  .obs-btn:hover {
+    color: #fff;
+    border-color: rgba(56, 189, 248, .56);
+  }
+
+  .obs-btn-primary {
+    color: #06111f;
+    background: linear-gradient(135deg, #38bdf8, #60a5fa);
+    border-color: rgba(125, 211, 252, .55);
+  }
+
+  .obs-btn-warning {
+    color: #422006;
+    background: linear-gradient(135deg, #f59e0b, #fde68a);
+    border-color: rgba(253, 230, 138, .55);
+  }
+
+  .obs-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: .75rem;
+    margin-bottom: 1rem;
+  }
+
+  .obs-kpi-grid-6 {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .obs-kpi-grid-7 {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+
+  .obs-kpi {
+    display: block;
+    min-height: 106px;
+    border: 1px solid rgba(148, 163, 184, .18);
+    border-radius: 20px;
+    padding: .9rem;
+    background: linear-gradient(180deg, rgba(15, 23, 42, .86), rgba(15, 23, 42, .62));
+    color: #e5e7eb;
+    text-decoration: none;
+    box-shadow: 0 14px 34px rgba(2, 8, 23, .18);
+  }
+
+  .obs-kpi:hover {
+    color: #fff;
+    border-color: rgba(56, 189, 248, .42);
+    transform: translateY(-1px);
+  }
+
+  .obs-kpi span {
+    display: block;
+    color: #bfdbfe;
+    font-size: .66rem;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+  }
+
+  .obs-kpi strong {
+    display: block;
+    margin-top: .25rem;
+    color: #fff;
+    font-size: clamp(1.35rem, 1.9vw, 2.1rem);
+    line-height: 1;
+    letter-spacing: -.05em;
+  }
+
+  .obs-kpi small {
+    display: block;
+    margin-top: .35rem;
+    color: #94a3b8;
+  }
+
+  .obs-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .9rem;
+    margin-bottom: 1rem;
+  }
+
+  .obs-panel {
+    border: 1px solid rgba(148, 163, 184, .18);
+    border-radius: 22px;
+    padding: 1rem;
+    background: linear-gradient(180deg, rgba(15, 23, 42, .84), rgba(15, 23, 42, .64));
+    box-shadow: 0 16px 38px rgba(2, 8, 23, .20);
+  }
+
+  .obs-panel-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: .8rem;
+    margin-bottom: .8rem;
+  }
+
+  .obs-panel-head h2 {
+    margin: 0;
+    color: #fff;
+    font-size: 1.02rem;
+    font-weight: 950;
+    letter-spacing: -.025em;
+  }
+
+  .obs-panel-head p {
+    margin: .2rem 0 0;
+    color: #93c5fd;
+    font-size: .8rem;
+  }
+
+  .obs-chip,
+  .obs-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(56, 189, 248, .30);
+    border-radius: 999px;
+    padding: .3rem .65rem;
+    color: #bae6fd;
+    background: rgba(14, 165, 233, .14);
+    font-size: .68rem;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    white-space: nowrap;
+  }
+
+  .obs-badge-success {
+    color: #bbf7d0;
+    background: rgba(22, 163, 74, .15);
+    border-color: rgba(34, 197, 94, .30);
+  }
+
+  .obs-badge-danger {
+    color: #fecaca;
+    background: rgba(220, 38, 38, .15);
+    border-color: rgba(248, 113, 113, .32);
+  }
+
+  .obs-badge-warning {
+    color: #fde68a;
+    background: rgba(245, 158, 11, .14);
+    border-color: rgba(245, 158, 11, .32);
+  }
+
+  .obs-muted {
+    color: #94a3b8;
+  }
+
+  .obs-list {
+    display: flex;
+    flex-direction: column;
+    gap: .55rem;
+  }
+
+  .obs-list-item,
+  .obs-result {
+    display: block;
+    border: 1px solid rgba(148, 163, 184, .16);
+    border-radius: 16px;
+    padding: .78rem;
+    background: rgba(2, 6, 23, .30);
+    color: #e5e7eb;
+    text-decoration: none;
+  }
+
+  .obs-list-item:hover,
+  .obs-result:hover {
+    color: #fff;
+    border-color: rgba(56, 189, 248, .42);
+  }
+
+  .obs-list-item strong,
+  .obs-result strong {
+    color: #fff;
+  }
+
+  .obs-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid rgba(148, 163, 184, .14);
+    border-radius: 16px;
+  }
+
+  .obs-table {
+    width: 100%;
+    min-width: 880px;
+    border-collapse: collapse;
+  }
+
+  .obs-table th,
+  .obs-table td {
+    padding: .68rem .75rem;
+    border-bottom: 1px solid rgba(148, 163, 184, .12);
+    color: #dbeafe;
+    vertical-align: middle;
+    font-size: .82rem;
+  }
+
+  .obs-table th {
+    color: #93c5fd;
+    background: rgba(2, 6, 23, .34);
+    font-size: .68rem;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+  }
+
+  .obs-table tbody tr:hover {
+    background: rgba(56, 189, 248, .06);
+  }
+
+  .obs-table tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .obs-form-grid {
+    display: grid;
+    grid-template-columns: minmax(260px, 1fr) auto;
+    gap: .65rem;
+    align-items: end;
+  }
+
+  .obs-filter-grid {
+    display: grid;
+    grid-template-columns: minmax(260px, 1.6fr) minmax(160px, 1fr) minmax(150px, .8fr) auto auto;
+    gap: .65rem;
+    align-items: end;
+  }
+
+  .obs-filter-label {
+    display: block;
+    margin-bottom: .25rem;
+    color: #93c5fd;
+    font-size: .66rem;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    font-weight: 950;
+  }
+
+  .obs-chart-wrap {
+    min-height: 280px;
+    position: relative;
+  }
+
+  .obs-message {
+    max-width: 520px;
+    white-space: normal;
+  }
+
+  .obs-pagination .page-link {
+    background: rgba(15, 23, 42, .76);
+    color: #dbeafe;
+    border-color: rgba(148, 163, 184, .20);
+  }
+
+  .obs-pagination .page-item.disabled .page-link,
+  .obs-pagination .active .page-link {
+    background: linear-gradient(135deg, #38bdf8, #60a5fa);
+    color: #06111f;
+    border-color: rgba(125, 211, 252, .55);
+    font-weight: 900;
+  }
+
+  @media (max-width: 1280px) {
+    .obs-kpi-grid,
+    .obs-kpi-grid-6,
+    .obs-kpi-grid-7 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 900px) {
+    .obs-hero,
+    .obs-panel-head {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .obs-actions {
+      justify-content: flex-start;
+    }
+
+    .obs-grid-2,
+    .obs-form-grid,
+    .obs-filter-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .obs-kpi-grid,
+    .obs-kpi-grid-6,
+    .obs-kpi-grid-7 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 560px) {
+    .obs-kpi-grid,
+    .obs-kpi-grid-6,
+    .obs-kpi-grid-7 {
+      grid-template-columns: 1fr;
+    }
+
+    .obs-btn {
+      width: 100%;
+    }
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="ds-page">
-
-  <div class="jobs-hero mb-4">
-    <div class="d-flex justify-content-between flex-wrap gap-3 align-items-center">
-      <div>
-        <h1 class="mb-1">⚙️ Dashboard de Jobs GED</h1>
-        <div class="text-white-50">Monitoramento operacional da camada de processamento enterprise.</div>
-      </div>
-      <div class="text-end">
-        <div class="small text-white-50">Taxa de sucesso</div>
-        <div class="display-6 fw-bold">{{ taxa_sucesso }}%</div>
-      </div>
+<div class="obs-page">
+  <section class="obs-hero">
+    <div>
+      <div class="obs-eyebrow"><i class="bi bi-cpu"></i> Job Runtime</div>
+      <h1>Dashboard de Jobs GED</h1>
+      <p>Monitoramento operacional da camada de processamento enterprise: execuções, falhas, duração e status.</p>
     </div>
-  </div>
+    <div class="obs-kpi" style="min-width: 190px;">
+      <span>Taxa de sucesso</span>
+      <strong>{{ taxa_sucesso }}%</strong>
+      <small>jobs finalizados</small>
+    </div>
+  </section>
 
-  <div class="row g-3 mb-4">
-    <div class="col-md"><div class="card jobs-card jobs-kpi"><div class="card-body"><small>Total</small><h2>{{ total }}</h2></div></div></div>
-    <div class="col-md"><div class="card jobs-card jobs-kpi"><div class="card-body"><small>Success</small><h2>{{ total_success }}</h2></div></div></div>
-    <div class="col-md"><div class="card jobs-card jobs-kpi"><div class="card-body"><small>Failed</small><h2>{{ total_failed }}</h2></div></div></div>
-    <div class="col-md"><div class="card jobs-card jobs-kpi"><div class="card-body"><small>Running</small><h2>{{ total_running }}</h2></div></div></div>
-    <div class="col-md"><div class="card jobs-card jobs-kpi"><div class="card-body"><small>Duração média</small><h2>{{ duracao_media_fmt }}</h2></div></div></div>
-  </div>
+  <section class="obs-kpi-grid">
+    <div class="obs-kpi"><span>Total</span><strong>{{ total }}</strong><small>execuções</small></div>
+    <div class="obs-kpi"><span>Success</span><strong>{{ total_success }}</strong><small>concluídos</small></div>
+    <div class="obs-kpi"><span>Failed</span><strong>{{ total_failed }}</strong><small>falhas</small></div>
+    <div class="obs-kpi"><span>Running</span><strong>{{ total_running }}</strong><small>em execução</small></div>
+    <div class="obs-kpi"><span>Duração média</span><strong>{{ duracao_media_fmt }}</strong><small>tempo médio</small></div>
+  </section>
 
-  <div class="row g-4 mb-4">
-    <div class="col-lg-6">
-      <div class="jobs-card p-4 h-100">
-        <h5 class="fw-bold mb-3">Status dos Jobs</h5>
+  <section class="obs-grid-2">
+    <div class="obs-panel">
+      <div class="obs-panel-head"><div><h2>Status dos Jobs</h2><p>Distribuição por status de execução.</p></div><span class="obs-chip">Status</span></div>
+      <div class="obs-list">
         {% for item in por_status %}
-          <div class="d-flex justify-content-between border-bottom py-2">
-            <strong>{{ item.status|default:"SEM STATUS" }}</strong>
-            <span>{{ item.total }}</span>
-          </div>
-        {% empty %}
-          <div class="text-muted">Nenhum job registrado ainda.</div>
-        {% endfor %}
+          <div class="obs-list-item d-flex justify-content-between gap-3"><strong>{{ item.status|default:"SEM STATUS" }}</strong><span class="obs-badge">{{ item.total }}</span></div>
+        {% empty %}<div class="obs-muted">Nenhum job registrado ainda.</div>{% endfor %}
       </div>
     </div>
 
-    <div class="col-lg-6">
-      <div class="jobs-card p-4 h-100">
-        <h5 class="fw-bold mb-3">Jobs mais executados</h5>
+    <div class="obs-panel">
+      <div class="obs-panel-head"><div><h2>Jobs mais executados</h2><p>Rotinas com maior recorrência operacional.</p></div><span class="obs-chip">Ranking</span></div>
+      <div class="obs-list">
         {% for item in por_job %}
-          <div class="d-flex justify-content-between border-bottom py-2">
-            <strong>{{ item.job_name|default:"SEM NOME" }}</strong>
-            <span>{{ item.total }}</span>
-          </div>
-        {% empty %}
-          <div class="text-muted">Nenhum job registrado ainda.</div>
-        {% endfor %}
+          <div class="obs-list-item d-flex justify-content-between gap-3"><strong>{{ item.job_name|default:"SEM NOME" }}</strong><span class="obs-badge">{{ item.total }}</span></div>
+        {% empty %}<div class="obs-muted">Nenhum job registrado ainda.</div>{% endfor %}
       </div>
     </div>
-  </div>
+  </section>
 
-  <div class="jobs-card p-4">
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-      <h5 class="fw-bold mb-0">Últimas execuções</h5>
-      {% if ultima_falha %}
-        <span class="text-danger small fw-bold">Última falha: {{ ultima_falha.created_at }}</span>
-      {% endif %}
+  <section class="obs-panel">
+    <div class="obs-panel-head">
+      <div><h2>Últimas execuções</h2><p>Histórico recente do runtime de jobs.</p></div>
+      {% if ultima_falha %}<span class="obs-badge obs-badge-danger">Última falha: {{ ultima_falha.created_at }}</span>{% endif %}
     </div>
 
-    <div class="table-responsive">
-      <table class="table align-middle">
+    <div class="obs-table-wrap">
+      <table class="obs-table">
         <thead>
-          <tr>
-            <th>Job</th>
-            <th>Status</th>
-            <th>Duração</th>
-            <th>Início</th>
-            <th>Fim</th>
-            <th>Usuário</th>
-            <th>Erro</th>
-          </tr>
+          <tr><th>Job</th><th>Status</th><th>Duração</th><th>Início</th><th>Fim</th><th>Usuário</th><th>Erro</th></tr>
         </thead>
         <tbody>
           {% for job in recentes %}
             <tr>
               <td><strong>{{ job.job_name }}</strong></td>
               <td>
-                {% if job.status == "SUCCESS" %}
-                  <span class="status-pill status-success">SUCCESS</span>
-                {% elif job.status == "FAILED" %}
-                  <span class="status-pill status-failed">FAILED</span>
-                {% elif job.status == "RUNNING" %}
-                  <span class="status-pill status-running">RUNNING</span>
-                {% elif job.status == "PENDING" %}
-                  <span class="status-pill status-pending">PENDING</span>
-                {% else %}
-                  <span class="status-pill status-default">{{ job.status }}</span>
-                {% endif %}
+                {% if job.status == "SUCCESS" %}<span class="obs-badge obs-badge-success">SUCCESS</span>
+                {% elif job.status == "FAILED" %}<span class="obs-badge obs-badge-danger">FAILED</span>
+                {% elif job.status == "RUNNING" %}<span class="obs-badge">RUNNING</span>
+                {% elif job.status == "PENDING" %}<span class="obs-badge obs-badge-warning">PENDING</span>
+                {% else %}<span class="obs-badge">{{ job.status }}</span>{% endif %}
               </td>
               <td>{{ job.duration_ms|default:"-" }} ms</td>
               <td>{{ job.started_at|default:"-" }}</td>
               <td>{{ job.finished_at|default:"-" }}</td>
               <td>{% if job.created_by %}{{ job.created_by.username }}{% else %}-{% endif %}</td>
-              <td class="small text-danger">{{ job.error|default:"" }}</td>
+              <td class="small obs-badge-danger">{{ job.error|default:"" }}</td>
             </tr>
-          {% empty %}
-            <tr>
-              <td colspan="7" class="text-muted">Nenhuma execução registrada.</td>
-            </tr>
-          {% endfor %}
+          {% empty %}<tr><td colspan="7" class="obs-muted">Nenhuma execução registrada.</td></tr>{% endfor %}
         </tbody>
       </table>
     </div>
-  </div>
-
+  </section>
 </div>
 {% endblock %}
