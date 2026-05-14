@@ -26,6 +26,25 @@ urlpatterns = [
         name="ops_center_events_partial",
     ),
 
+    # Legacy dashboard compatibility routes
+    path(
+        "dashboard-search/",
+        views.ops_center,
+        name="dashboard_search",
+    ),
+
+    path(
+        "dashboard-jobs/",
+        views.ops_center,
+        name="dashboard_jobs",
+    ),
+
+    path(
+        "dashboard-scheduler/",
+        views.ops_center,
+        name="dashboard_scheduler",
+    ),
+
     # Automacoes principais
     path(
         "executar-atualizar-ld/",
