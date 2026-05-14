@@ -1,134 +1,342 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>Unified Operations Center</h1>
+<meta http-equiv="refresh" content="30">
 
-<p>Última atualização: {{ ops.updated_at }}</p>
+<style>
+  .ops-shell {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 1.25rem;
+  }
 
-<section>
-  <h2>Runtime Health</h2>
-  <p>Status: <strong>{{ ops.runtime.status }}</strong></p>
-  <p>Score: <strong>{{ ops.runtime.score }}</strong></p>
-  <p>Alertas ativos: {{ ops.runtime.active_alerts }}</p>
-  <p>Jobs falhos: {{ ops.runtime.failed_jobs }}</p>
-  <p>Jobs em execução: {{ ops.runtime.running_jobs }}</p>
-  <p>Scheduler stale: {{ ops.runtime.stale_scheduler_states }}</p>
-</section>
+  .ops-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: flex-start;
+    margin-bottom: 1.25rem;
+  }
 
-<hr>
+  .ops-title h1 {
+    margin: 0;
+    font-size: 1.8rem;
+  }
 
-<section>
-  <h2>Scheduler</h2>
-  <p>Total: {{ ops.scheduler.total }}</p>
-  <p>Ativos: {{ ops.scheduler.enabled }}</p>
-  <p>Desativados: {{ ops.scheduler.disabled }}</p>
+  .ops-muted {
+    color: #6c757d;
+    font-size: 0.92rem;
+  }
 
-  <table>
-    <thead>
-      <tr>
-        <th>Scheduler State</th>
-        <th>Status</th>
-        <th>Heartbeat</th>
-        <th>Próxima execução</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for state in ops.scheduler.latest_states %}
-        <tr>
-          <td>{{ state.job_name|default:state.name|default:state }}</td>
-          <td>{{ state.last_status|default:"-" }}</td>
-          <td>{{ state.heartbeat|default:state.last_heartbeat|default:"-" }}</td>
-          <td>{{ state.next_run_at|default:"-" }}</td>
-        </tr>
-      {% empty %}
-        <tr>
-          <td colspan="4">Nenhum estado de scheduler encontrado.</td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</section>
+  .ops-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
 
-<hr>
+  .ops-btn {
+    display: inline-block;
+    padding: 0.55rem 0.8rem;
+    border-radius: 0.6rem;
+    border: 1px solid #dee2e6;
+    text-decoration: none;
+    color: inherit;
+    background: #fff;
+  }
 
-<section>
-  <h2>Jobs de Hoje</h2>
-  <p>Total: {{ ops.jobs.total_today }}</p>
-  <p>Sucesso: {{ ops.jobs.success_today }}</p>
-  <p>Falha: {{ ops.jobs.failed_today }}</p>
-  <p>Executando: {{ ops.jobs.running }}</p>
-  <p>Success rate: {{ ops.jobs.success_rate }}%</p>
-  <p>Duração média: {{ ops.jobs.avg_duration|default:"-" }}</p>
-</section>
+  .ops-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
 
-<hr>
+  .ops-card {
+    border: 1px solid #e9ecef;
+    border-radius: 0.9rem;
+    background: #fff;
+    padding: 1rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+  }
 
-<section>
-  <h2>Últimos Jobs</h2>
+  .ops-card h2,
+  .ops-card h3 {
+    margin-top: 0;
+  }
 
-  <table>
-    <thead>
-      <tr>
-        <th>Job</th>
-        <th>Status</th>
-        <th>Duração</th>
-        <th>Criado em</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for job in ops.jobs.latest_jobs %}
-        <tr>
-          <td>{{ job.job_name|default:job.name|default:job.nome|default:job }}</td>
-          <td>{{ job.status|default:"-" }}</td>
-          <td>{{ job.duration|default:job.duration_seconds|default:job.duracao|default:job.duracao_segundos|default:"-" }}</td>
-          <td>{{ job.created_at|default:job.criado_em|default:job.started_at|default:job.iniciado_em|default:"-" }}</td>
-        </tr>
-      {% empty %}
-        <tr>
-          <td colspan="4">Nenhum job encontrado.</td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</section>
+  .ops-kpi {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0.25rem 0;
+  }
 
-<hr>
+  .ops-badge {
+    display: inline-block;
+    padding: 0.25rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    border: 1px solid #dee2e6;
+  }
 
-<section>
-  <h2>Alertas Runtime</h2>
-  <p>Alertas ativos: {{ ops.alerts.active_total }}</p>
+  .ops-badge-healthy {
+    background: #e9f8ef;
+    border-color: #bfe8cd;
+  }
 
-  <table>
-    <thead>
-      <tr>
-        <th>Nível</th>
-        <th>Mensagem</th>
-        <th>Criado em</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for alert in ops.alerts.latest_alerts %}
-        <tr>
-          <td>{{ alert.level|default:alert.severity|default:alert.nivel|default:"-" }}</td>
-          <td>{{ alert.message|default:alert.mensagem|default:alert.description|default:alert.descricao|default:alert }}</td>
-          <td>{{ alert.created_at|default:alert.criado_em|default:alert.timestamp|default:"-" }}</td>
-        </tr>
-      {% empty %}
-        <tr>
-          <td colspan="3">Nenhum alerta encontrado.</td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</section>
+  .ops-badge-warning {
+    background: #fff8e5;
+    border-color: #ffe0a3;
+  }
 
-<hr>
+  .ops-badge-critical {
+    background: #fdecec;
+    border-color: #f3bcbc;
+  }
 
-<section>
-  <h2>KPIs Globais</h2>
-  <p>Total de jobs: {{ ops.kpis.total_jobs }}</p>
-  <p>Total scheduler states: {{ ops.kpis.total_scheduler_states }}</p>
-  <p>Total alertas: {{ ops.kpis.total_alerts }}</p>
-  <p>Alertas ativos: {{ ops.kpis.active_alerts }}</p>
-</section>
+  .ops-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .ops-table th,
+  .ops-table td {
+    padding: 0.65rem;
+    border-bottom: 1px solid #e9ecef;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .ops-table th {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    color: #6c757d;
+  }
+
+  .ops-wide {
+    grid-column: span 2;
+  }
+
+  @media (max-width: 1100px) {
+    .ops-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .ops-wide {
+      grid-column: span 2;
+    }
+  }
+
+  @media (max-width: 700px) {
+    .ops-header {
+      flex-direction: column;
+    }
+
+    .ops-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .ops-wide {
+      grid-column: span 1;
+    }
+  }
+</style>
+
+<div class="ops-shell">
+  <div class="ops-header">
+    <div class="ops-title">
+      <h1>Unified Operations Center</h1>
+      <div class="ops-muted">
+        Centro operacional do GED_PROFISSIONAL · Atualização automática a cada 30 segundos
+      </div>
+      <div class="ops-muted">
+        Última atualização: {{ ops.updated_at }}
+      </div>
+    </div>
+
+    <div class="ops-actions">
+      <a class="ops-btn" href="{% url 'automacoes:painel' %}">Painel</a>
+      <a class="ops-btn" href="{% url 'automacoes:dashboard_search' %}">Search Dashboard</a>
+      <a class="ops-btn" href="{% url 'automacoes:logs_automacoes' %}">Logs</a>
+    </div>
+  </div>
+
+  <div class="ops-grid">
+    <section class="ops-card">
+      <h2>Runtime Health</h2>
+      <span class="ops-badge ops-badge-{{ ops.runtime.status }}">
+        {{ ops.runtime.status }}
+      </span>
+      <p class="ops-kpi">{{ ops.runtime.score }}</p>
+      <div class="ops-muted">Score operacional</div>
+    </section>
+
+    <section class="ops-card">
+      <h2>Alertas Ativos</h2>
+      <p class="ops-kpi">{{ ops.runtime.active_alerts }}</p>
+      <div class="ops-muted">Deduplicados pelo runtime</div>
+    </section>
+
+    <section class="ops-card">
+      <h2>Jobs em Execução</h2>
+      <p class="ops-kpi">{{ ops.runtime.running_jobs }}</p>
+      <div class="ops-muted">Processos ativos agora</div>
+    </section>
+
+    <section class="ops-card">
+      <h2>Scheduler Stale</h2>
+      <p class="ops-kpi">{{ ops.runtime.stale_scheduler_states|default:0 }}</p>
+      <div class="ops-muted">Estados com indício de stale</div>
+    </section>
+  </div>
+
+  <div class="ops-grid">
+    <section class="ops-card">
+      <h2>Scheduler</h2>
+      <p>Total: <strong>{{ ops.scheduler.total }}</strong></p>
+      <p>Ativos: <strong>{{ ops.scheduler.enabled }}</strong></p>
+      <p>Desativados: <strong>{{ ops.scheduler.disabled }}</strong></p>
+    </section>
+
+    <section class="ops-card">
+      <h2>Jobs Hoje</h2>
+      <p>Total: <strong>{{ ops.jobs.total_today }}</strong></p>
+      <p>Sucesso: <strong>{{ ops.jobs.success_today }}</strong></p>
+      <p>Falha: <strong>{{ ops.jobs.failed_today }}</strong></p>
+      <p>Success rate: <strong>{{ ops.jobs.success_rate }}%</strong></p>
+    </section>
+
+    <section class="ops-card">
+      <h2>KPIs Globais</h2>
+      <p>Total de jobs: <strong>{{ ops.kpis.total_jobs }}</strong></p>
+      <p>Scheduler states: <strong>{{ ops.kpis.total_scheduler_states }}</strong></p>
+      <p>Total alertas: <strong>{{ ops.kpis.total_alerts }}</strong></p>
+      <p>Alertas ativos: <strong>{{ ops.kpis.active_alerts }}</strong></p>
+    </section>
+
+    <section class="ops-card">
+      <h2>Runtime Summary</h2>
+      <p>Jobs falhos: <strong>{{ ops.runtime.failed_jobs }}</strong></p>
+      <p>Jobs rodando: <strong>{{ ops.runtime.running_jobs }}</strong></p>
+      <p>Duração média hoje: <strong>{{ ops.jobs.avg_duration|default:"—" }}</strong></p>
+    </section>
+  </div>
+
+  <div class="ops-grid">
+    <section class="ops-card ops-wide">
+      <h2>Últimos Jobs</h2>
+
+      <table class="ops-table">
+        <thead>
+          <tr>
+            <th>Job</th>
+            <th>Status</th>
+            <th>Duração</th>
+            <th>Data</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for job in ops.jobs.latest_jobs_display %}
+            <tr>
+              <td>{{ job.name }}</td>
+              <td>{{ job.status }}</td>
+              <td>{{ job.duration }}</td>
+              <td>{{ job.created_at }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="4">Nenhum job encontrado.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+
+    <section class="ops-card ops-wide">
+      <h2>Alertas Runtime</h2>
+
+      <table class="ops-table">
+        <thead>
+          <tr>
+            <th>Nível</th>
+            <th>Mensagem</th>
+            <th>Data</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for alert in ops.alerts.latest_alerts_display %}
+            <tr>
+              <td>{{ alert.level }}</td>
+              <td>{{ alert.message }}</td>
+              <td>{{ alert.created_at }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="3">Nenhum alerta encontrado.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+  </div>
+
+  <div class="ops-grid">
+    <section class="ops-card ops-wide">
+      <h2>Scheduler Runtime States</h2>
+
+      <table class="ops-table">
+        <thead>
+          <tr>
+            <th>State</th>
+            <th>Status</th>
+            <th>Enabled</th>
+            <th>Heartbeat</th>
+            <th>Next run</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for state in ops.scheduler.latest_states %}
+            <tr>
+              <td>{{ state.job_code|default:state.name|default:state.pk }}</td>
+              <td>{{ state.last_status|default:"—" }}</td>
+              <td>{{ state.enabled|default:"—" }}</td>
+              <td>{{ state.heartbeat|default:state.updated_at|default:"—" }}</td>
+              <td>{{ state.next_run_at|default:"—" }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="5">Nenhum estado de scheduler encontrado.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+
+    <section class="ops-card ops-wide">
+      <h2>Distribuição de Alertas Ativos</h2>
+
+      <table class="ops-table">
+        <thead>
+          <tr>
+            <th>Nível</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in ops.alerts.by_level %}
+            <tr>
+              <td>{{ item.level|default:item.severity|default:item.nivel|default:item.tipo|default:"—" }}</td>
+              <td>{{ item.total }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="2">Nenhum alerta ativo por nível.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+  </div>
+</div>
 {% endblock %}
