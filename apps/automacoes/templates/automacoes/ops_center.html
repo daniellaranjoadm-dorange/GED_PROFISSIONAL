@@ -1,7 +1,12 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block content %}
 <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+<link
+    rel="stylesheet"
+    href="{% static 'automacoes/css/ops_enterprise.css' %}"
+>
 
 <style>
   .ops-shell {
@@ -154,6 +159,11 @@
 </style>
 
 <div class="ops-shell">
+{% include "automacoes/partials/_ops_enterprise_ribbon.html" %}
+
+{% include "automacoes/partials/_ops_enterprise_navigation.html" %}
+
+{% include "automacoes/partials/_ops_executive_summary.html" %}
   <div class="ops-header">
     <div class="ops-title">
       <h1>Unified Operations Center</h1>
