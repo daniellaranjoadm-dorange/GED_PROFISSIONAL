@@ -2738,3 +2738,32 @@ def ops_center_live_partial(request):
         "automacoes/partials/_ops_live_operations.html",
         LiveOperationsService.build_payload(),
     )
+
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+
+from apps.automacoes.services.runtime_health_api import RuntimeHealthAPIService
+from apps.automacoes.services.runtime_retention import RuntimeRetentionService
+
+
+@login_required
+def runtime_health_api(request):
+    return JsonResponse(RuntimeHealthAPIService.health())
+
+
+@login_required
+def runtime_metrics_api(request):
+    return JsonResponse(RuntimeHealthAPIService.metrics())
+
+
+@login_required
+def runtime_events_api(request):
+    return JsonResponse(RuntimeHealthAPIService.events())
+
+
+@login_required
+def runtime_retention_dry_run_api(request):
+    days = request.GET.get("days") or 90
+    result = RuntimeRetentionService.cleanup_all(days=int(days), dry_run=True)
+
+    return JsonResponse(result)
