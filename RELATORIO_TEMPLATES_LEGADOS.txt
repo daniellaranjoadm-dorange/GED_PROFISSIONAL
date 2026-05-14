@@ -1,0 +1,274 @@
+﻿RELATÓRIO DE TEMPLATES LEGADOS — GED_PROFISSIONAL
+Gerado em: 05/14/2026 17:15:32
+
+## GIT STATUS
+On branch main
+Your branch is ahead of 'origin/main' by 8 commits.
+  (use "git push" to publish your local commits)
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	MAPA_PROJETO_GED.txt
+	RELATORIO_TEMPLATES_LEGADOS.txt
+
+nothing added to commit but untracked files present (use "git add" to track)
+
+## ÚLTIMOS COMMITS
+087aa7a refactor observability dashboards enterprise visual
+8822b6c fix enterprise topbar divider positioning
+11989a2 refactor transmittals enterprise visual
+8891628 refactor ld dashboards enterprise visual
+84f46b2 refactor pcfs dashboards enterprise visual
+a8a8a9c compact ops center executive layout
+d67ee17 refactor ops center enterprise visual
+7966aa5 fix root route to enterprise painel
+c595814 checkpoint stabilize enterprise automation dashboards
+c02a40e feat stabilize production runtime foundation
+7cf9689 fix runtime retention and runtime api integration
+ac7e3cb feat add production runtime foundation
+
+## TEMPLATES COM CSS INLINE <style>
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\busca_global.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\dashboard_jobs.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\dashboard_ld.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\dashboard_pcfs.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\dashboard_scheduler.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\dashboard_search.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\dashboard_transmittals.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\lista_ld.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\logs_automacoes.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\pcfs_timeline.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\transmittals_km.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\contas\templates\contas\login.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\contas\templates\contas\minhas_configuracoes.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\contas\templates\contas\portal.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\dashboard\templates\dashboard\index.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\adicionar_arquivos.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\dashboard_master.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\detalhes.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\editar.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\importar_ldp.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\listar.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\lixeira.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\nova_revisao.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\painel_workflow.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\upload.html
+
+## TEMPLATES COM CARDS BOOTSTRAP LEGADOS
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\_ops_center_entrypoint.html:10: <a href="{% url 'automacoes:ops_center' %}" class="btn btn-primary">
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\contas\templates\contas\portal.html:918: <a href="{% url 'contas:login' %}" class="btn btn-primary">Acessar Sistema</a>
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\contas\templates\contas\portal.html:1109: <a href="{% url 'contas:solicitar_acesso' %}" class="btn btn-primary">
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\dashboard\templates\dashboard\index.html:157: <div class="row g-3">
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\adicionar_arquivos.html:68: <button class="btn btn-primary">
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\buscar_global.html:55: <button class="btn btn-primary">
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\configuracoes.html:32: <div class="row g-3">
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\configuracoes.html:36: <div class="card shadow-sm">
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\configuracoes.html:43: <form method="post" class="row g-3">
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\configuracoes.html:65: <button type="submit" class="btn btn-primary">
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\configuracoes.html:76: <div class="card shadow-sm">
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\detalhes.html:384: <div class="card shadow-sm p-3 mb-4 wf-card">
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\detalhes.html:572: <div class="card shadow-sm p-4 mb-4">
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\detalhes.html:640: <div class="card shadow-sm p-3 mb-4">
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\detalhes.html:665: class="btn btn-primary btn-pill">
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\detalhes.html:694: <div class="card shadow-sm p-3 mb-4">
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\detalhes.html:697: class="btn btn-primary btn-pill mb-3">
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\detalhes.html:774: <button class="btn btn-primary btn-pill"
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\detalhes.html:792: class="btn btn-primary btn-pill">
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\detalhes.html:796: <button class="btn btn-primary btn-pill" disabled title="Sem permissão">
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\detalhes.html:845: <div class="card shadow-sm p-3 mb-4">
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\detalhes.html:877: <div class="card shadow-sm p-3 mb-4">
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\detalhes.html:1058: <button class="btn btn-primary w-100 btn-pill" id="btnCompararDrop">
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\detalhes.html:1066: <div class="row g-3">
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\detalhes.html:1093: <button class="btn btn-primary btn-pill" id="btnGerarDiff">
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\historico.html:20: <div class="card shadow-sm p-3 mb-4">
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\historico.html:52: <div class="card shadow-sm p-4">
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\importar_ldp.html:133: <button type="submit" class="dash-btn dash-btn-primary btn btn-primary" id="btnStartImport">
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\listar.html:183: <form method="GET" class="row g-3 filters-grid">
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\listar.html:231: <button type="submit" class="btn btn-primary btn-premium btn-search" aria-label="Buscar">
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\medicao.html:143: <button type="submit" class="btn btn-primary btn-sm">Aplicar filtros</button>
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\painel_workflow.html:165: <div class="row g-3">
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\painel_workflow.html:228: <button class="btn btn-primary btn-sm">Filtrar</button>
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\upload.html:167: <button type="submit" class="dash-btn dash-btn-primary btn btn-primary">
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\solicitacoes\templates\solicitar_acesso\_Backup\form.html:14: <div class="card shadow-sm">
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\solicitacoes\templates\solicitar_acesso\_Backup\form.html:32: <button type="submit" class="btn btn-primary w-100">
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\solicitacoes\templates\solicitar_acesso\detalhe.html:24: <div class="row g-3 align-items-start solicitacoes-detalhe-grid">
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\solicitacoes\_Backup\form.html:14: <div class="card shadow-sm">
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\solicitacoes\_Backup\form.html:32: <button type="submit" class="btn btn-primary w-100">
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\solicitacoes\detalhe.html:14: <div class="card shadow-sm mb-4">
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\solicitacoes\detalhe.html:31: <form method="POST" class="card shadow-sm">
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\solicitacoes\lista.html:14: <div class="card shadow-sm">
+
+## TEMPLATES QUE EXTENDEM A BASE OFICIAL
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\busca_global.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\dashboard_jobs.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\dashboard_ld.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\dashboard_pcfs.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\dashboard_scheduler.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\dashboard_search.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\dashboard_transmittals.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\lista_ld.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\logs_automacoes.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\ops_center.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\painel.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\pcfs_timeline.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\runtime_alerts.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\transmittals_km.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\contas\templates\contas\login.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\contas\templates\contas\minhas_configuracoes.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\contas\templates\contas\painel_solicitacoes.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\contas\templates\contas\portal.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\dashboard\templates\dashboard\dashboard_ged.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\dashboard\templates\dashboard\index.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\adicionar_arquivos.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\buscar_global.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\configuracoes.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\dashboard_master.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\detalhes.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\editar.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\historico.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\importar_ldp.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\listar.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\lixeira.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\medicao.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\nova_revisao.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\painel_workflow.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\revisoes.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\templates\documentos\upload.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\solicitacoes\templates\solicitar_acesso\detalhe.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\solicitacoes\templates\solicitar_acesso\lista.html
+
+## TEMPLATES QUE AINDA USAM PORTAL / LANDING ANTIGA
+
+## TEMPLATES DE AUTOMAÇÕES EXISTENTES
+
+FullName                                                                                                                            
+--------                                                                                                                            
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\partials\_ops_enterprise_navigation.html    
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\partials\_ops_enterprise_ribbon.html        
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\partials\_ops_executive_summary.html        
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\partials\_ops_live_operations.html          
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\partials\_ops_predictive_runtime.html       
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\partials\_ops_runtime_events.html           
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\partials\_ops_runtime_metrics.html          
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\partials\_ops_runtime_metrics_dashboard.html
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\partials\_ops_runtime_observability.html    
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\partials\_ops_runtime_trends.html           
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\busca_global.html                           
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\dashboard_jobs.html                         
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\dashboard_ld.html                           
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\dashboard_pcfs.html                         
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\dashboard_scheduler.html                    
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\dashboard_search.html                       
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\dashboard_transmittals.html                 
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\lista_ld.html                               
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\logs_automacoes.html                        
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\ops_center.html                             
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\painel.html                                 
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\pcfs_timeline.html                          
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\runtime_alerts.html                         
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\transmittals_km.html                        
+C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\templates\automacoes\_ops_center_entrypoint.html                 
+
+
+
+## VIEWS QUE RENDERIZAM TEMPLATES
+
+### C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\automacoes\views.py
+
+apps\automacoes\views.py:361:    return render(
+apps\automacoes\views.py:534:    return render(
+apps\automacoes\views.py:1286:    return render(
+apps\automacoes\views.py:1452:    return render(
+apps\automacoes\views.py:1617:    return render(
+apps\automacoes\views.py:2109:    return render(
+apps\automacoes\views.py:2371:    return render(
+apps\automacoes\views.py:2446:    return render(
+apps\automacoes\views.py:2616:    return render(
+apps\automacoes\views.py:2635:    return render(
+apps\automacoes\views.py:2717:    return render(
+apps\automacoes\views.py:2739:    return render(
+apps\automacoes\views.py:2752:    return render(
+apps\automacoes\views.py:2761:    return render(
+apps\automacoes\views.py:2777:    return render(
+
+
+
+### C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\contas\views.py
+
+apps\contas\views.py:39:            return render(request, "contas/login.html")
+apps\contas\views.py:62:    return render(request, "contas/login.html")
+apps\contas\views.py:92:        return render(request, "contas/minhas_configuracoes.html", {"form": form})
+
+
+
+### C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\dashboard\views.py
+
+apps\dashboard\views.py:162:    return render(request, "documentos/dashboard_master.html", context)
+apps\dashboard\views.py:184:    return render(request, "dashboard/usuarios_permissoes.html", context)
+
+
+
+### C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\views.py
+
+apps\documentos\views.py:430:    return render(
+apps\documentos\views.py:552:    return render(
+apps\documentos\views.py:730:    return render(
+apps\documentos\views.py:937:    return render(request, "documentos/listar.html", context)
+apps\documentos\views.py:982:    return render(
+apps\documentos\views.py:1052:    return render(request, "documentos/detalhes.html", context)
+apps\documentos\views.py:1108:    return render(
+apps\documentos\views.py:1361:    return render(
+apps\documentos\views.py:1524:    return render(
+apps\documentos\views.py:1647:    return render(
+apps\documentos\views.py:1708:    return render(request, "documentos/adicionar_arquivos.html", {"documento": documento})
+apps\documentos\views.py:1833:    return render(
+apps\documentos\views.py:2014:        return render(request, "documentos/importar_ldp.html", {
+apps\documentos\views.py:2021:        return render(request, "documentos/importar_ldp.html", {"history": list(reversed(history))[:10]})
+apps\documentos\views.py:2025:        return render(request, "documentos/importar_ldp.html", {"history": list(reversed(history))[:10]})
+apps\documentos\views.py:2062:        return render(request, "documentos/importar_ldp.html", {
+apps\documentos\views.py:2230:    return render(request, "documentos/importar_ldp.html", {
+apps\documentos\views.py:2282:    return render(request, "documentos/importar_ldp.html")
+apps\documentos\views.py:2556:    return render(
+apps\documentos\views.py:2745:    return render(request, "documentos/lixeira.html", {"documentos": docs})
+apps\documentos\views.py:2782:    return render(
+apps\documentos\views.py:2822:    return render(
+apps\documentos\views.py:2938:    return render(request, "documentos/dashboard_master.html", context)
+
+
+
+### C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\documentos\_Backup\views.py
+
+apps\documentos\_Backup\views.py:424:    return render(
+apps\documentos\_Backup\views.py:546:    return render(
+apps\documentos\_Backup\views.py:724:    return render(
+apps\documentos\_Backup\views.py:917:    return render(request, "documentos/listar.html", context)
+apps\documentos\_Backup\views.py:976:    return render(request, "documentos/detalhes.html", context)
+apps\documentos\_Backup\views.py:991:    return render(
+apps\documentos\_Backup\views.py:1241:    return render(
+apps\documentos\_Backup\views.py:1302:    return render(
+apps\documentos\_Backup\views.py:1362:    return render(
+apps\documentos\_Backup\views.py:1423:    return render(request, "documentos/adicionar_arquivos.html", {"documento": documento})
+apps\documentos\_Backup\views.py:1548:    return render(
+apps\documentos\_Backup\views.py:1730:        return render(request, "documentos/importar_ldp.html", {
+apps\documentos\_Backup\views.py:1737:        return render(request, "documentos/importar_ldp.html", {"history": list(reversed(history))[:10]})
+apps\documentos\_Backup\views.py:1741:        return render(request, "documentos/importar_ldp.html", {"history": list(reversed(history))[:10]})
+apps\documentos\_Backup\views.py:1778:        return render(request, "documentos/importar_ldp.html", {
+apps\documentos\_Backup\views.py:1946:    return render(request, "documentos/importar_ldp.html", {
+apps\documentos\_Backup\views.py:1998:    return render(request, "documentos/importar_ldp.html")
+apps\documentos\_Backup\views.py:2063:    return render(
+apps\documentos\_Backup\views.py:2194:    return render(request, "documentos/lixeira.html", {"documentos": docs})
+apps\documentos\_Backup\views.py:2263:    return render(
+apps\documentos\_Backup\views.py:2303:    return render(
+apps\documentos\_Backup\views.py:2419:    return render(request, "documentos/dashboard_master.html", context)
+
+
+
+### C:\Users\daniel.laranjo\Documents\GED_PROFISSIONAL\apps\solicitacoes\views.py
+
+apps\solicitacoes\views.py:52:    return render(request, "solicitar_acesso/form.html", {"form": form})
+apps\solicitacoes\views.py:56:    return render(request, "solicitar_acesso/sucesso.html")
+apps\solicitacoes\views.py:72:    return render(request, "solicitar_acesso/lista.html", {"solicitacoes": qs})
+apps\solicitacoes\views.py:135:    return render(request, "solicitar_acesso/detalhe.html", {"solicitacao": solicitacao})
+
+
+
