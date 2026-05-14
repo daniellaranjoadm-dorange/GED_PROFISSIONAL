@@ -1,0 +1,53 @@
+<section class="ops-card ops-live-operations">
+  <div class="ops-card-header">
+    <div>
+      <h2>Live Operations</h2>
+      <p>Atualização operacional em modo polling leve.</p>
+    </div>
+    <span class="ops-badge ops-badge-live">ONLINE</span>
+  </div>
+
+  <div class="ops-grid ops-grid-4">
+    <div class="ops-metric">
+      <span>Runtime</span>
+      <strong>{{ ops.runtime.status }}</strong>
+      <small>Score {{ ops.runtime.score }}</small>
+    </div>
+
+    <div class="ops-metric">
+      <span>Jobs Running</span>
+      <strong>{{ ops.runtime.running_jobs }}</strong>
+      <small>execuções ativas</small>
+    </div>
+
+    <div class="ops-metric">
+      <span>Active Alerts</span>
+      <strong>{{ ops.runtime.active_alerts }}</strong>
+      <small>alertas ativos</small>
+    </div>
+
+    <div class="ops-metric">
+      <span>Risk</span>
+      <strong>{{ predictive_runtime.risk.label }}</strong>
+      <small>{{ predictive_runtime.risk.score }}</small>
+    </div>
+  </div>
+
+  <div class="ops-section">
+    <h3>Últimos eventos runtime</h3>
+
+    {% for event in runtime_events %}
+      <div class="ops-event ops-event-{{ event.severity|default:'info' }}">
+        <strong>{{ event.title }}</strong>
+        <small>{{ event.timestamp }}</small>
+        <p>{{ event.message }}</p>
+      </div>
+    {% empty %}
+      <p class="ops-muted">Nenhum evento runtime recente.</p>
+    {% endfor %}
+  </div>
+
+  <p class="ops-muted">
+    Atualizado em {{ live.refreshed_at }}
+  </p>
+</section>
