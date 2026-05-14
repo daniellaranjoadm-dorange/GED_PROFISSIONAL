@@ -1,0 +1,62 @@
+<section class="ops-panel ops-runtime-metrics">
+  <div class="ops-panel-header">
+    <div>
+      <h2>Runtime Metrics Persistence</h2>
+      <p>Histórico operacional persistido para tendências, KPIs e análise de estabilidade.</p>
+    </div>
+    <span class="ops-pill">Snapshots: {{ metrics.count }}</span>
+  </div>
+
+  {% if metrics.has_data %}
+    <div class="ops-grid ops-grid-4">
+      <div class="ops-card">
+        <span class="ops-label">Score médio</span>
+        <strong>{{ metrics.avg_score }}</strong>
+      </div>
+      <div class="ops-card">
+        <span class="ops-label">Score mínimo</span>
+        <strong>{{ metrics.min_score }}</strong>
+      </div>
+      <div class="ops-card">
+        <span class="ops-label">Score máximo</span>
+        <strong>{{ metrics.max_score }}</strong>
+      </div>
+      <div class="ops-card">
+        <span class="ops-label">Último status</span>
+        <strong>{{ metrics.latest_status|upper }}</strong>
+      </div>
+    </div>
+
+    <div class="ops-table-wrap">
+      <table class="ops-table">
+        <thead>
+          <tr>
+            <th>Capturado em</th>
+            <th>Score</th>
+            <th>Status</th>
+            <th>Alertas</th>
+            <th>Jobs falhos</th>
+            <th>Success rate</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in metrics.timeline %}
+            <tr>
+              <td>{{ item.captured_at }}</td>
+              <td>{{ item.runtime_score }}</td>
+              <td>{{ item.runtime_status|upper }}</td>
+              <td>{{ item.active_alerts }}</td>
+              <td>{{ item.failed_jobs }}</td>
+              <td>{{ item.success_rate }}%</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="ops-empty">
+      Nenhum snapshot persistido ainda. Execute:
+      <code>python manage.py capture_runtime_metrics --source manual</code>
+    </div>
+  {% endif %}
+</section>
