@@ -1,349 +1,83 @@
 {% extends "documentos/base.html" %}
+{% load static %}
 
 {% block title %}Dashboard Transmittals{% endblock %}
 
 {% block extra_head %}
-<style>
-  .tr-dash {
-    width: min(100%, 1500px);
-    margin: 0 auto;
-    color: #e5e7eb;
-  }
-
-  .tr-hero {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    gap: 1rem;
-    border: 1px solid rgba(56, 189, 248, .22);
-    border-radius: 24px;
-    padding: 1.15rem 1.25rem;
-    margin-bottom: 1rem;
-    background:
-      radial-gradient(circle at 0% 0%, rgba(56, 189, 248, .18), transparent 28rem),
-      radial-gradient(circle at 100% 0%, rgba(255, 138, 0, .12), transparent 24rem),
-      linear-gradient(135deg, rgba(15, 23, 42, .98), rgba(2, 6, 23, .92));
-    box-shadow: 0 18px 44px rgba(2, 8, 23, .28);
-  }
-
-  .tr-eyebrow {
-    display: inline-flex;
-    align-items: center;
-    gap: .4rem;
-    color: #38bdf8;
-    font-size: .72rem;
-    font-weight: 950;
-    text-transform: uppercase;
-    letter-spacing: .10em;
-    margin-bottom: .35rem;
-  }
-
-  .tr-hero h1 {
-    margin: 0;
-    color: #fff;
-    font-size: clamp(1.55rem, 2.4vw, 2.35rem);
-    font-weight: 950;
-    letter-spacing: -.045em;
-    line-height: 1;
-  }
-
-  .tr-hero p {
-    margin: .45rem 0 0;
-    color: #93c5fd;
-    max-width: 900px;
-  }
-
-  .tr-actions {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: .55rem;
-  }
-
-  .tr-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: .42rem;
-    border-radius: 999px;
-    border: 1px solid rgba(148, 163, 184, .24);
-    padding: .55rem .88rem;
-    color: #e5e7eb;
-    text-decoration: none;
-    font-size: .82rem;
-    font-weight: 900;
-    white-space: nowrap;
-    background: rgba(15, 23, 42, .70);
-  }
-
-  .tr-btn:hover {
-    color: #fff;
-    border-color: rgba(56, 189, 248, .56);
-  }
-
-  .tr-btn-primary {
-    color: #06111f;
-    background: linear-gradient(135deg, #38bdf8, #60a5fa);
-    border-color: rgba(125, 211, 252, .55);
-  }
-
-  .tr-kpi-grid {
-    display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: .75rem;
-    margin-bottom: 1rem;
-  }
-
-  .tr-kpi {
-    display: block;
-    min-height: 112px;
-    border: 1px solid rgba(148, 163, 184, .18);
-    border-radius: 20px;
-    padding: .9rem;
-    background: linear-gradient(180deg, rgba(15, 23, 42, .86), rgba(15, 23, 42, .62));
-    color: #e5e7eb;
-    text-decoration: none;
-    box-shadow: 0 14px 34px rgba(2, 8, 23, .18);
-  }
-
-  .tr-kpi:hover {
-    color: #fff;
-    border-color: rgba(56, 189, 248, .42);
-    transform: translateY(-1px);
-  }
-
-  .tr-kpi span {
-    display: block;
-    color: #bfdbfe;
-    font-size: .68rem;
-    font-weight: 950;
-    text-transform: uppercase;
-    letter-spacing: .07em;
-  }
-
-  .tr-kpi strong {
-    display: block;
-    margin-top: .25rem;
-    color: #fff;
-    font-size: clamp(1.5rem, 2.1vw, 2.2rem);
-    line-height: 1;
-    letter-spacing: -.05em;
-  }
-
-  .tr-kpi small {
-    display: block;
-    margin-top: .35rem;
-    color: #94a3b8;
-  }
-
-  .tr-grid-2 {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: .9rem;
-    margin-bottom: 1rem;
-  }
-
-  .tr-grid-main {
-    display: grid;
-    grid-template-columns: minmax(0, 1.25fr) minmax(360px, .75fr);
-    gap: .9rem;
-  }
-
-  .tr-panel {
-    border: 1px solid rgba(148, 163, 184, .18);
-    border-radius: 22px;
-    padding: 1rem;
-    background: linear-gradient(180deg, rgba(15, 23, 42, .84), rgba(15, 23, 42, .64));
-    box-shadow: 0 16px 38px rgba(2, 8, 23, .20);
-  }
-
-  .tr-panel-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: .8rem;
-    margin-bottom: .8rem;
-  }
-
-  .tr-panel-head h2 {
-    margin: 0;
-    color: #fff;
-    font-size: 1.02rem;
-    font-weight: 950;
-    letter-spacing: -.025em;
-  }
-
-  .tr-panel-head p {
-    margin: .2rem 0 0;
-    color: #93c5fd;
-    font-size: .8rem;
-  }
-
-  .tr-chip {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid rgba(56, 189, 248, .30);
-    border-radius: 999px;
-    padding: .3rem .65rem;
-    color: #bae6fd;
-    background: rgba(14, 165, 233, .14);
-    font-size: .68rem;
-    font-weight: 950;
-    text-transform: uppercase;
-    letter-spacing: .05em;
-    white-space: nowrap;
-  }
-
-  .tr-chip-warn {
-    color: #fde68a;
-    background: rgba(245, 158, 11, .14);
-    border-color: rgba(245, 158, 11, .34);
-  }
-
-  .tr-chip-risk {
-    color: #fecaca;
-    background: rgba(220, 38, 38, .15);
-    border-color: rgba(248, 113, 113, .32);
-  }
-
-  .chart-wrap {
-    min-height: 300px;
-    position: relative;
-  }
-
-  .tr-list {
-    display: flex;
-    flex-direction: column;
-    gap: .55rem;
-  }
-
-  .tr-list-item {
-    display: block;
-    border: 1px solid rgba(148, 163, 184, .16);
-    border-radius: 16px;
-    padding: .78rem;
-    background: rgba(2, 6, 23, .30);
-    color: #e5e7eb;
-    text-decoration: none;
-  }
-
-  .tr-list-item:hover {
-    color: #fff;
-    border-color: rgba(56, 189, 248, .42);
-  }
-
-  .tr-list-item strong {
-    display: block;
-    color: #fff;
-  }
-
-  .tr-muted {
-    color: #94a3b8;
-  }
-
-  @media (max-width: 1280px) {
-    .tr-kpi-grid {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
-    .tr-grid-main {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  @media (max-width: 900px) {
-    .tr-hero,
-    .tr-panel-head {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-
-    .tr-actions {
-      justify-content: flex-start;
-    }
-
-    .tr-grid-2 {
-      grid-template-columns: 1fr;
-    }
-
-    .tr-kpi-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-  }
-
-  @media (max-width: 560px) {
-    .tr-kpi-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .tr-btn {
-      width: 100%;
-    }
-  }
-</style>
+<link rel="stylesheet" href="{% static 'automacoes/css/ops_enterprise.css' %}?v=1501">
 {% endblock %}
 
 {% block content %}
-<div class="tr-dash">
-  <section class="tr-hero">
-    <div>
-      <div class="tr-eyebrow">
+<div class="ops-page">
+
+  <section class="ops-hero">
+    <div class="ops-hero-main">
+      <div class="ops-eyebrow">
         <i class="bi bi-box-seam"></i>
         Transmittals Intelligence
       </div>
+
       <h1>Dashboard Transmittals KM</h1>
-      <p>Indicadores executivos dos transmittals importados para o GED: documentos, emissões, PDFs válidos e concentração por pasta.</p>
+
+      <p>
+        Indicadores executivos dos transmittals importados para o GED: documentos, emissões, PDFs válidos e concentração por pasta.
+      </p>
     </div>
 
-    <div class="tr-actions">
-      <a href="{% url 'automacoes:transmittals_km' %}" class="tr-btn tr-btn-primary">
+    <div class="ops-actions">
+      <a href="{% url 'automacoes:transmittals_km' %}"
+         class="ops-btn ops-btn-primary">
         <i class="bi bi-table"></i>
         Ver Registros
       </a>
-      <a href="{% url 'automacoes:painel' %}" class="tr-btn">
+
+      <a href="{% url 'automacoes:painel' %}"
+         class="ops-btn">
         <i class="bi bi-arrow-left"></i>
         Voltar
       </a>
     </div>
   </section>
 
-  <section class="tr-kpi-grid">
-    <a href="{% url 'automacoes:transmittals_km' %}" class="tr-kpi">
+  <section class="ops-kpi-grid ops-kpi-grid-6">
+
+    <a href="{% url 'automacoes:transmittals_km' %}"
+       class="ops-kpi">
       <span>Registros</span>
       <strong>{{ total_registros }}</strong>
       <small>documentos importados</small>
     </a>
 
-    <div class="tr-kpi">
+    <div class="ops-kpi">
       <span>Transmittals</span>
       <strong>{{ total_transmittals }}</strong>
       <small>agrupamentos únicos</small>
     </div>
 
-    <div class="tr-kpi">
+    <div class="ops-kpi">
       <span>Status OK</span>
       <strong>{{ total_ok }}</strong>
       <small>parse validado</small>
     </div>
 
-    <div class="tr-kpi">
+    <div class="ops-kpi">
       <span>PDFs válidos</span>
       <strong>{{ total_pdf }}</strong>
       <small>originais localizados</small>
     </div>
 
-    <div class="tr-kpi">
+    <div class="ops-kpi">
       <span>Sem PDF</span>
       <strong>{{ total_sem_pdf }}</strong>
       <small>pendência de origem</small>
     </div>
 
-    <div class="tr-kpi">
+    <div class="ops-kpi">
       <span>Média Docs/Transmittal</span>
       <strong>{{ media_docs_transmittal }}</strong>
       <small>densidade documental</small>
     </div>
+
   </section>
 
   {{ pastas_labels|json_script:"tr-pastas-labels" }}
@@ -353,69 +87,87 @@
   {{ transmittal_labels|json_script:"tr-top-labels" }}
   {{ transmittal_values|json_script:"tr-top-values" }}
 
-  <section class="tr-grid-2">
-    <div class="tr-panel">
-      <div class="tr-panel-head">
+  <section class="ops-grid ops-grid-2 ops-stack">
+
+    <div class="ops-panel">
+      <div class="ops-panel-head">
         <div>
           <h2>Top Pastas</h2>
           <p>Pastas KM com maior volume documental.</p>
         </div>
-        <span class="tr-chip">Clique para filtrar</span>
+
+        <span class="ops-chip">Clique para filtrar</span>
       </div>
-      <div class="chart-wrap">
+
+      <div class="ops-chart-wrap">
         <canvas id="transPastasChart"></canvas>
       </div>
     </div>
 
-    <div class="tr-panel">
-      <div class="tr-panel-head">
+    <div class="ops-panel">
+      <div class="ops-panel-head">
         <div>
           <h2>Top Emissões</h2>
           <p>Distribuição por emissão dos documentos.</p>
         </div>
-        <span class="tr-chip">Distribuição</span>
+
+        <span class="ops-chip">Distribuição</span>
       </div>
-      <div class="chart-wrap">
+
+      <div class="ops-chart-wrap">
         <canvas id="transEmissoesChart"></canvas>
       </div>
     </div>
+
   </section>
 
-  <section class="tr-grid-main">
-    <div class="tr-panel">
-      <div class="tr-panel-head">
+  <section class="ops-grid-main">
+
+    <div class="ops-panel">
+      <div class="ops-panel-head">
         <div>
           <h2>Top Transmittals</h2>
           <p>Transmittals com maior concentração de documentos.</p>
         </div>
-        <span class="tr-chip">Documentos</span>
+
+        <span class="ops-chip">Documentos</span>
       </div>
-      <div class="chart-wrap">
+
+      <div class="ops-chart-wrap">
         <canvas id="transTopChart"></canvas>
       </div>
     </div>
 
-    <aside class="tr-panel">
-      <div class="tr-panel-head">
+    <aside class="ops-panel">
+      <div class="ops-panel-head">
         <div>
           <h2>Últimos Importados</h2>
           <p>Registros recentes do parser KM.</p>
         </div>
-        <span class="tr-chip">Recentes</span>
+
+        <span class="ops-chip">Recentes</span>
       </div>
 
-      <div class="tr-list">
+      <div class="ops-list">
         {% for item in ultimos %}
-          <a href="{% url 'automacoes:transmittals_km' %}?q={{ item.documento|urlencode }}" class="tr-list-item">
-            <strong>{{ item.documento }}</strong>
-            <small class="tr-muted">{{ item.transmittal_numero }} · {{ item.emissao|default:"—" }}</small>
-          </a>
+        <a href="{% url 'automacoes:transmittals_km' %}?q={{ item.documento|urlencode }}"
+           class="ops-list-item">
+
+          <strong>{{ item.documento }}</strong>
+
+          <small class="ops-muted">
+            {{ item.transmittal_numero }} · {{ item.emissao|default:"—" }}
+          </small>
+
+        </a>
         {% empty %}
-          <div class="tr-muted">Sem registros.</div>
+        <div class="ops-muted">Sem registros.</div>
         {% endfor %}
       </div>
     </aside>
+
   </section>
+
 </div>
 {% endblock %}
 
@@ -437,24 +189,35 @@
 
   function goToRecords(params) {
     const url = new URL(registrosUrl, window.location.origin);
+
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null && String(value).trim() !== "") {
         url.searchParams.set(key, value);
       }
     });
+
     window.location.href = url.toString();
   }
 
   function clickedLabel(chart, event) {
-    const points = chart.getElementsAtEventForMode(event, "nearest", { intersect: true }, true);
+    const points = chart.getElementsAtEventForMode(
+      event,
+      "nearest",
+      { intersect: true },
+      true
+    );
+
     if (!points.length) return null;
+
     return chart.data.labels[points[0].index];
   }
 
   const pastasLabels = readJsonScript("tr-pastas-labels");
   const pastasValues = readJsonScript("tr-pastas-values");
+
   const emissoesLabels = readJsonScript("tr-emissoes-labels");
   const emissoesValues = readJsonScript("tr-emissoes-values");
+
   const topLabels = readJsonScript("tr-top-labels");
   const topValues = readJsonScript("tr-top-values");
 
@@ -462,46 +225,77 @@
 
   new Chart(document.getElementById("transPastasChart"), {
     type: "bar",
-    data: { labels: pastasLabels, datasets: [{ label: "Documentos", data: pastasValues }] },
+    data: {
+      labels: pastasLabels,
+      datasets: [{
+        label: "Documentos",
+        data: pastasValues
+      }]
+    },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       indexAxis: "y",
-      plugins: { legend: { display: false } },
+      plugins: {
+        legend: { display: false }
+      },
       onClick: function (event) {
         const label = clickedLabel(this, event);
-        if (label && label !== "Sem pasta") goToRecords({ pasta: label });
+
+        if (label && label !== "Sem pasta") {
+          goToRecords({ pasta: label });
+        }
       }
     }
   });
 
   new Chart(document.getElementById("transEmissoesChart"), {
     type: "doughnut",
-    data: { labels: emissoesLabels, datasets: [{ data: emissoesValues }] },
+    data: {
+      labels: emissoesLabels,
+      datasets: [{
+        data: emissoesValues
+      }]
+    },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       onClick: function (event) {
         const label = clickedLabel(this, event);
-        if (label && label !== "Sem emissão") goToRecords({ emissao: label });
+
+        if (label && label !== "Sem emissão") {
+          goToRecords({ emissao: label });
+        }
       }
     }
   });
 
   new Chart(document.getElementById("transTopChart"), {
     type: "bar",
-    data: { labels: topLabels, datasets: [{ label: "Documentos", data: topValues }] },
+    data: {
+      labels: topLabels,
+      datasets: [{
+        label: "Documentos",
+        data: topValues
+      }]
+    },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       indexAxis: "y",
-      plugins: { legend: { display: false } },
+      plugins: {
+        legend: { display: false }
+      },
       onClick: function (event) {
         const label = clickedLabel(this, event);
-        if (label && label !== "Sem número") goToRecords({ transmittal: label });
+
+        if (label && label !== "Sem número") {
+          goToRecords({ transmittal: label });
+        }
       }
     }
   });
+
 })();
 </script>
 {% endblock %}
