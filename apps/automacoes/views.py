@@ -945,7 +945,7 @@ def _km_buscar_documento_indexado(documento, permitir_transmittal=False):
 
     if not candidatos:
         # Fallback amplo, ainda baseado no banco, para códigos extraídos/formatos inesperados.
-        for item in qs.order_by("-indexado_em")[:20000]:
+        for item in qs.order_by("-indexado_em")[:2000]:
             score = _km_score_documento_indexado(documento, item)
             if score <= 0:
                 continue
@@ -1162,7 +1162,7 @@ def _tr_buscar_ld_por_documento(numero_documento):
     melhor_item = None
     melhor_score = 0
 
-    for item in DocumentoLD.objects.exclude(documento="").order_by("-id")[:10000]:
+    for item in DocumentoLD.objects.exclude(documento="").order_by("-id")[:2000]:
         score = _tr_score_match_documento(doc, item)
         if score > melhor_score:
             melhor_score = score
@@ -1195,8 +1195,52 @@ def _tr_caminho_documento_ld(item_ld):
     return ""
 
 
+
+
+def _km_buscar_documentos_em_lote(documentos, permitir_transmittal=False):
+    """
+    Resolve documentos KM em lote usando cache para evitar N+1 e scans repetidos.
+    """
+    resultados = {}
+
+    docs_unicos = {
+        _tr_texto(doc)
+        for doc in documentos
+        if _tr_texto(doc)
+    }
+
+    for documento in docs_unicos:
+        cache_key = f"automacoes:km:doc:{_km_normalizar(documento)}"
+
+        cached = cache.get(cache_key)
+        if cached:
+            resultados[documento] = Path(cached)
+            continue
+
+        arquivo = _km_buscar_documento(
+            documento,
+            permitir_transmittal=permitir_transmittal,
+        )
+
+        if arquivo:
+            cache.set(
+                cache_key,
+                str(arquivo),
+                _cache_ttl("CACHE_TTL_MEDIUM", 300),
+            )
+
+        resultados[documento] = arquivo
+
+    return resultados
+
+
 def _tr_montar_central_transmittals(registros):
     grupos = {}
+
+    documentos_map = _km_buscar_documentos_em_lote(
+        [item.documento for item in registros],
+        permitir_transmittal=False,
+    )
 
     for item in registros:
         numero = _tr_texto(item.transmittal_numero) or "Sem número"
@@ -1236,7 +1280,7 @@ def _tr_montar_central_transmittals(registros):
         if item.status_parse:
             grupo["status"].add(item.status_parse)
 
-        item.km_arquivo = _km_buscar_documento(item.documento, permitir_transmittal=False)
+        item.km_arquivo = documentos_map.get(_tr_texto(item.documento))
         item.ld_vinculado = None
 
         grupo["docs"].append(item)
@@ -1312,8 +1356,28 @@ def listar_transmittals_km(request):
     if transmittal:
         registros = registros.filter(transmittal_numero__iexact=transmittal)
 
-    registros_lista = list(registros)
-    transmittals_agrupados = _tr_montar_central_transmittals(registros_lista)
+    cache_key = (
+        "automacoes:transmittals:list:"
+        f"{busca}:{pasta}:{emissao}:{transmittal}"
+    )
+
+    cached_payload = cache.get(cache_key)
+
+    if cached_payload:
+        registros_lista = cached_payload["registros"]
+        transmittals_agrupados = cached_payload["transmittals"]
+    else:
+        registros_lista = list(registros[:2000])
+        transmittals_agrupados = _tr_montar_central_transmittals(registros_lista)
+
+        cache.set(
+            cache_key,
+            {
+                "registros": registros_lista,
+                "transmittals": transmittals_agrupados,
+            },
+            _cache_ttl("CACHE_TTL_SHORT", 60),
+        )
 
     total_documentos = len(registros_lista)
     total_transmittals = len(transmittals_agrupados)
