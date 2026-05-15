@@ -3,12 +3,17 @@
 
 {% block title %}D'ORANGE — Operations Automation{% endblock %}
 
-{% block content %}
-<div class="ged-home">
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'automacoes/css/ops_enterprise.css' %}?v=1600">
+{% endblock %}
 
-  <section class="ged-hero">
-    <div class="ged-hero-main">
-      <div class="ged-eyebrow">
+{% block content %}
+<div class="ops-page">
+
+  <section class="ops-hero">
+
+    <div class="ops-hero-main">
+      <div class="ops-eyebrow">
         <span class="ged-status-dot"></span>
         GED Operational Automation Center
       </div>
@@ -20,26 +25,34 @@
         índice KM, runtime intelligence e observabilidade operacional.
       </p>
 
-      <div class="ged-hero-actions">
-        <a href="{% url 'automacoes:ops_center' %}" class="ged-btn ged-btn-primary">
+      <div class="ops-actions mt-3">
+
+        <a href="{% url 'automacoes:ops_center' %}"
+           class="ops-btn ops-btn-primary">
           <i class="bi bi-speedometer2"></i>
           Operations Center
         </a>
 
-        <a href="{% url 'automacoes:logs_automacoes' %}" class="ged-btn ged-btn-ghost">
+        <a href="{% url 'automacoes:logs_automacoes' %}"
+           class="ops-btn">
           <i class="bi bi-activity"></i>
           Logs Operacionais
         </a>
 
-        <a href="{% url 'automacoes:busca_global' %}" class="ged-btn ged-btn-ghost">
+        <a href="{% url 'automacoes:busca_global' %}"
+           class="ops-btn">
           <i class="bi bi-search"></i>
           Busca Global
         </a>
+
       </div>
     </div>
 
-    <div class="ged-hero-side">
-      <span>Última execução</span>
+    <div class="ops-detail-card">
+      <span class="ops-filter-label">
+        Última execução
+      </span>
+
       <strong>
         {% if ultima_execucao %}
           {{ ultima_execucao.nome }}
@@ -49,7 +62,8 @@
           Sem histórico
         {% endif %}
       </strong>
-      <small>
+
+      <div class="ops-muted mt-2">
         {% if ultima_execucao %}
           {{ ultima_execucao.iniciado_em }}
         {% elif ultima_atualizacao %}
@@ -57,213 +71,331 @@
         {% else %}
           aguardando primeira execução
         {% endif %}
-      </small>
+      </div>
     </div>
+
   </section>
 
   {% if messages %}
-    <div class="ged-alert-stack">
-      {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm">
-          {{ message }}
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
-        </div>
-      {% endfor %}
+  <div class="mb-4">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm">
+      {{ message }}
+      <button type="button"
+              class="btn-close"
+              data-bs-dismiss="alert"
+              aria-label="Fechar"></button>
     </div>
+    {% endfor %}
+  </div>
   {% endif %}
 
-  <div id="loading-alert" class="alert alert-info shadow-sm mb-4 d-none">
+  <div id="loading-alert"
+       class="alert alert-info shadow-sm mb-4 d-none">
     ⏳ Automação em execução. Aguarde o processamento finalizar. Não feche esta janela.
   </div>
 
-  <section class="ged-kpi-grid">
-    <a href="{% url 'automacoes:lista_ld' %}" class="ged-kpi-card">
+  <section class="ops-kpi-grid ops-kpi-grid-6">
+
+    <a href="{% url 'automacoes:lista_ld' %}"
+       class="ops-kpi">
       <span>Linhas LD</span>
       <strong>{{ total_ld }}</strong>
       <small>base documental</small>
     </a>
 
-    <a href="{% url 'automacoes:pcfs_timeline' %}" class="ged-kpi-card">
+    <a href="{% url 'automacoes:pcfs_timeline' %}"
+       class="ops-kpi">
       <span>PCFs</span>
       <strong>{{ total_pcfs }}</strong>
       <small>timeline técnica</small>
     </a>
 
-    <a href="{% url 'automacoes:pcfs_timeline' %}?somente_open=1" class="ged-kpi-card">
+    <a href="{% url 'automacoes:pcfs_timeline' %}?somente_open=1"
+       class="ops-kpi">
       <span>Open Comments</span>
       <strong>{{ total_pcfs_open }}</strong>
       <small>pendências abertas</small>
     </a>
 
-    <a href="{% url 'automacoes:pcfs_timeline' %}?status=NOT%20RELEASED" class="ged-kpi-card">
+    <a href="{% url 'automacoes:pcfs_timeline' %}?status=NOT%20RELEASED"
+       class="ops-kpi">
       <span>Not Released</span>
       <strong>{{ total_pcfs_not_released }}</strong>
       <small>atenção operacional</small>
     </a>
 
-    <a href="{% url 'automacoes:transmittals_km' %}" class="ged-kpi-card">
+    <a href="{% url 'automacoes:transmittals_km' %}"
+       class="ops-kpi">
       <span>Transmittals KM</span>
       <strong>{{ total_transmittals_unicos }}</strong>
       <small>pacotes únicos</small>
     </a>
 
-    <a href="{% url 'automacoes:transmittals_km' %}" class="ged-kpi-card">
+    <a href="{% url 'automacoes:transmittals_km' %}"
+       class="ops-kpi">
       <span>Índice KM</span>
       <strong>{{ total_km_index }}</strong>
       <small>arquivos ativos</small>
     </a>
+
   </section>
 
-  <section class="ged-section-head">
-    <div>
-      <h2>Rotinas Operacionais</h2>
-      <p>Execução controlada, rastreabilidade e acesso rápido aos dados processados.</p>
+  <section class="ops-panel mb-3">
+
+    <div class="ops-panel-head">
+      <div>
+        <h2>Rotinas Operacionais</h2>
+        <p>Execução controlada, rastreabilidade e acesso rápido aos dados processados.</p>
+      </div>
+
+      <span class="ops-chip">
+        Automation Runtime
+      </span>
     </div>
+
   </section>
 
-  <section class="ged-module-grid">
+  <section class="ops-grid ops-grid-2 ops-stack">
+
     {% for rotina in automacoes %}
-      <article class="ged-module-card">
-        <div class="ged-module-top">
-          <div class="ged-module-icon">
-            <i class="bi {{ rotina.icone }}"></i>
+
+    <article class="ops-panel">
+
+      <div class="ops-panel-head">
+
+        <div>
+
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+
+            <span class="ops-chip">
+              <i class="bi {{ rotina.icone }}"></i>
+            </span>
+
+            <h2 class="mb-0">
+              {{ rotina.nome }}
+            </h2>
+
           </div>
 
-          <div class="ged-module-title">
-            <h3>{{ rotina.nome }}</h3>
-            <span>{{ rotina.subtitulo }}</span>
-          </div>
+          <p class="mt-2">
+            {{ rotina.subtitulo }}
+          </p>
 
-          <div class="ged-module-badges">
-            <span class="ged-badge">{{ rotina.badge }}</span>
-            {% if rotina.health %}
-              <span class="ged-badge ged-badge-health">
-                <i class="bi {{ rotina.health.icone|default:'bi-circle' }}"></i>
-                {{ rotina.health.estado|default:'OCIOSO' }}
-              </span>
-            {% endif %}
-          </div>
         </div>
 
-        <p class="ged-module-description">{{ rotina.descricao }}</p>
+        <div class="ops-actions">
 
-        <div class="ged-metric-strip">
-          {% for metrica in rotina.metricas %}
-            <div>
-              <span>{{ metrica.label }}</span>
-              <strong>{{ metrica.valor }}</strong>
-            </div>
-          {% endfor %}
+          <span class="ops-chip">
+            {{ rotina.badge }}
+          </span>
+
+          {% if rotina.health %}
+          <span class="ops-status-pill">
+            <i class="bi {{ rotina.health.icone|default:'bi-circle' }}"></i>
+            {{ rotina.health.estado|default:'OCIOSO' }}
+          </span>
+          {% endif %}
+
         </div>
 
-        {% if rotina.health %}
-          <div class="ged-health-row">
-            <span>Taxa de sucesso</span>
-            <strong>{{ rotina.health.taxa_sucesso }}%</strong>
-            <small>Duração média: {{ rotina.health.duracao_media_fmt }}</small>
-          </div>
+      </div>
+
+      <div class="ops-muted mb-3">
+        {{ rotina.descricao }}
+      </div>
+
+      <div class="ops-grid ops-grid-3">
+
+        {% for metrica in rotina.metricas %}
+
+        <div class="ops-detail-card">
+          <span class="ops-filter-label">
+            {{ metrica.label }}
+          </span>
+
+          <strong>
+            {{ metrica.valor }}
+          </strong>
+        </div>
+
+        {% endfor %}
+
+      </div>
+
+      {% if rotina.health %}
+
+      <div class="ops-detail-card mt-3">
+        <span class="ops-filter-label">
+          Saúde operacional
+        </span>
+
+        <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap">
+          <strong>
+            Taxa de sucesso {{ rotina.health.taxa_sucesso }}%
+          </strong>
+
+          <span class="ops-muted">
+            Duração média: {{ rotina.health.duracao_media_fmt }}
+          </span>
+        </div>
+      </div>
+
+      {% endif %}
+
+      <div class="ops-actions mt-3">
+
+        <form method="post"
+              action="{% url rotina.form_url %}"
+              class="ged-action-form">
+          {% csrf_token %}
+
+          <button type="submit"
+                  class="ops-btn ops-btn-primary ged-run-btn">
+            <i class="bi bi-play-fill"></i>
+            {{ rotina.botao }}
+          </button>
+        </form>
+
+        {% if rotina.dashboard_url %}
+        <a href="{% url rotina.dashboard_url %}"
+           class="ops-btn">
+          <i class="bi bi-bar-chart"></i>
+          Dashboard
+        </a>
         {% endif %}
 
-        <div class="ged-card-actions">
-          <form method="post" action="{% url rotina.form_url %}" class="ged-action-form">
-            {% csrf_token %}
-            <button type="submit" class="ged-btn ged-btn-primary ged-run-btn">
-              <i class="bi bi-play-fill"></i>
-              {{ rotina.botao }}
-            </button>
-          </form>
+        {% if rotina.registros_url %}
+        <a href="{% url rotina.registros_url %}"
+           class="ops-btn">
+          <i class="bi bi-table"></i>
+          Registros
+        </a>
+        {% endif %}
 
-          {% if rotina.dashboard_url %}
-            <a href="{% url rotina.dashboard_url %}" class="ged-btn ged-btn-ghost">
-              <i class="bi bi-bar-chart"></i>
-              Dashboard
-            </a>
-          {% endif %}
+      </div>
 
-          {% if rotina.registros_url %}
-            <a href="{% url rotina.registros_url %}" class="ged-btn ged-btn-ghost">
-              <i class="bi bi-table"></i>
-              Registros
-            </a>
-          {% endif %}
-        </div>
-      </article>
+    </article>
+
     {% endfor %}
+
   </section>
 
-  <section class="ged-two-col">
-    <div class="ged-panel">
-      <div class="ged-panel-head">
+  <section class="ops-grid ops-grid-2 ops-stack">
+
+    <div class="ops-panel">
+
+      <div class="ops-panel-head">
         <div>
           <h2>Últimas Execuções</h2>
           <p>Histórico operacional recente.</p>
         </div>
-        <a href="{% url 'automacoes:logs_automacoes' %}" class="ged-link">Ver todos</a>
+
+        <a href="{% url 'automacoes:logs_automacoes' %}"
+           class="ops-btn">
+          Ver todos
+        </a>
       </div>
 
-      <div class="ged-timeline">
+      <div class="ops-list">
+
         {% for execucao in ultimas_execucoes %}
-          <div class="ged-timeline-item">
-            <div class="ged-timeline-dot"></div>
-            <div>
-              <strong>{{ execucao.nome }}</strong>
-              <span>{{ execucao.status }} · {{ execucao.iniciado_em }}</span>
-              <small>{{ execucao.mensagem|default:"Sem mensagem" }}</small>
-            </div>
+
+        <div class="ops-result-card">
+
+          <strong>
+            {{ execucao.nome }}
+          </strong>
+
+          <div class="ops-muted mt-1">
+            {{ execucao.status }} · {{ execucao.iniciado_em }}
           </div>
+
+          <div class="ops-muted small mt-2">
+            {{ execucao.mensagem|default:"Sem mensagem" }}
+          </div>
+
+        </div>
+
         {% empty %}
-          <div class="ged-empty">Nenhuma execução registrada.</div>
+
+        <div class="ops-empty">
+          Nenhuma execução registrada.
+        </div>
+
         {% endfor %}
+
       </div>
+
     </div>
 
-    <div class="ged-panel">
-      <div class="ged-panel-head">
+    <div class="ops-panel">
+
+      <div class="ops-panel-head">
         <div>
           <h2>Operational Snapshot</h2>
           <p>Indicadores rápidos da operação.</p>
         </div>
+
+        <span class="ops-chip">
+          Runtime
+        </span>
       </div>
 
-      <div class="ged-snapshot-grid">
-        <div>
-          <span>Execuções</span>
+      <div class="ops-grid ops-grid-3">
+
+        <div class="ops-detail-card">
+          <span class="ops-filter-label">Execuções</span>
           <strong>{{ total_execucoes }}</strong>
         </div>
-        <div>
-          <span>Sucessos</span>
+
+        <div class="ops-detail-card">
+          <span class="ops-filter-label">Sucessos</span>
           <strong>{{ total_sucessos }}</strong>
         </div>
-        <div>
-          <span>Falhas</span>
+
+        <div class="ops-detail-card">
+          <span class="ops-filter-label">Falhas</span>
           <strong>{{ total_falhas }}</strong>
         </div>
-        <div>
-          <span>Taxa Global</span>
+
+        <div class="ops-detail-card">
+          <span class="ops-filter-label">Taxa Global</span>
           <strong>{{ taxa_sucesso_global }}%</strong>
         </div>
-        <div>
-          <span>Hoje</span>
+
+        <div class="ops-detail-card">
+          <span class="ops-filter-label">Hoje</span>
           <strong>{{ execucoes_hoje }}</strong>
         </div>
-        <div>
-          <span>Falhas Hoje</span>
+
+        <div class="ops-detail-card">
+          <span class="ops-filter-label">Falhas Hoje</span>
           <strong>{{ falhas_hoje }}</strong>
         </div>
+
       </div>
 
-      <div class="ged-panel-actions">
-        <a href="{% url 'automacoes:ops_center' %}" class="ged-btn ged-btn-primary">
+      <div class="ops-actions mt-3">
+
+        <a href="{% url 'automacoes:ops_center' %}"
+           class="ops-btn ops-btn-primary">
           <i class="bi bi-cpu"></i>
           Abrir Runtime
         </a>
-        <a href="{% url 'automacoes:dashboard_search' %}" class="ged-btn ged-btn-ghost">
+
+        <a href="{% url 'automacoes:dashboard_search' %}"
+           class="ops-btn">
           <i class="bi bi-search"></i>
           Search Analytics
         </a>
+
       </div>
+
     </div>
+
   </section>
+
 </div>
 
 <script>
