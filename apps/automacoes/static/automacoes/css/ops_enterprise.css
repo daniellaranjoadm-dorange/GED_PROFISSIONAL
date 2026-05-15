@@ -762,3 +762,47 @@
   }
 }
 
+
+/* ==========================================================
+   OPERATIONS DESIGN SYSTEM — CHART HEIGHT FIX
+   Corrige expansão vertical excessiva dos gráficos Chart.js
+   ========================================================== */
+
+.ops-chart-wrap {
+  height: 300px !important;
+  min-height: 300px !important;
+  max-height: 300px !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.ops-chart-wrap canvas {
+  display: block !important;
+  width: 100% !important;
+  height: 300px !important;
+  max-height: 300px !important;
+}
+
+.ops-chart-empty {
+  display: none;
+  height: 300px !important;
+  min-height: 300px !important;
+  max-height: 300px !important;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  border: 1px dashed rgba(148, 163, 184, .30);
+  border-radius: 16px;
+  background: rgba(2, 6, 23, .30);
+  text-align: center;
+  padding: 1rem;
+}
+
+.ops-chart-clickable {
+  cursor: pointer;
+}
+
+.ops-progress > .ops-progress-risk {
+  background: linear-gradient(90deg, #f59e0b, #ef4444) !important;
+}
+
