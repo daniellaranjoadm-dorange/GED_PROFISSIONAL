@@ -4,122 +4,228 @@
 {% block title %}Usuários & Permissões{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-3">
+<div class="docx-page">
 
-  <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
-    <div>
-      <h1 class="h5 mb-1">Usuários &amp; Permissões</h1>
-      <div class="text-muted small">
-        Administração de acessos e preferências do sistema.
-      </div>
-    </div>
-
-    {% if user.is_superuser %}
-    <div class="d-flex flex-wrap gap-2">
-      <a class="btn btn-sm btn-outline-primary" href="/admin/auth/user/" target="_blank" rel="noopener">
-        <i class="bi bi-person-badge"></i> Usuários
-      </a>
-      <a class="btn btn-sm btn-outline-primary" href="/admin/auth/group/" target="_blank" rel="noopener">
-        <i class="bi bi-people"></i> Grupos
-      </a>
-      <a class="btn btn-sm btn-outline-secondary" href="/admin/" target="_blank" rel="noopener">
-        <i class="bi bi-shield-lock"></i> Admin Django
-      </a>
-    </div>
-    {% endif %}
-  </div>
-
-  <div class="row g-3">
-
-    <!-- Preferências do usuário -->
-    <div class="col-12 col-lg-6">
-      <div class="card shadow-sm">
-        <div class="card-header">
-          <div class="fw-semibold">Preferências do usuário</div>
-          <div class="text-muted small">Afeta somente a sua conta.</div>
+  <!-- HERO -->
+  <section class="docx-hero mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+      <div>
+        <div class="docx-eyebrow">
+          CONTROLE DE ACESSO
         </div>
 
-        <div class="card-body">
-          <form method="post" class="row g-3">
+        <h1 class="docx-title mb-2">
+          Usuários &amp; Permissões
+        </h1>
+
+        <div class="docx-subtitle">
+          Administração de acessos, preferências do usuário e parâmetros operacionais do GED.
+        </div>
+      </div>
+
+      {% if user.is_superuser %}
+      <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-enterprise-secondary"
+           href="/admin/auth/user/"
+           target="_blank"
+           rel="noopener">
+          <i class="bi bi-person-badge"></i>
+          Usuários
+        </a>
+
+        <a class="btn btn-enterprise-secondary"
+           href="/admin/auth/group/"
+           target="_blank"
+           rel="noopener">
+          <i class="bi bi-people"></i>
+          Grupos
+        </a>
+
+        <a class="btn btn-enterprise-primary"
+           href="/admin/"
+           target="_blank"
+           rel="noopener">
+          <i class="bi bi-shield-lock"></i>
+          Admin Django
+        </a>
+      </div>
+      {% endif %}
+    </div>
+  </section>
+
+  <!-- GRID -->
+  <div class="row g-4">
+
+    <!-- PREFERÊNCIAS -->
+    <div class="col-12 col-xl-7">
+      <div class="docx-card h-100">
+
+        <div class="docx-card-header">
+          <div>
+            <h2 class="docx-card-title mb-1">
+              Preferências do usuário
+            </h2>
+
+            <div class="docx-card-subtitle">
+              Configurações aplicadas somente à sua conta.
+            </div>
+          </div>
+
+          <div class="docx-status-badge status-active">
+            Conta ativa
+          </div>
+        </div>
+
+        <div class="docx-card-body">
+
+          <form method="post" class="row g-4">
             {% csrf_token %}
 
             {% for field in form %}
-              <div class="col-12">
-                <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            <div class="col-12">
 
-                <div>
-                  {{ field }}
-                </div>
+              <label class="form-label fw-semibold"
+                     for="{{ field.id_for_label }}">
+                {{ field.label }}
+              </label>
 
-                {% if field.help_text %}
-                  <div class="form-text">{{ field.help_text }}</div>
-                {% endif %}
-
-                {% for error in field.errors %}
-                  <div class="invalid-feedback d-block">{{ error }}</div>
-                {% endfor %}
+              <div class="enterprise-form-field">
+                {{ field }}
               </div>
+
+              {% if field.help_text %}
+              <div class="form-text mt-2">
+                {{ field.help_text }}
+              </div>
+              {% endif %}
+
+              {% for error in field.errors %}
+              <div class="invalid-feedback d-block">
+                {{ error }}
+              </div>
+              {% endfor %}
+
+            </div>
             {% endfor %}
 
-            <div class="col-12 d-flex justify-content-end">
-              <button type="submit" class="btn btn-primary">
-                <i class="bi bi-save"></i> Salvar
-              </button>
+            <div class="col-12">
+              <div class="d-flex justify-content-end pt-2">
+                <button type="submit"
+                        class="btn btn-enterprise-primary">
+                  <i class="bi bi-save"></i>
+                  Salvar preferências
+                </button>
+              </div>
             </div>
+
           </form>
+
         </div>
       </div>
     </div>
 
-    <!-- Indicadores / atalhos -->
-    <div class="col-12 col-lg-6">
-      <div class="card shadow-sm">
-        <div class="card-header">
-          <div class="fw-semibold">Parâmetros do sistema</div>
-          <div class="text-muted small">
-            Visão rápida dos cadastros base do GED (workflow, projetos, responsáveis).
+    <!-- PARÂMETROS -->
+    <div class="col-12 col-xl-5">
+
+      <div class="docx-card h-100">
+
+        <div class="docx-card-header">
+          <div>
+            <h2 class="docx-card-title mb-1">
+              Parâmetros do sistema
+            </h2>
+
+            <div class="docx-card-subtitle">
+              Visão consolidada dos cadastros estruturais do GED.
+            </div>
+          </div>
+
+          <div class="docx-status-badge status-info">
+            Runtime OK
           </div>
         </div>
 
-        <div class="card-body">
-          <div class="row g-2">
-            <div class="col-12 col-md-4">
-              <div class="border rounded p-3 h-100">
-                <div class="fw-semibold">Projetos</div>
-                <div class="text-muted small">{{ projetos|length }} cadastrados</div>
+        <div class="docx-card-body">
+
+          <div class="row g-3 mb-4">
+
+            <div class="col-12 col-md-4 col-xl-12">
+              <div class="docx-metric-card">
+                <div class="docx-metric-label">
+                  Projetos
+                </div>
+
+                <div class="docx-metric-value">
+                  {{ projetos|length }}
+                </div>
+
+                <div class="docx-metric-helper">
+                  projetos cadastrados
+                </div>
               </div>
             </div>
 
-            <div class="col-12 col-md-4">
-              <div class="border rounded p-3 h-100">
-                <div class="fw-semibold">Responsáveis</div>
-                <div class="text-muted small">{{ responsaveis|length }} cadastrados</div>
+            <div class="col-12 col-md-4 col-xl-12">
+              <div class="docx-metric-card">
+                <div class="docx-metric-label">
+                  Responsáveis
+                </div>
+
+                <div class="docx-metric-value">
+                  {{ responsaveis|length }}
+                </div>
+
+                <div class="docx-metric-helper">
+                  responsáveis cadastrados
+                </div>
               </div>
             </div>
 
-            <div class="col-12 col-md-4">
-              <div class="border rounded p-3 h-100">
-                <div class="fw-semibold">Etapas</div>
-                <div class="text-muted small">{{ etapas|length }} no workflow</div>
+            <div class="col-12 col-md-4 col-xl-12">
+              <div class="docx-metric-card">
+                <div class="docx-metric-label">
+                  Workflow
+                </div>
+
+                <div class="docx-metric-value">
+                  {{ etapas|length }}
+                </div>
+
+                <div class="docx-metric-helper">
+                  etapas configuradas
+                </div>
               </div>
             </div>
+
           </div>
 
-          <hr>
+          <div class="docx-divider"></div>
 
-          <div class="text-muted small">
-            Dica: para editar usuários, grupos, permissões e cadastros base, utilize o Admin do Django.
+          <div class="docx-info-panel">
+            <div class="docx-info-title">
+              Administração central
+            </div>
+
+            <div class="docx-info-text">
+              Usuários, grupos, permissões e entidades estruturais podem ser gerenciados diretamente pelo painel administrativo do Django.
+            </div>
           </div>
 
           {% if user.is_superuser %}
-          <div class="mt-2 d-flex flex-wrap gap-2">
-            <a class="btn btn-sm btn-outline-secondary" href="/admin/" target="_blank" rel="noopener">
+          <div class="mt-4 d-flex flex-wrap gap-2">
+            <a class="btn btn-enterprise-secondary"
+               href="/admin/"
+               target="_blank"
+               rel="noopener">
+              <i class="bi bi-box-arrow-up-right"></i>
               Abrir Admin
             </a>
           </div>
           {% endif %}
+
         </div>
       </div>
+
     </div>
 
   </div>
