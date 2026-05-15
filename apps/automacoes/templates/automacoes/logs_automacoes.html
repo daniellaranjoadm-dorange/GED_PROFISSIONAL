@@ -1,413 +1,78 @@
 {% extends "documentos/base.html" %}
+{% load static %}
 
 {% block title %}Logs de Automações{% endblock %}
 
 {% block extra_head %}
-<style>
-  .obs-page {
-    width: min(100%, 1500px);
-    margin: 0 auto;
-    color: #e5e7eb;
-  }
-
-  .obs-hero {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    gap: 1rem;
-    border: 1px solid rgba(56, 189, 248, .22);
-    border-radius: 24px;
-    padding: 1.15rem 1.25rem;
-    margin-bottom: 1rem;
-    background:
-      radial-gradient(circle at 0% 0%, rgba(56, 189, 248, .18), transparent 28rem),
-      radial-gradient(circle at 100% 0%, rgba(255, 138, 0, .12), transparent 24rem),
-      linear-gradient(135deg, rgba(15, 23, 42, .98), rgba(2, 6, 23, .92));
-    box-shadow: 0 18px 44px rgba(2, 8, 23, .28);
-  }
-
-  .obs-eyebrow {
-    display: inline-flex;
-    align-items: center;
-    gap: .4rem;
-    color: #38bdf8;
-    font-size: .72rem;
-    font-weight: 950;
-    text-transform: uppercase;
-    letter-spacing: .10em;
-    margin-bottom: .35rem;
-  }
-
-  .obs-hero h1 {
-    margin: 0;
-    color: #fff;
-    font-size: clamp(1.55rem, 2.4vw, 2.35rem);
-    font-weight: 950;
-    letter-spacing: -.045em;
-    line-height: 1;
-  }
-
-  .obs-hero p {
-    margin: .45rem 0 0;
-    color: #93c5fd;
-    max-width: 900px;
-  }
-
-  .obs-actions {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: .55rem;
-  }
-
-  .obs-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: .42rem;
-    border-radius: 999px;
-    border: 1px solid rgba(148, 163, 184, .24);
-    padding: .55rem .88rem;
-    color: #e5e7eb;
-    text-decoration: none;
-    font-size: .82rem;
-    font-weight: 900;
-    white-space: nowrap;
-    background: rgba(15, 23, 42, .70);
-  }
-
-  .obs-btn:hover {
-    color: #fff;
-    border-color: rgba(56, 189, 248, .56);
-  }
-
-  .obs-btn-primary {
-    color: #06111f;
-    background: linear-gradient(135deg, #38bdf8, #60a5fa);
-    border-color: rgba(125, 211, 252, .55);
-  }
-
-  .obs-btn-warning {
-    color: #422006;
-    background: linear-gradient(135deg, #f59e0b, #fde68a);
-    border-color: rgba(253, 230, 138, .55);
-  }
-
-  .obs-kpi-grid {
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: .75rem;
-    margin-bottom: 1rem;
-  }
-
-  .obs-kpi-grid-6 {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-  }
-
-  .obs-kpi-grid-7 {
-    grid-template-columns: repeat(7, minmax(0, 1fr));
-  }
-
-  .obs-kpi {
-    display: block;
-    min-height: 106px;
-    border: 1px solid rgba(148, 163, 184, .18);
-    border-radius: 20px;
-    padding: .9rem;
-    background: linear-gradient(180deg, rgba(15, 23, 42, .86), rgba(15, 23, 42, .62));
-    color: #e5e7eb;
-    text-decoration: none;
-    box-shadow: 0 14px 34px rgba(2, 8, 23, .18);
-  }
-
-  .obs-kpi:hover {
-    color: #fff;
-    border-color: rgba(56, 189, 248, .42);
-    transform: translateY(-1px);
-  }
-
-  .obs-kpi span {
-    display: block;
-    color: #bfdbfe;
-    font-size: .66rem;
-    font-weight: 950;
-    text-transform: uppercase;
-    letter-spacing: .07em;
-  }
-
-  .obs-kpi strong {
-    display: block;
-    margin-top: .25rem;
-    color: #fff;
-    font-size: clamp(1.35rem, 1.9vw, 2.1rem);
-    line-height: 1;
-    letter-spacing: -.05em;
-  }
-
-  .obs-kpi small {
-    display: block;
-    margin-top: .35rem;
-    color: #94a3b8;
-  }
-
-  .obs-grid-2 {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: .9rem;
-    margin-bottom: 1rem;
-  }
-
-  .obs-panel {
-    border: 1px solid rgba(148, 163, 184, .18);
-    border-radius: 22px;
-    padding: 1rem;
-    background: linear-gradient(180deg, rgba(15, 23, 42, .84), rgba(15, 23, 42, .64));
-    box-shadow: 0 16px 38px rgba(2, 8, 23, .20);
-  }
-
-  .obs-panel-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: .8rem;
-    margin-bottom: .8rem;
-  }
-
-  .obs-panel-head h2 {
-    margin: 0;
-    color: #fff;
-    font-size: 1.02rem;
-    font-weight: 950;
-    letter-spacing: -.025em;
-  }
-
-  .obs-panel-head p {
-    margin: .2rem 0 0;
-    color: #93c5fd;
-    font-size: .8rem;
-  }
-
-  .obs-chip,
-  .obs-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid rgba(56, 189, 248, .30);
-    border-radius: 999px;
-    padding: .3rem .65rem;
-    color: #bae6fd;
-    background: rgba(14, 165, 233, .14);
-    font-size: .68rem;
-    font-weight: 950;
-    text-transform: uppercase;
-    letter-spacing: .05em;
-    white-space: nowrap;
-  }
-
-  .obs-badge-success {
-    color: #bbf7d0;
-    background: rgba(22, 163, 74, .15);
-    border-color: rgba(34, 197, 94, .30);
-  }
-
-  .obs-badge-danger {
-    color: #fecaca;
-    background: rgba(220, 38, 38, .15);
-    border-color: rgba(248, 113, 113, .32);
-  }
-
-  .obs-badge-warning {
-    color: #fde68a;
-    background: rgba(245, 158, 11, .14);
-    border-color: rgba(245, 158, 11, .32);
-  }
-
-  .obs-muted {
-    color: #94a3b8;
-  }
-
-  .obs-list {
-    display: flex;
-    flex-direction: column;
-    gap: .55rem;
-  }
-
-  .obs-list-item,
-  .obs-result {
-    display: block;
-    border: 1px solid rgba(148, 163, 184, .16);
-    border-radius: 16px;
-    padding: .78rem;
-    background: rgba(2, 6, 23, .30);
-    color: #e5e7eb;
-    text-decoration: none;
-  }
-
-  .obs-list-item:hover,
-  .obs-result:hover {
-    color: #fff;
-    border-color: rgba(56, 189, 248, .42);
-  }
-
-  .obs-list-item strong,
-  .obs-result strong {
-    color: #fff;
-  }
-
-  .obs-table-wrap {
-    width: 100%;
-    overflow-x: auto;
-    border: 1px solid rgba(148, 163, 184, .14);
-    border-radius: 16px;
-  }
-
-  .obs-table {
-    width: 100%;
-    min-width: 880px;
-    border-collapse: collapse;
-  }
-
-  .obs-table th,
-  .obs-table td {
-    padding: .68rem .75rem;
-    border-bottom: 1px solid rgba(148, 163, 184, .12);
-    color: #dbeafe;
-    vertical-align: middle;
-    font-size: .82rem;
-  }
-
-  .obs-table th {
-    color: #93c5fd;
-    background: rgba(2, 6, 23, .34);
-    font-size: .68rem;
-    font-weight: 950;
-    text-transform: uppercase;
-    letter-spacing: .07em;
-  }
-
-  .obs-table tbody tr:hover {
-    background: rgba(56, 189, 248, .06);
-  }
-
-  .obs-table tbody tr:last-child td {
-    border-bottom: 0;
-  }
-
-  .obs-form-grid {
-    display: grid;
-    grid-template-columns: minmax(260px, 1fr) auto;
-    gap: .65rem;
-    align-items: end;
-  }
-
-  .obs-filter-grid {
-    display: grid;
-    grid-template-columns: minmax(260px, 1.6fr) minmax(160px, 1fr) minmax(150px, .8fr) auto auto;
-    gap: .65rem;
-    align-items: end;
-  }
-
-  .obs-filter-label {
-    display: block;
-    margin-bottom: .25rem;
-    color: #93c5fd;
-    font-size: .66rem;
-    text-transform: uppercase;
-    letter-spacing: .07em;
-    font-weight: 950;
-  }
-
-  .obs-chart-wrap {
-    min-height: 280px;
-    position: relative;
-  }
-
-  .obs-message {
-    max-width: 520px;
-    white-space: normal;
-  }
-
-  .obs-pagination .page-link {
-    background: rgba(15, 23, 42, .76);
-    color: #dbeafe;
-    border-color: rgba(148, 163, 184, .20);
-  }
-
-  .obs-pagination .page-item.disabled .page-link,
-  .obs-pagination .active .page-link {
-    background: linear-gradient(135deg, #38bdf8, #60a5fa);
-    color: #06111f;
-    border-color: rgba(125, 211, 252, .55);
-    font-weight: 900;
-  }
-
-  @media (max-width: 1280px) {
-    .obs-kpi-grid,
-    .obs-kpi-grid-6,
-    .obs-kpi-grid-7 {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-  }
-
-  @media (max-width: 900px) {
-    .obs-hero,
-    .obs-panel-head {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-
-    .obs-actions {
-      justify-content: flex-start;
-    }
-
-    .obs-grid-2,
-    .obs-form-grid,
-    .obs-filter-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .obs-kpi-grid,
-    .obs-kpi-grid-6,
-    .obs-kpi-grid-7 {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-  }
-
-  @media (max-width: 560px) {
-    .obs-kpi-grid,
-    .obs-kpi-grid-6,
-    .obs-kpi-grid-7 {
-      grid-template-columns: 1fr;
-    }
-
-    .obs-btn {
-      width: 100%;
-    }
-  }
-</style>
+<link rel="stylesheet" href="{% static 'automacoes/css/ops_enterprise.css' %}?v=1501">
 {% endblock %}
 
 {% block content %}
-<div class="obs-page">
-  <section class="obs-hero">
-    <div>
-      <div class="obs-eyebrow"><i class="bi bi-activity"></i> Automation Logs</div>
+<div class="ops-page">
+
+  <section class="ops-hero">
+    <div class="ops-hero-main">
+      <div class="ops-eyebrow">
+        <i class="bi bi-activity"></i>
+        Automation Logs
+      </div>
+
       <h1>Logs Executivos de Automações</h1>
-      <p>Auditoria operacional: usuário, status, duração, quantidade processada e mensagens de execução.</p>
+
+      <p>
+        Auditoria operacional: usuário, status, duração, quantidade processada e mensagens de execução.
+      </p>
     </div>
-    <div class="obs-actions">
-      <a href="{% url 'automacoes:painel' %}" class="obs-btn"><i class="bi bi-arrow-left"></i> Voltar ao Painel</a>
+
+    <div class="ops-actions">
+      <a href="{% url 'automacoes:painel' %}"
+         class="ops-btn">
+        <i class="bi bi-arrow-left"></i>
+        Voltar ao Painel
+      </a>
     </div>
   </section>
 
-  <section class="obs-kpi-grid obs-kpi-grid-7">
-    <div class="obs-kpi"><span>Total filtrado</span><strong>{{ total }}</strong></div>
-    <a href="{% url 'automacoes:logs_automacoes' %}?status=sucesso" class="obs-kpi"><span>Sucessos</span><strong>{{ total_sucesso }}</strong></a>
-    <a href="{% url 'automacoes:logs_automacoes' %}?status=erro" class="obs-kpi"><span>Erros</span><strong>{{ total_erros }}</strong></a>
-    <a href="{% url 'automacoes:logs_automacoes' %}?status=iniciado" class="obs-kpi"><span>Iniciados</span><strong>{{ total_iniciados }}</strong></a>
-    <div class="obs-kpi"><span>Duração média</span><strong>{{ duracao_media }}s</strong></div>
-    <div class="obs-kpi"><span>Sucesso %</span><strong>{{ taxa_sucesso }}%</strong></div>
-    <div class="obs-kpi"><span>Falhas hoje</span><strong>{{ falhas_hoje }}</strong></div>
+  <section class="ops-kpi-grid ops-kpi-grid-7">
+
+    <div class="ops-kpi">
+      <span>Total filtrado</span>
+      <strong>{{ total }}</strong>
+    </div>
+
+    <a href="{% url 'automacoes:logs_automacoes' %}?status=sucesso"
+       class="ops-kpi">
+      <span>Sucessos</span>
+      <strong>{{ total_sucesso }}</strong>
+    </a>
+
+    <a href="{% url 'automacoes:logs_automacoes' %}?status=erro"
+       class="ops-kpi">
+      <span>Erros</span>
+      <strong>{{ total_erros }}</strong>
+    </a>
+
+    <a href="{% url 'automacoes:logs_automacoes' %}?status=iniciado"
+       class="ops-kpi">
+      <span>Iniciados</span>
+      <strong>{{ total_iniciados }}</strong>
+    </a>
+
+    <div class="ops-kpi">
+      <span>Duração média</span>
+      <strong>{{ duracao_media }}s</strong>
+    </div>
+
+    <div class="ops-kpi">
+      <span>Sucesso %</span>
+      <strong>{{ taxa_sucesso }}%</strong>
+    </div>
+
+    <div class="ops-kpi">
+      <span>Falhas hoje</span>
+      <strong>{{ falhas_hoje }}</strong>
+    </div>
+
   </section>
 
   {{ dias_labels|json_script:"logs-dias-labels" }}
@@ -418,131 +83,392 @@
   {{ erros_chart_labels|json_script:"logs-erros-labels" }}
   {{ erros_chart_values|json_script:"logs-erros-values" }}
 
-  <section class="obs-grid-2">
-    <div class="obs-panel">
-      <div class="obs-panel-head"><div><h2>Execuções por automação</h2><p>Volume por rotina executada.</p></div><span class="obs-badge">{{ execucoes_hoje }} hoje</span></div>
-      <div class="obs-chart-wrap"><canvas id="logsAutomacaoChart"></canvas></div>
+  <section class="ops-grid ops-grid-2 ops-stack">
+
+    <div class="ops-panel">
+      <div class="ops-panel-head">
+        <div>
+          <h2>Execuções por automação</h2>
+          <p>Volume por rotina executada.</p>
+        </div>
+
+        <span class="ops-chip">
+          {{ execucoes_hoje }} hoje
+        </span>
+      </div>
+
+      <div class="ops-chart-wrap">
+        <canvas id="logsAutomacaoChart"></canvas>
+      </div>
     </div>
 
-    <div class="obs-panel">
-      <div class="obs-panel-head"><div><h2>Erros por automação</h2><p>Falhas agrupadas por rotina.</p></div><span class="obs-badge obs-badge-danger">{{ total_erros }} erros</span></div>
-      <div class="obs-chart-wrap"><canvas id="logsErrosChart"></canvas></div>
+    <div class="ops-panel">
+      <div class="ops-panel-head">
+        <div>
+          <h2>Erros por automação</h2>
+          <p>Falhas agrupadas por rotina.</p>
+        </div>
+
+        <span class="ops-chip ops-chip-danger">
+          {{ total_erros }} erros
+        </span>
+      </div>
+
+      <div class="ops-chart-wrap">
+        <canvas id="logsErrosChart"></canvas>
+      </div>
     </div>
+
   </section>
 
-  <section class="obs-panel">
+  <section class="ops-panel">
+
     <form method="get">
-      <div class="obs-filter-grid">
+
+      <div class="ops-filter-grid">
+
         <div>
-          <label class="obs-filter-label">Busca</label>
-          <input type="text" name="q" value="{{ busca }}" class="form-control" placeholder="Automação, mensagem ou usuário...">
+          <label class="ops-filter-label">
+            Busca
+          </label>
+
+          <input type="text"
+                 name="q"
+                 value="{{ busca }}"
+                 class="form-control"
+                 placeholder="Automação, mensagem ou usuário...">
         </div>
 
         <div>
-          <label class="obs-filter-label">Automação</label>
+          <label class="ops-filter-label">
+            Automação
+          </label>
+
           <select name="nome" class="form-select">
             <option value="">Todas</option>
-            {% for item in nomes %}<option value="{{ item }}" {% if nome == item %}selected{% endif %}>{{ item }}</option>{% endfor %}
+
+            {% for item in nomes %}
+            <option value="{{ item }}"
+                    {% if nome == item %}selected{% endif %}>
+              {{ item }}
+            </option>
+            {% endfor %}
           </select>
         </div>
 
         <div>
-          <label class="obs-filter-label">Status</label>
+          <label class="ops-filter-label">
+            Status
+          </label>
+
           <select name="status" class="form-select">
             <option value="">Todos</option>
-            {% for valor, rotulo in status_choices %}<option value="{{ valor }}" {% if status == valor %}selected{% endif %}>{{ rotulo }}</option>{% endfor %}
+
+            {% for valor, rotulo in status_choices %}
+            <option value="{{ valor }}"
+                    {% if status == valor %}selected{% endif %}>
+              {{ rotulo }}
+            </option>
+            {% endfor %}
           </select>
         </div>
 
-        <button class="obs-btn obs-btn-primary" type="submit"><i class="bi bi-funnel"></i> Filtrar</button>
-        <a href="{% url 'automacoes:logs_automacoes' %}" class="obs-btn"><i class="bi bi-x-circle"></i> Limpar</a>
+        <button class="ops-btn ops-btn-primary"
+                type="submit">
+          <i class="bi bi-funnel"></i>
+          Filtrar
+        </button>
+
+        <a href="{% url 'automacoes:logs_automacoes' %}"
+           class="ops-btn">
+          <i class="bi bi-x-circle"></i>
+          Limpar
+        </a>
+
       </div>
+
     </form>
+
   </section>
 
-  <section class="obs-panel mt-3">
-    <div class="obs-panel-head"><div><h2>Execuções nos últimos 14 dias</h2><p>Volume diário e falhas operacionais.</p></div><span class="obs-chip">Analytics</span></div>
-    <div class="obs-chart-wrap"><canvas id="logsDiasChart"></canvas></div>
+  <section class="ops-panel mt-3">
+
+    <div class="ops-panel-head">
+      <div>
+        <h2>Execuções nos últimos 14 dias</h2>
+        <p>Volume diário e falhas operacionais.</p>
+      </div>
+
+      <span class="ops-chip">
+        Analytics
+      </span>
+    </div>
+
+    <div class="ops-chart-wrap">
+      <canvas id="logsDiasChart"></canvas>
+    </div>
+
   </section>
 
-  <section class="obs-panel mt-3">
-    <div class="obs-panel-head"><div><h2>Logs filtrados</h2><p>Registros detalhados de execução.</p></div><span class="obs-chip">Tabela</span></div>
-    <div class="obs-table-wrap">
-      <table class="obs-table">
-        <thead><tr><th>Início</th><th>Automação</th><th>Status</th><th>Usuário</th><th>Qtd.</th><th>Duração</th><th>Mensagem</th></tr></thead>
+  <section class="ops-panel mt-3">
+
+    <div class="ops-panel-head">
+      <div>
+        <h2>Logs filtrados</h2>
+        <p>Registros detalhados de execução.</p>
+      </div>
+
+      <span class="ops-chip">
+        Tabela
+      </span>
+    </div>
+
+    <div class="ops-table-wrap">
+
+      <table class="ops-table">
+
+        <thead>
+          <tr>
+            <th>Início</th>
+            <th>Automação</th>
+            <th>Status</th>
+            <th>Usuário</th>
+            <th>Qtd.</th>
+            <th>Duração</th>
+            <th>Mensagem</th>
+          </tr>
+        </thead>
+
         <tbody>
+
           {% for log in logs %}
-            <tr>
-              <td>{{ log.iniciado_em }}</td>
-              <td><strong>{{ log.nome }}</strong></td>
-              <td>
-                {% if log.status == "sucesso" %}<span class="obs-badge obs-badge-success">● Sucesso</span>
-                {% elif log.status == "sucesso_parcial" %}<span class="obs-badge">● Parcial</span>
-                {% elif log.status == "iniciado" or log.status == "processando" %}<span class="obs-badge">● Executando</span>
-                {% elif log.status == "cancelado" %}<span class="obs-badge">● Cancelado</span>
-                {% else %}<span class="obs-badge obs-badge-danger">● Erro</span>{% endif %}
-              </td>
-              <td>{{ log.usuario|default:"Sistema" }}</td>
-              <td>{{ log.quantidade_processada|default:0 }}</td>
-              <td>{{ log.duracao_segundos|default:0 }}s</td>
-              <td class="obs-message">{{ log.mensagem|default:"—" }}</td>
-            </tr>
-          {% empty %}<tr><td colspan="7" class="text-center obs-muted">Nenhum log encontrado.</td></tr>{% endfor %}
+          <tr>
+
+            <td>{{ log.iniciado_em }}</td>
+
+            <td>
+              <strong>{{ log.nome }}</strong>
+            </td>
+
+            <td>
+              {% if log.status == "sucesso" %}
+                <span class="ops-status-pill ops-status-ok">
+                  ● Sucesso
+                </span>
+
+              {% elif log.status == "sucesso_parcial" %}
+                <span class="ops-status-pill">
+                  ● Parcial
+                </span>
+
+              {% elif log.status == "iniciado" or log.status == "processando" %}
+                <span class="ops-status-pill">
+                  ● Executando
+                </span>
+
+              {% elif log.status == "cancelado" %}
+                <span class="ops-status-pill ops-status-warn">
+                  ● Cancelado
+                </span>
+
+              {% else %}
+                <span class="ops-status-pill ops-status-risk">
+                  ● Erro
+                </span>
+              {% endif %}
+            </td>
+
+            <td>{{ log.usuario|default:"Sistema" }}</td>
+
+            <td>{{ log.quantidade_processada|default:0 }}</td>
+
+            <td>{{ log.duracao_segundos|default:0 }}s</td>
+
+            <td class="ops-message">
+              {{ log.mensagem|default:"—" }}
+            </td>
+
+          </tr>
+
+          {% empty %}
+          <tr>
+            <td colspan="7" class="ops-empty">
+              Nenhum log encontrado.
+            </td>
+          </tr>
+          {% endfor %}
+
         </tbody>
+
       </table>
+
     </div>
 
     {% if page_obj.has_other_pages %}
-      <nav class="mt-4 obs-pagination">
-        <ul class="pagination justify-content-center mb-0">
-          {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ busca|urlencode }}&status={{ status|urlencode }}&nome={{ nome|urlencode }}">Anterior</a></li>{% endif %}
-          <li class="page-item disabled"><span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span></li>
-          {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ busca|urlencode }}&status={{ status|urlencode }}&nome={{ nome|urlencode }}">Próxima</a></li>{% endif %}
-        </ul>
-      </nav>
+
+    <nav class="mt-4 ops-pagination">
+
+      <ul class="pagination justify-content-center mb-0">
+
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+          <a class="page-link"
+             href="?page={{ page_obj.previous_page_number }}&q={{ busca|urlencode }}&status={{ status|urlencode }}&nome={{ nome|urlencode }}">
+            Anterior
+          </a>
+        </li>
+        {% endif %}
+
+        <li class="page-item disabled">
+          <span class="page-link">
+            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+          </span>
+        </li>
+
+        {% if page_obj.has_next %}
+        <li class="page-item">
+          <a class="page-link"
+             href="?page={{ page_obj.next_page_number }}&q={{ busca|urlencode }}&status={{ status|urlencode }}&nome={{ nome|urlencode }}">
+            Próxima
+          </a>
+        </li>
+        {% endif %}
+
+      </ul>
+
+    </nav>
+
     {% endif %}
+
   </section>
+
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
 (function () {
+
   function readJson(id) {
     const element = document.getElementById(id);
+
     if (!element) return [];
-    try { return JSON.parse(element.textContent || "[]"); }
-    catch (error) { console.warn("Falha ao ler JSON do gráfico", id, error); return []; }
+
+    try {
+      return JSON.parse(element.textContent || "[]");
+    }
+    catch (error) {
+      console.warn("Falha ao ler JSON do gráfico", id, error);
+      return [];
+    }
   }
 
   if (!window.Chart) return;
 
   const autoLabels = readJson("logs-auto-labels");
   const autoValues = readJson("logs-auto-values");
+
   const errosLabels = readJson("logs-erros-labels");
   const errosValues = readJson("logs-erros-values");
+
   const diasLabels = readJson("logs-dias-labels");
   const diasExecucoes = readJson("logs-dias-execucoes");
   const diasErros = readJson("logs-dias-erros");
 
   const autoCanvas = document.getElementById("logsAutomacaoChart");
+
   if (autoCanvas && autoLabels.length) {
-    new Chart(autoCanvas, { type: "bar", data: { labels: autoLabels, datasets: [{ label: "Execuções", data: autoValues }] }, options: { responsive: true, maintainAspectRatio: false, indexAxis: "y", plugins: { legend: { display: false } } } });
+
+    new Chart(autoCanvas, {
+      type: "bar",
+      data: {
+        labels: autoLabels,
+        datasets: [{
+          label: "Execuções",
+          data: autoValues
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: "y",
+        plugins: {
+          legend: {
+            display: false
+          }
+        }
+      }
+    });
+
   }
 
   const errosCanvas = document.getElementById("logsErrosChart");
+
   if (errosCanvas && errosLabels.length) {
-    new Chart(errosCanvas, { type: "bar", data: { labels: errosLabels, datasets: [{ label: "Erros", data: errosValues }] }, options: { responsive: true, maintainAspectRatio: false, indexAxis: "y", plugins: { legend: { display: false } } } });
+
+    new Chart(errosCanvas, {
+      type: "bar",
+      data: {
+        labels: errosLabels,
+        datasets: [{
+          label: "Erros",
+          data: errosValues
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: "y",
+        plugins: {
+          legend: {
+            display: false
+          }
+        }
+      }
+    });
+
   }
 
   const diasCanvas = document.getElementById("logsDiasChart");
+
   if (diasCanvas && diasLabels.length) {
+
     new Chart(diasCanvas, {
       type: "line",
-      data: { labels: diasLabels, datasets: [{ label: "Execuções", data: diasExecucoes, tension: 0.25 }, { label: "Erros", data: diasErros, tension: 0.25 }] },
-      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom" } }, scales: { y: { beginAtZero: true, precision: 0 } } }
+      data: {
+        labels: diasLabels,
+        datasets: [
+          {
+            label: "Execuções",
+            data: diasExecucoes,
+            tension: 0.25
+          },
+          {
+            label: "Erros",
+            data: diasErros,
+            tension: 0.25
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: "bottom"
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            precision: 0
+          }
+        }
+      }
     });
+
   }
+
 })();
 </script>
 {% endblock %}
