@@ -4,67 +4,59 @@
 {% block title %}Novo Documento{% endblock %}
 
 {% block content %}
-<div class="page-upload-documento page-upload-doc page-novo-documento">
+<div class="docx-page page-upload-documento page-upload-doc page-novo-documento">
 
-<div class="dash-container dash-container--wide upload-wrap">
+<div class="upload-wrap">
 
 <style>
-/* Fallback: garante o visual premium mesmo se enterprise.css n&#227;o atualizar (cache/caminho). */
-.page-upload-documento .dash-actions{ display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap; }
-.page-upload-documento .dash-input-lg{ padding: 12px 14px !important; font-size: 1.02rem !important; }
-.page-upload-documento .dash-req{ color: var(--dash-accent); font-weight: 900; margin-left: 2px; }
-.page-upload-documento .dash-reqhint{ color: var(--dash-muted); font-size: .78rem; margin-left: 6px; font-weight: 700; }
 
-.page-upload-documento .ldp-dropzone{
-  position: relative;
-  border-radius: var(--dash-radius);
-  border: 2px dashed rgba(148,163,184,.45);
-  background: rgba(11,18,32,.03);
-  padding: 14px 16px;
-  transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
-}
-body[data-theme="dark"] .page-upload-documento .ldp-dropzone{ background: rgba(0,0,0,.14); border-color: rgba(148,163,184,.30); }
-.page-upload-documento .ldp-dropzone:hover{ border-color: rgba(224,96,0,.55); }
-.page-upload-documento .ldp-dropzone.is-dragover{
-  border-color: rgba(224,96,0,1);
-  background: rgba(224,96,0,.08);
-  box-shadow: 0 0 0 4px rgba(224,96,0,.12);
-}
+.docx-page{width:min(100%,1500px);margin:0 auto;color:#e5e7eb}
+.docx-hero{display:flex;justify-content:space-between;align-items:flex-end;gap:1rem;border:1px solid rgba(56,189,248,.22);border-radius:24px;padding:1.15rem 1.25rem;margin-bottom:1rem;background:radial-gradient(circle at 0% 0%,rgba(56,189,248,.18),transparent 28rem),radial-gradient(circle at 100% 0%,rgba(255,138,0,.12),transparent 24rem),linear-gradient(135deg,rgba(15,23,42,.98),rgba(2,6,23,.92));box-shadow:0 18px 44px rgba(2,8,23,.28)}
+.docx-eyebrow{display:inline-flex;align-items:center;gap:.4rem;color:#38bdf8;font-size:.72rem;font-weight:950;text-transform:uppercase;letter-spacing:.10em;margin-bottom:.35rem}
+.docx-hero h1{margin:0;color:#fff;font-size:clamp(1.55rem,2.4vw,2.35rem);font-weight:950;letter-spacing:-.045em;line-height:1}
+.docx-hero p{margin:.45rem 0 0;color:#93c5fd;max-width:900px}
+.docx-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:.55rem}
+.docx-page .btn,.docx-btn,.docx-page .dash-btn{display:inline-flex;align-items:center;justify-content:center;gap:.42rem;border-radius:999px!important;border:1px solid rgba(148,163,184,.24);padding:.55rem .88rem;color:#e5e7eb;text-decoration:none;font-size:.82rem;font-weight:900;white-space:nowrap;background:rgba(15,23,42,.70)}
+.docx-page .btn:hover,.docx-btn:hover,.docx-page .dash-btn:hover{color:#fff;border-color:rgba(56,189,248,.56)}
+.docx-page .btn-primary,.docx-btn-primary,.docx-page .dash-btn-primary{color:#06111f!important;background:linear-gradient(135deg,#38bdf8,#60a5fa)!important;border-color:rgba(125,211,252,.55)!important}
+.docx-page .btn-success,.docx-btn-success{color:#052e16!important;background:linear-gradient(135deg,#22c55e,#86efac)!important;border-color:rgba(134,239,172,.55)!important}
+.docx-page .btn-warning,.docx-btn-warning{color:#422006!important;background:linear-gradient(135deg,#f59e0b,#fde68a)!important;border-color:rgba(253,230,138,.55)!important}
+.docx-page .btn-danger,.docx-btn-danger{color:#fff!important;background:rgba(220,38,38,.20)!important;border-color:rgba(248,113,113,.38)!important}
+.docx-card,.docx-panel,.docx-page .card,.docx-page .dash-card,.docx-page .dash-surface,.docx-page .upload-card,.docx-page .neon-card{border:1px solid rgba(148,163,184,.18)!important;border-radius:22px!important;background:linear-gradient(180deg,rgba(15,23,42,.84),rgba(15,23,42,.64))!important;box-shadow:0 16px 38px rgba(2,8,23,.20)!important;color:#e5e7eb!important;padding:1rem}
+.docx-page .form-label,.docx-page label{color:#bfdbfe!important;font-size:.68rem;text-transform:uppercase;letter-spacing:.07em;font-weight:950}
+.docx-page .form-control,.docx-page .form-select{background:rgba(2,6,23,.42)!important;border:1px solid rgba(148,163,184,.22)!important;color:#e5e7eb!important;border-radius:14px!important;min-height:42px}
+.docx-page .form-control::placeholder{color:#94a3b8!important}
+.docx-page .form-text,.docx-page .text-muted,.docx-muted{color:#94a3b8!important}
+.docx-page .text-primary,.docx-page .text-info,.docx-page .neon-title{color:#bae6fd!important;text-shadow:none!important}
+.docx-page .text-light{color:#e5e7eb!important}
+.docx-page hr{border-color:rgba(148,163,184,.18);opacity:1}
+.docx-page .table{--bs-table-bg:transparent;--bs-table-color:#dbeafe;--bs-table-striped-bg:rgba(255,255,255,.03);--bs-table-striped-color:#dbeafe;--bs-table-hover-bg:rgba(56,189,248,.06);--bs-table-hover-color:#fff;color:#dbeafe;margin-bottom:0}
+.docx-page .table>:not(caption)>*>*{background-color:transparent!important;color:#dbeafe!important;border-color:rgba(148,163,184,.16)!important;vertical-align:middle}
+.docx-page .table thead th,.docx-page .table-primary th,.docx-page .table-danger th{color:#93c5fd!important;background:rgba(2,6,23,.42)!important;font-size:.68rem;font-weight:950;text-transform:uppercase;letter-spacing:.07em}
+.docx-page .alert{border-radius:18px;border:1px solid rgba(248,113,113,.35);background:rgba(220,38,38,.16);color:#fecaca}
+.docx-page .list-group-item{background:rgba(2,6,23,.30)!important;color:#dbeafe!important;border-color:rgba(148,163,184,.16)!important}
+.docx-grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.85rem}
+.docx-grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.85rem}
+.docx-field{min-width:0}
+.docx-section-title{color:#fff;font-size:1.02rem;font-weight:950;margin-bottom:.75rem}
+.docx-page .ldp-dropzone,.docx-page .upload-dropzone{position:relative;border-radius:20px;border:2px dashed rgba(56,189,248,.34);background:rgba(2,6,23,.32);padding:1.25rem;transition:.2s ease}
+.docx-page .ldp-dropzone:hover,.docx-page .upload-dropzone:hover,.docx-page .ldp-dropzone.is-dragover,.docx-page .upload-dropzone.is-dragover{border-color:rgba(56,189,248,.75);background:rgba(14,165,233,.10);box-shadow:0 0 0 4px rgba(56,189,248,.12)}
+.docx-page .ldp-title{color:#fff;font-size:1.08rem;font-weight:950;display:flex;align-items:center;gap:.55rem}
+.docx-page .ldp-title i{color:#38bdf8;font-size:1.25rem}
+.docx-page .ldp-sub,.docx-page .ldp-meta{color:#94a3b8!important}
+.docx-page .ldp-chips{display:flex;flex-wrap:wrap;gap:.55rem;margin-top:.75rem}
+.docx-page .ldp-chip{display:inline-flex;align-items:center;gap:.55rem;padding:.45rem .7rem;border-radius:999px;color:#bae6fd;background:rgba(14,165,233,.14);border:1px solid rgba(56,189,248,.30);max-width:100%;font-weight:850}
+.docx-page .ldp-chip-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:56ch}
+.docx-page .ldp-chip-remove{border:0;background:transparent;color:#94a3b8}
+.file-preview img{max-height:90px;border-radius:12px;margin:5px;box-shadow:0 0 8px rgba(56,189,248,.35)}
+.file-preview span{font-size:13px;display:block;margin-top:4px;color:#dbeafe}
+@media(max-width:900px){.docx-hero{flex-direction:column;align-items:flex-start}.docx-actions{justify-content:flex-start}.docx-grid-3,.docx-grid-2{grid-template-columns:1fr}.docx-page .btn,.docx-btn,.docx-page .dash-btn{width:100%}}
 
-.page-upload-documento .ldp-title{ font-weight: 900; color: var(--dash-text); display:flex; align-items:center; gap:10px; }
-.page-upload-documento .ldp-title i{ color: var(--dash-accent); font-size: 1.1rem; }
-.page-upload-documento .ldp-sub{ color: var(--dash-muted); font-weight: 650; margin-top: 2px; }
-.page-upload-documento .ldp-meta{ color: var(--dash-muted); font-size: .85rem; margin-top: 6px; }
-
-.page-upload-documento .ldp-chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top: 10px; }
-.page-upload-documento .ldp-chip{
-  display:inline-flex; align-items:center; gap:8px;
-  padding: 6px 10px; border-radius: 999px;
-  border: 1px solid rgba(148,163,184,.28);
-  background: rgba(0,0,0,.10);
-  max-width: 100%;
-}
-body[data-theme="light"] .page-upload-documento .ldp-chip{ background: rgba(11,18,32,.05); }
-.page-upload-documento .ldp-chip-name{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width: 42ch; }
-.page-upload-documento .ldp-chip-remove{ border:0; background:transparent; padding:0; line-height:1; color: var(--dash-muted); }
-.page-upload-documento .ldp-chip-remove:hover{ color: var(--dash-text); }
-
-/* Validation (se Django/Bootstrap aplicar classes) */
-.page-upload-documento .is-invalid{ border-color:#ef4444 !important; box-shadow: 0 0 0 .2rem rgba(239,68,68,.14) !important; }
-.page-upload-documento .is-valid{ border-color:#22c55e !important; box-shadow: 0 0 0 .2rem rgba(34,197,94,.14) !important; }
-.page-upload-documento .invalid-feedback,
-.page-upload-documento .errorlist{ color:#ef4444 !important; font-weight: 650; font-size: .9rem; margin-top: 6px; }
-.page-upload-documento .errorlist{ list-style:none; padding-left:0; margin: 6px 0 0; }
 </style>
 
-<div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-3">
-  <div>
-    <h1 class="dash-title mb-1"><i class="bi bi-file-earmark-plus me-2"></i> Novo Documento</h1>
-    <div class="dash-subtitle">Cadastre um novo documento no GED com os metadados b&#225;sicos e anexe o(s) arquivo(s).</div>
-  </div>
-</div>
+<section class="docx-hero"><div><div class="docx-eyebrow"><i class="bi bi-file-earmark-plus"></i> GED Document Control</div><h1>Novo Documento</h1><p>Cadastre um novo documento no GED com os metadados básicos e anexe o(s) arquivo(s).</p></div></section>
 
-<div class="dash-card upload-card">
+<div class="docx-card upload-card">
 
   {% if erro %}
     <div class="alert alert-danger d-flex align-items-center gap-2 mb-3" role="alert">
@@ -76,8 +68,8 @@ body[data-theme="light"] .page-upload-documento .ldp-chip{ background: rgba(11,1
   <form method="POST" enctype="multipart/form-data" action="{% url 'documentos:upload_documento' %}">
     {% csrf_token %}
 
-    <div class="upload-grid upload-grid--3">
-      <div class="upload-field">
+    <div class="docx-grid-3 mb-3">
+      <div class="docx-field">
         <label class="form-label">Projeto:</label>
         <select name="projeto" class="form-select">
           <option value="">(sem projeto)</option>
@@ -90,14 +82,14 @@ body[data-theme="light"] .page-upload-documento .ldp-chip{ background: rgba(11,1
         <div class="form-text">Se n&atilde;o selecionar, o sistema pode usar um projeto padr&atilde;o (se configurado na view).</div>
       </div>
 
-      <div class="upload-field">
+      <div class="docx-field">
         <label class="form-label">Disciplina:</label>
         <input type="text" name="disciplina" class="form-control"
                placeholder="Ex: CIVIL, EL&Eacute;TRICA..."
                value="{{ request.POST.disciplina|default:'' }}">
       </div>
 
-      <div class="upload-field">
+      <div class="docx-field">
         <label class="form-label">Tipo Documento:</label>
         <input type="text" name="tipo_doc" class="form-control"
                placeholder="Ex: DESENHO, MEMORIAL..."
@@ -105,15 +97,15 @@ body[data-theme="light"] .page-upload-documento .ldp-chip{ background: rgba(11,1
       </div>
     </div>
 
-    <div class="upload-grid upload-grid--3">
-      <div class="upload-field">
+    <div class="docx-grid-3 mb-3">
+      <div class="docx-field">
         <label class="form-label">Fase:</label>
         <input type="text" name="fase" class="form-control"
                placeholder="Ex: IFC, As Built..."
                value="{{ request.POST.fase|default:'' }}">
       </div>
 
-      <div class="upload-field">
+      <div class="docx-field">
         <label class="form-label">Revis&atilde;o:</label>
         <select name="revisao" class="form-select">
           <option value="">(vazia)</option>
@@ -124,7 +116,7 @@ body[data-theme="light"] .page-upload-documento .ldp-chip{ background: rgba(11,1
         </select>
       </div>
 
-      <div class="upload-field">
+      <div class="docx-field">
         <label class="form-label">C&oacute;digo <span class="dash-req">*</span><span class="dash-reqhint">Obrigat&oacute;rio</span></label>
         <input type="text" name="codigo" class="form-control" required
                placeholder="Ex: I-CR-4880.00-1200-000-CZ1-001"
@@ -132,8 +124,8 @@ body[data-theme="light"] .page-upload-documento .ldp-chip{ background: rgba(11,1
       </div>
     </div>
 
-    <div class="upload-grid upload-grid--1">
-      <div class="upload-field">
+    <div class="mb-3">
+      <div class="docx-field">
         <label class="form-label">T&iacute;tulo <span class="dash-req">*</span><span class="dash-reqhint">Obrigat&oacute;rio</span></label>
         <input type="text" name="titulo" class="form-control dash-input-lg" required
                placeholder="Ex: COMMISSIONING PLAN"
@@ -141,8 +133,8 @@ body[data-theme="light"] .page-upload-documento .ldp-chip{ background: rgba(11,1
       </div>
     </div>
 
-    <div class="upload-grid upload-grid--1">
-      <div class="upload-field">
+    <div class="mb-3">
+      <div class="docx-field">
         <label class="form-label">Arquivo(s) <span class="dash-req">*</span><span class="dash-reqhint">Obrigat&oacute;rio</span></label>
 
         <div class="upload-dropzone ldp-dropzone" id="dzArquivos" tabindex="0" role="button" aria-label="&Aacute;rea para anexar arquivos">
@@ -160,11 +152,11 @@ body[data-theme="light"] .page-upload-documento .ldp-chip{ background: rgba(11,1
       </div>
     </div>
 
-    <div class="upload-actions">
-      <a class="dash-btn btn btn-outline-secondary" href="{% url 'documentos:listar_documentos' %}">
+    <div class="docx-actions mt-4">
+      <a class="docx-btn" href="{% url 'documentos:listar_documentos' %}">
         <i class="bi bi-arrow-left"></i> Voltar
       </a>
-      <button type="submit" class="dash-btn dash-btn-primary btn btn-primary">
+      <button type="submit" class="docx-btn docx-btn-primary">
         <i class="bi bi-send"></i> Enviar Documento
       </button>
     </div>
@@ -238,7 +230,7 @@ body[data-theme="light"] .page-upload-documento .ldp-chip{ background: rgba(11,1
   dz.addEventListener('drop', (e) => {
     e.preventDefault();
     dz.classList.remove('is-dragover');
-    const dropped = Array.from(e.dataTransfer&Ocirc;.files || []);
+    const dropped = Array.from(e.dataTransfer?.files || []);
     if(!dropped.length) return;
     const current = Array.from(input.files || []);
     setFiles(mergeFiles(current, dropped));
