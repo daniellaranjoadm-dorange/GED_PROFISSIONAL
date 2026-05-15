@@ -1,616 +1,452 @@
 {% extends "documentos/base.html" %}
+{% load static %}
 
 {% block title %}Timeline PCFs{% endblock %}
 
 {% block extra_head %}
-<style>
-  .pcf-page {
-    width: min(100%, 1500px);
-    margin: 0 auto;
-    color: #e5e7eb;
-  }
-
-  .pcf-hero {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    gap: 1rem;
-    border: 1px solid rgba(56, 189, 248, .22);
-    border-radius: 24px;
-    padding: 1.15rem 1.25rem;
-    margin-bottom: 1rem;
-    background:
-      radial-gradient(circle at 0% 0%, rgba(56, 189, 248, .18), transparent 28rem),
-      radial-gradient(circle at 100% 0%, rgba(255, 138, 0, .12), transparent 24rem),
-      linear-gradient(135deg, rgba(15, 23, 42, .98), rgba(2, 6, 23, .92));
-    box-shadow: 0 18px 44px rgba(2, 8, 23, .28);
-  }
-
-  .pcf-eyebrow {
-    display: inline-flex;
-    align-items: center;
-    gap: .4rem;
-    color: #38bdf8;
-    font-size: .72rem;
-    font-weight: 950;
-    text-transform: uppercase;
-    letter-spacing: .10em;
-    margin-bottom: .35rem;
-  }
-
-  .pcf-hero h1 {
-    margin: 0;
-    color: #fff;
-    font-size: clamp(1.55rem, 2.4vw, 2.35rem);
-    font-weight: 950;
-    letter-spacing: -.045em;
-    line-height: 1;
-  }
-
-  .pcf-hero p {
-    margin: .45rem 0 0;
-    color: #93c5fd;
-    max-width: 840px;
-  }
-
-  .pcf-actions,
-  .pcf-card-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: .55rem;
-  }
-
-  .pcf-actions {
-    justify-content: flex-end;
-  }
-
-  .pcf-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: .42rem;
-    border-radius: 999px;
-    border: 1px solid rgba(148, 163, 184, .24);
-    padding: .55rem .88rem;
-    color: #e5e7eb;
-    text-decoration: none;
-    font-size: .82rem;
-    font-weight: 900;
-    white-space: nowrap;
-    background: rgba(15, 23, 42, .70);
-  }
-
-  .pcf-btn:hover {
-    color: #fff;
-    border-color: rgba(56, 189, 248, .56);
-  }
-
-  .pcf-btn-primary {
-    color: #06111f;
-    background: linear-gradient(135deg, #38bdf8, #60a5fa);
-    border-color: rgba(125, 211, 252, .55);
-  }
-
-  .pcf-btn-success {
-    color: #052e16;
-    background: linear-gradient(135deg, #22c55e, #86efac);
-    border-color: rgba(134, 239, 172, .55);
-  }
-
-  .pcf-kpi-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: .75rem;
-    margin-bottom: 1rem;
-  }
-
-  .pcf-kpi {
-    border: 1px solid rgba(148, 163, 184, .18);
-    border-radius: 20px;
-    padding: .9rem;
-    background: linear-gradient(180deg, rgba(15, 23, 42, .86), rgba(15, 23, 42, .62));
-    color: #e5e7eb;
-    box-shadow: 0 14px 34px rgba(2, 8, 23, .18);
-  }
-
-  .pcf-kpi span {
-    display: block;
-    color: #bfdbfe;
-    font-size: .68rem;
-    font-weight: 950;
-    text-transform: uppercase;
-    letter-spacing: .07em;
-  }
-
-  .pcf-kpi strong {
-    display: block;
-    margin-top: .25rem;
-    color: #fff;
-    font-size: clamp(1.5rem, 2.1vw, 2.2rem);
-    line-height: 1;
-    letter-spacing: -.05em;
-  }
-
-  .pcf-surface {
-    border: 1px solid rgba(148, 163, 184, .18);
-    border-radius: 22px;
-    padding: 1rem;
-    background: linear-gradient(180deg, rgba(15, 23, 42, .84), rgba(15, 23, 42, .64));
-    box-shadow: 0 16px 38px rgba(2, 8, 23, .20);
-  }
-
-  .pcf-filter-grid {
-    display: grid;
-    grid-template-columns: minmax(280px, 2fr) minmax(160px, 1fr) minmax(180px, 1fr) minmax(180px, .8fr) auto auto;
-    gap: .65rem;
-    align-items: center;
-    margin-bottom: .75rem;
-  }
-
-  .pcf-filter-check {
-    display: flex;
-    align-items: center;
-    gap: .45rem;
-    min-height: 38px;
-    color: #dbeafe;
-    font-weight: 700;
-    font-size: .82rem;
-  }
-
-  .pcf-toolbar {
-    display: flex;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: .7rem;
-    align-items: center;
-    border-top: 1px solid rgba(148, 163, 184, .14);
-    padding-top: .75rem;
-    margin-bottom: .9rem;
-  }
-
-  .pcf-toolbar small {
-    color: #94a3b8;
-  }
-
-  .pcf-card-list {
-    display: flex;
-    flex-direction: column;
-    gap: .85rem;
-  }
-
-  .pcf-card {
-    border: 1px solid rgba(148, 163, 184, .17);
-    border-radius: 20px;
-    padding: 1rem;
-    background: rgba(2, 6, 23, .34);
-    color: #e5e7eb;
-  }
-
-  .pcf-card-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: .85rem;
-    margin-bottom: .9rem;
-  }
-
-  .pcf-code {
-    color: #fff;
-    font-size: 1.05rem;
-    font-weight: 950;
-    letter-spacing: -.015em;
-  }
-
-  .pcf-sub {
-    color: #94a3b8;
-    font-size: .8rem;
-    margin-top: .2rem;
-  }
-
-  .pcf-title {
-    color: #dbeafe;
-    font-size: .95rem;
-    line-height: 1.35;
-    margin-top: .4rem;
-  }
-
-  .pcf-badges {
-    display: flex;
-    flex-wrap: wrap;
-    gap: .4rem;
-    justify-content: flex-end;
-  }
-
-  .pcf-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 999px;
-    border: 1px solid rgba(148, 163, 184, .20);
-    padding: .28rem .58rem;
-    font-size: .68rem;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: .035em;
-    color: #dbeafe;
-    background: rgba(15, 23, 42, .66);
-  }
-
-  .pcf-badge-ok {
-    color: #bbf7d0;
-    background: rgba(22, 163, 74, .15);
-    border-color: rgba(34, 197, 94, .30);
-  }
-
-  .pcf-badge-risk {
-    color: #fecaca;
-    background: rgba(220, 38, 38, .15);
-    border-color: rgba(248, 113, 113, .32);
-  }
-
-  .pcf-badge-warn {
-    color: #fde68a;
-    background: rgba(245, 158, 11, .14);
-    border-color: rgba(245, 158, 11, .32);
-  }
-
-  .pcf-info-grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: .65rem;
-    margin-bottom: .85rem;
-  }
-
-  .pcf-info-box,
-  .pcf-detail-box {
-    border: 1px solid rgba(148, 163, 184, .15);
-    border-radius: 14px;
-    padding: .72rem;
-    background: rgba(15, 23, 42, .50);
-  }
-
-  .pcf-label,
-  .pcf-detail-title {
-    display: block;
-    margin-bottom: .34rem;
-    color: #93c5fd;
-    font-size: .66rem;
-    text-transform: uppercase;
-    letter-spacing: .07em;
-    font-weight: 950;
-  }
-
-  .pcf-value {
-    color: #e5e7eb;
-    font-weight: 800;
-    word-break: break-word;
-  }
-
-  .pcf-detail-panel {
-    margin-top: .9rem;
-    border: 1px solid rgba(56, 189, 248, .18);
-    border-radius: 18px;
-    background: rgba(2, 6, 23, .30);
-    padding: .85rem;
-  }
-
-  .pcf-detail-grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: .65rem;
-  }
-
-  .pcf-path {
-    color: #bfdbfe;
-    font-size: .78rem;
-    word-break: break-all;
-    line-height: 1.35;
-  }
-
-  .pcf-empty {
-    border: 1px dashed rgba(148, 163, 184, .26);
-    border-radius: 18px;
-    padding: 1rem;
-    color: #94a3b8;
-    text-align: center;
-  }
-
-  .pcf-pagination .page-link {
-    background: rgba(15, 23, 42, .76);
-    color: #dbeafe;
-    border-color: rgba(148, 163, 184, .20);
-  }
-
-  .pcf-pagination .active .page-link,
-  .pcf-pagination .page-item.active .page-link {
-    background: linear-gradient(135deg, #38bdf8, #60a5fa);
-    color: #06111f;
-    border-color: rgba(125, 211, 252, .55);
-    font-weight: 900;
-  }
-
-  @media (max-width: 1280px) {
-    .pcf-filter-grid {
-      grid-template-columns: 1fr 1fr;
-    }
-
-    .pcf-info-grid,
-    .pcf-detail-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-  }
-
-  @media (max-width: 760px) {
-    .pcf-hero,
-    .pcf-card-top {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-
-    .pcf-actions,
-    .pcf-badges {
-      justify-content: flex-start;
-    }
-
-    .pcf-kpi-grid,
-    .pcf-filter-grid,
-    .pcf-info-grid,
-    .pcf-detail-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .pcf-btn {
-      width: 100%;
-    }
-  }
-</style>
+<link rel="stylesheet" href="{% static 'automacoes/css/ops_enterprise.css' %}?v=1600">
 {% endblock %}
 
 {% block content %}
-<div class="pcf-page">
-  <section class="pcf-hero">
-    <div>
-      <div class="pcf-eyebrow">
+<div class="ops-page">
+
+  <section class="ops-hero">
+
+    <div class="ops-hero-main">
+      <div class="ops-eyebrow">
         <i class="bi bi-table"></i>
         Timeline Operacional PCFs
       </div>
+
       <h1>Timeline PCFs</h1>
-      <p>Dados importados para o banco do GED. A planilha da rede permanece como backup operacional.</p>
+
+      <p>
+        Dados importados para o banco do GED. A planilha da rede permanece como backup operacional.
+      </p>
     </div>
 
-    <div class="pcf-actions">
-      <a href="{% url 'automacoes:dashboard_pcfs' %}" class="pcf-btn pcf-btn-primary">
+    <div class="ops-actions">
+
+      <a href="{% url 'automacoes:dashboard_pcfs' %}"
+         class="ops-btn ops-btn-primary">
         <i class="bi bi-graph-up"></i>
         Dashboard
       </a>
-      <a href="{% url 'automacoes:painel' %}" class="pcf-btn">
+
+      <a href="{% url 'automacoes:painel' %}"
+         class="ops-btn">
         <i class="bi bi-arrow-left"></i>
         Voltar
       </a>
+
     </div>
+
   </section>
 
-  <section class="pcf-kpi-grid">
-    <div class="pcf-kpi">
+  <section class="ops-kpi-grid ops-kpi-grid-3">
+
+    <div class="ops-kpi">
       <span>Total de PCFs</span>
       <strong>{{ total }}</strong>
     </div>
 
-    <div class="pcf-kpi">
+    <div class="ops-kpi">
       <span>Com comentários abertos</span>
       <strong>{{ total_open }}</strong>
     </div>
 
-    <div class="pcf-kpi">
+    <div class="ops-kpi">
       <span>Sem status final</span>
       <strong>{{ total_sem_status }}</strong>
     </div>
+
   </section>
 
-  <section class="pcf-surface">
+  <section class="ops-panel">
+
     <form method="get">
-      <div class="pcf-filter-grid">
-        <input type="text" name="q" value="{{ busca }}" class="form-control"
-               placeholder="Buscar por documento, PCF, link ou título...">
 
-        <select name="tipo" class="form-select">
-          <option value="">Todos os tipos</option>
-          {% for t in tipos %}
-            <option value="{{ t }}" {% if tipo == t %}selected{% endif %}>{{ t }}</option>
-          {% endfor %}
-        </select>
+      <div class="ops-filter-grid">
 
-        <input type="text" name="status" value="{{ status }}" class="form-control"
-               placeholder="Filtrar status final...">
+        <div>
+          <label class="ops-filter-label">
+            Busca geral
+          </label>
 
-        <label class="pcf-filter-check">
-          <input class="form-check-input"
-                 type="checkbox"
-                 name="somente_open"
-                 value="1"
-                 {% if somente_open %}checked{% endif %}>
-          Apenas Open Comments
-        </label>
+          <input type="text"
+                 name="q"
+                 value="{{ busca }}"
+                 class="form-control"
+                 placeholder="Buscar por documento, PCF, link ou título...">
+        </div>
 
-        <button class="pcf-btn pcf-btn-primary" type="submit">
+        <div>
+          <label class="ops-filter-label">
+            Tipo
+          </label>
+
+          <select name="tipo" class="form-select">
+            <option value="">Todos os tipos</option>
+
+            {% for t in tipos %}
+            <option value="{{ t }}"
+                    {% if tipo == t %}selected{% endif %}>
+              {{ t }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label class="ops-filter-label">
+            Status final
+          </label>
+
+          <input type="text"
+                 name="status"
+                 value="{{ status }}"
+                 class="form-control"
+                 placeholder="Filtrar status final...">
+        </div>
+
+        <div>
+          <label class="ops-filter-label">
+            Filtro rápido
+          </label>
+
+          <div class="ops-check-row">
+
+            <label>
+              <input class="form-check-input"
+                     type="checkbox"
+                     name="somente_open"
+                     value="1"
+                     {% if somente_open %}checked{% endif %}>
+
+              Apenas Open Comments
+            </label>
+
+          </div>
+        </div>
+
+        <button class="ops-btn ops-btn-primary"
+                type="submit">
           <i class="bi bi-search"></i>
           Buscar
         </button>
 
-        <a href="{% url 'automacoes:pcfs_timeline' %}" class="pcf-btn">
+        <a href="{% url 'automacoes:pcfs_timeline' %}"
+           class="ops-btn">
           <i class="bi bi-x-circle"></i>
           Limpar
         </a>
+
       </div>
+
     </form>
 
-    <div class="pcf-toolbar">
-      <small>
-        Resultado filtrado da timeline PCFs{% if busca %} · busca: "{{ busca }}"{% endif %}
-      </small>
+    <div class="ops-toolbar mt-3">
+
+      <div class="ops-muted">
+        Resultado filtrado da timeline PCFs
+        {% if busca %}
+          · busca: "{{ busca }}"
+        {% endif %}
+      </div>
 
       <a href="{% url 'automacoes:exportar_pcfs_timeline_excel' %}?q={{ busca }}&tipo={{ tipo }}&status={{ status }}{% if somente_open %}&somente_open=1{% endif %}"
-         class="pcf-btn pcf-btn-success">
+         class="ops-btn ops-btn-success">
         <i class="bi bi-file-earmark-excel"></i>
         Exportar Excel filtrado
       </a>
+
     </div>
 
-    <div class="pcf-card-list">
-      {% for item in registros %}
-      <article class="pcf-card">
-        <div class="pcf-card-top">
-          <div>
-            <div class="d-flex align-items-center gap-2 flex-wrap">
-              <div class="pcf-code">{{ item.numero_documento }}</div>
-              <span class="pcf-badge">Rev {{ item.revisao_pcf }}</span>
-              <span class="pcf-badge">{{ item.tipo }}</span>
-            </div>
+  </section>
 
-            <div class="pcf-sub">{{ item.numero_pcf }}</div>
-            <div class="pcf-title">{{ item.titulo }}</div>
+  <section class="ops-list mt-3">
+
+    {% for item in registros %}
+
+    <article class="ops-panel">
+
+      <div class="ops-panel-head">
+
+        <div>
+
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+
+            <h2 class="mb-0">
+              {{ item.numero_documento }}
+            </h2>
+
+            <span class="ops-chip">
+              Rev {{ item.revisao_pcf }}
+            </span>
+
+            <span class="ops-chip">
+              {{ item.tipo }}
+            </span>
+
           </div>
 
-          <div class="pcf-badges">
-            {% if item.open_comments > 0 %}
-              <span class="pcf-badge pcf-badge-warn">Open {{ item.open_comments }}</span>
-            {% else %}
-              <span class="pcf-badge pcf-badge-ok">Open 0</span>
-            {% endif %}
-
-            {% if item.status_final %}
-              {% if "NOT" in item.status_final|upper %}
-                <span class="pcf-badge pcf-badge-risk">{{ item.status_final }}</span>
-              {% elif "RELEASED" in item.status_final|upper %}
-                <span class="pcf-badge pcf-badge-ok">{{ item.status_final }}</span>
-              {% else %}
-                <span class="pcf-badge">{{ item.status_final }}</span>
-              {% endif %}
-            {% endif %}
+          <div class="ops-muted mt-2">
+            {{ item.numero_pcf }}
           </div>
+
+          <div class="mt-2">
+            {{ item.titulo }}
+          </div>
+
         </div>
 
-        <div class="pcf-info-grid">
-          <div class="pcf-info-box">
-            <span class="pcf-label">PCF Link</span>
-            <div class="pcf-value">{{ item.pcf_link|default:"—" }}</div>
-          </div>
+        <div class="ops-actions">
 
-          <div class="pcf-info-box">
-            <span class="pcf-label">Data Recebimento</span>
-            <div class="pcf-value">{{ item.data_recebimento|default:"—" }}</div>
-          </div>
-
-          <div class="pcf-info-box">
-            <span class="pcf-label">Comentários</span>
-            <div class="pcf-value">{{ item.qtd_comentarios }}</div>
-          </div>
-
-          <div class="pcf-info-box">
-            <span class="pcf-label">Arquivo</span>
-            <div class="pcf-value">
-              {% if item.caminho %}
-                Disponível
-              {% else %}
-                —
-              {% endif %}
-            </div>
-          </div>
-        </div>
-
-        <div class="pcf-card-actions">
-          {% if item.caminho %}
-          <a href="{% url 'automacoes:abrir_arquivo_pcf' item.id %}"
-             target="_blank"
-             class="pcf-btn">
-            <i class="bi bi-folder2-open"></i>
-            Abrir PCF
-          </a>
+          {% if item.open_comments > 0 %}
+            <span class="ops-status-pill ops-status-warn">
+              Open {{ item.open_comments }}
+            </span>
+          {% else %}
+            <span class="ops-status-pill ops-status-ok">
+              Open 0
+            </span>
           {% endif %}
 
-          <button class="pcf-btn"
-                  type="button"
-                  data-bs-toggle="collapse"
-                  data-bs-target="#pcf-detalhes-{{ item.id }}"
-                  aria-expanded="false"
-                  aria-controls="pcf-detalhes-{{ item.id }}">
-            <i class="bi bi-eye"></i>
-            Detalhes
-          </button>
+          {% if item.status_final %}
+
+            {% if "NOT" in item.status_final|upper %}
+              <span class="ops-status-pill ops-status-risk">
+                {{ item.status_final }}
+              </span>
+
+            {% elif "RELEASED" in item.status_final|upper %}
+              <span class="ops-status-pill ops-status-ok">
+                {{ item.status_final }}
+              </span>
+
+            {% else %}
+              <span class="ops-status-pill">
+                {{ item.status_final }}
+              </span>
+            {% endif %}
+
+          {% endif %}
+
         </div>
 
-        <div class="collapse" id="pcf-detalhes-{{ item.id }}">
-          <div class="pcf-detail-panel">
-            <div class="pcf-detail-grid">
-              <div class="pcf-detail-box">
-                <div class="pcf-detail-title">Identificação</div>
-                <div><strong>ID banco:</strong> {{ item.id }}</div>
-                <div><strong>Documento:</strong> {{ item.numero_documento|default:"—" }}</div>
-                <div><strong>Nº PCF:</strong> {{ item.numero_pcf|default:"—" }}</div>
-                <div><strong>Revisão:</strong> {{ item.revisao_pcf|default:"—" }}</div>
-                <div><strong>Tipo:</strong> {{ item.tipo|default:"—" }}</div>
-              </div>
+      </div>
 
-              <div class="pcf-detail-box">
-                <div class="pcf-detail-title">Status e comentários</div>
-                <div><strong>Status final:</strong> {{ item.status_final|default:"—" }}</div>
-                <div><strong>Open comments:</strong> {{ item.open_comments }}</div>
-                <div><strong>Qtd. comentários:</strong> {{ item.qtd_comentarios }}</div>
-                <div><strong>Data recebimento:</strong> {{ item.data_recebimento|default:"—" }}</div>
-              </div>
+      <div class="ops-grid ops-grid-4">
 
-              <div class="pcf-detail-box">
-                <div class="pcf-detail-title">Referências</div>
-                <div><strong>PCF link:</strong></div>
-                <div class="pcf-path">{{ item.pcf_link|default:"—" }}</div>
-              </div>
+        <div class="ops-detail-card">
+          <span class="ops-filter-label">
+            PCF Link
+          </span>
 
-              <div class="pcf-detail-box">
-                <div class="pcf-detail-title">Arquivo</div>
-                <div><strong>Disponibilidade:</strong> {% if item.caminho %}Disponível{% else %}—{% endif %}</div>
-                <div class="pcf-path mt-2">{{ item.caminho|default:"—" }}</div>
-              </div>
+          <strong>{{ item.pcf_link|default:"—" }}</strong>
+        </div>
+
+        <div class="ops-detail-card">
+          <span class="ops-filter-label">
+            Data Recebimento
+          </span>
+
+          <strong>{{ item.data_recebimento|default:"—" }}</strong>
+        </div>
+
+        <div class="ops-detail-card">
+          <span class="ops-filter-label">
+            Comentários
+          </span>
+
+          <strong>{{ item.qtd_comentarios }}</strong>
+        </div>
+
+        <div class="ops-detail-card">
+          <span class="ops-filter-label">
+            Arquivo
+          </span>
+
+          <strong>
+            {% if item.caminho %}
+              Disponível
+            {% else %}
+              —
+            {% endif %}
+          </strong>
+        </div>
+
+      </div>
+
+      <div class="ops-actions mt-3">
+
+        {% if item.caminho %}
+        <a href="{% url 'automacoes:abrir_arquivo_pcf' item.id %}"
+           target="_blank"
+           class="ops-btn">
+
+          <i class="bi bi-folder2-open"></i>
+          Abrir PCF
+
+        </a>
+        {% endif %}
+
+        <button class="ops-btn"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#pcf-detalhes-{{ item.id }}"
+                aria-expanded="false">
+
+          <i class="bi bi-eye"></i>
+          Detalhes
+
+        </button>
+
+      </div>
+
+      <div class="collapse mt-3"
+           id="pcf-detalhes-{{ item.id }}">
+
+        <div class="ops-panel">
+
+          <div class="ops-grid ops-grid-4">
+
+            <div class="ops-detail-card">
+
+              <span class="ops-filter-label">
+                Identificação
+              </span>
+
+              <div><strong>ID banco:</strong> {{ item.id }}</div>
+              <div><strong>Documento:</strong> {{ item.numero_documento|default:"—" }}</div>
+              <div><strong>Nº PCF:</strong> {{ item.numero_pcf|default:"—" }}</div>
+              <div><strong>Revisão:</strong> {{ item.revisao_pcf|default:"—" }}</div>
+              <div><strong>Tipo:</strong> {{ item.tipo|default:"—" }}</div>
+
             </div>
 
-            <div class="pcf-detail-box mt-3">
-              <div class="pcf-detail-title">Título completo</div>
-              <div>{{ item.titulo|default:"—" }}</div>
+            <div class="ops-detail-card">
+
+              <span class="ops-filter-label">
+                Status e comentários
+              </span>
+
+              <div><strong>Status final:</strong> {{ item.status_final|default:"—" }}</div>
+              <div><strong>Open comments:</strong> {{ item.open_comments }}</div>
+              <div><strong>Qtd. comentários:</strong> {{ item.qtd_comentarios }}</div>
+              <div><strong>Data recebimento:</strong> {{ item.data_recebimento|default:"—" }}</div>
+
             </div>
+
+            <div class="ops-detail-card">
+
+              <span class="ops-filter-label">
+                Referências
+              </span>
+
+              <div class="ops-muted small">
+                {{ item.pcf_link|default:"—" }}
+              </div>
+
+            </div>
+
+            <div class="ops-detail-card">
+
+              <span class="ops-filter-label">
+                Arquivo
+              </span>
+
+              <div>
+                <strong>Disponibilidade:</strong>
+
+                {% if item.caminho %}
+                  Disponível
+                {% else %}
+                  —
+                {% endif %}
+              </div>
+
+              <div class="ops-muted small mt-2">
+                {{ item.caminho|default:"—" }}
+              </div>
+
+            </div>
+
           </div>
+
+          <div class="ops-detail-card mt-3">
+
+            <span class="ops-filter-label">
+              Título completo
+            </span>
+
+            <div>
+              {{ item.titulo|default:"—" }}
+            </div>
+
+          </div>
+
         </div>
-      </article>
-      {% empty %}
-      <div class="pcf-empty">Nenhum registro encontrado.</div>
-      {% endfor %}
+
+      </div>
+
+    </article>
+
+    {% empty %}
+
+    <div class="ops-empty">
+      Nenhum registro encontrado.
     </div>
 
-    {% if page_obj.paginator.num_pages > 1 %}
-    <nav class="mt-4 pcf-pagination">
-      <ul class="pagination justify-content-center">
-        {% if page_obj.has_previous %}
-        <li class="page-item">
-          <a class="page-link"
-             href="?page={{ page_obj.previous_page_number }}&q={{ busca }}&tipo={{ tipo }}&status={{ status }}{% if somente_open %}&somente_open=1{% endif %}">
-            Anterior
-          </a>
-        </li>
-        {% endif %}
+    {% endfor %}
 
-        <li class="page-item active">
-          <span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
-        </li>
-
-        {% if page_obj.has_next %}
-        <li class="page-item">
-          <a class="page-link"
-             href="?page={{ page_obj.next_page_number }}&q={{ busca }}&tipo={{ tipo }}&status={{ status }}{% if somente_open %}&somente_open=1{% endif %}">
-            Próxima
-          </a>
-        </li>
-        {% endif %}
-      </ul>
-    </nav>
-    {% endif %}
   </section>
+
+  {% if page_obj.paginator.num_pages > 1 %}
+
+  <nav class="mt-4 ops-pagination">
+
+    <ul class="pagination justify-content-center">
+
+      {% if page_obj.has_previous %}
+      <li class="page-item">
+
+        <a class="page-link"
+           href="?page={{ page_obj.previous_page_number }}&q={{ busca }}&tipo={{ tipo }}&status={{ status }}{% if somente_open %}&somente_open=1{% endif %}">
+
+          Anterior
+
+        </a>
+
+      </li>
+      {% endif %}
+
+      <li class="page-item active">
+
+        <span class="page-link">
+          Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+        </span>
+
+      </li>
+
+      {% if page_obj.has_next %}
+      <li class="page-item">
+
+        <a class="page-link"
+           href="?page={{ page_obj.next_page_number }}&q={{ busca }}&tipo={{ tipo }}&status={{ status }}{% if somente_open %}&somente_open=1{% endif %}">
+
+          Próxima
+
+        </a>
+
+      </li>
+      {% endif %}
+
+    </ul>
+
+  </nav>
+
+  {% endif %}
+
 </div>
 {% endblock %}
