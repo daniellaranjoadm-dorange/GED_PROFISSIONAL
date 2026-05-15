@@ -292,3 +292,22 @@ LOGGING = {
 }
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# ======================
+# CACHE (Enterprise Runtime Layer)
+# ======================
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "ged-enterprise-cache",
+        "TIMEOUT": 300,
+        "OPTIONS": {
+            "MAX_ENTRIES": 5000,
+        },
+    }
+}
+
+CACHE_TTL_SHORT = 60
+CACHE_TTL_MEDIUM = 300
+CACHE_TTL_LONG = 900

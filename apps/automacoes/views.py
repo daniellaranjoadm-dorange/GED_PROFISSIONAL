@@ -1,4 +1,6 @@
 from pathlib import Path
+
+from django.conf import settings
 import os
 import time
 import traceback
@@ -8,6 +10,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.core.paginator import Paginator
+from django.core.cache import cache
 from django.db.models import Avg, Count, Q, Sum
 from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
@@ -47,6 +50,20 @@ KM_EXTENSOES_PRIORITARIAS = {
     ".xls": 44,
     ".pdf": 20,
 }
+
+
+def _cache_ttl(nome, padrao):
+    return int(getattr(settings, nome, padrao) or padrao)
+
+
+def _cache_get_or_set(chave, builder, ttl):
+    valor = cache.get(chave)
+    if valor is not None:
+        return valor
+
+    valor = builder()
+    cache.set(chave, valor, ttl)
+    return valor
 
 
 
@@ -180,188 +197,200 @@ def _health_automacoes(nomes):
 
 @login_required
 def painel(request):
-    total_ld = DocumentoLD.objects.count()
-    total_pcfs = PCFTimeline.objects.count()
-    total_transmittals = TransmittalKM.objects.count()
+    def _build_painel_context():
+        total_ld = DocumentoLD.objects.count()
+        total_pcfs = PCFTimeline.objects.count()
+        total_transmittals = TransmittalKM.objects.count()
 
-    total_ld_com_pcf = 0
-    if _model_has_field(DocumentoLD, "pcf"):
-        total_ld_com_pcf = DocumentoLD.objects.exclude(pcf="").exclude(pcf__isnull=True).count()
+        total_ld_com_pcf = 0
+        if _model_has_field(DocumentoLD, "pcf"):
+            total_ld_com_pcf = DocumentoLD.objects.exclude(pcf="").exclude(pcf__isnull=True).count()
 
-    total_ld_sem_pcf = max(total_ld - total_ld_com_pcf, 0)
+        total_ld_sem_pcf = max(total_ld - total_ld_com_pcf, 0)
 
-    total_pcfs_open = PCFTimeline.objects.filter(open_comments__gt=0).count()
-    total_pcfs_not_released = PCFTimeline.objects.filter(status_final__iexact="NOT RELEASED").count()
-    total_pcfs_released = PCFTimeline.objects.filter(status_final__iexact="RELEASED").count()
+        total_pcfs_open = PCFTimeline.objects.filter(open_comments__gt=0).count()
+        total_pcfs_not_released = PCFTimeline.objects.filter(status_final__iexact="NOT RELEASED").count()
+        total_pcfs_released = PCFTimeline.objects.filter(status_final__iexact="RELEASED").count()
 
-    total_transmittals_unicos = (
-        TransmittalKM.objects.exclude(transmittal_numero="")
-        .exclude(transmittal_numero__isnull=True)
-        .values("transmittal_numero")
-        .distinct()
-        .count()
-        if _model_has_field(TransmittalKM, "transmittal_numero")
-        else 0
-    )
+        total_transmittals_unicos = (
+            TransmittalKM.objects.exclude(transmittal_numero="")
+            .exclude(transmittal_numero__isnull=True)
+            .values("transmittal_numero")
+            .distinct()
+            .count()
+            if _model_has_field(TransmittalKM, "transmittal_numero")
+            else 0
+        )
 
-    total_transmittals_sem_pdf = (
-        TransmittalKM.objects.filter(Q(arquivo_pdf="") | Q(arquivo_pdf__isnull=True)).count()
-        if _model_has_field(TransmittalKM, "arquivo_pdf")
-        else 0
-    )
+        total_transmittals_sem_pdf = (
+            TransmittalKM.objects.filter(Q(arquivo_pdf="") | Q(arquivo_pdf__isnull=True)).count()
+            if _model_has_field(TransmittalKM, "arquivo_pdf")
+            else 0
+        )
 
-    ultimos_pcfs = PCFTimeline.objects.order_by("-atualizado_em")[:5] if _model_has_field(PCFTimeline, "atualizado_em") else PCFTimeline.objects.all()[:5]
-    ultimos_transmittals = TransmittalKM.objects.order_by("-criado_em")[:5] if _model_has_field(TransmittalKM, "criado_em") else TransmittalKM.objects.all()[:5]
+        ultimos_pcfs = list(
+            PCFTimeline.objects.order_by("-atualizado_em")[:5]
+            if _model_has_field(PCFTimeline, "atualizado_em")
+            else PCFTimeline.objects.all()[:5]
+        )
 
-    ultima_atualizacao = (
-        _latest_model_value(PCFTimeline, "atualizado_em", "criado_em")
-        or _latest_model_value(TransmittalKM, "criado_em", "atualizado_em")
-        or _latest_model_value(DocumentoLD, "atualizado_em", "criado_em")
-    )
+        ultimos_transmittals = list(
+            TransmittalKM.objects.order_by("-criado_em")[:5]
+            if _model_has_field(TransmittalKM, "criado_em")
+            else TransmittalKM.objects.all()[:5]
+        )
 
-    ultimas_execucoes = ExecucaoAutomacao.objects.select_related("usuario").order_by("-iniciado_em")[:8]
-    ultima_execucao = ultimas_execucoes[0] if ultimas_execucoes else None
-    ultima_falha = (
-        ExecucaoAutomacao.objects.select_related("usuario")
-        .filter(sucesso=False)
-        .exclude(status=ExecucaoAutomacao.STATUS_INICIADO)
-        .order_by("-iniciado_em")
-        .first()
-    )
-    total_execucoes = ExecucaoAutomacao.objects.count()
-    total_falhas = (
-        ExecucaoAutomacao.objects.filter(sucesso=False)
-        .exclude(status=ExecucaoAutomacao.STATUS_INICIADO)
-        .count()
-    )
-    total_sucessos = ExecucaoAutomacao.objects.filter(status=ExecucaoAutomacao.STATUS_SUCESSO).count()
-    total_finalizados = ExecucaoAutomacao.objects.exclude(status=ExecucaoAutomacao.STATUS_INICIADO).count()
-    taxa_sucesso_global = round((total_sucessos / total_finalizados) * 100, 1) if total_finalizados else 0
-    hoje = timezone.localdate()
-    execucoes_hoje = ExecucaoAutomacao.objects.filter(iniciado_em__date=hoje).count()
-    falhas_hoje = ExecucaoAutomacao.objects.filter(
-        iniciado_em__date=hoje,
-        status=ExecucaoAutomacao.STATUS_ERRO,
-    ).count()
-    duracao_media_global = (
-        ExecucaoAutomacao.objects.exclude(duracao_segundos=0)
-        .aggregate(media=Avg("duracao_segundos"))
-        .get("media")
-        or 0
-    )
-    duracao_media_global = round(duracao_media_global, 2) if duracao_media_global else 0
+        ultima_atualizacao = (
+            _latest_model_value(PCFTimeline, "atualizado_em", "criado_em")
+            or _latest_model_value(TransmittalKM, "criado_em", "atualizado_em")
+            or _latest_model_value(DocumentoLD, "atualizado_em", "criado_em")
+        )
 
-    total_km_index = KMFileIndex.objects.filter(ativo=True).count()
-    total_km_docs_index = KMFileIndex.objects.filter(ativo=True, eh_transmittal_letter=False).count()
-    total_km_transmittals_index = KMFileIndex.objects.filter(ativo=True, eh_transmittal_letter=True).count()
-    ultima_indexacao_km = (
-        KMFileIndex.objects.filter(ativo=True)
-        .order_by("-indexado_em")
-        .values_list("indexado_em", flat=True)
-        .first()
-    )
+        ultimas_execucoes = list(
+            ExecucaoAutomacao.objects.select_related("usuario").order_by("-iniciado_em")[:8]
+        )
+        ultima_execucao = ultimas_execucoes[0] if ultimas_execucoes else None
+        ultima_falha = (
+            ExecucaoAutomacao.objects.select_related("usuario")
+            .filter(sucesso=False)
+            .exclude(status=ExecucaoAutomacao.STATUS_INICIADO)
+            .order_by("-iniciado_em")
+            .first()
+        )
 
-    automacoes = [
-        {
-            "nome": "Atualização LD",
-            "subtitulo": "Lista de Documentos",
-            "icone": "bi-file-earmark-spreadsheet",
-            "badge": "Crítica",
-            "badge_class": "auto-badge-warning",
-            "descricao": "Sincroniza dados documentais, revisões, PCFs, GRDs, links de rede e medição.",
-            "form_url": "automacoes:atualizar_ld",
-            "botao": "Executar Atualização LD",
-            "botao_class": "btn-primary",
-            "dashboard_url": "automacoes:dashboard_ld",
-            "registros_url": "automacoes:lista_ld",
-            "metricas": [
-                {"label": "Linhas LD", "valor": total_ld},
-                {"label": "Com PCF", "valor": total_ld_com_pcf},
-                {"label": "Sem PCF", "valor": total_ld_sem_pcf},
-            ],
-        },
-        {
-            "nome": "Timeline PCFs",
-            "subtitulo": "Comentários e revisões",
-            "icone": "bi-bar-chart-line",
-            "badge": "Integrada",
-            "badge_class": "auto-badge-success",
-            "descricao": "Gera e atualiza a timeline das PCFs recebidas e respondidas.",
-            "form_url": "automacoes:timeline_pcfs",
-            "botao": "Gerar Timeline PCFs",
-            "botao_class": "btn-success",
-            "dashboard_url": "automacoes:dashboard_pcfs",
-            "registros_url": "automacoes:pcfs_timeline",
-            "metricas": [
-                {"label": "PCFs", "valor": total_pcfs},
-                {"label": "Open", "valor": total_pcfs_open},
-                {"label": "Not Released", "valor": total_pcfs_not_released},
-            ],
-        },
-        {
-            "nome": "Transmittal KM",
-            "subtitulo": "Parser PDF",
-            "icone": "bi-box-seam",
-            "badge": "Parser PDF",
-            "badge_class": "auto-badge-info",
-            "descricao": "Lê PDFs KM e consolida transmittals para acompanhamento documental.",
-            "form_url": "automacoes:transmittal_km",
-            "botao": "Consolidar Transmittals KM",
-            "botao_class": "btn-info",
-            "dashboard_url": "automacoes:dashboard_transmittals",
-            "registros_url": "automacoes:transmittals_km",
-            "metricas": [
-                {"label": "Registros", "valor": total_transmittals},
-                {"label": "Transmittals", "valor": total_transmittals_unicos},
-                {"label": "Sem PDF", "valor": total_transmittals_sem_pdf},
-            ],
-        },
-        {
-            "nome": "Índice KM",
-            "subtitulo": "Arquivos e documentos KM",
-            "icone": "bi-hdd-network",
-            "badge": "Indexação",
-            "badge_class": "auto-badge-info",
-            "descricao": "Varre a pasta Documentos KM, indexa arquivos técnicos e acelera a abertura direta dos documentos.",
-            "form_url": "automacoes:indexar_km",
-            "botao": "Atualizar Índice KM",
-            "botao_class": "btn-primary",
-            "dashboard_url": "automacoes:transmittals_km",
-            "registros_url": "automacoes:transmittals_km",
-            "metricas": [
-                {"label": "Arquivos", "valor": total_km_index},
-                {"label": "Docs técnicos", "valor": total_km_docs_index},
-                {"label": "Letters", "valor": total_km_transmittals_index},
-            ],
-        },
-        {
-            "nome": "GRD GHENOVA",
-            "subtitulo": "Consolidação GRDs 7K e 14K",
-            "icone": "bi-diagram-3",
-            "badge": "Engenharia",
-            "badge_class": "auto-badge-neutral",
-            "descricao": "Processa PDFs de GRD e gera planilhas consolidadas por empreendimento.",
-            "form_url": "automacoes:grd_ghenova",
-            "botao": "Consolidar GRDs GHENOVA",
-            "botao_class": "btn-secondary",
-            "dashboard_url": "",
-            "registros_url": "",
-            "metricas": [
-                {"label": "Fonte", "valor": "PDF"},
-                {"label": "Escopo", "valor": "7K/14K"},
-                {"label": "Status", "valor": "Ativo"},
-            ],
-        },
-    ]
+        total_execucoes = ExecucaoAutomacao.objects.count()
+        total_falhas = (
+            ExecucaoAutomacao.objects.filter(sucesso=False)
+            .exclude(status=ExecucaoAutomacao.STATUS_INICIADO)
+            .count()
+        )
+        total_sucessos = ExecucaoAutomacao.objects.filter(status=ExecucaoAutomacao.STATUS_SUCESSO).count()
+        total_finalizados = ExecucaoAutomacao.objects.exclude(status=ExecucaoAutomacao.STATUS_INICIADO).count()
+        taxa_sucesso_global = round((total_sucessos / total_finalizados) * 100, 1) if total_finalizados else 0
 
-    health_map = _health_automacoes([rotina["nome"] for rotina in automacoes])
-    for rotina in automacoes:
-        rotina["health"] = health_map.get(rotina["nome"], {})
+        hoje = timezone.localdate()
+        execucoes_hoje = ExecucaoAutomacao.objects.filter(iniciado_em__date=hoje).count()
+        falhas_hoje = ExecucaoAutomacao.objects.filter(
+            iniciado_em__date=hoje,
+            status=ExecucaoAutomacao.STATUS_ERRO,
+        ).count()
 
-    return render(
-        request,
-        "automacoes/painel.html",
-        {
+        duracao_media_global = (
+            ExecucaoAutomacao.objects.exclude(duracao_segundos=0)
+            .aggregate(media=Avg("duracao_segundos"))
+            .get("media")
+            or 0
+        )
+        duracao_media_global = round(duracao_media_global, 2) if duracao_media_global else 0
+
+        total_km_index = KMFileIndex.objects.filter(ativo=True).count()
+        total_km_docs_index = KMFileIndex.objects.filter(ativo=True, eh_transmittal_letter=False).count()
+        total_km_transmittals_index = KMFileIndex.objects.filter(ativo=True, eh_transmittal_letter=True).count()
+        ultima_indexacao_km = (
+            KMFileIndex.objects.filter(ativo=True)
+            .order_by("-indexado_em")
+            .values_list("indexado_em", flat=True)
+            .first()
+        )
+
+        automacoes = [
+            {
+                "nome": "Atualização LD",
+                "subtitulo": "Lista de Documentos",
+                "icone": "bi-file-earmark-spreadsheet",
+                "badge": "Crítica",
+                "badge_class": "auto-badge-warning",
+                "descricao": "Sincroniza dados documentais, revisões, PCFs, GRDs, links de rede e medição.",
+                "form_url": "automacoes:atualizar_ld",
+                "botao": "Executar Atualização LD",
+                "botao_class": "btn-primary",
+                "dashboard_url": "automacoes:dashboard_ld",
+                "registros_url": "automacoes:lista_ld",
+                "metricas": [
+                    {"label": "Linhas LD", "valor": total_ld},
+                    {"label": "Com PCF", "valor": total_ld_com_pcf},
+                    {"label": "Sem PCF", "valor": total_ld_sem_pcf},
+                ],
+            },
+            {
+                "nome": "Timeline PCFs",
+                "subtitulo": "Comentários e revisões",
+                "icone": "bi-bar-chart-line",
+                "badge": "Integrada",
+                "badge_class": "auto-badge-success",
+                "descricao": "Gera e atualiza a timeline das PCFs recebidas e respondidas.",
+                "form_url": "automacoes:timeline_pcfs",
+                "botao": "Gerar Timeline PCFs",
+                "botao_class": "btn-success",
+                "dashboard_url": "automacoes:dashboard_pcfs",
+                "registros_url": "automacoes:pcfs_timeline",
+                "metricas": [
+                    {"label": "PCFs", "valor": total_pcfs},
+                    {"label": "Open", "valor": total_pcfs_open},
+                    {"label": "Not Released", "valor": total_pcfs_not_released},
+                ],
+            },
+            {
+                "nome": "Transmittal KM",
+                "subtitulo": "Parser PDF",
+                "icone": "bi-box-seam",
+                "badge": "Parser PDF",
+                "badge_class": "auto-badge-info",
+                "descricao": "Lê PDFs KM e consolida transmittals para acompanhamento documental.",
+                "form_url": "automacoes:transmittal_km",
+                "botao": "Consolidar Transmittals KM",
+                "botao_class": "btn-info",
+                "dashboard_url": "automacoes:dashboard_transmittals",
+                "registros_url": "automacoes:transmittals_km",
+                "metricas": [
+                    {"label": "Registros", "valor": total_transmittals},
+                    {"label": "Transmittals", "valor": total_transmittals_unicos},
+                    {"label": "Sem PDF", "valor": total_transmittals_sem_pdf},
+                ],
+            },
+            {
+                "nome": "Índice KM",
+                "subtitulo": "Arquivos e documentos KM",
+                "icone": "bi-hdd-network",
+                "badge": "Indexação",
+                "badge_class": "auto-badge-info",
+                "descricao": "Varre a pasta Documentos KM, indexa arquivos técnicos e acelera a abertura direta dos documentos.",
+                "form_url": "automacoes:indexar_km",
+                "botao": "Atualizar Índice KM",
+                "botao_class": "btn-primary",
+                "dashboard_url": "automacoes:transmittals_km",
+                "registros_url": "automacoes:transmittals_km",
+                "metricas": [
+                    {"label": "Arquivos", "valor": total_km_index},
+                    {"label": "Docs técnicos", "valor": total_km_docs_index},
+                    {"label": "Letters", "valor": total_km_transmittals_index},
+                ],
+            },
+            {
+                "nome": "GRD GHENOVA",
+                "subtitulo": "Consolidação GRDs 7K e 14K",
+                "icone": "bi-diagram-3",
+                "badge": "Engenharia",
+                "badge_class": "auto-badge-neutral",
+                "descricao": "Processa PDFs de GRD e gera planilhas consolidadas por empreendimento.",
+                "form_url": "automacoes:grd_ghenova",
+                "botao": "Consolidar GRDs GHENOVA",
+                "botao_class": "btn-secondary",
+                "dashboard_url": "",
+                "registros_url": "",
+                "metricas": [
+                    {"label": "Fonte", "valor": "PDF"},
+                    {"label": "Escopo", "valor": "7K/14K"},
+                    {"label": "Status", "valor": "Ativo"},
+                ],
+            },
+        ]
+
+        health_map = _health_automacoes([rotina["nome"] for rotina in automacoes])
+        for rotina in automacoes:
+            rotina["health"] = health_map.get(rotina["nome"], {})
+
+        return {
             "total_ld": total_ld,
             "total_pcfs": total_pcfs,
             "total_pcfs_open": total_pcfs_open,
@@ -387,8 +416,15 @@ def painel(request):
             "total_km_docs_index": total_km_docs_index,
             "total_km_transmittals_index": total_km_transmittals_index,
             "ultima_indexacao_km": ultima_indexacao_km,
-        },
+        }
+
+    context = _cache_get_or_set(
+        "automacoes:painel:context:v1",
+        _build_painel_context,
+        _cache_ttl("CACHE_TTL_SHORT", 60),
     )
+
+    return render(request, "automacoes/painel.html", context)
 
 
 def _executar_automacao(request, executor, nome):
@@ -447,6 +483,7 @@ def _executar_automacao(request, executor, nome):
                 "finalizado_em",
             ]
         )
+        cache.delete("automacoes:painel:context:v1")
 
     return redirect("automacoes:painel")
 
