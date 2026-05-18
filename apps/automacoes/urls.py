@@ -22,6 +22,8 @@ urlpatterns = [
     path("dashboard-ld/", views.dashboard_ld, name="dashboard_ld"),
     path("excecoes-documentais/", views.dashboard_excecoes_documentais, name="dashboard_excecoes_documentais"),
     path("dashboard-transmittals/", views.dashboard_transmittals, name="dashboard_transmittals"),
+    path("dashboard-km-ld/", views.dashboard_km_ld, name="dashboard_km_ld"),
+    path("importar-lista-km/", views.importar_lista_km, name="importar_lista_km"),
 
     # Legacy entity routes
     path("pcfs-timeline/", views.listar_pcfs_timeline, name="pcfs_timeline"),
