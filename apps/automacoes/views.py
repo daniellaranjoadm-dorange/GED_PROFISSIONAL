@@ -1301,6 +1301,28 @@ def listar_transmittals_km(request):
     )
 
 
+def _rev_texto(valor):
+    return str(valor or "").strip().upper()
+
+
+def _rev_normalizar(valor):
+    texto = _rev_texto(valor)
+    texto = texto.replace("REV.", "").replace("REV", "")
+    texto = texto.replace("REVISÃO", "").replace("REVISAO", "")
+    texto = texto.replace("_", "").replace("-", "").replace(" ", "")
+    return texto.strip()
+
+
+def _rev_status_display(status):
+    mapa = {
+        "OK": "OK",
+        "DIVERGENTE": "DIVERGENTE",
+        "PENDENTE": "PENDENTE",
+        "SEM_REVISAO": "SEM REVISÃO",
+    }
+    return mapa.get(str(status or "").upper(), status or "PENDENTE")
+
+
 @login_required
 def dashboard_excecoes_documentais(request):
     """
@@ -1343,6 +1365,11 @@ def dashboard_excecoes_documentais(request):
     sem_pcf_q = Q(pcf="") | Q(pcf__isnull=True)
     recebido_nao_emitido_q = Q(transmittal_km__gt="") & ~Q(status_grd__iexact="Emitido")
     emitido_sem_km_q = Q(status_grd__iexact="Emitido") & (Q(transmittal_km="") | Q(transmittal_km__isnull=True))
+    revisao_divergente_q = Q(status_revisao_km=DocumentoLD.STATUS_REVISAO_KM_DIVERGENTE)
+    revisao_pendente_q = (
+        Q(status_revisao_km=DocumentoLD.STATUS_REVISAO_KM_PENDENTE)
+        | Q(status_revisao_km=DocumentoLD.STATUS_REVISAO_KM_SEM_REVISAO)
+    )
 
     kpis = {
         "total_ld": base.count(),
@@ -1355,6 +1382,8 @@ def dashboard_excecoes_documentais(request):
         "sem_pcf": base.filter(sem_pcf_q).count(),
         "recebido_nao_emitido": base.filter(recebido_nao_emitido_q).count(),
         "emitido_sem_km": base.filter(emitido_sem_km_q).count(),
+        "revisao_divergente": base.filter(revisao_divergente_q).count(),
+        "revisao_pendente": base.filter(revisao_pendente_q).count(),
     }
 
     filtros = {
@@ -1367,6 +1396,8 @@ def dashboard_excecoes_documentais(request):
         "sem_pcf": ("Sem PCF", sem_pcf_q),
         "recebido_nao_emitido": ("Recebido não emitido", recebido_nao_emitido_q),
         "emitido_sem_km": ("Emitido sem KM", emitido_sem_km_q),
+        "revisao_divergente": ("Revisão divergente", revisao_divergente_q),
+        "revisao_pendente": ("Revisão pendente", revisao_pendente_q),
     }
 
     queryset = base
@@ -1382,6 +1413,8 @@ def dashboard_excecoes_documentais(request):
             | sem_arquivo_q
             | recebido_nao_emitido_q
             | emitido_sem_km_q
+            | revisao_divergente_q
+            | revisao_pendente_q
         )
 
     queryset = queryset.order_by(

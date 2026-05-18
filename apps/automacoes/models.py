@@ -205,6 +205,19 @@ class DocumentoLD(models.Model):
         (STATUS_VINCULO_KM_MULTIPLO, "Múltiplas correspondências"),
     ]
 
+
+    STATUS_REVISAO_KM_OK = "OK"
+    STATUS_REVISAO_KM_DIVERGENTE = "DIVERGENTE"
+    STATUS_REVISAO_KM_PENDENTE = "PENDENTE"
+    STATUS_REVISAO_KM_SEM_REVISAO = "SEM_REVISAO"
+
+    STATUS_REVISAO_KM_CHOICES = [
+        (STATUS_REVISAO_KM_OK, "Revisão compatível"),
+        (STATUS_REVISAO_KM_DIVERGENTE, "Revisão divergente"),
+        (STATUS_REVISAO_KM_PENDENTE, "Revisão pendente"),
+        (STATUS_REVISAO_KM_SEM_REVISAO, "Sem revisão KM"),
+    ]
+
     origem_aba = models.CharField(max_length=100, blank=True)
     documento = models.CharField(max_length=255, blank=True)
     revisao = models.CharField(max_length=50, blank=True)
@@ -276,6 +289,24 @@ class DocumentoLD(models.Model):
         help_text="Observações operacionais do motor de vínculo KM ↔ LD.",
     )
 
+    revisao_km = models.CharField(
+        max_length=50,
+        blank=True,
+        db_index=True,
+        help_text="Revisão identificada no recebimento KM/transmittal.",
+    )
+    status_revisao_km = models.CharField(
+        max_length=30,
+        choices=STATUS_REVISAO_KM_CHOICES,
+        default=STATUS_REVISAO_KM_PENDENTE,
+        db_index=True,
+        help_text="Status comparativo entre revisão KM e revisão LD/Petrobras.",
+    )
+    observacao_revisao_km = models.TextField(
+        blank=True,
+        help_text="Observações da comparação de revisão KM ↔ LD.",
+    )
+
     atualizado_em = models.DateTimeField(auto_now=True)
     criado_em = models.DateTimeField(auto_now_add=True)
 
@@ -285,6 +316,7 @@ class DocumentoLD(models.Model):
             models.Index(fields=["origem_aba", "numero_documento_km"]),
             models.Index(fields=["status_vinculo_km", "score_vinculo_km"]),
             models.Index(fields=["transmittal_km"]),
+            models.Index(fields=["status_revisao_km", "revisao_km"]),
         ]
         constraints = [
             models.UniqueConstraint(

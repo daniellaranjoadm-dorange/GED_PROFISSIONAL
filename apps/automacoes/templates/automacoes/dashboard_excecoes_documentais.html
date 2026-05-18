@@ -71,7 +71,7 @@
 
   </section>
 
-  <section class="ops-kpi-grid ops-kpi-grid-4 mt-3">
+  <section class="ops-kpi-grid ops-kpi-grid-5 mt-3">
 
     <a class="ops-kpi" href="?filtro=sem_grd">
       <span>Sem GRD</span>
@@ -91,6 +91,11 @@
     <a class="ops-kpi" href="?filtro=emitido_sem_km">
       <span>Emitido sem KM</span>
       <strong>{{ kpis.emitido_sem_km }}</strong>
+    </a>
+
+    <a class="ops-kpi" href="?filtro=revisao_divergente">
+      <span>Revisão divergente</span>
+      <strong>{{ kpis.revisao_divergente }}</strong>
     </a>
 
   </section>
@@ -165,6 +170,7 @@
             <th>Título</th>
             <th>Disciplina</th>
             <th>Vínculo</th>
+            <th>Revisão</th>
             <th>GRD / PCF</th>
             <th>Problema</th>
             <th>Ações</th>
@@ -226,6 +232,30 @@
                 {% else %}
                   não localizado
                 {% endif %}
+              </div>
+            </td>
+
+            <td>
+              {% if item.status_revisao_km == "OK" %}
+              <span class="ops-status-pill ops-status-ok">
+                OK
+              </span>
+              {% elif item.status_revisao_km == "DIVERGENTE" %}
+              <span class="ops-status-pill ops-status-risk">
+                DIVERGENTE
+              </span>
+              {% else %}
+              <span class="ops-status-pill ops-status-warn">
+                {{ item.status_revisao_km|default:"PENDENTE" }}
+              </span>
+              {% endif %}
+
+              <div class="ops-muted small mt-1">
+                LD: {{ item.revisao|default:"—" }}
+              </div>
+
+              <div class="ops-muted small mt-1">
+                KM: {{ item.revisao_km|default:"—" }}
               </div>
             </td>
 
@@ -317,7 +347,7 @@
 
           {% empty %}
           <tr>
-            <td colspan="7" class="ops-empty">
+            <td colspan="8" class="ops-empty">
               Nenhuma pendência encontrada para os filtros aplicados.
             </td>
           </tr>
