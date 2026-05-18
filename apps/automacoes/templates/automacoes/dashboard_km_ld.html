@@ -1,0 +1,343 @@
+{% extends "documentos/base.html" %}
+{% load static %}
+
+{% block title %}Dashboard KM ↔ LD{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'automacoes/css/ops_enterprise.css' %}?v=1700">
+{% endblock %}
+
+{% block content %}
+<div class="ops-page">
+
+  <section class="ops-hero">
+    <div class="ops-hero-main">
+      <div class="ops-eyebrow">
+        <i class="bi bi-diagram-3"></i>
+        Engineering Document Intelligence
+      </div>
+
+      <h1>Dashboard Comparativo KM ↔ LD</h1>
+
+      <p>
+        Visão executiva da rastreabilidade entre Lista Mestre Kongsberg, transmittals KM e LD Petrobras/Transpetro.
+      </p>
+    </div>
+
+    <div class="ops-actions">
+      <a href="{% url 'automacoes:dashboard_transmittals' %}" class="ops-btn">
+        <i class="bi bi-box-seam"></i>
+        Transmittals
+      </a>
+
+      <a href="{% url 'automacoes:dashboard_ld' %}" class="ops-btn">
+        <i class="bi bi-folder2-open"></i>
+        Dashboard LD
+      </a>
+
+      <a href="{% url 'automacoes:dashboard_excecoes_documentais' %}" class="ops-btn">
+        <i class="bi bi-exclamation-triangle"></i>
+        Exceções
+      </a>
+
+      <a href="{% url 'automacoes:painel' %}" class="ops-btn">
+        <i class="bi bi-arrow-left"></i>
+        Voltar
+      </a>
+    </div>
+  </section>
+
+  {% if not documento_km_disponivel %}
+  <section class="ops-panel">
+    <div class="ops-panel-head">
+      <div>
+        <h2>DocumentoKM não localizado</h2>
+        <p>O dashboard está ativo, mas os KPIs KM ficam zerados até o model DocumentoKM estar disponível no app automacoes.</p>
+      </div>
+      <span class="ops-chip">Modo compatibilidade</span>
+    </div>
+  </section>
+  {% endif %}
+
+  <section class="ops-kpi-grid ops-kpi-grid-6">
+    <a href="{% url 'automacoes:transmittals_km' %}" class="ops-kpi">
+      <span>Recebidos KM</span>
+      <strong>{{ total_km }}</strong>
+      <small>Lista Mestre KM</small>
+    </a>
+
+    <a href="{% url 'automacoes:lista_ld' %}" class="ops-kpi">
+      <span>Linhas LD</span>
+      <strong>{{ total_ld }}</strong>
+      <small>Petrobras/Transpetro</small>
+    </a>
+
+    <div class="ops-kpi">
+      <span>Transmittals</span>
+      <strong>{{ total_transmittals }}</strong>
+      <small>eventos KM únicos</small>
+    </div>
+
+    <div class="ops-kpi">
+      <span>Cobertura KM ↔ LD</span>
+      <strong>{{ cobertura_km_ld }}%</strong>
+      <small>vínculos detectados</small>
+    </div>
+
+    <a href="{% url 'automacoes:dashboard_excecoes_documentais' %}" class="ops-kpi">
+      <span>Revisão divergente</span>
+      <strong>{{ revisao_divergente }}</strong>
+      <small>KM vs LD</small>
+    </a>
+
+    <div class="ops-kpi">
+      <span>Score médio</span>
+      <strong>{{ score_medio }}</strong>
+      <small>qualidade do vínculo</small>
+    </div>
+  </section>
+
+  <section class="ops-kpi-grid ops-kpi-grid-4">
+    <div class="ops-kpi">
+      <span>KM com LD</span>
+      <strong>{{ km_com_ld }}</strong>
+      <small>documentos vinculados</small>
+    </div>
+
+    <a href="{% url 'automacoes:dashboard_excecoes_documentais' %}" class="ops-kpi">
+      <span>KM sem LD</span>
+      <strong>{{ km_sem_ld }}</strong>
+      <small>recebido sem vínculo</small>
+    </a>
+
+    <div class="ops-kpi">
+      <span>LD com KM</span>
+      <strong>{{ ld_com_km }}</strong>
+      <small>LD rastreada</small>
+    </div>
+
+    <a href="{% url 'automacoes:dashboard_excecoes_documentais' %}" class="ops-kpi">
+      <span>LD sem KM</span>
+      <strong>{{ ld_sem_km }}</strong>
+      <small>emitido ou cadastrado sem KM</small>
+    </a>
+  </section>
+
+  <section class="ops-kpi-grid ops-kpi-grid-4">
+    <div class="ops-kpi">
+      <span>Emitidos Petrobras</span>
+      <strong>{{ emitidos_petobras }}</strong>
+      <small>GRD emitido</small>
+    </div>
+
+    <div class="ops-kpi">
+      <span>Recebido sem emissão</span>
+      <strong>{{ recebido_sem_emissao }}</strong>
+      <small>KM aguardando LD</small>
+    </div>
+
+    <div class="ops-kpi">
+      <span>Emitido sem recebimento</span>
+      <strong>{{ emitido_sem_recebimento }}</strong>
+      <small>LD sem rastreio KM</small>
+    </div>
+
+    <div class="ops-kpi">
+      <span>Revisão pendente</span>
+      <strong>{{ revisao_pendente }}</strong>
+      <small>comparação KM ↔ LD</small>
+    </div>
+  </section>
+
+  {{ disciplina_labels|json_script:"kmld-disciplina-labels" }}
+  {{ disciplina_values|json_script:"kmld-disciplina-values" }}
+  {{ status_km_labels|json_script:"kmld-status-km-labels" }}
+  {{ status_km_values|json_script:"kmld-status-km-values" }}
+  {{ status_ld_labels|json_script:"kmld-status-ld-labels" }}
+  {{ status_ld_values|json_script:"kmld-status-ld-values" }}
+
+  <section class="ops-grid ops-grid-3 ops-stack">
+    <div class="ops-panel">
+      <div class="ops-panel-head">
+        <div>
+          <h2>Por disciplina</h2>
+          <p>Distribuição documental KM/LD.</p>
+        </div>
+      </div>
+      <div class="ops-chart-wrap">
+        <canvas id="kmldDisciplinaChart"></canvas>
+      </div>
+    </div>
+
+    <div class="ops-panel">
+      <div class="ops-panel-head">
+        <div>
+          <h2>Status KM</h2>
+          <p>Situação da Lista Mestre KM.</p>
+        </div>
+      </div>
+      <div class="ops-chart-wrap">
+        <canvas id="kmldStatusKmChart"></canvas>
+      </div>
+    </div>
+
+    <div class="ops-panel">
+      <div class="ops-panel-head">
+        <div>
+          <h2>Status LD</h2>
+          <p>Situação documental Petrobras/Transpetro.</p>
+        </div>
+      </div>
+      <div class="ops-chart-wrap">
+        <canvas id="kmldStatusLdChart"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <section class="ops-grid ops-grid-2 ops-stack">
+    <div class="ops-panel">
+      <div class="ops-panel-head">
+        <div>
+          <h2>Responsáveis KM</h2>
+          <p>Top responsáveis por volume documental.</p>
+        </div>
+      </div>
+
+      <div class="ops-table-wrap">
+        <table class="ops-table">
+          <thead>
+            <tr>
+              <th>Responsável</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in por_responsavel %}
+            <tr>
+              <td>{{ item.responsible|default:"N/I" }}</td>
+              <td>{{ item.total }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="2">Sem dados disponíveis.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="ops-panel">
+      <div class="ops-panel-head">
+        <div>
+          <h2>Fases KM</h2>
+          <p>Distribuição por fase da Lista Mestre.</p>
+        </div>
+      </div>
+
+      <div class="ops-table-wrap">
+        <table class="ops-table">
+          <thead>
+            <tr>
+              <th>Fase</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in por_fase %}
+            <tr>
+              <td>{{ item.phase|default:"N/I" }}</td>
+              <td>{{ item.total }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="2">Sem dados disponíveis.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="ops-panel">
+    <div class="ops-panel-head">
+      <div>
+        <h2>Últimos documentos KM</h2>
+        <p>Amostra operacional da Lista Mestre Kongsberg.</p>
+      </div>
+    </div>
+
+    <div class="ops-table-wrap">
+      <table class="ops-table">
+        <thead>
+          <tr>
+            <th>Número KM</th>
+            <th>Título</th>
+            <th>Disciplina</th>
+            <th>Status</th>
+            <th>Revisão</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for doc in ultimos_km %}
+          <tr>
+            <td>{{ doc.numero_km|default:"-" }}</td>
+            <td>{{ doc.titulo|default:"-" }}</td>
+            <td>{{ doc.disciplina|default:"-" }}</td>
+            <td>{{ doc.status_km|default:"-" }}</td>
+            <td>{{ doc.revisao_km|default:"-" }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5">Nenhum documento KM encontrado.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+
+<script>
+(function () {
+  function data(id) {
+    const node = document.getElementById(id);
+    return node ? JSON.parse(node.textContent) : [];
+  }
+
+  function buildChart(canvasId, labelsId, valuesId, type) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas || typeof Chart === "undefined") {
+      return;
+    }
+
+    const labels = data(labelsId);
+    const values = data(valuesId);
+
+    new Chart(canvas, {
+      type: type || "bar",
+      data: {
+        labels: labels,
+        datasets: [{
+          label: "Total",
+          data: values
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false }
+        }
+      }
+    });
+  }
+
+  buildChart("kmldDisciplinaChart", "kmld-disciplina-labels", "kmld-disciplina-values", "bar");
+  buildChart("kmldStatusKmChart", "kmld-status-km-labels", "kmld-status-km-values", "doughnut");
+  buildChart("kmldStatusLdChart", "kmld-status-ld-labels", "kmld-status-ld-values", "doughnut");
+})();
+</script>
+{% endblock %}
