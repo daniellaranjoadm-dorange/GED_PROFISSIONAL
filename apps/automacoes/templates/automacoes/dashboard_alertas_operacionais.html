@@ -1,0 +1,134 @@
+{% extends "documentos/base.html" %}
+{% load static %}
+
+{% block title %}Alertas Operacionais{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'automacoes/css/ops_enterprise.css' %}?v=1700">
+{% endblock %}
+
+{% block content %}
+<div class="ops-page">
+
+  <section class="ops-hero">
+    <div class="ops-hero-main">
+      <div class="ops-eyebrow">
+        <i class="bi bi-exclamation-triangle"></i>
+        Document Intelligence
+      </div>
+
+      <h1>Alertas Operacionais</h1>
+
+      <p>
+        Monitoramento dinâmico de exceções documentais: vínculos KM ↔ LD, revisão divergente,
+        score baixo, recebimento pendente e transmittals sem PDF.
+      </p>
+    </div>
+
+    <div class="ops-actions">
+      <form method="post" action="{% url 'automacoes:executar_sync_km_ld' %}">
+        {% csrf_token %}
+        <button class="ops-btn ops-btn-primary" type="submit">
+          <i class="bi bi-arrow-repeat"></i>
+          Executar Sync KM ↔ LD
+        </button>
+      </form>
+
+      <a href="{% url 'automacoes:dashboard_km_ld' %}" class="ops-btn">
+        <i class="bi bi-columns-gap"></i>
+        Dashboard KM ↔ LD
+      </a>
+
+      <a href="{% url 'automacoes:painel' %}" class="ops-btn">
+        <i class="bi bi-arrow-left"></i>
+        Voltar
+      </a>
+    </div>
+  </section>
+
+  <section class="ops-kpi-grid ops-kpi-grid-5">
+    <div class="ops-kpi">
+      <span>Total alertas</span>
+      <strong>{{ total }}</strong>
+      <small>eventos documentais</small>
+    </div>
+
+    <div class="ops-kpi">
+      <span>Alta</span>
+      <strong>{{ total_alta }}</strong>
+      <small>ação prioritária</small>
+    </div>
+
+    <div class="ops-kpi">
+      <span>Média</span>
+      <strong>{{ total_media }}</strong>
+      <small>atenção operacional</small>
+    </div>
+
+    <div class="ops-kpi">
+      <span>Baixa</span>
+      <strong>{{ total_baixa }}</strong>
+      <small>observação</small>
+    </div>
+
+    <div class="ops-kpi">
+      <span>Health Score</span>
+      <strong>{{ health_score }}%</strong>
+      <small>document intelligence</small>
+    </div>
+  </section>
+
+  <section class="ops-panel">
+    <div class="ops-panel-head">
+      <div>
+        <h2>Fila de alertas</h2>
+        <p>Lista gerada em tempo real, sem persistência adicional.</p>
+      </div>
+      <span class="ops-chip">Dynamic</span>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-dark table-hover align-middle">
+        <thead>
+          <tr>
+            <th>Severidade</th>
+            <th>Código</th>
+            <th>Referência</th>
+            <th>Título</th>
+            <th>Origem</th>
+            <th>Disciplina</th>
+            <th>Responsável</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for alerta in alertas %}
+          <tr>
+            <td>
+              <span class="ops-chip">
+                {{ alerta.severidade|upper }}
+              </span>
+            </td>
+            <td>{{ alerta.codigo }}</td>
+            <td>{{ alerta.referencia|default:"—" }}</td>
+            <td>
+              <strong>{{ alerta.titulo }}</strong><br>
+              <small>{{ alerta.descricao }}</small>
+            </td>
+            <td>{{ alerta.origem }}</td>
+            <td>{{ alerta.disciplina|default:"—" }}</td>
+            <td>{{ alerta.responsavel|default:"—" }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="text-center text-muted py-4">
+              Nenhum alerta operacional identificado.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+{% endblock %}

@@ -17,7 +17,7 @@ from django.shortcuts import redirect, render
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 
-from apps.automacoes.models import TransmittalKM, PCFTimeline, DocumentoLD, ExecucaoAutomacao, KMFileIndex
+from apps.automacoes.models import TransmittalKM, PCFTimeline, DocumentoLD, DocumentoKM, ExecucaoAutomacao, KMFileIndex
 from apps.automacoes.services import (
     atualizar_ld,
     grd_ghenova,
@@ -3061,59 +3061,146 @@ def runtime_retention_dry_run_api(request):
 
     return JsonResponse(result)
 
+
 @login_required
 def dashboard_km_ld(request):
     """
-    Dashboard executivo comparativo KM x LD.
+    Dashboard comparativo KM ↔ LD.
 
-    View defensiva para manter compatibilidade com templates enterprise
-    mesmo quando a camada analítica avançada ainda não estiver completa.
+    Mantém a view tolerante a campos opcionais para não quebrar ambientes com
+    migrations intermediárias ou templates em evolução.
     """
+
     total_ld = DocumentoLD.objects.count()
+    total_km = DocumentoKM.objects.count()
     total_transmittals = TransmittalKM.objects.count()
+
+    km_recebidos = (
+        DocumentoKM.objects.filter(status_recebimento="RECEBIDO").count()
+        if _model_has_field(DocumentoKM, "status_recebimento")
+        else 0
+    )
+    km_pendentes = max(total_km - km_recebidos, 0)
+
+    km_sem_vinculo = (
+        DocumentoKM.objects.filter(
+            Q(documento_ld__isnull=True)
+            | Q(status_vinculo_ld__in=["PENDENTE", "SEM_MATCH", "CONFLITO", "MULTIPLO"])
+        ).count()
+        if _model_has_field(DocumentoKM, "documento_ld")
+        else 0
+    )
+
+    km_com_vinculo = max(total_km - km_sem_vinculo, 0)
+
+    revisao_divergente = (
+        DocumentoLD.objects.filter(status_revisao_km__iexact="DIVERGENTE").count()
+        if _model_has_field(DocumentoLD, "status_revisao_km")
+        else 0
+    )
+
+    score_medio = (
+        DocumentoKM.objects.aggregate(media=Avg("score_vinculo_ld")).get("media") or 0
+        if _model_has_field(DocumentoKM, "score_vinculo_ld")
+        else 0
+    )
+
+    cobertura_km_ld = round((km_com_vinculo / total_km) * 100, 1) if total_km else 0
+    taxa_recebimento = round((km_recebidos / total_km) * 100, 1) if total_km else 0
+    consistencia_revisao = (
+        round(((total_ld - revisao_divergente) / total_ld) * 100, 1)
+        if total_ld
+        else 0
+    )
+
+    por_disciplina = []
+    if _model_has_field(DocumentoKM, "disciplina"):
+        por_disciplina = list(
+            DocumentoKM.objects.values("disciplina")
+            .annotate(total=Count("id"))
+            .order_by("-total", "disciplina")[:10]
+        )
+
+    por_status = []
+    if _model_has_field(DocumentoKM, "status_km"):
+        por_status = list(
+            DocumentoKM.objects.values("status_km")
+            .annotate(total=Count("id"))
+            .order_by("-total", "status_km")[:10]
+        )
 
     context = {
         "total_ld": total_ld,
-        "total_documentos_ld": total_ld,
+        "total_km": total_km,
         "total_transmittals": total_transmittals,
-        "total_documentos_km": total_transmittals,
-        "total_km": total_transmittals,
-        "sem_vinculo_ld": 0,
-        "revisao_divergente": 0,
-        "emitidos_petroleo": 0,
-        "recebidos_km": total_transmittals,
-        "score_medio_vinculo": 0,
-        "cobertura_documental": 0,
-        "por_disciplina": [],
-        "por_status": [],
-        "ultimos_registros": [],
+        "km_recebidos": km_recebidos,
+        "km_pendentes": km_pendentes,
+        "km_sem_vinculo": km_sem_vinculo,
+        "km_com_vinculo": km_com_vinculo,
+        "revisao_divergente": revisao_divergente,
+        "score_medio": round(float(score_medio), 1) if score_medio else 0,
+        "cobertura_km_ld": cobertura_km_ld,
+        "taxa_recebimento": taxa_recebimento,
+        "consistencia_revisao": consistencia_revisao,
+        "por_disciplina": por_disciplina,
+        "por_status": por_status,
+        "disciplinas_labels": [item.get("disciplina") or "Sem disciplina" for item in por_disciplina],
+        "disciplinas_values": [item.get("total") or 0 for item in por_disciplina],
+        "status_labels": [item.get("status_km") or "Sem status" for item in por_status],
+        "status_values": [item.get("total") or 0 for item in por_status],
     }
 
-    return render(
-        request,
-        "automacoes/dashboard_km_ld.html",
-        context,
-    )
+    return render(request, "automacoes/dashboard_km_ld.html", context)
 
 
 @login_required
 def importar_lista_km(request):
     """
-    Endpoint compatível com os templates de upload da Lista KM.
+    Endpoint estável para o botão/form de importação da Lista KM.
 
-    Mantém a navegação estável e evita NoReverseMatch enquanto o importador
-    completo evolui em service próprio.
+    Se o service do importador estiver disponível, executa a importação.
+    Caso contrário, mantém a rota viva e informa o usuário sem quebrar templates.
     """
-    if request.method == "POST":
-        messages.info(
+
+    if request.method != "POST":
+        messages.warning(request, "Envie uma planilha .xlsx para importar a Lista KM.")
+        return redirect("automacoes:transmittals_km")
+
+    arquivo = request.FILES.get("arquivo_km") or request.FILES.get("arquivo") or request.FILES.get("file")
+
+    if not arquivo:
+        messages.error(request, "Nenhum arquivo KM foi enviado.")
+        return redirect("automacoes:transmittals_km")
+
+    try:
+        from apps.automacoes.services.kongsberg_document_list import importar_lista_kongsberg
+    except Exception:
+        importar_lista_kongsberg = None
+
+    if importar_lista_kongsberg is None:
+        messages.warning(
             request,
-            "Importador da Lista KM recebido. A integração operacional será processada pela rotina KM configurada.",
+            "Arquivo recebido, mas o service do importador KM não está disponível neste ambiente.",
         )
+        return redirect("automacoes:transmittals_km")
+
+    try:
+        resultado = importar_lista_kongsberg(arquivo)
+    except TypeError:
+        resultado = importar_lista_kongsberg(arquivo=arquivo)
+    except Exception as exc:
+        messages.error(request, f"Erro ao importar Lista KM: {exc}")
+        return redirect("automacoes:transmittals_km")
+
+    if isinstance(resultado, dict):
+        ok = bool(resultado.get("ok", True))
+        mensagem = resultado.get("mensagem") or "Importação KM concluída."
+        if ok:
+            messages.success(request, mensagem)
+        else:
+            messages.error(request, mensagem)
     else:
-        messages.info(
-            request,
-            "Importador da Lista KM disponível.",
-        )
+        messages.success(request, "Importação KM concluída.")
 
     return redirect("automacoes:transmittals_km")
 
