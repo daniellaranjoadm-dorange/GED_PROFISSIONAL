@@ -1,5 +1,6 @@
 import re
 from apps.automacoes.models import TransmittalKM, ExecucaoAutomacao
+from apps.automacoes.services.document_link_engine import executar_vinculo_km_ld
 from pathlib import Path
 from typing import Dict, List, Tuple
 from django.utils import timezone
@@ -555,18 +556,40 @@ def executar():
                 "detalhes": resumo,
             }
 
+        resultado_vinculo = executar_vinculo_km_ld()
+        detalhes_vinculo = resultado_vinculo.get("detalhes", {}) if isinstance(resultado_vinculo, dict) else {}
+
+        vinculados_auto = int(detalhes_vinculo.get("vinculados_auto") or 0)
+        pendentes = int(detalhes_vinculo.get("pendentes") or 0)
+        sem_match = int(detalhes_vinculo.get("sem_match") or 0)
+        multiplos = int(detalhes_vinculo.get("multiplos") or 0)
+        conflitos = int(detalhes_vinculo.get("conflitos") or 0)
+
         return {
             "ok": True,
             "mensagem": (
                 "Transmittal KM executado com sucesso. "
                 f"PDFs lidos: {pdfs_lidos}. "
-                f"Linhas gravadas: {linhas_gravadas}."
+                f"Linhas gravadas: {linhas_gravadas}. "
+                f"Vínculos automáticos: {vinculados_auto}. "
+                f"Pendentes: {pendentes}. "
+                f"Sem match: {sem_match}."
             ),
             "quantidade_processada": linhas_gravadas,
             "detalhes": {
                 "pdfs_lidos": pdfs_lidos,
                 "linhas_gravadas": linhas_gravadas,
                 "arquivo": arquivo,
+                "vinculo_km_ld": {
+                    "ok": bool(resultado_vinculo.get("ok", False)) if isinstance(resultado_vinculo, dict) else False,
+                    "mensagem": resultado_vinculo.get("mensagem", "") if isinstance(resultado_vinculo, dict) else "",
+                    "vinculados_auto": vinculados_auto,
+                    "pendentes": pendentes,
+                    "sem_match": sem_match,
+                    "multiplos": multiplos,
+                    "conflitos": conflitos,
+                    "detalhes": detalhes_vinculo,
+                },
             },
         }
 
