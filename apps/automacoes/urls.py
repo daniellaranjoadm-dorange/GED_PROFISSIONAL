@@ -20,6 +20,7 @@ urlpatterns = [
     path("dashboard-km/", views.listar_transmittals_km, name="dashboard_km"),
     path("dashboard-grd/", views.logs_automacoes, name="dashboard_grd"),
     path("dashboard-ld/", views.dashboard_ld, name="dashboard_ld"),
+    path("excecoes-documentais/", views.dashboard_excecoes_documentais, name="dashboard_excecoes_documentais"),
     path("dashboard-transmittals/", views.dashboard_transmittals, name="dashboard_transmittals"),
 
     # Legacy entity routes

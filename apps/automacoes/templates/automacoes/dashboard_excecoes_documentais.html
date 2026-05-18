@@ -1,0 +1,314 @@
+{% extends "documentos/base.html" %}
+{% load static %}
+
+{% block title %}Exceções Documentais · KM ↔ LD{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'automacoes/css/ops_enterprise.css' %}?v=1600">
+{% endblock %}
+
+{% block content %}
+<div class="ops-page">
+
+  <section class="ops-hero">
+    <div class="ops-hero-main">
+      <div class="ops-eyebrow">
+        <i class="bi bi-exclamation-triangle"></i>
+        Document Intelligence
+      </div>
+
+      <h1>Exceções Documentais</h1>
+
+      <p>
+        Pendências críticas entre Transmittals KM, Lista LD Petrobras, arquivos de rede, GRD e PCF.
+      </p>
+    </div>
+
+    <div class="ops-actions">
+      <a href="{% url 'automacoes:transmittals_km' %}" class="ops-btn ops-btn-primary">
+        <i class="bi bi-box-seam"></i>
+        Central KM
+      </a>
+
+      <a href="{% url 'automacoes:dashboard_ld' %}" class="ops-btn">
+        <i class="bi bi-bar-chart"></i>
+        Dashboard LD
+      </a>
+    </div>
+  </section>
+
+  <section class="ops-kpi-grid ops-kpi-grid-5">
+
+    <a class="ops-kpi" href="?filtro=sem_vinculo">
+      <span>Sem vínculo LD</span>
+      <strong>{{ kpis.sem_vinculo }}</strong>
+      <small>KM não casou com Petrobras</small>
+    </a>
+
+    <a class="ops-kpi" href="?filtro=conflitos">
+      <span>Conflitos</span>
+      <strong>{{ kpis.conflitos }}</strong>
+      <small>Exigem revisão manual</small>
+    </a>
+
+    <a class="ops-kpi" href="?filtro=multiplos">
+      <span>Múltiplos matches</span>
+      <strong>{{ kpis.multiplos }}</strong>
+      <small>Mais de um candidato</small>
+    </a>
+
+    <a class="ops-kpi" href="?filtro=sem_arquivo">
+      <span>Sem arquivo KM</span>
+      <strong>{{ kpis.sem_arquivo }}</strong>
+      <small>Vínculo sem arquivo físico</small>
+    </a>
+
+    <a class="ops-kpi" href="?filtro=score_baixo">
+      <span>Score baixo</span>
+      <strong>{{ kpis.score_baixo }}</strong>
+      <small>Confiança abaixo de 70%</small>
+    </a>
+
+  </section>
+
+  <section class="ops-kpi-grid ops-kpi-grid-4 mt-3">
+
+    <a class="ops-kpi" href="?filtro=sem_grd">
+      <span>Sem GRD</span>
+      <strong>{{ kpis.sem_grd }}</strong>
+    </a>
+
+    <a class="ops-kpi" href="?filtro=sem_pcf">
+      <span>Sem PCF</span>
+      <strong>{{ kpis.sem_pcf }}</strong>
+    </a>
+
+    <a class="ops-kpi" href="?filtro=recebido_nao_emitido">
+      <span>Recebido não emitido</span>
+      <strong>{{ kpis.recebido_nao_emitido }}</strong>
+    </a>
+
+    <a class="ops-kpi" href="?filtro=emitido_sem_km">
+      <span>Emitido sem KM</span>
+      <strong>{{ kpis.emitido_sem_km }}</strong>
+    </a>
+
+  </section>
+
+  <section class="ops-panel mt-3">
+
+    <form method="get">
+      <div class="ops-filter-grid">
+        <div>
+          <label class="ops-filter-label">Busca</label>
+          <input type="text"
+                 name="q"
+                 value="{{ busca }}"
+                 class="form-control"
+                 placeholder="KM, Petrobras, título, disciplina, GRD, PCF ou transmittal...">
+        </div>
+
+        <div>
+          <label class="ops-filter-label">Filtro crítico</label>
+          <select name="filtro" class="form-select">
+            <option value="">Todas as exceções</option>
+            {% for key, data in filtros.items %}
+            <option value="{{ key }}" {% if filtro == key %}selected{% endif %}>
+              {{ data.0 }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <button class="ops-btn ops-btn-primary" type="submit">
+          <i class="bi bi-search"></i>
+          Filtrar
+        </button>
+
+        <a href="{% url 'automacoes:dashboard_excecoes_documentais' %}" class="ops-btn">
+          <i class="bi bi-x-circle"></i>
+          Limpar
+        </a>
+      </div>
+    </form>
+
+    <div class="ops-toolbar mt-3">
+      <span class="ops-toolbar-item active">
+        Total exibido: {{ page_obj.paginator.count }}
+      </span>
+
+      {% if filtro %}
+      <span class="ops-toolbar-item">
+        Filtro: {{ filtro }}
+      </span>
+      {% endif %}
+    </div>
+
+  </section>
+
+  <section class="ops-panel mt-3">
+
+    <div class="ops-panel-head">
+      <div>
+        <h2>Fila de Pendências</h2>
+        <p>Documentos que precisam de ação ou validação documental.</p>
+      </div>
+
+      <span class="ops-chip">KM ↔ LD</span>
+    </div>
+
+    <div class="ops-table-wrap">
+      <table class="ops-table">
+        <thead>
+          <tr>
+            <th>Petrobras / KM</th>
+            <th>Título</th>
+            <th>Disciplina</th>
+            <th>Vínculo</th>
+            <th>GRD / PCF</th>
+            <th>Problema</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for item in itens %}
+          <tr>
+            <td>
+              <strong>{{ item.documento|default:"—" }}</strong>
+
+              <div class="ops-muted small mt-1">
+                KM: {{ item.numero_documento_km|default:"—" }}
+              </div>
+
+              <div class="ops-muted small mt-1">
+                TR: {{ item.transmittal_km|default:"—" }}
+              </div>
+            </td>
+
+            <td class="ops-message">
+              {{ item.titulo|default:"—" }}
+
+              {% if item.data_recebimento_km %}
+              <div class="ops-muted small mt-1">
+                Recebido KM: {{ item.data_recebimento_km }}
+              </div>
+              {% endif %}
+            </td>
+
+            <td>
+              {{ item.disciplina|default:"—" }}
+            </td>
+
+            <td>
+              {% if item.status_vinculo_km == "AUTO" or item.status_vinculo_km == "MANUAL" %}
+              <span class="ops-status-pill ops-status-ok">
+                {{ item.status_vinculo_km }}
+              </span>
+              {% elif item.status_vinculo_km == "CONFLITO" or item.status_vinculo_km == "MULTIPLO" %}
+              <span class="ops-status-pill ops-status-risk">
+                {{ item.status_vinculo_km }}
+              </span>
+              {% else %}
+              <span class="ops-status-pill ops-status-warn">
+                {{ item.status_vinculo_km|default:"PENDENTE" }}
+              </span>
+              {% endif %}
+
+              <div class="ops-muted small mt-1">
+                Score: {{ item.score_vinculo_km }}%
+              </div>
+
+              <div class="ops-muted small mt-1">
+                Arquivo KM:
+                {% if item.arquivo_km_encontrado %}
+                  encontrado
+                {% else %}
+                  não localizado
+                {% endif %}
+              </div>
+            </td>
+
+            <td>
+              <div class="ops-muted small">
+                GRD: {{ item.grd|default:"—" }}
+              </div>
+
+              <div class="ops-muted small mt-1">
+                Status GRD: {{ item.status_grd|default:"—" }}
+              </div>
+
+              <div class="ops-muted small mt-1">
+                PCF: {{ item.pcf|default:"—" }}
+              </div>
+
+              <div class="ops-muted small mt-1">
+                Status PCF: {{ item.status_final_pcf|default:"—" }}
+              </div>
+            </td>
+
+            <td>
+              {% if not item.numero_documento_km %}
+              <span class="ops-chip ops-chip-warn">Sem KM</span>
+              {% endif %}
+
+              {% if item.status_vinculo_km == "CONFLITO" %}
+              <span class="ops-chip ops-chip-risk">Conflito</span>
+              {% endif %}
+
+              {% if item.status_vinculo_km == "MULTIPLO" %}
+              <span class="ops-chip ops-chip-risk">Múltiplo</span>
+              {% endif %}
+
+              {% if item.score_vinculo_km > 0 and item.score_vinculo_km < 70 %}
+              <span class="ops-chip ops-chip-warn">Score baixo</span>
+              {% endif %}
+
+              {% if item.numero_documento_km and not item.arquivo_km_encontrado %}
+              <span class="ops-chip ops-chip-warn">Sem arquivo</span>
+              {% endif %}
+
+              {% if item.transmittal_km and item.status_grd != "Emitido" %}
+              <span class="ops-chip ops-chip-warn">Recebido não emitido</span>
+              {% endif %}
+
+              {% if item.status_grd == "Emitido" and not item.transmittal_km %}
+              <span class="ops-chip ops-chip-warn">Emitido sem KM</span>
+              {% endif %}
+            </td>
+          </tr>
+
+          {% empty %}
+          <tr>
+            <td colspan="6" class="ops-empty">
+              Nenhuma pendência encontrada para os filtros aplicados.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if page_obj.has_other_pages %}
+    <div class="ops-toolbar mt-3">
+      {% if page_obj.has_previous %}
+      <a class="ops-toolbar-item" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page_obj.previous_page_number }}">
+        Anterior
+      </a>
+      {% endif %}
+
+      <span class="ops-toolbar-item active">
+        Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+      </span>
+
+      {% if page_obj.has_next %}
+      <a class="ops-toolbar-item" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page_obj.next_page_number }}">
+        Próxima
+      </a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+  </section>
+
+</div>
+{% endblock %}
