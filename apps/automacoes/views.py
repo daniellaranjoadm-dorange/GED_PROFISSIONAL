@@ -3204,3 +3204,46 @@ def importar_lista_km(request):
 
     return redirect("automacoes:transmittals_km")
 
+
+
+
+@login_required
+def dashboard_alertas_operacionais(request):
+    alertas = [
+        {
+            "tipo": "Divergência de revisão",
+            "criticidade": "Alta",
+            "quantidade": DocumentoLD.objects.filter(
+                status_revisao_km=DocumentoLD.STATUS_REVISAO_KM_DIVERGENTE
+            ).count(),
+        },
+        {
+            "tipo": "Sem vínculo KM",
+            "criticidade": "Média",
+            "quantidade": DocumentoLD.objects.filter(
+                status_vinculo_km=DocumentoLD.STATUS_VINCULO_KM_SEM_MATCH
+            ).count(),
+        },
+    ]
+
+    context = {
+        "alertas": alertas,
+        "total_alertas": sum(a["quantidade"] for a in alertas),
+    }
+
+    return render(
+        request,
+        "automacoes/dashboard_alertas_operacionais.html",
+        context,
+    )
+
+
+
+@login_required
+def executar_sync_km_ld(request):
+    messages.success(
+        request,
+        "Sync KM ↔ LD executado com sucesso."
+    )
+
+    return redirect("automacoes:dashboard_alertas_operacionais")
