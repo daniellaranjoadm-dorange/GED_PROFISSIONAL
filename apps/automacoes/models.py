@@ -125,6 +125,115 @@ class TransmittalKM(models.Model):
         return f"{self.documento} - {self.transmittal_numero}"
 
 
+
+class DocumentoKM(models.Model):
+    """
+    Lista mestre de documentos Kongsberg/KM.
+
+    Esta tabela representa a LD do fornecedor.
+    TransmittalKM continua sendo evento de recebimento por PDF.
+    DocumentoLD continua sendo a LD Petrobras/Transpetro.
+    """
+
+    STATUS_VINCULO_LD_AUTO = "AUTO"
+    STATUS_VINCULO_LD_MANUAL = "MANUAL"
+    STATUS_VINCULO_LD_PENDENTE = "PENDENTE"
+    STATUS_VINCULO_LD_CONFLITO = "CONFLITO"
+    STATUS_VINCULO_LD_SEM_MATCH = "SEM_MATCH"
+    STATUS_VINCULO_LD_MULTIPLO = "MULTIPLO"
+
+    STATUS_VINCULO_LD_CHOICES = [
+        (STATUS_VINCULO_LD_AUTO, "Vinculado automaticamente"),
+        (STATUS_VINCULO_LD_MANUAL, "Vinculado manualmente"),
+        (STATUS_VINCULO_LD_PENDENTE, "Pendente"),
+        (STATUS_VINCULO_LD_CONFLITO, "Conflito"),
+        (STATUS_VINCULO_LD_SEM_MATCH, "Sem correspondência"),
+        (STATUS_VINCULO_LD_MULTIPLO, "Múltiplas correspondências"),
+    ]
+
+    STATUS_RECEBIMENTO_RECEBIDO = "RECEBIDO"
+    STATUS_RECEBIMENTO_PENDENTE = "PENDENTE"
+
+    STATUS_RECEBIMENTO_CHOICES = [
+        (STATUS_RECEBIMENTO_RECEBIDO, "Recebido da Kongsberg"),
+        (STATUS_RECEBIMENTO_PENDENTE, "Pendente de recebimento"),
+    ]
+
+    numero_km = models.CharField(
+        max_length=255,
+        unique=True,
+        db_index=True,
+        help_text="Número do documento Kongsberg/KM.",
+    )
+    titulo = models.TextField(blank=True)
+    disciplina = models.CharField(max_length=120, blank=True, db_index=True)
+
+    toc = models.CharField(max_length=120, blank=True)
+    phase = models.CharField(max_length=120, blank=True)
+    responsible = models.CharField(max_length=255, blank=True)
+
+    contractual_delivery = models.CharField(max_length=80, blank=True)
+    first_delivery = models.CharField(max_length=80, blank=True)
+
+    status_km = models.CharField(max_length=120, blank=True, db_index=True)
+    revisao_km = models.CharField(max_length=50, blank=True, db_index=True)
+
+    status_recebimento = models.CharField(
+        max_length=30,
+        choices=STATUS_RECEBIMENTO_CHOICES,
+        default=STATUS_RECEBIMENTO_PENDENTE,
+        db_index=True,
+    )
+    transmittal_numero = models.CharField(max_length=120, blank=True, db_index=True)
+    data_recebimento_km = models.CharField(max_length=80, blank=True)
+
+    documento_tp = models.CharField(
+        max_length=255,
+        blank=True,
+        db_index=True,
+        help_text="Número Petrobras/Transpetro associado ao documento KM.",
+    )
+    documento_ld = models.ForeignKey(
+        "DocumentoLD",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="documentos_km",
+    )
+
+    status_vinculo_ld = models.CharField(
+        max_length=30,
+        choices=STATUS_VINCULO_LD_CHOICES,
+        default=STATUS_VINCULO_LD_PENDENTE,
+        db_index=True,
+    )
+    score_vinculo_ld = models.PositiveSmallIntegerField(default=0, db_index=True)
+    observacao_vinculo_ld = models.TextField(blank=True)
+
+    arquivo_km_encontrado = models.BooleanField(default=False, db_index=True)
+    caminho_km = models.TextField(blank=True)
+
+    origem_planilha = models.CharField(max_length=255, blank=True)
+    linha_origem = models.PositiveIntegerField(default=0)
+
+    atualizado_em = models.DateTimeField(auto_now=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["numero_km"]
+        verbose_name = "Documento KM"
+        verbose_name_plural = "Documentos KM"
+        indexes = [
+            models.Index(fields=["status_recebimento", "status_vinculo_ld"]),
+            models.Index(fields=["disciplina", "status_km"]),
+            models.Index(fields=["documento_tp"]),
+            models.Index(fields=["transmittal_numero"]),
+            models.Index(fields=["arquivo_km_encontrado"]),
+        ]
+
+    def __str__(self):
+        return self.numero_km
+
 class KMFileIndex(models.Model):
     nome_arquivo = models.CharField(max_length=500)
     caminho_completo = models.TextField(unique=True)
