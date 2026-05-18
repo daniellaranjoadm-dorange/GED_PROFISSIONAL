@@ -31,6 +31,23 @@
         Ver Registros
       </a>
 
+
+      <form method="post"
+            action="{% url 'automacoes:importar_lista_km' %}"
+            enctype="multipart/form-data"
+            class="ops-upload-form">
+        {% csrf_token %}
+        <label class="ops-btn">
+          <i class="bi bi-upload"></i>
+          Importar Lista KM
+          <input type="file"
+                 name="arquivo_km"
+                 accept=".xlsx"
+                 onchange="this.form.submit()"
+                 hidden>
+        </label>
+      </form>
+
       <a href="{% url 'automacoes:painel' %}"
          class="ops-btn">
         <i class="bi bi-arrow-left"></i>
