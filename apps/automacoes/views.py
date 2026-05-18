@@ -1197,6 +1197,60 @@ def _tr_caminho_documento_ld(item_ld):
 
 
 
+
+
+def _tr_aplicar_rastreabilidade_ld(item):
+    """
+    Enriquece um registro TransmittalKM com dados da LD Petrobras/Transpetro.
+    Não altera banco; apenas prepara dados para a Central KM.
+    """
+    item.ld_vinculado = None
+    item.ld_documento = ""
+    item.ld_revisao = ""
+    item.ld_titulo = ""
+    item.ld_status_documento = ""
+    item.ld_status_grd = ""
+    item.ld_grd = ""
+    item.ld_pcf = ""
+    item.ld_status_pcf = ""
+    item.ld_score_vinculo = 0
+    item.ld_status_vinculo = "SEM_MATCH"
+    item.ld_arquivo_km_encontrado = bool(getattr(item, "km_arquivo", None))
+    item.ld_caminho_documento = ""
+
+    if not _tr_texto(getattr(item, "documento", "")):
+        return item
+
+    ld = _tr_buscar_ld_por_documento(item.documento)
+
+    if not ld:
+        return item
+
+    score = getattr(ld, "score_vinculo_km", 0) or _tr_score_match_documento(item.documento, ld)
+    status_vinculo = getattr(ld, "status_vinculo_km", "") or (
+        "AUTO" if score >= 90 else "PENDENTE" if score >= 60 else "SEM_MATCH"
+    )
+
+    item.ld_vinculado = ld
+    item.ld_documento = _tr_texto(getattr(ld, "documento", ""))
+    item.ld_revisao = _tr_texto(getattr(ld, "revisao", ""))
+    item.ld_titulo = _tr_texto(getattr(ld, "titulo", ""))
+    item.ld_status_documento = _tr_texto(getattr(ld, "status_documento", ""))
+    item.ld_status_grd = _tr_texto(getattr(ld, "status_grd", ""))
+    item.ld_grd = _tr_texto(getattr(ld, "grd", ""))
+    item.ld_pcf = _tr_texto(getattr(ld, "pcf", ""))
+    item.ld_status_pcf = _tr_texto(getattr(ld, "status_final_pcf", ""))
+    item.ld_score_vinculo = int(score or 0)
+    item.ld_status_vinculo = status_vinculo
+    item.ld_arquivo_km_encontrado = bool(
+        getattr(ld, "arquivo_km_encontrado", False)
+        or getattr(item, "km_arquivo", None)
+    )
+    item.ld_caminho_documento = _tr_caminho_documento_ld(ld)
+
+    return item
+
+
 def _km_buscar_documentos_em_lote(documentos, permitir_transmittal=False):
     """
     Resolve documentos KM em lote usando cache para evitar N+1 e scans repetidos.
@@ -1281,7 +1335,7 @@ def _tr_montar_central_transmittals(registros):
             grupo["status"].add(item.status_parse)
 
         item.km_arquivo = documentos_map.get(_tr_texto(item.documento))
-        item.ld_vinculado = None
+        _tr_aplicar_rastreabilidade_ld(item)
 
         grupo["docs"].append(item)
 
@@ -1297,6 +1351,9 @@ def _tr_montar_central_transmittals(registros):
             ),
         )
         grupo["total_docs"] = len(grupo["docs"])
+        grupo["total_ld_vinculados"] = sum(1 for doc in grupo["docs"] if getattr(doc, "ld_vinculado", None))
+        grupo["total_sem_ld"] = max(grupo["total_docs"] - grupo["total_ld_vinculados"], 0)
+        grupo["total_arquivos_km"] = sum(1 for doc in grupo["docs"] if getattr(doc, "ld_arquivo_km_encontrado", False))
         grupo["pastas_lista"] = sorted(grupo["pastas"])
         grupo["status_lista"] = sorted(grupo["status"])
 

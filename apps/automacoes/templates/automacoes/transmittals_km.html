@@ -21,7 +21,7 @@
       <h1>Central de Transmittals KM</h1>
 
       <p>
-        Rastreabilidade por transmittal: documentos recebidos, PDF original e links diretos para arquivos e pastas da rede.
+        Rastreabilidade por transmittal: documentos KM recebidos, vínculo Petrobras/LD, GRD, PCF, PDF original e arquivos de rede.
       </p>
     </div>
 
@@ -283,6 +283,30 @@
           </strong>
         </div>
 
+        <div class="ops-detail-card">
+          <span class="ops-filter-label">
+            Vínculos LD
+          </span>
+
+          <strong>{{ grupo.total_ld_vinculados }}/{{ grupo.total_docs }}</strong>
+        </div>
+
+        <div class="ops-detail-card">
+          <span class="ops-filter-label">
+            Sem vínculo
+          </span>
+
+          <strong>{{ grupo.total_sem_ld }}</strong>
+        </div>
+
+        <div class="ops-detail-card">
+          <span class="ops-filter-label">
+            Arquivos KM
+          </span>
+
+          <strong>{{ grupo.total_arquivos_km }}</strong>
+        </div>
+
       </div>
 
       <div class="collapse {% if forloop.first %}show{% endif %} mt-3"
@@ -294,10 +318,10 @@
 
             <thead>
               <tr>
-                <th>Documento</th>
-                <th>Título</th>
-                <th>Pasta</th>
-                <th>Emissão</th>
+                <th>KM / Petrobras</th>
+                <th>Título / LD</th>
+                <th>Rastreabilidade</th>
+                <th>GRD / PCF</th>
                 <th>Status</th>
                 <th>Ações</th>
               </tr>
@@ -310,21 +334,39 @@
               <tr>
 
                 <td>
-                  <strong>{{ item.documento|default:"—" }}</strong>
+                  <strong>KM: {{ item.documento|default:"—" }}</strong>
 
                   {% if item.ld_vinculado %}
                   <div class="ops-muted small mt-1">
-                    LD vinculada
+                    Petrobras: <strong>{{ item.ld_documento }}</strong>{% if item.ld_revisao %} · Rev. {{ item.ld_revisao }}{% endif %}
                   </div>
                   {% else %}
                   <div class="ops-muted small mt-1">
-                    Sem vínculo LD
+                    Petrobras: não localizado
+                  </div>
+                  {% endif %}
+
+                  {% if item.ld_status_documento %}
+                  <div class="ops-muted small mt-2">
+                    LD: {{ item.ld_status_documento }}
+                  </div>
+                  {% endif %}
+
+                  {% if item.ld_status_grd %}
+                  <div class="ops-muted small mt-1">
+                    GRD: {{ item.ld_status_grd }}
                   </div>
                   {% endif %}
                 </td>
 
                 <td class="ops-message">
                   {{ item.titulo|default:"—" }}
+
+                  {% if item.ld_titulo %}
+                  <div class="ops-muted small mt-1">
+                    LD: {{ item.ld_titulo }}
+                  </div>
+                  {% endif %}
 
                   {% if item.observacao_parse %}
                   <div class="ops-muted small mt-1">
@@ -333,9 +375,68 @@
                   {% endif %}
                 </td>
 
-                <td>{{ item.pasta|default:"—" }}</td>
+                <td>
+                  {% if item.ld_vinculado %}
 
-                <td>{{ item.emissao|default:"—" }}</td>
+                    {% if item.ld_status_vinculo == "AUTO" %}
+                    <span class="ops-status-pill ops-status-ok">
+                      AUTO
+                    </span>
+                    {% elif item.ld_status_vinculo == "MANUAL" %}
+                    <span class="ops-status-pill ops-status-ok">
+                      MANUAL
+                    </span>
+                    {% elif item.ld_status_vinculo == "CONFLITO" or item.ld_status_vinculo == "MULTIPLO" %}
+                    <span class="ops-status-pill ops-status-risk">
+                      {{ item.ld_status_vinculo }}
+                    </span>
+                    {% else %}
+                    <span class="ops-status-pill ops-status-warn">
+                      {{ item.ld_status_vinculo }}
+                    </span>
+                    {% endif %}
+
+                    <div class="ops-muted small mt-1">
+                      Score: {{ item.ld_score_vinculo }}%
+                    </div>
+
+                    <div class="ops-muted small mt-1">
+                      Arquivo KM:
+                      {% if item.ld_arquivo_km_encontrado %}
+                        encontrado
+                      {% else %}
+                        não localizado
+                      {% endif %}
+                    </div>
+
+                  {% else %}
+
+                    <span class="ops-status-pill ops-status-warn">
+                      SEM LD
+                    </span>
+
+                    <div class="ops-muted small mt-1">
+                      Aguardando vínculo
+                    </div>
+
+                  {% endif %}
+                </td>
+
+                <td>
+                  <div class="ops-muted small">
+                    GRD: {{ item.ld_grd|default:"—" }}
+                  </div>
+
+                  <div class="ops-muted small mt-1">
+                    PCF: {{ item.ld_pcf|default:"—" }}
+                  </div>
+
+                  {% if item.ld_status_pcf %}
+                  <div class="ops-muted small mt-1">
+                    Status PCF: {{ item.ld_status_pcf }}
+                  </div>
+                  {% endif %}
+                </td>
 
                 <td>
                   {% if item.status_parse %}
@@ -387,6 +488,12 @@
                        class="ops-btn">
                       Pasta
                     </a>
+
+                    {% if item.ld_vinculado %}
+                    <span class="ops-chip">
+                      LD vinculada
+                    </span>
+                    {% endif %}
 
                   </div>
                 </td>
