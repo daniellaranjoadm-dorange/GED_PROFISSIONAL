@@ -17,7 +17,7 @@ from django.shortcuts import redirect, render
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 
-from apps.automacoes.models import TransmittalKM, PCFTimeline, DocumentoLD, ExecucaoAutomacao, KMFileIndex
+from apps.automacoes.models import TransmittalKM, PCFTimeline, DocumentoLD, DocumentoKM, ExecucaoAutomacao, KMFileIndex
 from apps.automacoes.services import (
     atualizar_ld,
     grd_ghenova,
@@ -3065,3 +3065,96 @@ def dashboard_alertas_operacionais(request):
         "automacoes/dashboard_alertas_operacionais.html",
         {"alertas": alertas, "total_alertas": sum(a["quantidade"] for a in alertas)},
     )
+
+
+@login_required
+def listar_km(request):
+    busca = request.GET.get("q", "").strip()
+    status = request.GET.get("status", "").strip()
+    disciplina = request.GET.get("disciplina", "").strip()
+
+    registros = DocumentoKM.objects.all().order_by("numero_km")
+
+    if busca:
+        registros = registros.filter(
+            Q(numero_km__icontains=busca)
+            | Q(titulo__icontains=busca)
+            | Q(disciplina__icontains=busca)
+            | Q(status_km__icontains=busca)
+            | Q(transmittal_numero__icontains=busca)
+            | Q(documento_tp__icontains=busca)
+        )
+
+    if status and _model_has_field(DocumentoKM, "status_km"):
+        registros = registros.filter(status_km__icontains=status)
+
+    if disciplina and _model_has_field(DocumentoKM, "disciplina"):
+        registros = registros.filter(disciplina__icontains=disciplina)
+
+    total = registros.count()
+
+    total_recebidos = (
+        DocumentoKM.objects.filter(
+            status_recebimento=getattr(DocumentoKM, "STATUS_RECEBIMENTO_RECEBIDO", "RECEBIDO")
+        ).count()
+        if _model_has_field(DocumentoKM, "status_recebimento")
+        else 0
+    )
+
+    total_pendentes = (
+        DocumentoKM.objects.filter(
+            status_recebimento=getattr(DocumentoKM, "STATUS_RECEBIMENTO_PENDENTE", "PENDENTE")
+        ).count()
+        if _model_has_field(DocumentoKM, "status_recebimento")
+        else 0
+    )
+
+    total_vinculados = (
+        DocumentoKM.objects.filter(
+            status_vinculo_ld=getattr(DocumentoKM, "STATUS_VINCULO_LD_AUTO", "AUTO")
+        ).count()
+        if _model_has_field(DocumentoKM, "status_vinculo_ld")
+        else 0
+    )
+
+    disciplinas = (
+        DocumentoKM.objects.exclude(disciplina="")
+        .exclude(disciplina__isnull=True)
+        .values_list("disciplina", flat=True)
+        .distinct()
+        .order_by("disciplina")
+        if _model_has_field(DocumentoKM, "disciplina")
+        else []
+    )
+
+    status_km = (
+        DocumentoKM.objects.exclude(status_km="")
+        .exclude(status_km__isnull=True)
+        .values_list("status_km", flat=True)
+        .distinct()
+        .order_by("status_km")
+        if _model_has_field(DocumentoKM, "status_km")
+        else []
+    )
+
+    paginator = Paginator(registros, 50)
+    page_obj = paginator.get_page(request.GET.get("page"))
+
+    return render(
+        request,
+        "automacoes/lista_km.html",
+        {
+            "registros": page_obj,
+            "page_obj": page_obj,
+            "busca": busca,
+            "status": status,
+            "disciplina": disciplina,
+            "total": total,
+            "total_recebidos": total_recebidos,
+            "total_pendentes": total_pendentes,
+            "total_vinculados": total_vinculados,
+            "disciplinas": disciplinas,
+            "status_km": status_km,
+        },
+    )
+

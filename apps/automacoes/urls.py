@@ -25,6 +25,7 @@ urlpatterns = [
     path("dashboard-transmittals/", views.dashboard_transmittals, name="dashboard_transmittals"),
     path("dashboard-km-ld/", views.dashboard_km_ld, name="dashboard_km_ld"),
     path("importar-lista-km/", views.importar_lista_km, name="importar_lista_km"),
+    path("lista-km/", views.listar_km, name="lista_km"),
     path("executar-sync-km-ld/", views.executar_sync_km_ld, name="executar_sync_km_ld"),
 
     # Legacy entity routes

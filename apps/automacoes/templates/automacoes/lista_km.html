@@ -1,0 +1,194 @@
+{% extends "documentos/base.html" %}
+{% load static %}
+
+{% block title %}Lista LD Kongsberg{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'automacoes/css/ops_enterprise.css' %}?v=1700">
+{% endblock %}
+
+{% block content %}
+<div class="ops-page">
+
+  <section class="ops-hero">
+    <div class="ops-hero-main">
+      <div class="ops-eyebrow">
+        <span class="ged-status-dot"></span>
+        KM DOCUMENT MASTER
+      </div>
+
+      <h1>Lista LD Kongsberg</h1>
+
+      <p>
+        Consulta operacional da Lista Mestre Kongsberg importada para DocumentoKM,
+        com recebimento por Transmittal KM e vínculo com LD Petrobras.
+      </p>
+
+      <div class="ops-actions mt-3">
+        <a href="{% url 'automacoes:importar_lista_km' %}" class="ops-btn ops-btn-primary">
+          <i class="bi bi-cloud-upload"></i>
+          Importar LD Kongsberg
+        </a>
+
+        <a href="{% url 'automacoes:dashboard_km_ld' %}" class="ops-btn">
+          <i class="bi bi-diagram-3"></i>
+          Dashboard KM ↔ LD
+        </a>
+
+        <a href="{% url 'automacoes:transmittals_km' %}" class="ops-btn">
+          <i class="bi bi-box-seam"></i>
+          Transmittals KM
+        </a>
+      </div>
+    </div>
+
+    <div class="ops-detail-card">
+      <span class="ops-filter-label">Total DocumentoKM</span>
+      <strong>{{ total }}</strong>
+      <div class="ops-muted mt-2">base importada da LD_KM.</div>
+    </div>
+  </section>
+
+  <section class="ops-kpi-grid ops-kpi-grid-4 mb-3">
+    <div class="ops-kpi">
+      <span>Total KM</span>
+      <strong>{{ total }}</strong>
+      <small>documentos importados</small>
+    </div>
+
+    <div class="ops-kpi">
+      <span>Recebidos</span>
+      <strong>{{ total_recebidos }}</strong>
+      <small>com transmittal KM</small>
+    </div>
+
+    <div class="ops-kpi">
+      <span>Pendentes</span>
+      <strong>{{ total_pendentes }}</strong>
+      <small>sem recebimento</small>
+    </div>
+
+    <div class="ops-kpi">
+      <span>Vinculados LD</span>
+      <strong>{{ total_vinculados }}</strong>
+      <small>match com Petrobras</small>
+    </div>
+  </section>
+
+  <section class="ops-panel mb-3">
+    <form method="get" class="ops-filter-grid">
+      <div>
+        <label class="ops-filter-label">Buscar</label>
+        <input type="text"
+               name="q"
+               value="{{ busca }}"
+               class="form-control"
+               placeholder="Número KM, título, disciplina, transmittal...">
+      </div>
+
+      <div>
+        <label class="ops-filter-label">Disciplina</label>
+        <select name="disciplina" class="form-select">
+          <option value="">Todas</option>
+          {% for item in disciplinas %}
+          <option value="{{ item }}" {% if item == disciplina %}selected{% endif %}>{{ item }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="ops-filter-label">Status KM</label>
+        <select name="status" class="form-select">
+          <option value="">Todos</option>
+          {% for item in status_km %}
+          <option value="{{ item }}" {% if item == status %}selected{% endif %}>{{ item }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="d-flex align-items-end gap-2">
+        <button type="submit" class="ops-btn ops-btn-primary w-100">
+          <i class="bi bi-funnel"></i>
+          Filtrar
+        </button>
+
+        <a href="{% url 'automacoes:lista_km' %}" class="ops-btn">
+          Limpar
+        </a>
+      </div>
+    </form>
+  </section>
+
+  <section class="ops-panel">
+    <div class="ops-panel-head">
+      <div>
+        <h2>Documentos KM</h2>
+        <p>Registros importados da aba LD_KM.</p>
+      </div>
+      <span class="ops-chip">{{ page_obj.paginator.count }} registros filtrados</span>
+    </div>
+
+    <div class="table-responsive mt-3">
+      <table class="table table-dark table-hover align-middle ops-table">
+        <thead>
+          <tr>
+            <th>Número KM</th>
+            <th>Título</th>
+            <th>Disciplina</th>
+            <th>Status KM</th>
+            <th>Transmittal</th>
+            <th>Recebimento</th>
+            <th>Documento TP</th>
+            <th>Vínculo LD</th>
+            <th>Score</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in registros %}
+          <tr>
+            <td><strong>{{ item.numero_km }}</strong></td>
+            <td>{{ item.titulo|default:"—"|truncatechars:90 }}</td>
+            <td>{{ item.disciplina|default:"—" }}</td>
+            <td>{{ item.status_km|default:"—" }}</td>
+            <td>{{ item.transmittal_numero|default:"—" }}</td>
+            <td>{{ item.status_recebimento|default:"—" }}</td>
+            <td>{{ item.documento_tp|default:"—" }}</td>
+            <td>{{ item.status_vinculo_ld|default:"—" }}</td>
+            <td>{{ item.score_vinculo_ld|default:"—" }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="9" class="text-center ops-muted py-4">
+              Nenhum documento KM encontrado. Importe a LD Kongsberg primeiro.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if page_obj.has_other_pages %}
+    <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+      <span class="ops-muted">
+        Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+      </span>
+
+      <div class="ops-actions">
+        {% if page_obj.has_previous %}
+        <a class="ops-btn" href="?page={{ page_obj.previous_page_number }}&q={{ busca }}&disciplina={{ disciplina }}&status={{ status }}">
+          Anterior
+        </a>
+        {% endif %}
+
+        {% if page_obj.has_next %}
+        <a class="ops-btn" href="?page={{ page_obj.next_page_number }}&q={{ busca }}&disciplina={{ disciplina }}&status={{ status }}">
+          Próxima
+        </a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </section>
+
+</div>
+{% endblock %}

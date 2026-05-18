@@ -1,40 +1,144 @@
-{% extends "base.html" %}
+{% extends "documentos/base.html" %}
+{% load static %}
+
+{% block title %}Importar LD Kongsberg{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'automacoes/css/ops_enterprise.css' %}?v=1700">
+{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-  <div class="d-flex justify-content-between align-items-start mb-4">
-    <div>
-      <h1 class="mb-1">Importar LD Kongsberg</h1>
-      <p class="text-muted mb-0">
-        Importa a aba <strong>LD_KM</strong> para DocumentoKM e cruza com Transmittals KM e LD Petrobras.
-      </p>
-    </div>
-    <a href="{% url 'automacoes:dashboard_km_ld' %}" class="btn btn-outline-secondary">
-      Voltar ao comparativo KM ↔ LD
-    </a>
-  </div>
+<div class="ops-page">
 
-  <div class="card shadow-sm">
-    <div class="card-body">
-      <form method="post" enctype="multipart/form-data">
+  <section class="ops-hero">
+    <div class="ops-hero-main">
+      <div class="ops-eyebrow">
+        <span class="ged-status-dot"></span>
+        KM ↔ LD SYNC ENGINE
+      </div>
+
+      <h1>Importar LD Kongsberg</h1>
+
+      <p>
+        Importa a aba <strong>LD_KM</strong>, atualiza a base DocumentoKM
+        e executa cruzamentos com Transmittals KM e Lista LD Petrobras.
+      </p>
+
+      <div class="ops-actions mt-3">
+        <a href="{% url 'automacoes:dashboard_km_ld' %}" class="ops-btn">
+          <i class="bi bi-diagram-3"></i>
+          Voltar ao comparativo KM ↔ LD
+        </a>
+
+        <a href="{% url 'automacoes:dashboard_alertas_operacionais' %}" class="ops-btn">
+          <i class="bi bi-bell"></i>
+          Alertas Operacionais
+        </a>
+      </div>
+    </div>
+
+    <div class="ops-detail-card">
+      <span class="ops-filter-label">Fluxo ativo</span>
+      <strong>LD_KM → DocumentoKM</strong>
+      <div class="ops-muted mt-2">
+        Depois cruza TransmittalKM → DocumentoLD.
+      </div>
+    </div>
+  </section>
+
+  {% if messages %}
+  <div class="mb-4">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm">
+      {{ message }}
+      <button type="button"
+              class="btn-close"
+              data-bs-dismiss="alert"
+              aria-label="Fechar"></button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <section class="ops-grid ops-grid-2 ops-stack">
+
+    <article class="ops-panel">
+      <div class="ops-panel-head">
+        <div>
+          <h2>Upload da LD KM</h2>
+          <p>Use a planilha oficial Kongsberg em formato .xlsx.</p>
+        </div>
+
+        <span class="ops-chip">
+          <i class="bi bi-file-earmark-spreadsheet"></i>
+          XLSX
+        </span>
+      </div>
+
+      <form method="post" enctype="multipart/form-data" class="mt-3">
         {% csrf_token %}
+
         <div class="mb-3">
-          <label class="form-label fw-semibold">Planilha LD Kongsberg (.xlsx)</label>
-          <input type="file" name="arquivo" class="form-control" accept=".xlsx" required>
+          <label class="form-label fw-semibold">
+            Planilha LD Kongsberg (.xlsx)
+          </label>
+
+          <input type="file"
+                 name="arquivo"
+                 class="form-control"
+                 accept=".xlsx"
+                 required>
+
           <div class="form-text">
             A importação usa a coluna <strong>Number</strong> como chave mestre do DocumentoKM.
           </div>
         </div>
 
-        <button type="submit" class="btn btn-primary">
+        <button type="submit" class="ops-btn ops-btn-primary">
+          <i class="bi bi-cloud-upload"></i>
           Importar e cruzar dados
         </button>
       </form>
-    </div>
-  </div>
+    </article>
 
-  <div class="alert alert-info mt-4">
-    Fluxo: LD_KM → DocumentoKM → TransmittalKM → DocumentoLD.
-  </div>
+    <article class="ops-panel">
+      <div class="ops-panel-head">
+        <div>
+          <h2>Fluxo operacional</h2>
+          <p>Sequência executada após o upload.</p>
+        </div>
+
+        <span class="ops-chip">Pipeline</span>
+      </div>
+
+      <div class="ops-grid ops-grid-1 mt-3">
+        <div class="ops-detail-card">
+          <span class="ops-filter-label">1</span>
+          <strong>Importar aba LD_KM</strong>
+          <div class="ops-muted">Lê a planilha e normaliza os dados Kongsberg.</div>
+        </div>
+
+        <div class="ops-detail-card">
+          <span class="ops-filter-label">2</span>
+          <strong>Atualizar DocumentoKM</strong>
+          <div class="ops-muted">Cria ou atualiza os documentos KM pelo campo Number.</div>
+        </div>
+
+        <div class="ops-detail-card">
+          <span class="ops-filter-label">3</span>
+          <strong>Cruzar TransmittalKM</strong>
+          <div class="ops-muted">Identifica recebimentos por transmittal.</div>
+        </div>
+
+        <div class="ops-detail-card">
+          <span class="ops-filter-label">4</span>
+          <strong>Cruzar DocumentoLD</strong>
+          <div class="ops-muted">Relaciona KM com LD Petrobras/Transpetro.</div>
+        </div>
+      </div>
+    </article>
+
+  </section>
+
 </div>
 {% endblock %}
