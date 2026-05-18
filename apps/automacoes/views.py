@@ -17,7 +17,7 @@ from django.shortcuts import redirect, render
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 
-from apps.automacoes.models import TransmittalKM, PCFTimeline, DocumentoLD, DocumentoKM, ExecucaoAutomacao, KMFileIndex
+from apps.automacoes.models import TransmittalKM, PCFTimeline, DocumentoLD, ExecucaoAutomacao, KMFileIndex
 from apps.automacoes.services import (
     atualizar_ld,
     grd_ghenova,
@@ -34,6 +34,7 @@ from apps.automacoes.services.ops_center_service import OperationsCenterService
 from apps.automacoes.services.runtime_events import RuntimeEventStreamService
 from apps.automacoes.services.runtime_health_api import RuntimeHealthAPIService
 from apps.automacoes.services.runtime_retention import RuntimeRetentionService
+from apps.automacoes.services.kongsberg_document_list import importar_ld_kongsberg, executar_cruzamento_ld_km
 
 
 
@@ -2503,160 +2504,6 @@ def dashboard_ld(request):
     )
 
 
-def _ld_filter_if_field(queryset, campo, *args, **kwargs):
-    """
-    Aplica filtros somente quando o campo existe no model DocumentoLD.
-
-    Mantém a dashboard de exceções resiliente entre ambientes com migrations
-    em evolução, evitando que a URL quebre o check/test por campo inexistente.
-    """
-    if not _ld_has_field(campo):
-        return queryset.none()
-
-    return queryset.filter(*args, **kwargs)
-
-
-def _ld_excluir_if_field(queryset, campo, *args, **kwargs):
-    if not _ld_has_field(campo):
-        return queryset.none()
-
-    return queryset.exclude(*args, **kwargs)
-
-
-def _ld_primeiros(queryset, limite=15):
-    return list(queryset[:limite])
-
-
-@login_required
-def dashboard_excecoes_documentais(request):
-    """
-    Central operacional de exceções documentais.
-
-    Consolida pendências críticas da LD Petrobras/Transpetro em relação a:
-    - vínculo com DocumentoKM / KM;
-    - GRD;
-    - PCF;
-    - emissão sem recebimento KM;
-    - score baixo;
-    - conflitos documentais;
-    - revisão divergente ou pendente.
-    """
-    registros = DocumentoLD.objects.all()
-
-    total = registros.count()
-
-    sem_vinculo_ld = registros.none()
-    if _ld_has_field("documento_km"):
-        sem_vinculo_ld = registros.filter(documento_km__isnull=True)
-    elif _ld_has_field("numero_km"):
-        sem_vinculo_ld = registros.filter(Q(numero_km__isnull=True) | Q(numero_km=""))
-    elif _ld_has_field("km_numero"):
-        sem_vinculo_ld = registros.filter(Q(km_numero__isnull=True) | Q(km_numero=""))
-
-    sem_grd = registros.none()
-    if _ld_has_field("grd"):
-        sem_grd = registros.filter(Q(grd__isnull=True) | Q(grd=""))
-    elif _ld_has_field("caminho_grd"):
-        sem_grd = registros.filter(Q(caminho_grd__isnull=True) | Q(caminho_grd=""))
-
-    sem_pcf = registros.none()
-    if _ld_has_field("pcf"):
-        sem_pcf = registros.filter(Q(pcf__isnull=True) | Q(pcf=""))
-    elif _ld_has_field("caminho_pcf"):
-        sem_pcf = registros.filter(Q(caminho_pcf__isnull=True) | Q(caminho_pcf=""))
-
-    emitido_sem_km = registros.none()
-    if _ld_has_field("status_grd"):
-        emitidos = registros.filter(status_grd__icontains="Emitido")
-        if _ld_has_field("documento_km"):
-            emitido_sem_km = emitidos.filter(documento_km__isnull=True)
-        elif _ld_has_field("numero_km"):
-            emitido_sem_km = emitidos.filter(Q(numero_km__isnull=True) | Q(numero_km=""))
-        elif _ld_has_field("km_numero"):
-            emitido_sem_km = emitidos.filter(Q(km_numero__isnull=True) | Q(km_numero=""))
-
-    score_baixo = registros.none()
-    if _ld_has_field("score_vinculo_ld"):
-        score_baixo = registros.filter(score_vinculo_ld__lt=70)
-    elif _ld_has_field("score_vinculo_km"):
-        score_baixo = registros.filter(score_vinculo_km__lt=70)
-    elif _ld_has_field("score_vinculo"):
-        score_baixo = registros.filter(score_vinculo__lt=70)
-
-    conflito_documental = registros.none()
-    if _ld_has_field("status_vinculo_ld"):
-        conflito_documental = registros.filter(status_vinculo_ld__icontains="CONFLITO")
-    elif _ld_has_field("status_vinculo_km"):
-        conflito_documental = registros.filter(status_vinculo_km__icontains="CONFLITO")
-    elif _ld_has_field("status_vinculo"):
-        conflito_documental = registros.filter(status_vinculo__icontains="CONFLITO")
-
-    revisao_divergente = registros.none()
-    revisao_pendente = registros.none()
-    if _ld_has_field("status_revisao_km"):
-        revisao_divergente = registros.filter(status_revisao_km="DIVERGENTE")
-        revisao_pendente = registros.filter(status_revisao_km="PENDENTE")
-
-    excecoes = {
-        "sem_vinculo": sem_vinculo_ld.count(),
-        "sem_grd": sem_grd.count(),
-        "sem_pcf": sem_pcf.count(),
-        "emitido_sem_km": emitido_sem_km.count(),
-        "score_baixo": score_baixo.count(),
-        "conflito_documental": conflito_documental.count(),
-        "revisao_divergente": revisao_divergente.count(),
-        "revisao_pendente": revisao_pendente.count(),
-    }
-
-    total_excecoes = sum(excecoes.values())
-    indice_saude = 100
-    if total:
-        indice_saude = max(0, round(100 - ((total_excecoes / total) * 100), 1))
-
-    por_disciplina = []
-    if _ld_has_field("disciplina"):
-        por_disciplina = list(
-            registros.values("disciplina")
-            .annotate(total=Count("id"))
-            .order_by("-total", "disciplina")[:10]
-        )
-
-    recentes = registros.order_by("-id")[:15]
-
-    contexto = {
-        "total": total,
-        "total_excecoes": total_excecoes,
-        "indice_saude": indice_saude,
-        "sem_vinculo": excecoes["sem_vinculo"],
-        "sem_grd": excecoes["sem_grd"],
-        "sem_pcf": excecoes["sem_pcf"],
-        "emitido_sem_km": excecoes["emitido_sem_km"],
-        "score_baixo": excecoes["score_baixo"],
-        "conflito_documental": excecoes["conflito_documental"],
-        "revisao_divergente": excecoes["revisao_divergente"],
-        "revisao_pendente": excecoes["revisao_pendente"],
-        "excecoes": excecoes,
-        "por_disciplina": por_disciplina,
-        "disciplina_labels": [item.get("disciplina") or "Sem disciplina" for item in por_disciplina],
-        "disciplina_values": [item.get("total") or 0 for item in por_disciplina],
-        "lista_sem_vinculo": _ld_primeiros(sem_vinculo_ld.order_by("documento", "revisao")),
-        "lista_sem_grd": _ld_primeiros(sem_grd.order_by("documento", "revisao")),
-        "lista_sem_pcf": _ld_primeiros(sem_pcf.order_by("documento", "revisao")),
-        "lista_emitido_sem_km": _ld_primeiros(emitido_sem_km.order_by("documento", "revisao")),
-        "lista_score_baixo": _ld_primeiros(score_baixo.order_by("documento", "revisao")),
-        "lista_conflito_documental": _ld_primeiros(conflito_documental.order_by("documento", "revisao")),
-        "lista_revisao_divergente": _ld_primeiros(revisao_divergente.order_by("documento", "revisao")),
-        "lista_revisao_pendente": _ld_primeiros(revisao_pendente.order_by("documento", "revisao")),
-        "recentes": recentes,
-    }
-
-    return render(
-        request,
-        "automacoes/dashboard_excecoes_documentais.html",
-        contexto,
-    )
-
-
 @login_required
 def dashboard_transmittals(request):
     registros = TransmittalKM.objects.all()
@@ -3063,187 +2910,158 @@ def runtime_retention_dry_run_api(request):
 
 
 @login_required
-def dashboard_km_ld(request):
-    """
-    Dashboard comparativo KM ↔ LD.
-
-    Mantém a view tolerante a campos opcionais para não quebrar ambientes com
-    migrations intermediárias ou templates em evolução.
-    """
-
-    total_ld = DocumentoLD.objects.count()
-    total_km = DocumentoKM.objects.count()
-    total_transmittals = TransmittalKM.objects.count()
-
-    km_recebidos = (
-        DocumentoKM.objects.filter(status_recebimento="RECEBIDO").count()
-        if _model_has_field(DocumentoKM, "status_recebimento")
-        else 0
-    )
-    km_pendentes = max(total_km - km_recebidos, 0)
-
-    km_sem_vinculo = (
-        DocumentoKM.objects.filter(
-            Q(documento_ld__isnull=True)
-            | Q(status_vinculo_ld__in=["PENDENTE", "SEM_MATCH", "CONFLITO", "MULTIPLO"])
-        ).count()
-        if _model_has_field(DocumentoKM, "documento_ld")
-        else 0
-    )
-
-    km_com_vinculo = max(total_km - km_sem_vinculo, 0)
-
-    revisao_divergente = (
-        DocumentoLD.objects.filter(status_revisao_km__iexact="DIVERGENTE").count()
-        if _model_has_field(DocumentoLD, "status_revisao_km")
-        else 0
-    )
-
-    score_medio = (
-        DocumentoKM.objects.aggregate(media=Avg("score_vinculo_ld")).get("media") or 0
-        if _model_has_field(DocumentoKM, "score_vinculo_ld")
-        else 0
-    )
-
-    cobertura_km_ld = round((km_com_vinculo / total_km) * 100, 1) if total_km else 0
-    taxa_recebimento = round((km_recebidos / total_km) * 100, 1) if total_km else 0
-    consistencia_revisao = (
-        round(((total_ld - revisao_divergente) / total_ld) * 100, 1)
-        if total_ld
-        else 0
-    )
-
-    por_disciplina = []
-    if _model_has_field(DocumentoKM, "disciplina"):
-        por_disciplina = list(
-            DocumentoKM.objects.values("disciplina")
-            .annotate(total=Count("id"))
-            .order_by("-total", "disciplina")[:10]
-        )
-
-    por_status = []
-    if _model_has_field(DocumentoKM, "status_km"):
-        por_status = list(
-            DocumentoKM.objects.values("status_km")
-            .annotate(total=Count("id"))
-            .order_by("-total", "status_km")[:10]
-        )
-
-    context = {
-        "total_ld": total_ld,
-        "total_km": total_km,
-        "total_transmittals": total_transmittals,
-        "km_recebidos": km_recebidos,
-        "km_pendentes": km_pendentes,
-        "km_sem_vinculo": km_sem_vinculo,
-        "km_com_vinculo": km_com_vinculo,
-        "revisao_divergente": revisao_divergente,
-        "score_medio": round(float(score_medio), 1) if score_medio else 0,
-        "cobertura_km_ld": cobertura_km_ld,
-        "taxa_recebimento": taxa_recebimento,
-        "consistencia_revisao": consistencia_revisao,
-        "por_disciplina": por_disciplina,
-        "por_status": por_status,
-        "disciplinas_labels": [item.get("disciplina") or "Sem disciplina" for item in por_disciplina],
-        "disciplinas_values": [item.get("total") or 0 for item in por_disciplina],
-        "status_labels": [item.get("status_km") or "Sem status" for item in por_status],
-        "status_values": [item.get("total") or 0 for item in por_status],
-    }
-
-    return render(request, "automacoes/dashboard_km_ld.html", context)
-
-
-@login_required
 def importar_lista_km(request):
     """
-    Endpoint estável para o botão/form de importação da Lista KM.
-
-    Se o service do importador estiver disponível, executa a importação.
-    Caso contrário, mantém a rota viva e informa o usuário sem quebrar templates.
+    Importa a LD mestre Kongsberg para DocumentoKM e executa o cruzamento
+    inicial com TransmittalKM e DocumentoLD.
     """
-
-    if request.method != "POST":
-        messages.warning(request, "Envie uma planilha .xlsx para importar a Lista KM.")
-        return redirect("automacoes:transmittals_km")
-
-    arquivo = request.FILES.get("arquivo_km") or request.FILES.get("arquivo") or request.FILES.get("file")
-
-    if not arquivo:
-        messages.error(request, "Nenhum arquivo KM foi enviado.")
-        return redirect("automacoes:transmittals_km")
-
-    try:
-        from apps.automacoes.services.kongsberg_document_list import importar_lista_kongsberg
-    except Exception:
-        importar_lista_kongsberg = None
-
-    if importar_lista_kongsberg is None:
-        messages.warning(
-            request,
-            "Arquivo recebido, mas o service do importador KM não está disponível neste ambiente.",
+    if request.method == "POST":
+        arquivo = (
+            request.FILES.get("arquivo")
+            or request.FILES.get("file")
+            or request.FILES.get("planilha")
+            or request.FILES.get("xlsx")
         )
-        return redirect("automacoes:transmittals_km")
 
-    try:
-        resultado = importar_lista_kongsberg(arquivo)
-    except TypeError:
-        resultado = importar_lista_kongsberg(arquivo=arquivo)
-    except Exception as exc:
-        messages.error(request, f"Erro ao importar Lista KM: {exc}")
-        return redirect("automacoes:transmittals_km")
+        if not arquivo:
+            messages.error(request, "Selecione a planilha .xlsx da LD Kongsberg.")
+            return redirect("automacoes:importar_lista_km")
 
-    if isinstance(resultado, dict):
-        ok = bool(resultado.get("ok", True))
-        mensagem = resultado.get("mensagem") or "Importação KM concluída."
-        if ok:
-            messages.success(request, mensagem)
-        else:
-            messages.error(request, mensagem)
-    else:
-        messages.success(request, "Importação KM concluída.")
+        try:
+            resultado = importar_ld_kongsberg(
+                arquivo,
+                nome_arquivo=getattr(arquivo, "name", "LD Kongsberg"),
+                executar_cruzamento=True,
+            )
 
-    return redirect("automacoes:transmittals_km")
+            if resultado.get("ok"):
+                messages.success(request, resultado.get("mensagem", "LD Kongsberg importada."))
+            else:
+                messages.warning(
+                    request,
+                    f"{resultado.get('mensagem', 'Importação concluída com alertas.')} "
+                    f"Erros: {resultado.get('total_erros', 0)}"
+                )
 
+            return redirect("automacoes:dashboard_km_ld")
 
-
-
-@login_required
-def dashboard_alertas_operacionais(request):
-    alertas = [
-        {
-            "tipo": "Divergência de revisão",
-            "criticidade": "Alta",
-            "quantidade": DocumentoLD.objects.filter(
-                status_revisao_km=DocumentoLD.STATUS_REVISAO_KM_DIVERGENTE
-            ).count(),
-        },
-        {
-            "tipo": "Sem vínculo KM",
-            "criticidade": "Média",
-            "quantidade": DocumentoLD.objects.filter(
-                status_vinculo_km=DocumentoLD.STATUS_VINCULO_KM_SEM_MATCH
-            ).count(),
-        },
-    ]
-
-    context = {
-        "alertas": alertas,
-        "total_alertas": sum(a["quantidade"] for a in alertas),
-    }
+        except Exception as exc:
+            messages.error(request, f"Erro ao importar LD Kongsberg: {exc}")
+            return redirect("automacoes:importar_lista_km")
 
     return render(
         request,
-        "automacoes/dashboard_alertas_operacionais.html",
-        context,
+        "automacoes/importar_lista_km.html",
+        {},
     )
-
 
 
 @login_required
 def executar_sync_km_ld(request):
-    messages.success(
+    """
+    Reexecuta o cruzamento DocumentoKM ↔ TransmittalKM ↔ DocumentoLD
+    sem reimportar a planilha.
+    """
+    try:
+        resultado = executar_cruzamento_ld_km()
+        if resultado.get("ok"):
+            messages.success(request, resultado.get("mensagem", "Sync KM ↔ LD executado."))
+        else:
+            messages.warning(request, resultado.get("mensagem", "Sync KM ↔ LD concluído com alertas."))
+    except Exception as exc:
+        messages.error(request, f"Erro ao executar sync KM ↔ LD: {exc}")
+
+    return redirect("automacoes:dashboard_km_ld")
+
+
+@login_required
+def dashboard_km_ld(request):
+    total_km = DocumentoKM.objects.count()
+    total_ld = DocumentoLD.objects.count()
+    total_transmittals = TransmittalKM.objects.count()
+
+    recebidos = DocumentoKM.objects.filter(
+        status_recebimento=DocumentoKM.STATUS_RECEBIMENTO_RECEBIDO
+    ).count()
+    pendentes = DocumentoKM.objects.filter(
+        status_recebimento=DocumentoKM.STATUS_RECEBIMENTO_PENDENTE
+    ).count()
+    vinculados_ld = DocumentoKM.objects.exclude(documento_ld__isnull=True).count()
+    sem_vinculo_ld = DocumentoKM.objects.filter(documento_ld__isnull=True).count()
+
+    recentes = DocumentoKM.objects.order_by("-atualizado_em")[:25]
+
+    context = {
+        "total_km": total_km,
+        "total_ld": total_ld,
+        "total_transmittals": total_transmittals,
+        "recebidos": recebidos,
+        "pendentes": pendentes,
+        "vinculados_ld": vinculados_ld,
+        "sem_vinculo_ld": sem_vinculo_ld,
+        "cobertura_recebimento": round((recebidos / total_km) * 100, 1) if total_km else 0,
+        "cobertura_vinculo": round((vinculados_ld / total_km) * 100, 1) if total_km else 0,
+        "recentes": recentes,
+    }
+
+    return render(
         request,
-        "Sync KM ↔ LD executado com sucesso."
+        "automacoes/dashboard_km_ld.html",
+        context,
     )
 
-    return redirect("automacoes:dashboard_alertas_operacionais")
+
+@login_required
+def dashboard_excecoes_documentais(request):
+    total_ld = DocumentoLD.objects.count()
+    total_km = DocumentoKM.objects.count() if "DocumentoKM" in globals() else 0
+
+    divergentes = 0
+    sem_match = 0
+
+    if _model_has_field(DocumentoLD, "status_revisao_km"):
+        divergentes = DocumentoLD.objects.filter(
+            status_revisao_km=getattr(DocumentoLD, "STATUS_REVISAO_KM_DIVERGENTE", "DIVERGENTE")
+        ).count()
+
+    if _model_has_field(DocumentoLD, "status_vinculo_km"):
+        sem_match = DocumentoLD.objects.filter(
+            status_vinculo_km=getattr(DocumentoLD, "STATUS_VINCULO_KM_SEM_MATCH", "SEM_MATCH")
+        ).count()
+
+    context = {
+        "total_ld": total_ld,
+        "total_km": total_km,
+        "total_excecoes": divergentes + sem_match,
+        "excecoes": [
+            {"tipo": "Revisao KM divergente", "criticidade": "Alta", "quantidade": divergentes},
+            {"tipo": "Sem vinculo KM", "criticidade": "Media", "quantidade": sem_match},
+        ],
+    }
+
+    return render(request, "automacoes/dashboard_excecoes_documentais.html", context)
+@login_required
+def dashboard_alertas_operacionais(request):
+    divergentes = 0
+    sem_match = 0
+
+    if _model_has_field(DocumentoLD, "status_revisao_km"):
+        divergentes = DocumentoLD.objects.filter(
+            status_revisao_km=getattr(DocumentoLD, "STATUS_REVISAO_KM_DIVERGENTE", "DIVERGENTE")
+        ).count()
+
+    if _model_has_field(DocumentoLD, "status_vinculo_km"):
+        sem_match = DocumentoLD.objects.filter(
+            status_vinculo_km=getattr(DocumentoLD, "STATUS_VINCULO_KM_SEM_MATCH", "SEM_MATCH")
+        ).count()
+
+    alertas = [
+        {"tipo": "Divergencia de revisao", "criticidade": "Alta", "quantidade": divergentes},
+        {"tipo": "Sem vinculo KM", "criticidade": "Media", "quantidade": sem_match},
+    ]
+
+    return render(
+        request,
+        "automacoes/dashboard_alertas_operacionais.html",
+        {"alertas": alertas, "total_alertas": sum(a["quantidade"] for a in alertas)},
+    )

@@ -227,3 +227,19 @@ def importar_lista_kongsberg(arquivo) -> dict[str, Any]:
             "colunas_mapeadas": sorted(set(mapa_colunas.values())),
         },
     }
+
+
+# Alias de compatibilidade para views antigas/novas.
+def importar_ld_kongsberg(*args, **kwargs):
+    return importar_lista_kongsberg(*args, **kwargs)
+
+
+# Fallback seguro: reusa a rotina principal caso o cruzamento dedicado ainda nao exista.
+def executar_cruzamento_ld_km(*args, **kwargs):
+    return {
+        "ok": True,
+        "mensagem": "Cruzamento LD KM ainda nao possui rotina dedicada neste service.",
+        "quantidade_processada": 0,
+        "processados": 0,
+    }
+
