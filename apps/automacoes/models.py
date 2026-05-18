@@ -188,6 +188,23 @@ class PCFTimeline(models.Model):
         return f"{self.tipo} - {self.numero_documento} - {self.revisao_pcf}"
 
 class DocumentoLD(models.Model):
+
+    STATUS_VINCULO_KM_AUTO = "AUTO"
+    STATUS_VINCULO_KM_MANUAL = "MANUAL"
+    STATUS_VINCULO_KM_PENDENTE = "PENDENTE"
+    STATUS_VINCULO_KM_CONFLITO = "CONFLITO"
+    STATUS_VINCULO_KM_SEM_MATCH = "SEM_MATCH"
+    STATUS_VINCULO_KM_MULTIPLO = "MULTIPLO"
+
+    STATUS_VINCULO_KM_CHOICES = [
+        (STATUS_VINCULO_KM_AUTO, "Vinculado automaticamente"),
+        (STATUS_VINCULO_KM_MANUAL, "Vinculado manualmente"),
+        (STATUS_VINCULO_KM_PENDENTE, "Pendente"),
+        (STATUS_VINCULO_KM_CONFLITO, "Conflito"),
+        (STATUS_VINCULO_KM_SEM_MATCH, "Sem correspondência"),
+        (STATUS_VINCULO_KM_MULTIPLO, "Múltiplas correspondências"),
+    ]
+
     origem_aba = models.CharField(max_length=100, blank=True)
     documento = models.CharField(max_length=255, blank=True)
     revisao = models.CharField(max_length=50, blank=True)
@@ -217,11 +234,58 @@ class DocumentoLD(models.Model):
     caminho_resposta = models.TextField(blank=True)
     caminho_grd_resposta = models.TextField(blank=True)
 
+    # ========================================================
+    # VÍNCULO KM ↔ LD/PETROBRAS
+    # ========================================================
+    numero_documento_km = models.CharField(
+        max_length=255,
+        blank=True,
+        db_index=True,
+        help_text="Número do documento KM vinculado ao documento Petrobras/Transpetro.",
+    )
+    transmittal_km = models.CharField(
+        max_length=100,
+        blank=True,
+        db_index=True,
+        help_text="Último transmittal KM relacionado a este documento.",
+    )
+    data_recebimento_km = models.CharField(
+        max_length=50,
+        blank=True,
+        help_text="Data de recebimento do documento via transmittal KM.",
+    )
+    arquivo_km_encontrado = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text="Indica se o arquivo físico KM foi localizado no índice de rede.",
+    )
+    status_vinculo_km = models.CharField(
+        max_length=30,
+        choices=STATUS_VINCULO_KM_CHOICES,
+        default=STATUS_VINCULO_KM_PENDENTE,
+        db_index=True,
+        help_text="Status do vínculo entre o documento KM e a LD Petrobras.",
+    )
+    score_vinculo_km = models.PositiveSmallIntegerField(
+        default=0,
+        db_index=True,
+        help_text="Pontuação de confiança do vínculo KM ↔ LD, de 0 a 100.",
+    )
+    observacao_vinculo_km = models.TextField(
+        blank=True,
+        help_text="Observações operacionais do motor de vínculo KM ↔ LD.",
+    )
+
     atualizado_em = models.DateTimeField(auto_now=True)
     criado_em = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ["origem_aba", "documento", "revisao"]
+        indexes = [
+            models.Index(fields=["origem_aba", "numero_documento_km"]),
+            models.Index(fields=["status_vinculo_km", "score_vinculo_km"]),
+            models.Index(fields=["transmittal_km"]),
+        ]
         constraints = [
             models.UniqueConstraint(
                 fields=["origem_aba", "documento", "revisao"],
