@@ -173,6 +173,13 @@ class DocumentoKM(models.Model):
     responsible = models.CharField(max_length=255, blank=True)
 
     contractual_delivery = models.CharField(max_length=80, blank=True)
+    preliminary_delivery = models.CharField(max_length=80, blank=True)
+    agreed_delivery = models.CharField(max_length=80, blank=True)
+    released_for = models.CharField(max_length=255, blank=True)
+
+    core_share_document = models.TextField(blank=True)
+    core_share_folder = models.TextField(blank=True)
+
     first_delivery = models.CharField(max_length=80, blank=True)
 
     status_km = models.CharField(max_length=120, blank=True, db_index=True)
