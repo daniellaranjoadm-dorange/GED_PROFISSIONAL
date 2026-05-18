@@ -167,6 +167,7 @@
             <th>Vínculo</th>
             <th>GRD / PCF</th>
             <th>Problema</th>
+            <th>Ações</th>
           </tr>
         </thead>
 
@@ -275,11 +276,48 @@
               <span class="ops-chip ops-chip-warn">Emitido sem KM</span>
               {% endif %}
             </td>
+
+            <td>
+              <div class="ops-inline-actions">
+
+                {% if item.caminho_documento %}
+                <a href="{% url 'automacoes:abrir_arquivo_ld' item.id 'documento' %}"
+                   target="_blank"
+                   class="ops-btn">
+                  Documento
+                </a>
+                {% endif %}
+
+                {% if item.caminho_grd %}
+                <a href="{% url 'automacoes:abrir_arquivo_ld' item.id 'grd' %}"
+                   target="_blank"
+                   class="ops-btn">
+                  GRD
+                </a>
+                {% endif %}
+
+                {% if item.caminho_pcf %}
+                <a href="{% url 'automacoes:abrir_arquivo_ld' item.id 'pcf' %}"
+                   target="_blank"
+                   class="ops-btn">
+                  PCF
+                </a>
+                {% endif %}
+
+                {% if item.transmittal_km %}
+                <a href="{% url 'automacoes:transmittals_km' %}?q={{ item.transmittal_km }}"
+                   class="ops-btn ops-btn-primary">
+                  KM
+                </a>
+                {% endif %}
+
+              </div>
+            </td>
           </tr>
 
           {% empty %}
           <tr>
-            <td colspan="6" class="ops-empty">
+            <td colspan="7" class="ops-empty">
               Nenhuma pendência encontrada para os filtros aplicados.
             </td>
           </tr>
