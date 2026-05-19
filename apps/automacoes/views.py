@@ -1,6 +1,3 @@
-from io import BytesIO
-from pptx import Presentation
-from pptx.util import Inches
 
 from pathlib import Path
 
@@ -3471,105 +3468,286 @@ def listar_km(request):
 @login_required
 def exportar_dashboard_pcfs_ppt(request):
     """
-    Exporta apresentação PowerPoint executiva baseada nos filtros ativos
-    do Dashboard PCFs.
+    Exporta apresentação executiva PCF em layout escuro D'ORANGE,
+    respeitando os filtros ativos do Dashboard PCFs.
     """
+    from collections import Counter
+    from io import BytesIO
+
+    from django.http import HttpResponse
+    from pptx import Presentation
+    from pptx.chart.data import CategoryChartData
+    from pptx.dml.color import RGBColor
+    from pptx.enum.chart import XL_CHART_TYPE
+    from pptx.util import Inches, Pt
+
     registros = _pcf_enriquecer_runtime(list(_filtrar_pcfs_timeline(request)))
 
     total_pcfs = len(registros)
-    total_open = sum(getattr(item, "open_comments", 0) or 0 for item in registros)
+    total_open_docs = sum(1 for item in registros if (getattr(item, "open_comments", 0) or 0) > 0)
+    total_open_comments = sum(getattr(item, "open_comments", 0) or 0 for item in registros)
 
-    total_not_released = len([
-        item for item in registros
-        if "NOT RELEASED" in ((getattr(item, "status_final", "") or "").upper())
-    ])
+    def _status(item):
+        return str(getattr(item, "status_final", "") or "Sem status").strip() or "Sem status"
 
-    total_released = len([
-        item for item in registros
-        if (
-            "RELEASED" in ((getattr(item, "status_final", "") or "").upper())
-            and "NOT RELEASED" not in ((getattr(item, "status_final", "") or "").upper())
+    def _tipo(item):
+        return str(getattr(item, "tipo", "") or getattr(item, "tipo_documento", "") or "Sem tipo").strip() or "Sem tipo"
+
+    def _doc(item):
+        return str(
+            getattr(item, "numero_documento", "")
+            or getattr(item, "documento", "")
+            or getattr(item, "codigo_documento", "")
+            or "-"
         )
-    ])
 
-    total_sla_vencido = len([
-        item for item in registros
-        if getattr(item, "sla_vencido_runtime", False)
-    ])
+    def _rev(item):
+        return str(getattr(item, "revisao_pcf", "") or getattr(item, "revisao", "") or "-")
+
+    total_released = sum(1 for item in registros if "RELEASED" in _status(item).upper() and "NOT" not in _status(item).upper())
+    total_not_released = sum(1 for item in registros if "NOT RELEASED" in _status(item).upper())
+    total_sla_vencido = sum(1 for item in registros if getattr(item, "sla_vencido_runtime", False))
 
     aging_valores = [
-        getattr(item, "aging_dias_runtime", 0)
+        getattr(item, "aging_dias_runtime", None)
         for item in registros
         if getattr(item, "aging_dias_runtime", None) is not None
     ]
-
     aging_medio = round(sum(aging_valores) / len(aging_valores), 1) if aging_valores else 0
     risco = round((total_not_released / total_pcfs) * 100, 1) if total_pcfs else 0
+    sla_atendido = round(((total_pcfs - total_sla_vencido) / total_pcfs) * 100, 1) if total_pcfs else 100
+
+    filtros = []
+    for key, label in [
+        ("q", "Busca"),
+        ("tipo", "Tipo"),
+        ("status", "Status"),
+        ("somente_latest", "Última revisão"),
+        ("apenas_open", "Apenas open"),
+        ("com_comentarios", "Com comentários"),
+        ("aging", "Aging"),
+    ]:
+        value = request.GET.get(key)
+        if value not in (None, ""):
+            filtros.append(f"{label}: {value}")
+    filtros_txt = " | ".join(filtros) if filtros else "Sem filtros aplicados"
 
     prs = Presentation()
+    prs.slide_width = Inches(13.333)
+    prs.slide_height = Inches(7.5)
 
-    slide = prs.slides.add_slide(prs.slide_layouts[0])
-    slide.shapes.title.text = "PCF Executive Intelligence"
-    slide.placeholders[1].text = (
-        "Relatório executivo gerado automaticamente\n"
-        "GED_PROFISSIONAL • D'ORANGE"
-    )
+    BG = RGBColor(6, 13, 28)
+    PANEL = RGBColor(14, 28, 52)
+    PANEL_2 = RGBColor(18, 42, 72)
+    CYAN = RGBColor(72, 190, 244)
+    ORANGE = RGBColor(255, 161, 35)
+    WHITE = RGBColor(245, 248, 255)
+    MUTED = RGBColor(164, 188, 218)
+    RED = RGBColor(255, 92, 92)
+    GREEN = RGBColor(80, 220, 145)
 
-    slide = prs.slides.add_slide(prs.slide_layouts[5])
-    slide.shapes.title.text = "Resumo Executivo"
-    textbox = slide.shapes.add_textbox(Inches(0.7), Inches(1.5), Inches(8.5), Inches(4.5))
-    tf = textbox.text_frame
-    tf.text = "Indicadores principais"
-    for linha in [
-        f"Total PCFs: {total_pcfs}",
-        f"Open Comments: {total_open}",
-        f"Released: {total_released}",
-        f"Not Released: {total_not_released}",
-        f"SLA vencido: {total_sla_vencido}",
-        f"Aging médio: {aging_medio} dias",
-        f"Risco operacional: {risco}%",
-    ]:
-        p = tf.add_paragraph()
-        p.text = linha
+    def add_bg(slide):
+        shape = slide.shapes.add_shape(1, 0, 0, prs.slide_width, prs.slide_height)
+        shape.fill.solid()
+        shape.fill.fore_color.rgb = BG
+        shape.line.fill.background()
 
-    slide = prs.slides.add_slide(prs.slide_layouts[5])
-    slide.shapes.title.text = "Top Pendências"
+    def add_title(slide, title, subtitle=None):
+        box = slide.shapes.add_textbox(Inches(0.55), Inches(0.35), Inches(12.2), Inches(0.65))
+        tf = box.text_frame
+        tf.clear()
+        p = tf.paragraphs[0]
+        p.text = title
+        p.font.bold = True
+        p.font.size = Pt(28)
+        p.font.color.rgb = WHITE
+        if subtitle:
+            sub = slide.shapes.add_textbox(Inches(0.58), Inches(0.98), Inches(11.8), Inches(0.35))
+            stf = sub.text_frame
+            stf.text = subtitle
+            stf.paragraphs[0].font.size = Pt(10)
+            stf.paragraphs[0].font.color.rgb = MUTED
 
-    top = sorted(
-        registros,
-        key=lambda x: getattr(x, "criticidade_score_runtime", 0),
-        reverse=True,
-    )[:10]
+    def add_footer(slide):
+        line = slide.shapes.add_shape(1, Inches(0.5), Inches(7.08), Inches(12.3), Inches(0.02))
+        line.fill.solid()
+        line.fill.fore_color.rgb = ORANGE
+        line.line.fill.background()
+        foot = slide.shapes.add_textbox(Inches(0.55), Inches(7.12), Inches(12.1), Inches(0.25))
+        foot.text_frame.text = f"GED_PROFISSIONAL • PCF Intelligence • {filtros_txt}"
+        foot.text_frame.paragraphs[0].font.size = Pt(8)
+        foot.text_frame.paragraphs[0].font.color.rgb = MUTED
 
-    table = slide.shapes.add_table(
-        len(top) + 1,
-        5,
-        Inches(0.4),
-        Inches(1.5),
-        Inches(9),
-        Inches(4.5),
-    ).table
+    def add_card(slide, x, y, w, h, label, value, accent=CYAN):
+        shp = slide.shapes.add_shape(5, Inches(x), Inches(y), Inches(w), Inches(h))
+        shp.fill.solid()
+        shp.fill.fore_color.rgb = PANEL
+        shp.line.color.rgb = PANEL_2
+        shp.line.width = Pt(1)
+        stripe = slide.shapes.add_shape(1, Inches(x), Inches(y + h - 0.08), Inches(w), Inches(0.06))
+        stripe.fill.solid()
+        stripe.fill.fore_color.rgb = accent
+        stripe.line.fill.background()
+        t = slide.shapes.add_textbox(Inches(x + 0.16), Inches(y + 0.12), Inches(w - 0.32), Inches(0.25))
+        t.text_frame.text = label.upper()
+        t.text_frame.paragraphs[0].font.bold = True
+        t.text_frame.paragraphs[0].font.size = Pt(8)
+        t.text_frame.paragraphs[0].font.color.rgb = MUTED
+        v = slide.shapes.add_textbox(Inches(x + 0.16), Inches(y + 0.44), Inches(w - 0.32), Inches(0.52))
+        v.text_frame.text = str(value)
+        v.text_frame.paragraphs[0].font.bold = True
+        v.text_frame.paragraphs[0].font.size = Pt(22)
+        v.text_frame.paragraphs[0].font.color.rgb = WHITE
 
-    for idx, head in enumerate(["Documento", "Rev", "Open", "Aging", "Status"]):
-        table.cell(0, idx).text = head
+    def add_text_block(slide, x, y, w, h, text):
+        shp = slide.shapes.add_shape(5, Inches(x), Inches(y), Inches(w), Inches(h))
+        shp.fill.solid()
+        shp.fill.fore_color.rgb = PANEL
+        shp.line.color.rgb = PANEL_2
+        tb = slide.shapes.add_textbox(Inches(x + 0.25), Inches(y + 0.22), Inches(w - 0.5), Inches(h - 0.4))
+        tf = tb.text_frame
+        tf.word_wrap = True
+        tf.text = text
+        for p in tf.paragraphs:
+            p.font.size = Pt(14)
+            p.font.color.rgb = WHITE
+        return tb
 
-    for row_idx, item in enumerate(top, start=1):
-        table.cell(row_idx, 0).text = str(getattr(item, "numero_documento", ""))
-        table.cell(row_idx, 1).text = str(getattr(item, "revisao_pcf", ""))
-        table.cell(row_idx, 2).text = str(getattr(item, "open_comments", 0))
-        table.cell(row_idx, 3).text = str(getattr(item, "aging_dias_runtime", "-"))
-        table.cell(row_idx, 4).text = str(getattr(item, "status_final", ""))
+    def style_chart(chart):
+        chart.has_legend = True
+        chart.legend.include_in_layout = False
+        chart.legend.font.size = Pt(8)
+        chart.legend.font.color.rgb = MUTED
+        chart.chart_title.has_text_frame = False
+        try:
+            chart.value_axis.tick_labels.font.size = Pt(8)
+            chart.value_axis.tick_labels.font.color.rgb = MUTED
+            chart.category_axis.tick_labels.font.size = Pt(8)
+            chart.category_axis.tick_labels.font.color.rgb = MUTED
+        except Exception:
+            pass
 
-    slide = prs.slides.add_slide(prs.slide_layouts[5])
-    slide.shapes.title.text = "Snapshot Operacional"
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    add_bg(slide)
+    add_title(slide, "PCF Executive Intelligence", "Relatório executivo automático • D'ORANGE Platform")
+    add_card(slide, 0.75, 2.0, 2.2, 1.15, "Total PCFs", total_pcfs, CYAN)
+    add_card(slide, 3.15, 2.0, 2.2, 1.15, "Comentários abertos", total_open_comments, ORANGE)
+    add_card(slide, 5.55, 2.0, 2.2, 1.15, "Not Released", total_not_released, RED)
+    add_card(slide, 7.95, 2.0, 2.2, 1.15, "Risco crítico", f"{risco}%", RED if risco >= 50 else ORANGE)
+    add_card(slide, 10.35, 2.0, 2.2, 1.15, "SLA atendido", f"{sla_atendido}%", GREEN)
     narrativa = (
-        f"Foram identificados {total_pcfs} registros PCF filtrados. "
-        f"O ambiente possui {total_open} open comments ativos. "
-        f"{total_not_released} documentos encontram-se em status NOT RELEASED. "
-        f"O risco operacional estimado é de {risco}%."
+        f"A visão filtrada contém {total_pcfs} PCFs, com {total_open_docs} documentos contendo open comments "
+        f"e {total_open_comments} comentários abertos. O aging médio é de {aging_medio} dias. "
+        f"O índice operacional de risco, baseado em documentos NOT RELEASED, é {risco}%."
     )
-    textbox = slide.shapes.add_textbox(Inches(0.8), Inches(1.8), Inches(8.8), Inches(3))
-    textbox.text_frame.text = narrativa
+    add_text_block(slide, 0.75, 3.65, 11.8, 1.35, narrativa)
+    add_footer(slide)
+
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    add_bg(slide)
+    add_title(slide, "Resumo Executivo", "Indicadores recalculados com os filtros ativos")
+    cards = [
+        ("Total PCFs", total_pcfs, CYAN),
+        ("Com Open", total_open_docs, ORANGE),
+        ("Comentários Abertos", total_open_comments, ORANGE),
+        ("Released", total_released, GREEN),
+        ("Not Released", total_not_released, RED),
+        ("SLA Vencido", total_sla_vencido, RED),
+        ("Aging Médio", f"{aging_medio} dias", CYAN),
+        ("SLA Atendido", f"{sla_atendido}%", GREEN),
+    ]
+    for idx, (label, value, color) in enumerate(cards):
+        x = 0.7 + (idx % 4) * 3.05
+        y = 1.55 + (idx // 4) * 1.55
+        add_card(slide, x, y, 2.75, 1.15, label, value, color)
+    add_footer(slide)
+
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    add_bg(slide)
+    add_title(slide, "Distribuição por Status", "Quantidade de PCFs por status final")
+    status_counts = Counter(_status(item) for item in registros)
+    chart_data = CategoryChartData()
+    chart_data.categories = list(status_counts.keys()) or ["Sem dados"]
+    chart_data.add_series("PCFs", list(status_counts.values()) or [0])
+    chart = slide.shapes.add_chart(
+        XL_CHART_TYPE.COLUMN_CLUSTERED,
+        Inches(0.8), Inches(1.45), Inches(11.8), Inches(4.85),
+        chart_data,
+    ).chart
+    style_chart(chart)
+    add_footer(slide)
+
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    add_bg(slide)
+    add_title(slide, "Distribuição por Tipo", "Volume documental PCF por tipo")
+    tipo_counts = Counter(_tipo(item) for item in registros)
+    top_tipos = tipo_counts.most_common(8)
+    chart_data = CategoryChartData()
+    chart_data.categories = [k for k, _ in top_tipos] or ["Sem dados"]
+    chart_data.add_series("PCFs", [v for _, v in top_tipos] or [0])
+    chart = slide.shapes.add_chart(
+        XL_CHART_TYPE.BAR_CLUSTERED,
+        Inches(1.0), Inches(1.35), Inches(11.3), Inches(5.0),
+        chart_data,
+    ).chart
+    style_chart(chart)
+    add_footer(slide)
+
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    add_bg(slide)
+    add_title(slide, "Top Pendências", "Ranking por criticidade operacional runtime")
+    top = sorted(registros, key=lambda x: getattr(x, "criticidade_score_runtime", 0) or 0, reverse=True)[:10]
+    rows = len(top) + 1
+    cols = 6
+    table_shape = slide.shapes.add_table(rows, cols, Inches(0.45), Inches(1.35), Inches(12.45), Inches(5.35))
+    table = table_shape.table
+    headers = ["Documento", "Rev", "Open", "Aging", "Status", "Score"]
+    widths = [3.1, 0.7, 0.8, 0.9, 4.0, 0.8]
+    for c, width in enumerate(widths):
+        table.columns[c].width = Inches(width)
+    for c, head in enumerate(headers):
+        cell = table.cell(0, c)
+        cell.text = head
+        cell.fill.solid()
+        cell.fill.fore_color.rgb = PANEL_2
+        p = cell.text_frame.paragraphs[0]
+        p.font.bold = True
+        p.font.size = Pt(8)
+        p.font.color.rgb = WHITE
+    for r, item in enumerate(top, start=1):
+        values = [
+            _doc(item),
+            _rev(item),
+            str(getattr(item, "open_comments", 0) or 0),
+            str(getattr(item, "aging_dias_runtime", "-")),
+            _status(item),
+            str(getattr(item, "criticidade_score_runtime", 0) or 0),
+        ]
+        for c, value in enumerate(values):
+            cell = table.cell(r, c)
+            cell.text = value[:55]
+            cell.fill.solid()
+            cell.fill.fore_color.rgb = PANEL
+            p = cell.text_frame.paragraphs[0]
+            p.font.size = Pt(7.5)
+            p.font.color.rgb = WHITE if c != 4 else MUTED
+    add_footer(slide)
+
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    add_bg(slide)
+    add_title(slide, "Snapshot Operacional", "Leitura executiva da carteira PCF filtrada")
+    if total_pcfs:
+        texto = (
+            f"Base filtrada: {total_pcfs} PCFs.\n\n"
+            f"Pontos de atenção: {total_not_released} documentos NOT RELEASED, "
+            f"{total_sla_vencido} registros com SLA vencido e {total_open_comments} comentários abertos.\n\n"
+            f"Prioridade recomendada: tratar os itens do Top Pendências, reduzindo o volume de open comments "
+            f"e acelerando a conversão para RELEASED."
+        )
+    else:
+        texto = "Nenhum registro encontrado para os filtros aplicados."
+    add_text_block(slide, 0.8, 1.45, 11.7, 4.8, texto)
+    add_footer(slide)
 
     output = BytesIO()
     prs.save(output)
@@ -3577,10 +3755,7 @@ def exportar_dashboard_pcfs_ppt(request):
 
     response = HttpResponse(
         output.read(),
-        content_type=(
-            "application/vnd.openxmlformats-officedocument."
-            "presentationml.presentation"
-        ),
+        content_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
     )
     response["Content-Disposition"] = 'attachment; filename="pcf_executive_report.pptx"'
     return response
