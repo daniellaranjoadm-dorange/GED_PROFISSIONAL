@@ -1,3 +1,43 @@
+
+/* SIDEBAR ACCORDION FINAL BACKUP */
+html body.ged-enterprise-shell .sidebar-group-toggle{
+  appearance:none !important;
+  -webkit-appearance:none !important;
+  background:transparent !important;
+  background-color:transparent !important;
+  color:#f8fafc !important;
+  border:0 !important;
+  box-shadow:none !important;
+}
+html body.ged-enterprise-shell .sidebar-group{
+  background:linear-gradient(180deg,rgba(15,23,42,.72),rgba(2,6,23,.38)) !important;
+  border:1px solid rgba(148,163,184,.12) !important;
+  border-radius:18px !important;
+}
+html body.ged-enterprise-shell .sidebar-group:not(.is-open) .sidebar-subnav{
+  display:none !important;
+}
+html body.ged-enterprise-shell .sidebar-group.is-open .sidebar-subnav{
+  display:flex !important;
+}
+
+
+/* SIDEBAR HARD FIX BACKUP — main source is inline in base.html */
+html body.ged-enterprise-shell .sidebar-group-toggle{
+  appearance:none !important;
+  -webkit-appearance:none !important;
+  background:transparent !important;
+  background-color:transparent !important;
+  color:#f8fafc !important;
+  border:0 !important;
+  box-shadow:none !important;
+}
+html body.ged-enterprise-shell .sidebar-group{
+  background:linear-gradient(180deg,rgba(15,23,42,.72),rgba(2,6,23,.38)) !important;
+  border:1px solid rgba(148,163,184,.12) !important;
+  border-radius:18px !important;
+}
+
 /* ==========================================================
    GED ENTERPRISE PANEL SKIN — MUST LOAD FIRST — v1300
    Corrige /automacoes/ e telas .ged-* mesmo se houver CSS legado abaixo.

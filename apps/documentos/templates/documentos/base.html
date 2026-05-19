@@ -40,7 +40,246 @@
 
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-  <link rel="stylesheet" href="{% static 'css/enterprise.css' %}?v=1300">
+  <link rel="stylesheet" href="{% static 'css/enterprise.css' %}?v=1700">
+
+  
+
+
+
+<style id="sidebar-enterprise-accordion-final">
+:root{
+  --sidebar-width: 284px !important;
+  --sidebar-collapsed-width: 84px !important;
+}
+
+html body.ged-enterprise-shell .sidebar{
+  width: var(--sidebar-width) !important;
+  min-width: var(--sidebar-width) !important;
+  max-width: var(--sidebar-width) !important;
+  background: linear-gradient(180deg,#07101f 0%,#020817 100%) !important;
+  border-right: 1px solid rgba(56,189,248,.22) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 14px 10px !important;
+  box-shadow: 10px 0 32px rgba(0,0,0,.38) !important;
+}
+
+html body.ged-enterprise-shell .sidebar-inner{
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  min-height: 100% !important;
+}
+
+html body.ged-enterprise-shell .sidebar-brand{
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 6px 8px 10px !important;
+}
+
+html body.ged-enterprise-shell .sidebar-logo{
+  width: 38px !important;
+  max-width: 38px !important;
+}
+
+html body.ged-enterprise-shell .sidebar-brand-title{
+  color: #38BDF8 !important;
+  font-weight: 900 !important;
+}
+
+html body.ged-enterprise-shell #sidebarToggle{
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(148,163,184,.22) !important;
+  background: rgba(15,23,42,.92) !important;
+  color: #e5e7eb !important;
+  display: grid !important;
+  place-items: center !important;
+  margin: 0 0 6px !important;
+  cursor: pointer !important;
+}
+
+html body.ged-enterprise-shell .sidebar-nav,
+html body.ged-enterprise-shell .sidebar-subnav{
+  list-style: none !important;
+}
+
+html body.ged-enterprise-shell .sidebar-nav{
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+html body.ged-enterprise-shell .sidebar-group{
+  display: block !important;
+  border-radius: 18px !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(148,163,184,.12) !important;
+  background: linear-gradient(180deg,rgba(15,23,42,.72),rgba(2,6,23,.38)) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04) !important;
+}
+
+html body.ged-enterprise-shell .sidebar-group-toggle{
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  width: 100% !important;
+  min-height: 44px !important;
+  border: 0 !important;
+  outline: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  color: #f8fafc !important;
+  box-shadow: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 12px 14px !important;
+  margin: 0 !important;
+  font: inherit !important;
+  font-weight: 900 !important;
+  text-align: left !important;
+  cursor: pointer !important;
+}
+
+html body.ged-enterprise-shell .sidebar-group-title{
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-width: 0 !important;
+}
+
+html body.ged-enterprise-shell .sidebar-group-title i,
+html body.ged-enterprise-shell .sidebar-group-chevron{
+  color: #38BDF8 !important;
+}
+
+html body.ged-enterprise-shell .sidebar-group.is-open .sidebar-group-chevron{
+  transform: rotate(180deg) !important;
+}
+
+html body.ged-enterprise-shell .sidebar-subnav{
+  display: none !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  padding: 0 8px 10px !important;
+  margin: 0 !important;
+}
+
+html body.ged-enterprise-shell .sidebar-group.is-open .sidebar-subnav{
+  display: flex !important;
+}
+
+html body.ged-enterprise-shell .sidebar-link,
+html body.ged-enterprise-shell .sidebar-action-button{
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  width: 100% !important;
+  min-height: 42px !important;
+  border: 0 !important;
+  border-radius: 13px !important;
+  background: transparent !important;
+  color: #dbeafe !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 9px 12px !important;
+  margin: 0 !important;
+  text-decoration: none !important;
+  font-weight: 750 !important;
+  line-height: 1.15 !important;
+  cursor: pointer !important;
+  box-shadow: none !important;
+}
+
+html body.ged-enterprise-shell .sidebar-link i,
+html body.ged-enterprise-shell .sidebar-action-button i{
+  flex: 0 0 18px !important;
+  width: 18px !important;
+  text-align: center !important;
+  color: #38BDF8 !important;
+}
+
+html body.ged-enterprise-shell .sidebar-link:hover,
+html body.ged-enterprise-shell .sidebar-action-button:hover{
+  background: linear-gradient(90deg,rgba(255,138,0,.20),rgba(56,189,248,.07)) !important;
+  color: #fff !important;
+  transform: translateX(2px) !important;
+}
+
+html body.ged-enterprise-shell .sidebar-link.active{
+  background: linear-gradient(135deg,#FF8A00,#FDBA74) !important;
+  color: #111827 !important;
+  font-weight: 950 !important;
+  box-shadow: 0 10px 26px rgba(255,138,0,.30) !important;
+}
+
+html body.ged-enterprise-shell .sidebar-link.active i{
+  color: #111827 !important;
+}
+
+html body.ged-enterprise-shell .content{
+  margin-left: var(--sidebar-width) !important;
+  width: calc(100% - var(--sidebar-width)) !important;
+  transition: margin-left .22s ease,width .22s ease !important;
+}
+
+html body.ged-enterprise-shell.sidebar-collapsed .sidebar{
+  width: var(--sidebar-collapsed-width) !important;
+  min-width: var(--sidebar-collapsed-width) !important;
+  max-width: var(--sidebar-collapsed-width) !important;
+}
+
+html body.ged-enterprise-shell.sidebar-collapsed .content{
+  margin-left: var(--sidebar-collapsed-width) !important;
+  width: calc(100% - var(--sidebar-collapsed-width)) !important;
+}
+
+html body.ged-enterprise-shell.sidebar-collapsed .sidebar-text,
+html body.ged-enterprise-shell.sidebar-collapsed .sidebar-brand-title,
+html body.ged-enterprise-shell.sidebar-collapsed .sidebar-group-chevron,
+html body.ged-enterprise-shell.sidebar-collapsed .sidebar-footer{
+  display: none !important;
+}
+
+html body.ged-enterprise-shell.sidebar-collapsed .sidebar-brand,
+html body.ged-enterprise-shell.sidebar-collapsed .sidebar-group-toggle,
+html body.ged-enterprise-shell.sidebar-collapsed .sidebar-link,
+html body.ged-enterprise-shell.sidebar-collapsed .sidebar-action-button{
+  justify-content: center !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+html body.ged-enterprise-shell.sidebar-collapsed .sidebar-subnav{
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+}
+
+@media (max-width: 991.98px){
+  html body.ged-enterprise-shell .sidebar{
+    transform: translateX(-105%) !important;
+    width: min(86vw,320px) !important;
+    min-width: min(86vw,320px) !important;
+    max-width: min(86vw,320px) !important;
+    transition: transform .22s ease !important;
+  }
+
+  html body.ged-enterprise-shell.sidebar-open .sidebar{
+    transform: translateX(0) !important;
+  }
+
+  html body.ged-enterprise-shell .content,
+  html body.ged-enterprise-shell.sidebar-collapsed .content{
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+}
+</style>
 
   {% block extra_head %}{% endblock %}
 </head>
@@ -50,19 +289,18 @@
 
   {# Permite ocultar sidebar em páginas específicas (login/portal) sem quebrar o resto #}
   {% block sidebar %}
-  <!-- SIDEBAR -->
+  <!-- SIDEBAR ENTERPRISE ACCORDION -->
   <aside class="sidebar" style="z-index:999 !important;">
     <div class="sidebar-inner">
 
       <button type="button"
               class="sidebar-toggle"
               id="sidebarToggle"
-              aria-label="Recolher ou expandir menu"
-              title="Recolher/expandir menu">
+              aria-label="Minimizar ou expandir menu"
+              title="Minimizar/expandir menu">
         <i class="bi bi-layout-sidebar-inset"></i>
       </button>
 
-      <!-- LOGO -->
       <div class="sidebar-brand">
         <img src="{% static 'documentos/logo_dorange.png' %}" class="sidebar-logo" alt="">
         <div>
@@ -70,204 +308,240 @@
         </div>
       </div>
 
-      <ul class="sidebar-nav">
+      <ul class="sidebar-nav sidebar-nav-groups">
 
-        <li class="sidebar-section">
-          <span class="sidebar-section-label">GED</span>
-        </li>
-
-        <li>
-          <a class="sidebar-link" href="{{ url_listar_documentos|default:'/documentos/documentos/' }}" title="Lista de Documentos">
-            <i class="bi bi-table"></i>
-            <span class="sidebar-text">Lista de Documentos</span>
-          </a>
-        </li>
-        <li>
-          <a class="sidebar-link" href="{% url 'documentos:revisoes' %}" title="Revisões">
-            <i class="bi bi-arrow-repeat"></i>
-            <span class="sidebar-text">Revis&otilde;es</span>
-          </a>
-        </li>
-        <li>
-          <a class="sidebar-link" href="{{ url_upload_documento|default:'#' }}" title="Novo Documento">
-            <i class="bi bi-file-earmark-plus"></i>
-            <span class="sidebar-text">Novo Documento</span>
-          </a>
-        </li>
-        <li>
-          <a class="sidebar-link" href="{{ url_importar_ldp|default:'#' }}" title="Importar LDP">
-            <i class="bi bi-cloud-upload"></i>
-            <span class="sidebar-text">Importar LDP</span>
-          </a>
-        </li>
-        <li>
-          <a class="sidebar-link" href="/dashboard/" title="Dashboard GED">
-            <i class="bi bi-graph-up-arrow"></i>
-            <span class="sidebar-text">Dashboard GED</span>
-          </a>
-        </li>
-
-        <li class="sidebar-section">
-          <span class="sidebar-section-label">Automações</span>
-        </li>
-
-        <li>
-          <a class="sidebar-link" href="{{ url_automacoes_painel|default:'/automacoes/' }}" title="Painel de Automações">
-            <i class="bi bi-robot"></i>
-            <span class="sidebar-text">Painel Automa&ccedil;&otilde;es</span>
-          </a>
-        </li>
-        <li>
-          <a class="sidebar-link" href="{{ url_ops_center|default:'/automacoes/ops-center/' }}" title="Operations Center">
-            <i class="bi bi-speedometer2"></i>
-            <span class="sidebar-text">Operations Center</span>
-          </a>
-        </li>
-        <li>
-          <a class="sidebar-link" href="{{ url_logs_automacoes|default:'/automacoes/logs/' }}" title="Logs Automações">
-            <i class="bi bi-activity"></i>
-            <span class="sidebar-text">Logs Automa&ccedil;&otilde;es</span>
-          </a>
-        </li>
-
-        <li class="sidebar-section">
-          <span class="sidebar-section-label">KM Intelligence</span>
+        <li class="sidebar-group is-open" data-sidebar-group="ged">
+          <button type="button" class="sidebar-group-toggle" aria-expanded="true">
+            <span class="sidebar-group-title">
+              <i class="bi bi-folder2-open"></i>
+              <span class="sidebar-text">GED</span>
+            </span>
+            <i class="bi bi-chevron-down sidebar-group-chevron"></i>
+          </button>
+          <ul class="sidebar-subnav">
+            <li>
+              <a class="sidebar-link" href="{{ url_listar_documentos|default:'/documentos/documentos/' }}" title="Lista de Documentos">
+                <i class="bi bi-table"></i>
+                <span class="sidebar-text">Lista de Documentos</span>
+              </a>
+            </li>
+            <li>
+              <a class="sidebar-link" href="{% url 'documentos:revisoes' %}" title="Revisões">
+                <i class="bi bi-arrow-repeat"></i>
+                <span class="sidebar-text">Revis&otilde;es</span>
+              </a>
+            </li>
+            <li>
+              <a class="sidebar-link" href="{{ url_upload_documento|default:'#' }}" title="Novo Documento">
+                <i class="bi bi-file-earmark-plus"></i>
+                <span class="sidebar-text">Novo Documento</span>
+              </a>
+            </li>
+            <li>
+              <a class="sidebar-link" href="{{ url_importar_ldp|default:'#' }}" title="Importar LDP">
+                <i class="bi bi-cloud-upload"></i>
+                <span class="sidebar-text">Importar LDP</span>
+              </a>
+            </li>
+            <li>
+              <a class="sidebar-link" href="{{ url_dashboard_documentos|default:'/documentos/dashboard/' }}" title="Dashboard GED">
+                <i class="bi bi-graph-up-arrow"></i>
+                <span class="sidebar-text">Dashboard GED</span>
+              </a>
+            </li>
+            <li>
+              <a class="sidebar-link" href="{{ url_painel_workflow|default:'#' }}" title="Workflow">
+                <i class="bi bi-diagram-3"></i>
+                <span class="sidebar-text">Workflow</span>
+              </a>
+            </li>
+            <li>
+              <a class="sidebar-link" href="{{ url_medicao|default:'#' }}" title="Medição">
+                <i class="bi bi-cash-coin"></i>
+                <span class="sidebar-text">Medi&ccedil;&atilde;o</span>
+              </a>
+            </li>
+            <li>
+              <a class="sidebar-link" href="{{ url_lixeira|default:'/documentos/lixeira/' }}" title="Lixeira">
+                <i class="bi bi-trash3"></i>
+                <span class="sidebar-text">Lixeira</span>
+              </a>
+            </li>
+          </ul>
         </li>
 
-        <li>
-          <a class="sidebar-link sidebar-link-km" href="{{ url_importar_lista_km|default:'/automacoes/importar-lista-km/' }}" title="Importar LD Kongsberg">
-            <i class="bi bi-file-earmark-spreadsheet"></i>
-            <span class="sidebar-text">Importar LD Kongsberg</span>
-          </a>
-        </li>
-        <li>
-          <a class="sidebar-link sidebar-link-km" href="{{ url_transmittals_km|default:'/automacoes/transmittals-km/' }}" title="Transmittals KM">
-            <i class="bi bi-box-seam"></i>
-            <span class="sidebar-text">Transmittals KM</span>
-          </a>
-        </li>
-        <li>
-          <a class="sidebar-link sidebar-link-km" href="{{ url_dashboard_transmittals|default:'/automacoes/dashboard-transmittals/' }}" title="Dashboard Transmittals">
-            <i class="bi bi-bar-chart"></i>
-            <span class="sidebar-text">Dashboard Transmittals</span>
-          </a>
-        </li>
-        <li>
-          <a class="sidebar-link sidebar-link-km" href="{{ url_dashboard_km_ld|default:'/automacoes/dashboard-km-ld/' }}" title="Dashboard KM ↔ LD">
-            <i class="bi bi-diagram-3"></i>
-            <span class="sidebar-text">Dashboard KM &harr; LD</span>
-          </a>
-        </li>
-        <li>
-          <a class="sidebar-link sidebar-link-km" href="{{ url_alertas_operacionais|default:'/automacoes/alertas-operacionais/' }}" title="Alertas Operacionais">
-            <i class="bi bi-bell"></i>
-            <span class="sidebar-text">Alertas Operacionais</span>
-          </a>
-        </li>
-        <li>
-          <form method="post"
-                action="{{ url_executar_sync_km_ld|default:'/automacoes/executar-sync-km-ld/' }}"
-                class="sidebar-action-form">
-            {% csrf_token %}
-            <button type="submit"
-                    class="sidebar-link sidebar-action-button sidebar-link-km"
-                    title="Executar Sync KM ↔ LD">
-              <i class="bi bi-arrow-repeat"></i>
-              <span class="sidebar-text">Sync KM &harr; LD</span>
-            </button>
-          </form>
+        <li class="sidebar-group is-open" data-sidebar-group="automacoes">
+          <button type="button" class="sidebar-group-toggle" aria-expanded="true">
+            <span class="sidebar-group-title">
+              <i class="bi bi-cpu"></i>
+              <span class="sidebar-text">Automa&ccedil;&otilde;es</span>
+            </span>
+            <i class="bi bi-chevron-down sidebar-group-chevron"></i>
+          </button>
+          <ul class="sidebar-subnav">
+            <li>
+              <a class="sidebar-link" href="{{ url_automacoes_painel|default:'/automacoes/' }}" title="Painel de Automações">
+                <i class="bi bi-robot"></i>
+                <span class="sidebar-text">Painel Automa&ccedil;&otilde;es</span>
+              </a>
+            </li>
+            <li>
+              <a class="sidebar-link" href="{{ url_ops_center|default:'/automacoes/ops-center/' }}" title="Operations Center">
+                <i class="bi bi-speedometer2"></i>
+                <span class="sidebar-text">Operations Center</span>
+              </a>
+            </li>
+            <li>
+              <a class="sidebar-link" href="{{ url_logs_automacoes|default:'/automacoes/logs/' }}" title="Logs Automações">
+                <i class="bi bi-activity"></i>
+                <span class="sidebar-text">Logs Automa&ccedil;&otilde;es</span>
+              </a>
+            </li>
+            <li>
+              <a class="sidebar-link" href="{{ url_busca_global|default:'/automacoes/busca-global/' }}" title="Busca Global">
+                <i class="bi bi-search"></i>
+                <span class="sidebar-text">Busca Global</span>
+              </a>
+            </li>
+          </ul>
         </li>
 
-        <li class="sidebar-section">
-          <span class="sidebar-section-label">LD Petrobras</span>
+        <li class="sidebar-group is-open sidebar-group-km" data-sidebar-group="km">
+          <button type="button" class="sidebar-group-toggle" aria-expanded="true">
+            <span class="sidebar-group-title">
+              <i class="bi bi-diagram-3"></i>
+              <span class="sidebar-text">KM / Kongsberg</span>
+            </span>
+            <i class="bi bi-chevron-down sidebar-group-chevron"></i>
+          </button>
+          <ul class="sidebar-subnav">
+            <li>
+              <a class="sidebar-link sidebar-link-km" href="{{ url_importar_lista_km|default:'/automacoes/importar-lista-km/' }}" title="Importar LD Kongsberg">
+                <i class="bi bi-file-earmark-spreadsheet"></i>
+                <span class="sidebar-text">Importar LD Kongsberg</span>
+              </a>
+            </li>
+            <li>
+              <a class="sidebar-link sidebar-link-km" href="{{ url_lista_km|default:'/automacoes/lista-km/' }}" title="Lista KM">
+                <i class="bi bi-list-columns"></i>
+                <span class="sidebar-text">Lista KM</span>
+              </a>
+            </li>
+            <li>
+              <a class="sidebar-link sidebar-link-km" href="{{ url_dashboard_km_ld|default:'/automacoes/dashboard-km-ld/' }}" title="Dashboard KM ↔ LD">
+                <i class="bi bi-diagram-3"></i>
+                <span class="sidebar-text">Dashboard KM &harr; LD</span>
+              </a>
+            </li>
+            <li>
+              <a class="sidebar-link sidebar-link-km" href="{{ url_alertas_operacionais|default:'/automacoes/alertas-operacionais/' }}" title="Alertas Operacionais">
+                <i class="bi bi-bell"></i>
+                <span class="sidebar-text">Alertas Operacionais</span>
+              </a>
+            </li>
+            <li>
+              <form method="post"
+                    action="{{ url_executar_sync_km_ld|default:'/automacoes/executar-sync-km-ld/' }}"
+                    class="sidebar-action-form">
+                {% csrf_token %}
+                <button type="submit"
+                        class="sidebar-link sidebar-action-button sidebar-link-km"
+                        title="Executar Sync KM ↔ LD">
+                  <i class="bi bi-arrow-repeat"></i>
+                  <span class="sidebar-text">Sync KM &harr; LD</span>
+                </button>
+              </form>
+            </li>
+            <li>
+              <a class="sidebar-link sidebar-link-km" href="{{ url_transmittals_km|default:'/automacoes/transmittals-km/' }}" title="Transmittals KM">
+                <i class="bi bi-box-seam"></i>
+                <span class="sidebar-text">Transmittals KM</span>
+              </a>
+            </li>
+            <li>
+              <a class="sidebar-link sidebar-link-km" href="{{ url_dashboard_transmittals|default:'/automacoes/dashboard-transmittals/' }}" title="Dashboard Transmittals">
+                <i class="bi bi-bar-chart"></i>
+                <span class="sidebar-text">Dashboard Transmittals</span>
+              </a>
+            </li>
+          </ul>
         </li>
 
-        <li>
-          <a class="sidebar-link" href="{{ url_lista_ld|default:'/automacoes/lista-ld/' }}" title="Lista LD">
-            <i class="bi bi-folder2-open"></i>
-            <span class="sidebar-text">Lista LD</span>
-          </a>
-        </li>
-        <li>
-          <a class="sidebar-link" href="{{ url_dashboard_ld|default:'/automacoes/dashboard-ld/' }}" title="Dashboard LD">
-            <i class="bi bi-pie-chart"></i>
-            <span class="sidebar-text">Dashboard LD</span>
-          </a>
-        </li>
-        <li>
-          <a class="sidebar-link" href="{{ url_excecoes_documentais|default:'/automacoes/excecoes-documentais/' }}" title="Exceções Documentais">
-            <i class="bi bi-exclamation-triangle"></i>
-            <span class="sidebar-text">Exce&ccedil;&otilde;es Documentais</span>
-          </a>
-        </li>
-
-        <li class="sidebar-section">
-          <span class="sidebar-section-label">Análise</span>
-        </li>
-
-        <li>
-          <a class="sidebar-link" href="{{ url_busca_global|default:'/automacoes/busca-global/' }}" title="Busca Global">
-            <i class="bi bi-search"></i>
-            <span class="sidebar-text">Busca Global</span>
-          </a>
-        </li>
-        <li>
-          <a class="sidebar-link" href="{{ url_dashboard_pcfs|default:'/automacoes/dashboard-pcfs/' }}" title="Dashboard PCFs">
-            <i class="bi bi-graph-up"></i>
-            <span class="sidebar-text">Dashboard PCFs</span>
-          </a>
-        </li>
-        <li>
-          <a class="sidebar-link" href="{{ url_pcfs_timeline|default:'/automacoes/pcfs-timeline/' }}" title="Timeline PCFs">
-            <i class="bi bi-table"></i>
-            <span class="sidebar-text">Timeline PCFs</span>
-          </a>
-        </li>
-
-        <li class="sidebar-section">
-          <span class="sidebar-section-label">Gestão</span>
+        <li class="sidebar-group" data-sidebar-group="ld-pcf">
+          <button type="button" class="sidebar-group-toggle" aria-expanded="false">
+            <span class="sidebar-group-title">
+              <i class="bi bi-kanban"></i>
+              <span class="sidebar-text">LD / PCF</span>
+            </span>
+            <i class="bi bi-chevron-down sidebar-group-chevron"></i>
+          </button>
+          <ul class="sidebar-subnav">
+            <li>
+              <a class="sidebar-link" href="{{ url_lista_ld|default:'/automacoes/lista-ld/' }}" title="Lista LD">
+                <i class="bi bi-folder2-open"></i>
+                <span class="sidebar-text">Lista LD</span>
+              </a>
+            </li>
+            <li>
+              <a class="sidebar-link" href="{{ url_dashboard_ld|default:'/automacoes/dashboard-ld/' }}" title="Dashboard LD">
+                <i class="bi bi-pie-chart"></i>
+                <span class="sidebar-text">Dashboard LD</span>
+              </a>
+            </li>
+            <li>
+              <a class="sidebar-link" href="{{ url_dashboard_pcfs|default:'/automacoes/dashboard-pcfs/' }}" title="Dashboard PCFs">
+                <i class="bi bi-graph-up"></i>
+                <span class="sidebar-text">Dashboard PCFs</span>
+              </a>
+            </li>
+            <li>
+              <a class="sidebar-link" href="{{ url_pcfs_timeline|default:'/automacoes/pcfs-timeline/' }}" title="Timeline PCFs">
+                <i class="bi bi-table"></i>
+                <span class="sidebar-text">Timeline PCFs</span>
+              </a>
+            </li>
+            <li>
+              <a class="sidebar-link" href="{{ url_excecoes_documentais|default:'/automacoes/excecoes-documentais/' }}" title="Exceções Documentais">
+                <i class="bi bi-exclamation-triangle"></i>
+                <span class="sidebar-text">Exce&ccedil;&otilde;es Documentais</span>
+              </a>
+            </li>
+          </ul>
         </li>
 
-        <li>
-          <a class="sidebar-link" href="{{ url_painel_workflow|default:'#' }}" title="Workflow">
-            <i class="bi bi-diagram-3"></i>
-            <span class="sidebar-text">Workflow</span>
-          </a>
-        </li>
-        <li>
-          <a class="sidebar-link" href="{{ url_medicao|default:'#' }}" title="Medição">
-            <i class="bi bi-cash-coin"></i>
-            <span class="sidebar-text">Medi&ccedil;&atilde;o</span>
-          </a>
-        </li>
-
-        {% if user.is_authenticated and user.is_staff and url_solicitacoes %}
-        <li>
-          <a class="sidebar-link" href="{{ url_solicitacoes }}" title="Solicitações de Acesso">
-            <i class="bi bi-people"></i>
-            <span class="sidebar-text">Solicita&ccedil;&otilde;es de Acesso</span>
-          </a>
-        </li>
-        {% endif %}
-
-        {% if user.is_authenticated and user.is_superuser %}
-        <li>
-          <a class="sidebar-link" href="{{ url_usuarios_permissoes|default:'/admin/contas/usuario/' }}" title="Usuários & Permissões">
-            <i class="bi bi-gear"></i>
-            <span class="sidebar-text">Usu&aacute;rios &amp; Permiss&otilde;es</span>
-          </a>
-        </li>
-        <li>
-          <a class="sidebar-link" href="{{ url_minhas_configuracoes|default:'/contas/minhas-configuracoes/' }}" title="Minhas Configurações">
-            <i class="bi bi-person-gear"></i>
-            <span class="sidebar-text">Minhas Configura&ccedil;&otilde;es</span>
-          </a>
-        </li>
-        <li>
-          <a class="sidebar-link" href="{{ url_lixeira|default:'/documentos/lixeira/' }}" title="Lixeira">
-            <i class="bi bi-trash3"></i>
-            <span class="sidebar-text">Lixeira</span>
-          </a>
+        {% if user.is_authenticated and user.is_staff or user.is_authenticated and user.is_superuser %}
+        <li class="sidebar-group" data-sidebar-group="admin">
+          <button type="button" class="sidebar-group-toggle" aria-expanded="false">
+            <span class="sidebar-group-title">
+              <i class="bi bi-shield-lock"></i>
+              <span class="sidebar-text">Administra&ccedil;&atilde;o</span>
+            </span>
+            <i class="bi bi-chevron-down sidebar-group-chevron"></i>
+          </button>
+          <ul class="sidebar-subnav">
+            {% if user.is_authenticated and user.is_staff and url_solicitacoes %}
+            <li>
+              <a class="sidebar-link" href="{{ url_solicitacoes }}" title="Solicitações de Acesso">
+                <i class="bi bi-people"></i>
+                <span class="sidebar-text">Solicita&ccedil;&otilde;es de Acesso</span>
+              </a>
+            </li>
+            {% endif %}
+            {% if user.is_authenticated and user.is_superuser %}
+            <li>
+              <a class="sidebar-link" href="{{ url_usuarios_permissoes|default:'/admin/contas/usuario/' }}" title="Usuários & Permissões">
+                <i class="bi bi-gear"></i>
+                <span class="sidebar-text">Usu&aacute;rios &amp; Permiss&otilde;es</span>
+              </a>
+            </li>
+            <li>
+              <a class="sidebar-link" href="{{ url_minhas_configuracoes|default:'/contas/minhas-configuracoes/' }}" title="Minhas Configurações">
+                <i class="bi bi-person-gear"></i>
+                <span class="sidebar-text">Minhas Configura&ccedil;&otilde;es</span>
+              </a>
+            </li>
+            {% endif %}
+          </ul>
         </li>
         {% endif %}
       </ul>
@@ -570,6 +844,132 @@ function setLanguage(lang) {
     } catch (e) {}
   });
 })();
+</script>
+
+
+
+
+<script id="sidebar-enterprise-accordion-final-js">
+document.addEventListener("DOMContentLoaded", function () {
+  const body = document.body;
+  const sidebar = document.querySelector(".sidebar");
+  const sidebarToggle = document.getElementById("sidebarToggle");
+  const topbarToggles = document.querySelectorAll(".topbar-enterprise .sidebar-toggle");
+  const groupToggles = document.querySelectorAll(".sidebar-group-toggle");
+  const collapsedKey = "gedSidebarCollapsedAccordionFinal";
+  const groupsKey = "gedSidebarGroupsAccordionFinal";
+
+  function isMobile(){
+    return window.matchMedia && window.matchMedia("(max-width: 991.98px)").matches;
+  }
+
+  function saveGroups(){
+    const state = {};
+    document.querySelectorAll(".sidebar-group").forEach(function(group){
+      const key = group.dataset.sidebarGroup;
+      if (key) state[key] = group.classList.contains("is-open");
+    });
+    try { localStorage.setItem(groupsKey, JSON.stringify(state)); } catch(e) {}
+  }
+
+  function restoreGroups(){
+    let state = null;
+    try { state = JSON.parse(localStorage.getItem(groupsKey) || "null"); } catch(e) {}
+    if (!state) return;
+
+    document.querySelectorAll(".sidebar-group").forEach(function(group){
+      const key = group.dataset.sidebarGroup;
+      if (!key || !(key in state)) return;
+      group.classList.toggle("is-open", !!state[key]);
+      const btn = group.querySelector(".sidebar-group-toggle");
+      if (btn) btn.setAttribute("aria-expanded", !!state[key] ? "true" : "false");
+    });
+  }
+
+  function toggleSidebar(event){
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
+    if (isMobile()) {
+      body.classList.toggle("sidebar-open");
+      return;
+    }
+
+    body.classList.toggle("sidebar-collapsed");
+
+    try {
+      localStorage.setItem(
+        collapsedKey,
+        body.classList.contains("sidebar-collapsed") ? "1" : "0"
+      );
+    } catch(e) {}
+  }
+
+  if (sidebarToggle) sidebarToggle.addEventListener("click", toggleSidebar);
+  topbarToggles.forEach(function(btn){ btn.addEventListener("click", toggleSidebar); });
+
+  groupToggles.forEach(function(btn){
+    btn.addEventListener("click", function(event){
+      event.preventDefault();
+      event.stopPropagation();
+
+      const group = btn.closest(".sidebar-group");
+      if (!group) return;
+
+      const open = !group.classList.contains("is-open");
+      group.classList.toggle("is-open", open);
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+      saveGroups();
+    });
+  });
+
+  restoreGroups();
+
+  try {
+    if (localStorage.getItem(collapsedKey) === "1" && !isMobile()) {
+      body.classList.add("sidebar-collapsed");
+    }
+  } catch(e) {}
+
+  let bestLink = null;
+  let bestLen = -1;
+  const current = window.location.pathname.replace(/\/+$/, "") || "/";
+
+  document.querySelectorAll(".sidebar-link[href]").forEach(function(link){
+    const href = link.getAttribute("href");
+    if (!href || href === "#") return;
+
+    try {
+      const linkPath = new URL(href, window.location.origin).pathname.replace(/\/+$/, "") || "/";
+      if (current === linkPath || (linkPath !== "/" && current.startsWith(linkPath))) {
+        if (linkPath.length > bestLen) {
+          bestLink = link;
+          bestLen = linkPath.length;
+        }
+      }
+    } catch(e) {}
+  });
+
+  if (bestLink) {
+    bestLink.classList.add("active");
+    const group = bestLink.closest(".sidebar-group");
+    if (group) {
+      group.classList.add("is-open");
+      const btn = group.querySelector(".sidebar-group-toggle");
+      if (btn) btn.setAttribute("aria-expanded", "true");
+    }
+  }
+
+  document.addEventListener("click", function(event){
+    if (!isMobile()) return;
+    if (!body.classList.contains("sidebar-open")) return;
+    if (sidebar && sidebar.contains(event.target)) return;
+    if (event.target.closest(".sidebar-toggle")) return;
+    body.classList.remove("sidebar-open");
+  });
+});
 </script>
 
 </body>
