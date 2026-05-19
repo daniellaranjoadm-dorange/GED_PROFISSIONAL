@@ -1573,12 +1573,58 @@ def _obter_queryset_latest_pcfs(queryset):
 
 
 def _pcf_data_base(item):
-    valor = getattr(item, "data_recebimento", None)
-    if not valor:
-        return None
-    if hasattr(valor, "date"):
-        return valor.date()
-    return valor
+    """
+    Retorna a melhor data disponível para cálculo de aging PCF.
+
+    Ordem de preferência:
+    1. data_recebimento
+    2. data_pcf / data_envio
+    3. campos de criação/atualização como fallback operacional
+
+    Não grava nada no banco. É normalização runtime.
+    """
+    from django.utils.dateparse import parse_date, parse_datetime
+
+    campos_data = (
+        "data_recebimento",
+        "data_pcf",
+        "data_envio",
+        "recebido_em",
+        "criado_em",
+        "created_at",
+        "atualizado_em",
+        "updated_at",
+    )
+
+    for campo in campos_data:
+        valor = getattr(item, campo, None)
+
+        if not valor:
+            continue
+
+        if hasattr(valor, "date"):
+            try:
+                return valor.date()
+            except Exception:
+                pass
+
+        if hasattr(valor, "year") and hasattr(valor, "month") and hasattr(valor, "day"):
+            return valor
+
+        if isinstance(valor, str):
+            texto = valor.strip()
+            if not texto:
+                continue
+
+            dt = parse_datetime(texto)
+            if dt:
+                return dt.date()
+
+            data = parse_date(texto[:10])
+            if data:
+                return data
+
+    return None
 
 
 def _pcf_aging_dias(item):
@@ -1604,40 +1650,79 @@ def _pcf_aging_bucket(dias):
 
 
 def _pcf_criticidade_score(item):
-    score = 0
+    """
+    Score operacional runtime de 0 a 100.
+
+    Regras:
+    - status é comparado de forma exata e case-insensitive;
+    - RELEASED e RELEASED WITH COMMENTS são tratados separadamente;
+    - volume de open comments pesa de forma progressiva;
+    - aging/SLA aumenta o risco quando houver data válida;
+    - registros sem data recebem pequeno acréscimo se ainda possuem pendência.
+    """
     open_comments = int(getattr(item, "open_comments", 0) or 0)
-    status = str(getattr(item, "status_final", "") or "").upper()
+    status = str(getattr(item, "status_final", "") or "").strip().upper()
     aging = _pcf_aging_dias(item)
 
-    if "NOT RELEASED" in status:
-        score += 40
-    elif "RELEASED WITH COMMENTS" in status:
-        score += 25
+    score = 0
 
-    if open_comments >= 10:
-        score += 30
-    elif open_comments >= 6:
-        score += 20
-    elif open_comments >= 1:
+    if status == "NOT RELEASED":
+        score += 35
+    elif status == "RELEASED WITH COMMENTS":
+        score += 18
+    elif status == "RELEASED":
+        score += 0
+    elif status:
         score += 10
 
-    if aging is not None:
-        if aging > 30:
-            score += 30
-        elif aging > 15:
-            score += 20
-        elif aging > 7:
-            score += 10
+    # Peso progressivo por volume de comentários abertos.
+    score += min(round(open_comments * 0.7), 35)
 
-    return min(score, 100)
+    if aging is None:
+        if open_comments > 0 and status != "RELEASED":
+            score += 5
+    elif aging > 45:
+        score += 30
+    elif aging > 30:
+        score += 24
+    elif aging > 15:
+        score += 15
+    elif aging > 7:
+        score += 8
+
+    if aging is not None and aging > 30 and open_comments > 0:
+        score += 10
+
+    if status == "RELEASED" and open_comments == 0:
+        score = min(score, 5)
+
+    return min(int(score), 100)
 
 
 def _pcf_criticidade_classe(score):
+    """
+    Classe legada usada pelo dashboard.
+    Mantida para não quebrar templates/testes existentes.
+    """
     if score >= 70:
         return "CRÍTICO"
     if score >= 40:
         return "ATENÇÃO"
     return "OK"
+
+
+def _pcf_criticidade_faixa(score):
+    """
+    Faixa executiva usada no PPT.
+    """
+    if score >= 80:
+        return "CRITICAL"
+    if score >= 60:
+        return "HIGH"
+    if score >= 40:
+        return "MEDIUM"
+    return "LOW"
+
 
 
 def _pcf_enriquecer_runtime(registros):
@@ -1649,6 +1734,7 @@ def _pcf_enriquecer_runtime(registros):
         item.aging_bucket_runtime = _pcf_aging_bucket(aging)
         item.criticidade_score_runtime = score
         item.criticidade_classe_runtime = _pcf_criticidade_classe(score)
+        item.criticidade_faixa_runtime = _pcf_criticidade_faixa(score)
         item.sla_vencido_runtime = bool(
             aging is not None
             and aging > 30
@@ -3504,8 +3590,9 @@ def exportar_dashboard_pcfs_ppt(request):
     def _rev(item):
         return str(getattr(item, "revisao_pcf", "") or getattr(item, "revisao", "") or "-")
 
-    total_released = sum(1 for item in registros if "RELEASED" in _status(item).upper() and "NOT" not in _status(item).upper())
-    total_not_released = sum(1 for item in registros if "NOT RELEASED" in _status(item).upper())
+    total_released = sum(1 for item in registros if _status(item).upper() == "RELEASED")
+    total_released_comments = sum(1 for item in registros if _status(item).upper() == "RELEASED WITH COMMENTS")
+    total_not_released = sum(1 for item in registros if _status(item).upper() == "NOT RELEASED")
     total_sla_vencido = sum(1 for item in registros if getattr(item, "sla_vencido_runtime", False))
 
     aging_valores = [
@@ -3517,13 +3604,19 @@ def exportar_dashboard_pcfs_ppt(request):
     risco = round((total_not_released / total_pcfs) * 100, 1) if total_pcfs else 0
     sla_atendido = round(((total_pcfs - total_sla_vencido) / total_pcfs) * 100, 1) if total_pcfs else 100
 
+    scores = [getattr(item, "criticidade_score_runtime", 0) or 0 for item in registros]
+    risco_medio = round(sum(scores) / len(scores), 1) if scores else 0
+    total_risco_critical = sum(1 for score in scores if score >= 80)
+    total_risco_high = sum(1 for score in scores if score >= 60)
+    released_ratio = round((total_released / total_pcfs) * 100, 1) if total_pcfs else 0
+
     filtros = []
     for key, label in [
         ("q", "Busca"),
         ("tipo", "Tipo"),
         ("status", "Status"),
         ("somente_latest", "Última revisão"),
-        ("apenas_open", "Apenas open"),
+        ("somente_open", "Apenas open"),
         ("com_comentarios", "Com comentários"),
         ("aging", "Aging"),
     ]:
@@ -3633,12 +3726,13 @@ def exportar_dashboard_pcfs_ppt(request):
     add_card(slide, 0.75, 2.0, 2.2, 1.15, "Total PCFs", total_pcfs, CYAN)
     add_card(slide, 3.15, 2.0, 2.2, 1.15, "Comentários abertos", total_open_comments, ORANGE)
     add_card(slide, 5.55, 2.0, 2.2, 1.15, "Not Released", total_not_released, RED)
-    add_card(slide, 7.95, 2.0, 2.2, 1.15, "Risco crítico", f"{risco}%", RED if risco >= 50 else ORANGE)
-    add_card(slide, 10.35, 2.0, 2.2, 1.15, "SLA atendido", f"{sla_atendido}%", GREEN)
+    add_card(slide, 7.95, 2.0, 2.2, 1.15, "Risk Index", f"{risco_medio}", RED if risco_medio >= 70 else ORANGE)
+    add_card(slide, 10.35, 2.0, 2.2, 1.15, "Released Ratio", f"{released_ratio}%", GREEN)
     narrativa = (
         f"A visão filtrada contém {total_pcfs} PCFs, com {total_open_docs} documentos contendo open comments "
         f"e {total_open_comments} comentários abertos. O aging médio é de {aging_medio} dias. "
-        f"O índice operacional de risco, baseado em documentos NOT RELEASED, é {risco}%."
+        f"O índice médio de risco é {risco_medio}/100, com {total_risco_high} itens HIGH "
+        f"e {total_risco_critical} itens CRITICAL."
     )
     add_text_block(slide, 0.75, 3.65, 11.8, 1.35, narrativa)
     add_footer(slide)
@@ -3651,10 +3745,10 @@ def exportar_dashboard_pcfs_ppt(request):
         ("Com Open", total_open_docs, ORANGE),
         ("Comentários Abertos", total_open_comments, ORANGE),
         ("Released", total_released, GREEN),
+        ("Rel. c/ Comments", total_released_comments, ORANGE),
         ("Not Released", total_not_released, RED),
-        ("SLA Vencido", total_sla_vencido, RED),
-        ("Aging Médio", f"{aging_medio} dias", CYAN),
-        ("SLA Atendido", f"{sla_atendido}%", GREEN),
+        ("Risk Index", risco_medio, RED if risco_medio >= 70 else ORANGE),
+        ("Released Ratio", f"{released_ratio}%", GREEN),
     ]
     for idx, (label, value, color) in enumerate(cards):
         x = 0.7 + (idx % 4) * 3.05
@@ -3665,7 +3759,11 @@ def exportar_dashboard_pcfs_ppt(request):
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     add_bg(slide)
     add_title(slide, "Distribuição por Status", "Quantidade de PCFs por status final")
-    status_counts = Counter(_status(item) for item in registros)
+    def _status_norm(item):
+        status = _status(item).strip()
+        return status.upper() if status else "SEM STATUS"
+
+    status_counts = Counter(_status_norm(item) for item in registros)
     chart_data = CategoryChartData()
     chart_data.categories = list(status_counts.keys()) or ["Sem dados"]
     chart_data.add_series("PCFs", list(status_counts.values()) or [0])
@@ -3696,13 +3794,21 @@ def exportar_dashboard_pcfs_ppt(request):
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     add_bg(slide)
     add_title(slide, "Top Pendências", "Ranking por criticidade operacional runtime")
-    top = sorted(registros, key=lambda x: getattr(x, "criticidade_score_runtime", 0) or 0, reverse=True)[:10]
+    top = sorted(
+        registros,
+        key=lambda x: (
+            getattr(x, "criticidade_score_runtime", 0) or 0,
+            int(getattr(x, "open_comments", 0) or 0),
+            getattr(x, "aging_dias_runtime", 0) or 0,
+        ),
+        reverse=True,
+    )[:10]
     rows = len(top) + 1
-    cols = 6
-    table_shape = slide.shapes.add_table(rows, cols, Inches(0.45), Inches(1.35), Inches(12.45), Inches(5.35))
+    cols = 7
+    table_shape = slide.shapes.add_table(rows, cols, Inches(0.35), Inches(1.35), Inches(12.65), Inches(5.35))
     table = table_shape.table
-    headers = ["Documento", "Rev", "Open", "Aging", "Status", "Score"]
-    widths = [3.1, 0.7, 0.8, 0.9, 4.0, 0.8]
+    headers = ["Documento", "Rev", "Open", "Aging", "Status", "Risco", "Classe"]
+    widths = [3.0, 0.65, 0.75, 0.8, 3.35, 0.75, 1.05]
     for c, width in enumerate(widths):
         table.columns[c].width = Inches(width)
     for c, head in enumerate(headers):
@@ -3719,9 +3825,10 @@ def exportar_dashboard_pcfs_ppt(request):
             _doc(item),
             _rev(item),
             str(getattr(item, "open_comments", 0) or 0),
-            str(getattr(item, "aging_dias_runtime", "-")),
+            str(getattr(item, "aging_dias_runtime", None) if getattr(item, "aging_dias_runtime", None) is not None else "-"),
             _status(item),
             str(getattr(item, "criticidade_score_runtime", 0) or 0),
+            str(getattr(item, "criticidade_faixa_runtime", "") or "-"),
         ]
         for c, value in enumerate(values):
             cell = table.cell(r, c)
@@ -3741,7 +3848,9 @@ def exportar_dashboard_pcfs_ppt(request):
             f"Base filtrada: {total_pcfs} PCFs.\n\n"
             f"Pontos de atenção: {total_not_released} documentos NOT RELEASED, "
             f"{total_sla_vencido} registros com SLA vencido e {total_open_comments} comentários abertos.\n\n"
-            f"Prioridade recomendada: tratar os itens do Top Pendências, reduzindo o volume de open comments "
+            f"Risco executivo: Risk Index {risco_medio}/100, com {total_risco_high} itens HIGH "
+            f"e {total_risco_critical} itens CRITICAL. Released Ratio atual: {released_ratio}%.\n\n"
+            f"Prioridade recomendada: tratar os itens HIGH/CRITICAL do Top Pendências, reduzindo open comments "
             f"e acelerando a conversão para RELEASED."
         )
     else:
