@@ -72,26 +72,41 @@
         </div>
 
         <div>
+          <label class="ops-filter-label">Revisões</label>
+          <select name="somente_latest" class="form-select">
+            <option value="">Todas as revisões</option>
+            <option value="1" {% if somente_latest %}selected{% endif %}>
+              Somente última revisão por documento
+            </option>
+          </select>
+        </div>
+
+
+        <div>
           <label class="ops-filter-label">Filtros rápidos</label>
           <div class="ops-check-row">
             <label>
               <input class="form-check-input" type="checkbox" name="somente_open" value="1" {% if somente_open %}checked{% endif %}>
               Apenas Open Comments
             </label>
-            <div>
-              <label class="ops-filter-label">Revisões</label>
-              <select name="somente_latest" class="form-select">
-                <option value="">Todas as revisões</option>
-                <option value="1" {% if somente_latest %}selected{% endif %}>
-                  Somente última revisão por documento
-                </option>
-              </select>
-            </div>
-            <label>
+<label>
               <input class="form-check-input" type="checkbox" name="com_comentarios" value="1" {% if com_comentarios %}checked{% endif %}>
               Com comentários
             </label>
           </div>
+        </div>
+
+        
+        <div>
+          <label class="ops-filter-label">Aging / SLA</label>
+          <select name="aging" class="form-select">
+            <option value="">Todas as idades</option>
+            <option value="0-7" {% if aging == "0-7" %}selected{% endif %}>0 até 7 dias</option>
+            <option value="8-15" {% if aging == "8-15" %}selected{% endif %}>8 até 15 dias</option>
+            <option value="16-30" {% if aging == "16-30" %}selected{% endif %}>16 até 30 dias</option>
+            <option value="30+" {% if aging == "30+" %}selected{% endif %}>30+ dias</option>
+            <option value="sem_data" {% if aging == "sem_data" %}selected{% endif %}>Sem data</option>
+          </select>
         </div>
 
         <button class="ops-btn ops-btn-primary" type="submit">
@@ -123,19 +138,22 @@
           <i class="bi bi-file-earmark-excel"></i>
           Exportar Excel filtrado
         </a>
+      <span class="ops-chip" title="Próxima etapa: exportar apresentação executiva filtrada">
+          Relatório executivo PPT
+        </span>
       </div>
     </div>
   </section>
 
 
   <section class="ops-kpi-grid ops-kpi-grid-6">
-    <a href="{% url 'automacoes:pcfs_timeline' %}{% if querystring %}?{{ querystring }}{% endif %}" class="ops-kpi">
+    <a href="{% url 'automacoes:pcfs_timeline' %}" class="ops-kpi">
       <span>Total PCFs</span>
       <strong>{{ total }}</strong>
       <small>{% if somente_latest %}últimas revisões{% else %}registros importados{% endif %}</small>
     </a>
 
-    <a href="{% url 'automacoes:pcfs_timeline' %}{% if querystring %}?{{ querystring }}&somente_open=1{% else %}?somente_open=1{% endif %}" class="ops-kpi">
+    <a href="{% url 'automacoes:pcfs_timeline' %}?somente_open=1" class="ops-kpi">
       <span>Com Open</span>
       <strong>{{ total_open }}</strong>
       <small>com comentários abertos</small>
@@ -166,6 +184,26 @@
         <span class="ops-progress-risk" style="width: {{ critical_rate|default:0 }}%;"></span>
       </div>
     </div>
+  
+    <div class="ops-kpi">
+      <span>SLA Vencido</span>
+      <strong>{{ total_sla_vencido }}</strong>
+      <small>open comments com 30+ dias</small>
+    </div>
+
+    <div class="ops-kpi">
+      <span>Aging Médio</span>
+      <strong>{{ aging_medio }}</strong>
+      <small>dias desde recebimento</small>
+    </div>
+
+    <div class="ops-kpi">
+      <span>SLA Atendido</span>
+      <strong>{{ sla_atendido_percentual }}%</strong>
+      <small>open dentro do prazo</small>
+    </div>
+
+
   </section>
 
   {{ status_chart_labels|json_script:"pcf-status-labels" }}
@@ -174,6 +212,8 @@
   {{ tipo_chart_values|json_script:"pcf-tipo-values" }}
   {{ tipo_open_labels|json_script:"pcf-open-labels" }}
   {{ tipo_open_values|json_script:"pcf-open-values" }}
+  {{ aging_chart_labels|json_script:"pcf-aging-labels" }}
+  {{ aging_chart_values|json_script:"pcf-aging-values" }}
 
   <section class="ops-grid ops-grid-2 ops-stack">
     <div class="ops-panel">
@@ -364,6 +404,67 @@
         </table>
       </div>
     </div>
+
+    
+    <div class="ops-panel">
+      <div class="ops-panel-head">
+        <div>
+          <h2>Top SLA / Aging Crítico</h2>
+          <p>Documentos abertos mais antigos, priorizados para ação.</p>
+        </div>
+
+        <span class="ops-chip ops-chip-warn">Contrato</span>
+      </div>
+
+      <div class="ops-table-wrap">
+        <table class="ops-table">
+          <thead>
+            <tr>
+              <th>Documento</th>
+              <th>Rev.</th>
+              <th>Open</th>
+              <th>Aging</th>
+              <th>SLA</th>
+              <th>Score</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for item in top_aging %}
+            <tr>
+              <td><strong>{{ item.numero_documento }}</strong></td>
+              <td>{{ item.revisao_pcf }}</td>
+              <td>{{ item.open_comments }}</td>
+              <td>
+                {% if item.aging_dias_runtime is not None %}
+                  {{ item.aging_dias_runtime }} dias
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+              <td>
+                {% if item.sla_vencido_runtime %}
+                  <span class="ops-status-pill ops-status-risk">Vencido</span>
+                {% else %}
+                  <span class="ops-status-pill ops-status-ok">Dentro</span>
+                {% endif %}
+              </td>
+              <td>
+                <span class="ops-status-pill {% if item.criticidade_classe_runtime == 'CRÍTICO' %}ops-status-risk{% elif item.criticidade_classe_runtime == 'ATENÇÃO' %}ops-status-warn{% else %}ops-status-ok{% endif %}">
+                  {{ item.criticidade_score_runtime }}
+                </span>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="6" class="ops-empty">Sem aging crítico.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
 
     <aside class="ops-panel">
       <div class="ops-panel-head">

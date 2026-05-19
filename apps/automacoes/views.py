@@ -1569,6 +1569,128 @@ def _obter_queryset_latest_pcfs(queryset):
     return queryset.filter(id__in=ids)
 
 
+
+def _pcf_data_base(item):
+    valor = getattr(item, "data_recebimento", None)
+    if not valor:
+        return None
+    if hasattr(valor, "date"):
+        return valor.date()
+    return valor
+
+
+def _pcf_aging_dias(item):
+    data_base = _pcf_data_base(item)
+    if not data_base:
+        return None
+    try:
+        return max((timezone.localdate() - data_base).days, 0)
+    except Exception:
+        return None
+
+
+def _pcf_aging_bucket(dias):
+    if dias is None:
+        return "SEM DATA"
+    if dias <= 7:
+        return "0-7"
+    if dias <= 15:
+        return "8-15"
+    if dias <= 30:
+        return "16-30"
+    return "30+"
+
+
+def _pcf_criticidade_score(item):
+    score = 0
+    open_comments = int(getattr(item, "open_comments", 0) or 0)
+    status = str(getattr(item, "status_final", "") or "").upper()
+    aging = _pcf_aging_dias(item)
+
+    if "NOT RELEASED" in status:
+        score += 40
+    elif "RELEASED WITH COMMENTS" in status:
+        score += 25
+
+    if open_comments >= 10:
+        score += 30
+    elif open_comments >= 6:
+        score += 20
+    elif open_comments >= 1:
+        score += 10
+
+    if aging is not None:
+        if aging > 30:
+            score += 30
+        elif aging > 15:
+            score += 20
+        elif aging > 7:
+            score += 10
+
+    return min(score, 100)
+
+
+def _pcf_criticidade_classe(score):
+    if score >= 70:
+        return "CRÍTICO"
+    if score >= 40:
+        return "ATENÇÃO"
+    return "OK"
+
+
+def _pcf_enriquecer_runtime(registros):
+    itens = []
+    for item in registros:
+        aging = _pcf_aging_dias(item)
+        score = _pcf_criticidade_score(item)
+        item.aging_dias_runtime = aging
+        item.aging_bucket_runtime = _pcf_aging_bucket(aging)
+        item.criticidade_score_runtime = score
+        item.criticidade_classe_runtime = _pcf_criticidade_classe(score)
+        item.sla_vencido_runtime = bool(
+            aging is not None
+            and aging > 30
+            and int(getattr(item, "open_comments", 0) or 0) > 0
+        )
+        itens.append(item)
+    return itens
+
+
+def _pcf_aging_summary(itens):
+    buckets = {"0-7": 0, "8-15": 0, "16-30": 0, "30+": 0, "SEM DATA": 0}
+    validos = []
+
+    for item in itens:
+        bucket = getattr(item, "aging_bucket_runtime", "SEM DATA")
+        buckets[bucket] = buckets.get(bucket, 0) + 1
+        aging = getattr(item, "aging_dias_runtime", None)
+        if aging is not None:
+            validos.append(aging)
+
+    return {
+        "aging_0_7": buckets.get("0-7", 0),
+        "aging_8_15": buckets.get("8-15", 0),
+        "aging_16_30": buckets.get("16-30", 0),
+        "aging_30_plus": buckets.get("30+", 0),
+        "aging_sem_data": buckets.get("SEM DATA", 0),
+        "aging_medio": round(sum(validos) / len(validos), 1) if validos else 0,
+    }
+
+
+def _pcf_filtrar_aging_python(registros, aging):
+    if not aging:
+        return registros
+
+    itens = _pcf_enriquecer_runtime(list(registros))
+
+    if aging == "sem_data":
+        ids = [item.id for item in itens if item.aging_bucket_runtime == "SEM DATA"]
+    else:
+        ids = [item.id for item in itens if item.aging_bucket_runtime == aging]
+
+    return registros.filter(id__in=ids)
+
+
 def _pcf_bool_param(request, nome):
     return str(request.GET.get(nome, "")).strip().lower() in {"1", "true", "on", "sim", "yes"}
 
@@ -1580,6 +1702,8 @@ def _pcf_query_params(request):
     somente_open = _pcf_bool_param(request, "somente_open")
     somente_latest = _pcf_bool_param(request, "somente_latest")
     com_comentarios = _pcf_bool_param(request, "com_comentarios")
+    faixa_comentarios = request.GET.get("faixa_comentarios", "").strip()
+    aging = request.GET.get("aging", "").strip()
 
     return {
         "busca": busca,
@@ -1588,6 +1712,8 @@ def _pcf_query_params(request):
         "somente_open": somente_open,
         "somente_latest": somente_latest,
         "com_comentarios": com_comentarios,
+        "faixa_comentarios": faixa_comentarios,
+        "aging": aging,
     }
 
 
@@ -1631,6 +1757,21 @@ def _filtrar_pcfs_timeline(request):
 
     if filtros["com_comentarios"]:
         registros = registros.filter(qtd_comentarios__gt=0)
+
+    faixa = filtros["faixa_comentarios"]
+
+    if faixa == "0":
+        registros = registros.filter(open_comments=0)
+
+    elif faixa == "1-5":
+        registros = registros.filter(open_comments__gte=1, open_comments__lte=5)
+
+    elif faixa == "6-10":
+        registros = registros.filter(open_comments__gte=6, open_comments__lte=10)
+
+    elif faixa == "10+":
+        registros = registros.filter(open_comments__gt=10)
+
 
     if filtros["somente_latest"]:
         registros = _obter_queryset_latest_pcfs(registros)
@@ -1677,12 +1818,15 @@ def listar_pcfs_timeline(request):
     total_comentarios = registros.aggregate(total=Sum("qtd_comentarios")).get("total") or 0
     total_comentarios_open = registros.aggregate(total=Sum("open_comments")).get("total") or 0
 
-    paginator = Paginator(registros, 50)
-    page_number = request.GET.get("page")
-    page_obj = paginator.get_page(page_number)
+    registros_runtime = _pcf_enriquecer_runtime(list(registros))
+    aging_summary = _pcf_aging_summary(registros_runtime)
+
+    paginator = Paginator(registros_runtime, 50)
+    page_obj = paginator.get_page(request.GET.get("page"))
 
     context = {
         **filtros_context,
+        **aging_summary,
         "registros": page_obj,
         "page_obj": page_obj,
         "total": total,
@@ -1721,7 +1865,7 @@ def abrir_arquivo_pcf(request, pk):
 
 @login_required
 def exportar_pcfs_timeline_excel(request):
-    registros = _filtrar_pcfs_timeline(request)
+    registros = _pcf_enriquecer_runtime(list(_filtrar_pcfs_timeline(request)))
 
     wb = Workbook()
     ws = wb.active
@@ -1800,12 +1944,18 @@ def dashboard_pcfs(request):
     total_open = registros.filter(open_comments__gt=0).count()
     total_sem_status = registros.filter(Q(status_final__isnull=True) | Q(status_final="")).count()
     total_not_released = registros.filter(status_final__icontains="NOT RELEASED").count()
-    total_released = registros.filter(status_final__icontains="RELEASED").exclude(
-        status_final__icontains="NOT RELEASED"
-    ).count()
+    total_released = registros.filter(status_final__icontains="RELEASED").exclude(status_final__icontains="NOT RELEASED").count()
 
     total_comentarios_abertos = registros.aggregate(total=Sum("open_comments")).get("total") or 0
     total_comentarios = registros.aggregate(total=Sum("qtd_comentarios")).get("total") or 0
+
+    registros_runtime = _pcf_enriquecer_runtime(list(registros))
+    aging_summary = _pcf_aging_summary(registros_runtime)
+
+    total_sla_vencido = sum(1 for item in registros_runtime if getattr(item, "sla_vencido_runtime", False))
+    total_criticidade_alta = sum(1 for item in registros_runtime if getattr(item, "criticidade_classe_runtime", "") == "CRÍTICO")
+    sla_atendido = max(total_open - total_sla_vencido, 0)
+    sla_atendido_percentual = round((sla_atendido / total_open) * 100, 1) if total_open else 100
 
     por_tipo = list(
         registros.values("tipo")
@@ -1820,32 +1970,50 @@ def dashboard_pcfs(request):
 
     por_status = [
         {"status_final": status, "total": total_status}
-        for status, total_status in sorted(
-            status_agregado.items(),
-            key=lambda item: (-item[1], item[0]),
-        )[:10]
+        for status, total_status in sorted(status_agregado.items(), key=lambda item: (-item[1], item[0]))[:10]
     ]
 
-    top_pendencias = (
-        registros.filter(open_comments__gt=0)
-        .order_by("-open_comments", "numero_documento")[:15]
-    )
+    top_pendencias = sorted(
+        [item for item in registros_runtime if int(getattr(item, "open_comments", 0) or 0) > 0],
+        key=lambda item: (
+            getattr(item, "criticidade_score_runtime", 0),
+            int(getattr(item, "open_comments", 0) or 0),
+            getattr(item, "aging_dias_runtime", 0) or 0,
+        ),
+        reverse=True,
+    )[:15]
+
+    top_aging = sorted(
+        [item for item in registros_runtime if int(getattr(item, "open_comments", 0) or 0) > 0],
+        key=lambda item: (
+            getattr(item, "aging_dias_runtime", -1) if getattr(item, "aging_dias_runtime", None) is not None else -1,
+            int(getattr(item, "open_comments", 0) or 0),
+        ),
+        reverse=True,
+    )[:15]
 
     recentes = registros.order_by("-atualizado_em")[:10]
 
     status_chart_labels = [item.get("status_final") or "SEM STATUS" for item in por_status]
     status_chart_values = [item.get("total") or 0 for item in por_status]
-
     tipo_chart_labels = [(item.get("tipo") or "Sem tipo") for item in por_tipo]
     tipo_chart_values = [item.get("total") or 0 for item in por_tipo]
-
     tipo_open_labels = [(item.get("tipo") or "Sem tipo") for item in por_tipo]
     tipo_open_values = [item.get("open_total") or 0 for item in por_tipo]
+    aging_chart_labels = ["0-7", "8-15", "16-30", "30+", "Sem data"]
+    aging_chart_values = [
+        aging_summary.get("aging_0_7", 0),
+        aging_summary.get("aging_8_15", 0),
+        aging_summary.get("aging_16_30", 0),
+        aging_summary.get("aging_30_plus", 0),
+        aging_summary.get("aging_sem_data", 0),
+    ]
 
     critical_rate = round((total_not_released / total) * 100, 1) if total else 0
 
     context = {
         **filtros_context,
+        **aging_summary,
         "total": total,
         "total_open": total_open,
         "total_sem_status": total_sem_status,
@@ -1854,9 +2022,16 @@ def dashboard_pcfs(request):
         "total_comentarios": total_comentarios,
         "total_comentarios_abertos": total_comentarios_abertos,
         "critical_rate": critical_rate,
+        "total_criticos": registros.filter(open_comments__gte=10).count(),
+        "total_atencao": registros.filter(open_comments__gte=1, open_comments__lt=10).count(),
+        "taxa_resolucao": round((total_released / total) * 100, 1) if total else 0,
+        "total_sla_vencido": total_sla_vencido,
+        "sla_atendido_percentual": sla_atendido_percentual,
+        "total_criticidade_alta": total_criticidade_alta,
         "por_tipo": por_tipo,
         "por_status": por_status,
         "top_pendencias": top_pendencias,
+        "top_aging": top_aging,
         "recentes": recentes,
         "status_chart_labels": status_chart_labels,
         "status_chart_values": status_chart_values,
@@ -1864,6 +2039,8 @@ def dashboard_pcfs(request):
         "tipo_chart_values": tipo_chart_values,
         "tipo_open_labels": tipo_open_labels,
         "tipo_open_values": tipo_open_values,
+        "aging_chart_labels": aging_chart_labels,
+        "aging_chart_values": aging_chart_values,
     }
 
     return render(request, "automacoes/dashboard_pcfs.html", context)

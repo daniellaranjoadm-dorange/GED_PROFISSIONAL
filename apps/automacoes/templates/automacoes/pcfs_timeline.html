@@ -129,6 +129,20 @@
 
         <div>
           <label class="ops-filter-label">
+            Revisões
+          </label>
+
+          <select name="somente_latest" class="form-select">
+            <option value="">Todas as revisões</option>
+            <option value="1" {% if somente_latest %}selected{% endif %}>
+              Somente última revisão por documento
+            </option>
+          </select>
+        </div>
+
+
+        <div>
+          <label class="ops-filter-label">
             Filtro rápido
           </label>
 
@@ -143,20 +157,23 @@
 
               Apenas Open Comments
             </label>
+</div>
+        </div>
 
-            <div>
-              <label class="ops-filter-label">
-                Revisões
-              </label>
-              <select name="somente_latest" class="form-select">
-                <option value="">Todas as revisões</option>
-                <option value="1" {% if somente_latest %}selected{% endif %}>
-                  Somente última revisão por documento
-                </option>
-              </select>
-            </div>
+        
+        <div>
+          <label class="ops-filter-label">
+            Aging / SLA
+          </label>
 
-          </div>
+          <select name="aging" class="form-select">
+            <option value="">Todas as idades</option>
+            <option value="0-7" {% if aging == "0-7" %}selected{% endif %}>0 até 7 dias</option>
+            <option value="8-15" {% if aging == "8-15" %}selected{% endif %}>8 até 15 dias</option>
+            <option value="16-30" {% if aging == "16-30" %}selected{% endif %}>16 até 30 dias</option>
+            <option value="30+" {% if aging == "30+" %}selected{% endif %}>30+ dias</option>
+            <option value="sem_data" {% if aging == "sem_data" %}selected{% endif %}>Sem data</option>
+          </select>
         </div>
 
         <button class="ops-btn ops-btn-primary"
@@ -242,6 +259,20 @@
             </span>
           {% endif %}
 
+          {% if item.aging_dias_runtime is not None %}
+            <span class="ops-status-pill {% if item.sla_vencido_runtime %}ops-status-risk{% elif item.aging_dias_runtime > 15 %}ops-status-warn{% else %}ops-status-ok{% endif %}">
+              {{ item.aging_dias_runtime }} dias
+            </span>
+          {% else %}
+            <span class="ops-status-pill">Sem data</span>
+          {% endif %}
+
+          {% if item.sla_vencido_runtime %}
+            <span class="ops-status-pill ops-status-risk">
+              SLA Vencido
+            </span>
+          {% endif %}
+
           {% if item.status_final %}
 
             {% if "NOT" in item.status_final|upper %}
@@ -290,6 +321,30 @@
           </span>
 
           <strong>{{ item.qtd_comentarios }}</strong>
+        </div>
+
+        <div class="ops-detail-card">
+          <span class="ops-filter-label">
+            Aging / SLA
+          </span>
+
+          <strong>
+            {% if item.aging_dias_runtime is not None %}
+              {{ item.aging_dias_runtime }} dias · {{ item.aging_bucket_runtime }}
+            {% else %}
+              Sem data
+            {% endif %}
+          </strong>
+        </div>
+
+        <div class="ops-detail-card">
+          <span class="ops-filter-label">
+            Criticidade
+          </span>
+
+          <strong>
+            {{ item.criticidade_classe_runtime }} · {{ item.criticidade_score_runtime }}
+          </strong>
         </div>
 
         <div class="ops-detail-card">
@@ -442,7 +497,7 @@
       <li class="page-item">
 
         <a class="page-link"
-           href="?page={{ page_obj.previous_page_number }}{% if querystring %}&{{ querystring }}{% endif %}">
+           href="?page={{ page_obj.previous_page_number }}&q={{ busca }}&tipo={{ tipo }}&status={{ status }}{% if somente_open %}&somente_open=1{% endif %}">
 
           Anterior
 
@@ -463,7 +518,7 @@
       <li class="page-item">
 
         <a class="page-link"
-           href="?page={{ page_obj.next_page_number }}{% if querystring %}&{{ querystring }}{% endif %}">
+           href="?page={{ page_obj.next_page_number }}&q={{ busca }}&tipo={{ tipo }}&status={{ status }}{% if somente_open %}&somente_open=1{% endif %}">
 
           Próxima
 
