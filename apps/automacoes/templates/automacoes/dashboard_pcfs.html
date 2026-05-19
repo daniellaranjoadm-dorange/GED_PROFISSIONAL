@@ -24,6 +24,13 @@
     </div>
 
     <div class="ops-actions">
+<a
+  href="{% url 'automacoes:exportar_dashboard_pcfs_ppt' %}?{{ request.GET.urlencode }}"
+  class="btn btn-warning btn-sm"
+>
+  Exportar PPT Executivo
+</a>
+
       <a href="{% url 'automacoes:pcfs_timeline' %}{% if querystring %}?{{ querystring }}{% endif %}" class="ops-btn ops-btn-primary">
         <i class="bi bi-table"></i>
         Ver Timeline

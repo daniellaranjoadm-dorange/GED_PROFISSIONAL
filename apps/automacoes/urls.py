@@ -60,4 +60,9 @@ urlpatterns = [
     path("ld/exportar-excel/", views.exportar_ld_excel, name="exportar_ld_excel"),
     path("pcfs/abrir/<int:pk>/", views.abrir_arquivo_pcf, name="abrir_arquivo_pcf"),
     path("ld/<int:pk>/<str:tipo>/abrir/", views.abrir_arquivo_ld, name="abrir_arquivo_ld"),
+    path(
+        "pcfs/exportar-ppt/",
+        views.exportar_dashboard_pcfs_ppt,
+        name="exportar_dashboard_pcfs_ppt",
+    ),
 ]

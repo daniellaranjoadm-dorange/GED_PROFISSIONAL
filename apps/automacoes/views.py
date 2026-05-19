@@ -1,3 +1,7 @@
+from io import BytesIO
+from pptx import Presentation
+from pptx.util import Inches
+
 from pathlib import Path
 
 from django.conf import settings
@@ -13,6 +17,7 @@ from django.core.paginator import Paginator
 from django.core.cache import cache
 from django.db.models import Avg, Count, Q, Sum
 from django.http import FileResponse, Http404, HttpResponse, JsonResponse
+from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
@@ -3463,3 +3468,119 @@ def listar_km(request):
         },
     )
 
+@login_required
+def exportar_dashboard_pcfs_ppt(request):
+    """
+    Exporta apresentação PowerPoint executiva baseada nos filtros ativos
+    do Dashboard PCFs.
+    """
+    registros = _pcf_enriquecer_runtime(list(_filtrar_pcfs_timeline(request)))
+
+    total_pcfs = len(registros)
+    total_open = sum(getattr(item, "open_comments", 0) or 0 for item in registros)
+
+    total_not_released = len([
+        item for item in registros
+        if "NOT RELEASED" in ((getattr(item, "status_final", "") or "").upper())
+    ])
+
+    total_released = len([
+        item for item in registros
+        if (
+            "RELEASED" in ((getattr(item, "status_final", "") or "").upper())
+            and "NOT RELEASED" not in ((getattr(item, "status_final", "") or "").upper())
+        )
+    ])
+
+    total_sla_vencido = len([
+        item for item in registros
+        if getattr(item, "sla_vencido_runtime", False)
+    ])
+
+    aging_valores = [
+        getattr(item, "aging_dias_runtime", 0)
+        for item in registros
+        if getattr(item, "aging_dias_runtime", None) is not None
+    ]
+
+    aging_medio = round(sum(aging_valores) / len(aging_valores), 1) if aging_valores else 0
+    risco = round((total_not_released / total_pcfs) * 100, 1) if total_pcfs else 0
+
+    prs = Presentation()
+
+    slide = prs.slides.add_slide(prs.slide_layouts[0])
+    slide.shapes.title.text = "PCF Executive Intelligence"
+    slide.placeholders[1].text = (
+        "Relatório executivo gerado automaticamente\n"
+        "GED_PROFISSIONAL • D'ORANGE"
+    )
+
+    slide = prs.slides.add_slide(prs.slide_layouts[5])
+    slide.shapes.title.text = "Resumo Executivo"
+    textbox = slide.shapes.add_textbox(Inches(0.7), Inches(1.5), Inches(8.5), Inches(4.5))
+    tf = textbox.text_frame
+    tf.text = "Indicadores principais"
+    for linha in [
+        f"Total PCFs: {total_pcfs}",
+        f"Open Comments: {total_open}",
+        f"Released: {total_released}",
+        f"Not Released: {total_not_released}",
+        f"SLA vencido: {total_sla_vencido}",
+        f"Aging médio: {aging_medio} dias",
+        f"Risco operacional: {risco}%",
+    ]:
+        p = tf.add_paragraph()
+        p.text = linha
+
+    slide = prs.slides.add_slide(prs.slide_layouts[5])
+    slide.shapes.title.text = "Top Pendências"
+
+    top = sorted(
+        registros,
+        key=lambda x: getattr(x, "criticidade_score_runtime", 0),
+        reverse=True,
+    )[:10]
+
+    table = slide.shapes.add_table(
+        len(top) + 1,
+        5,
+        Inches(0.4),
+        Inches(1.5),
+        Inches(9),
+        Inches(4.5),
+    ).table
+
+    for idx, head in enumerate(["Documento", "Rev", "Open", "Aging", "Status"]):
+        table.cell(0, idx).text = head
+
+    for row_idx, item in enumerate(top, start=1):
+        table.cell(row_idx, 0).text = str(getattr(item, "numero_documento", ""))
+        table.cell(row_idx, 1).text = str(getattr(item, "revisao_pcf", ""))
+        table.cell(row_idx, 2).text = str(getattr(item, "open_comments", 0))
+        table.cell(row_idx, 3).text = str(getattr(item, "aging_dias_runtime", "-"))
+        table.cell(row_idx, 4).text = str(getattr(item, "status_final", ""))
+
+    slide = prs.slides.add_slide(prs.slide_layouts[5])
+    slide.shapes.title.text = "Snapshot Operacional"
+    narrativa = (
+        f"Foram identificados {total_pcfs} registros PCF filtrados. "
+        f"O ambiente possui {total_open} open comments ativos. "
+        f"{total_not_released} documentos encontram-se em status NOT RELEASED. "
+        f"O risco operacional estimado é de {risco}%."
+    )
+    textbox = slide.shapes.add_textbox(Inches(0.8), Inches(1.8), Inches(8.8), Inches(3))
+    textbox.text_frame.text = narrativa
+
+    output = BytesIO()
+    prs.save(output)
+    output.seek(0)
+
+    response = HttpResponse(
+        output.read(),
+        content_type=(
+            "application/vnd.openxmlformats-officedocument."
+            "presentationml.presentation"
+        ),
+    )
+    response["Content-Disposition"] = 'attachment; filename="pcf_executive_report.pptx"'
+    return response
