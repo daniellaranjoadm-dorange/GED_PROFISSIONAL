@@ -24,7 +24,7 @@
     </div>
 
     <div class="ops-actions">
-      <a href="{% url 'automacoes:pcfs_timeline' %}" class="ops-btn ops-btn-primary">
+      <a href="{% url 'automacoes:pcfs_timeline' %}{% if querystring %}?{{ querystring }}{% endif %}" class="ops-btn ops-btn-primary">
         <i class="bi bi-table"></i>
         Ver Timeline
       </a>
@@ -36,14 +36,106 @@
     </div>
   </section>
 
+
+  <section class="ops-panel">
+    <form method="get">
+      <div class="ops-filter-grid">
+
+        <div>
+          <label class="ops-filter-label">Busca geral</label>
+          <input type="text"
+                 name="q"
+                 value="{{ busca }}"
+                 class="form-control"
+                 placeholder="Documento, PCF, link ou título...">
+        </div>
+
+        <div>
+          <label class="ops-filter-label">Tipo</label>
+          <select name="tipo" class="form-select">
+            <option value="">Todos os tipos</option>
+            {% for t in tipos %}
+            <option value="{{ t }}" {% if tipo == t %}selected{% endif %}>{{ t }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label class="ops-filter-label">Status final</label>
+          <select name="status" class="form-select">
+            <option value="">Todos os status</option>
+            <option value="__SEM_STATUS__" {% if status == "__SEM_STATUS__" %}selected{% endif %}>Sem status</option>
+            {% for s in status_disponiveis %}
+            <option value="{{ s }}" {% if status == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label class="ops-filter-label">Filtros rápidos</label>
+          <div class="ops-check-row">
+            <label>
+              <input class="form-check-input" type="checkbox" name="somente_open" value="1" {% if somente_open %}checked{% endif %}>
+              Apenas Open Comments
+            </label>
+            <div>
+              <label class="ops-filter-label">Revisões</label>
+              <select name="somente_latest" class="form-select">
+                <option value="">Todas as revisões</option>
+                <option value="1" {% if somente_latest %}selected{% endif %}>
+                  Somente última revisão por documento
+                </option>
+              </select>
+            </div>
+            <label>
+              <input class="form-check-input" type="checkbox" name="com_comentarios" value="1" {% if com_comentarios %}checked{% endif %}>
+              Com comentários
+            </label>
+          </div>
+        </div>
+
+        <button class="ops-btn ops-btn-primary" type="submit">
+          <i class="bi bi-funnel"></i>
+          Aplicar filtros
+        </button>
+
+        <a href="{% url 'automacoes:dashboard_pcfs' %}" class="ops-btn">
+          <i class="bi bi-x-circle"></i>
+          Limpar
+        </a>
+
+      </div>
+    </form>
+
+    <div class="ops-toolbar mt-3">
+      <div class="ops-muted">
+        Dashboard recalculado conforme os filtros ativos.
+        {% if somente_latest %} · últimas revisões{% endif %}
+        {% if somente_open %} · apenas open{% endif %}
+      </div>
+
+      <div class="ops-actions">
+        <a href="{% url 'automacoes:pcfs_timeline' %}{% if querystring %}?{{ querystring }}{% endif %}" class="ops-btn">
+          <i class="bi bi-table"></i>
+          Ver Timeline filtrada
+        </a>
+        <a href="{% url 'automacoes:exportar_pcfs_timeline_excel' %}{% if querystring %}?{{ querystring }}{% endif %}" class="ops-btn ops-btn-success">
+          <i class="bi bi-file-earmark-excel"></i>
+          Exportar Excel filtrado
+        </a>
+      </div>
+    </div>
+  </section>
+
+
   <section class="ops-kpi-grid ops-kpi-grid-6">
-    <a href="{% url 'automacoes:pcfs_timeline' %}" class="ops-kpi">
+    <a href="{% url 'automacoes:pcfs_timeline' %}{% if querystring %}?{{ querystring }}{% endif %}" class="ops-kpi">
       <span>Total PCFs</span>
       <strong>{{ total }}</strong>
-      <small>registros importados</small>
+      <small>{% if somente_latest %}últimas revisões{% else %}registros importados{% endif %}</small>
     </a>
 
-    <a href="{% url 'automacoes:pcfs_timeline' %}?somente_open=1" class="ops-kpi">
+    <a href="{% url 'automacoes:pcfs_timeline' %}{% if querystring %}?{{ querystring }}&somente_open=1{% else %}?somente_open=1{% endif %}" class="ops-kpi">
       <span>Com Open</span>
       <strong>{{ total_open }}</strong>
       <small>com comentários abertos</small>

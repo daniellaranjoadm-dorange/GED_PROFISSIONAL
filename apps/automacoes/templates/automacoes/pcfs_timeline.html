@@ -27,7 +27,7 @@
 
     <div class="ops-actions">
 
-      <a href="{% url 'automacoes:dashboard_pcfs' %}"
+      <a href="{% url 'automacoes:dashboard_pcfs' %}{% if querystring %}?{{ querystring }}{% endif %}"
          class="ops-btn ops-btn-primary">
         <i class="bi bi-graph-up"></i>
         Dashboard
@@ -58,6 +58,22 @@
     <div class="ops-kpi">
       <span>Sem status final</span>
       <strong>{{ total_sem_status }}</strong>
+    </div>
+
+  
+    <div class="ops-kpi">
+      <span>Comentários Totais</span>
+      <strong>{{ total_comentarios|default:0 }}</strong>
+    </div>
+
+    <div class="ops-kpi">
+      <span>Comentários Open</span>
+      <strong>{{ total_comentarios_open|default:0 }}</strong>
+    </div>
+
+    <div class="ops-kpi">
+      <span>Latest Revision Runtime</span>
+      <strong>{% if somente_latest %}ON{% else %}OFF{% endif %}</strong>
     </div>
 
   </section>
@@ -102,11 +118,13 @@
             Status final
           </label>
 
-          <input type="text"
-                 name="status"
-                 value="{{ status }}"
-                 class="form-control"
-                 placeholder="Filtrar status final...">
+          <select name="status" class="form-select">
+            <option value="">Todos os status</option>
+            <option value="__SEM_STATUS__" {% if status == "__SEM_STATUS__" %}selected{% endif %}>Sem status</option>
+            {% for s in status_disponiveis %}
+            <option value="{{ s }}" {% if status == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
         </div>
 
         <div>
@@ -125,6 +143,18 @@
 
               Apenas Open Comments
             </label>
+
+            <div>
+              <label class="ops-filter-label">
+                Revisões
+              </label>
+              <select name="somente_latest" class="form-select">
+                <option value="">Todas as revisões</option>
+                <option value="1" {% if somente_latest %}selected{% endif %}>
+                  Somente última revisão por documento
+                </option>
+              </select>
+            </div>
 
           </div>
         </div>
@@ -154,7 +184,7 @@
         {% endif %}
       </div>
 
-      <a href="{% url 'automacoes:exportar_pcfs_timeline_excel' %}?q={{ busca }}&tipo={{ tipo }}&status={{ status }}{% if somente_open %}&somente_open=1{% endif %}"
+      <a href="{% url 'automacoes:exportar_pcfs_timeline_excel' %}{% if querystring %}?{{ querystring }}{% endif %}"
          class="ops-btn ops-btn-success">
         <i class="bi bi-file-earmark-excel"></i>
         Exportar Excel filtrado
@@ -412,7 +442,7 @@
       <li class="page-item">
 
         <a class="page-link"
-           href="?page={{ page_obj.previous_page_number }}&q={{ busca }}&tipo={{ tipo }}&status={{ status }}{% if somente_open %}&somente_open=1{% endif %}">
+           href="?page={{ page_obj.previous_page_number }}{% if querystring %}&{{ querystring }}{% endif %}">
 
           Anterior
 
@@ -433,7 +463,7 @@
       <li class="page-item">
 
         <a class="page-link"
-           href="?page={{ page_obj.next_page_number }}&q={{ busca }}&tipo={{ tipo }}&status={{ status }}{% if somente_open %}&somente_open=1{% endif %}">
+           href="?page={{ page_obj.next_page_number }}{% if querystring %}&{{ querystring }}{% endif %}">
 
           Próxima
 

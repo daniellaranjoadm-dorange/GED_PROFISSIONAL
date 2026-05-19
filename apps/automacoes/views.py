@@ -1496,11 +1496,108 @@ def abrir_pasta_documento_transmittal_km(request, pk):
     )
 
 
-def _filtrar_pcfs_timeline(request):
+
+
+def _normalizar_revisao_pcf(valor):
+    """
+    Normaliza revisão PCF para comparação runtime.
+
+    Exemplos:
+    - "0" -> 0
+    - "REV 1" -> 1
+    - "R2" -> 2
+    - "A" -> 1
+    """
+    valor = str(valor or "").strip().upper()
+
+    if not valor:
+        return -1
+
+    valor = valor.replace("REV", "").replace("R", "").strip()
+
+    try:
+        return int(valor)
+    except Exception:
+        pass
+
+    if len(valor) == 1 and valor.isalpha():
+        return ord(valor) - 64
+
+    return 0
+
+
+def _obter_queryset_latest_pcfs(queryset):
+    """
+    Runtime only: mantém somente a maior revisão por documento.
+    Não altera histórico e não cria migration.
+    """
+    latest_por_documento = {}
+
+    for item in queryset:
+        documento = (
+            getattr(item, "numero_documento", None)
+            or getattr(item, "documento", None)
+            or ""
+        ).strip()
+
+        if not documento:
+            continue
+
+        revisao = _normalizar_revisao_pcf(
+            getattr(item, "revisao_pcf", None)
+            or getattr(item, "revisao", None)
+        )
+
+        atual = latest_por_documento.get(documento)
+
+        if atual is None:
+            latest_por_documento[documento] = item
+            continue
+
+        revisao_atual = _normalizar_revisao_pcf(
+            getattr(atual, "revisao_pcf", None)
+            or getattr(atual, "revisao", None)
+        )
+
+        # Em empate de revisão, mantém o registro mais novo/maior id.
+        if revisao > revisao_atual or (
+            revisao == revisao_atual and getattr(item, "id", 0) > getattr(atual, "id", 0)
+        ):
+            latest_por_documento[documento] = item
+
+    ids = [obj.id for obj in latest_por_documento.values()]
+    return queryset.filter(id__in=ids)
+
+
+def _pcf_bool_param(request, nome):
+    return str(request.GET.get(nome, "")).strip().lower() in {"1", "true", "on", "sim", "yes"}
+
+
+def _pcf_query_params(request):
     busca = request.GET.get("q", "").strip()
     tipo = request.GET.get("tipo", "").strip()
     status = request.GET.get("status", "").strip()
-    somente_open = request.GET.get("somente_open", "").strip()
+    somente_open = _pcf_bool_param(request, "somente_open")
+    somente_latest = _pcf_bool_param(request, "somente_latest")
+    com_comentarios = _pcf_bool_param(request, "com_comentarios")
+
+    return {
+        "busca": busca,
+        "tipo": tipo,
+        "status": status,
+        "somente_open": somente_open,
+        "somente_latest": somente_latest,
+        "com_comentarios": com_comentarios,
+    }
+
+
+def _filtrar_pcfs_timeline(request):
+    """
+    Filtro central de PCFs.
+    Usado por Timeline, Dashboard e Export Excel para garantir
+    que KPI, gráficos, lista e planilha usem exatamente a mesma base.
+    """
+    filtros = _pcf_query_params(request)
 
     registros = PCFTimeline.objects.all().order_by(
         "numero_documento",
@@ -1508,33 +1605,41 @@ def _filtrar_pcfs_timeline(request):
         "pcf_link",
     )
 
+    busca = filtros["busca"]
+    tipo = filtros["tipo"]
+    status = filtros["status"]
+
     if busca:
-        registros = (
-            registros.filter(numero_documento__icontains=busca)
-            | registros.filter(numero_pcf__icontains=busca)
-            | registros.filter(pcf_link__icontains=busca)
-            | registros.filter(titulo__icontains=busca)
+        registros = registros.filter(
+            Q(numero_documento__icontains=busca)
+            | Q(numero_pcf__icontains=busca)
+            | Q(pcf_link__icontains=busca)
+            | Q(titulo__icontains=busca)
         )
 
     if tipo:
         registros = registros.filter(tipo=tipo)
 
     if status:
-        registros = registros.filter(status_final__iexact=status)
+        if status == "__SEM_STATUS__":
+            registros = registros.filter(Q(status_final__isnull=True) | Q(status_final=""))
+        else:
+            registros = registros.filter(status_final__iexact=status)
 
-    if somente_open:
+    if filtros["somente_open"]:
         registros = registros.filter(open_comments__gt=0)
+
+    if filtros["com_comentarios"]:
+        registros = registros.filter(qtd_comentarios__gt=0)
+
+    if filtros["somente_latest"]:
+        registros = _obter_queryset_latest_pcfs(registros)
 
     return registros
 
-@login_required
-def listar_pcfs_timeline(request):
-    busca = request.GET.get("q", "").strip()
-    tipo = request.GET.get("tipo", "").strip()
-    status = request.GET.get("status", "").strip()
-    somente_open = request.GET.get("somente_open", "").strip()
 
-    registros = _filtrar_pcfs_timeline(request)
+def _pcf_filtros_context(request):
+    filtros = _pcf_query_params(request)
 
     tipos = (
         PCFTimeline.objects.exclude(tipo="")
@@ -1543,30 +1648,53 @@ def listar_pcfs_timeline(request):
         .order_by("tipo")
     )
 
+    status_disponiveis = (
+        PCFTimeline.objects.exclude(status_final="")
+        .exclude(status_final__isnull=True)
+        .values_list("status_final", flat=True)
+        .distinct()
+        .order_by("status_final")
+    )
+
+    query_params = request.GET.copy()
+    query_params.pop("page", None)
+
+    return {
+        **filtros,
+        "tipos": tipos,
+        "status_disponiveis": status_disponiveis,
+        "querystring": query_params.urlencode(),
+    }
+
+@login_required
+def listar_pcfs_timeline(request):
+    registros = _filtrar_pcfs_timeline(request)
+    filtros_context = _pcf_filtros_context(request)
+
     total = registros.count()
     total_open = registros.filter(open_comments__gt=0).count()
-    total_sem_status = registros.filter(status_final="").count()
+    total_sem_status = registros.filter(Q(status_final__isnull=True) | Q(status_final="")).count()
+    total_comentarios = registros.aggregate(total=Sum("qtd_comentarios")).get("total") or 0
+    total_comentarios_open = registros.aggregate(total=Sum("open_comments")).get("total") or 0
 
     paginator = Paginator(registros, 50)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
-    return render(
-        request,
-        "automacoes/pcfs_timeline.html",
-        {
-            "registros": page_obj,
-            "page_obj": page_obj,
-            "busca": busca,
-            "tipo": tipo,
-            "status": status,
-            "somente_open": somente_open,
-            "tipos": tipos,
-            "total": total,
-            "total_open": total_open,
-            "total_sem_status": total_sem_status,
-        },
-    )
+    context = {
+        **filtros_context,
+        "registros": page_obj,
+        "page_obj": page_obj,
+        "total": total,
+        "total_open": total_open,
+        "total_sem_status": total_sem_status,
+        "total_comentarios": total_comentarios,
+        "total_comentarios_open": total_comentarios_open,
+    }
+
+    return render(request, "automacoes/pcfs_timeline.html", context)
+
+
 
 @login_required
 def abrir_arquivo_pcf(request, pk):
@@ -1665,7 +1793,8 @@ def exportar_pcfs_timeline_excel(request):
 
 @login_required
 def dashboard_pcfs(request):
-    registros = PCFTimeline.objects.all()
+    registros = _filtrar_pcfs_timeline(request)
+    filtros_context = _pcf_filtros_context(request)
 
     total = registros.count()
     total_open = registros.filter(open_comments__gt=0).count()
@@ -1675,9 +1804,8 @@ def dashboard_pcfs(request):
         status_final__icontains="NOT RELEASED"
     ).count()
 
-    total_comentarios_abertos = (
-        registros.aggregate(total=Sum("open_comments")).get("total") or 0
-    )
+    total_comentarios_abertos = registros.aggregate(total=Sum("open_comments")).get("total") or 0
+    total_comentarios = registros.aggregate(total=Sum("qtd_comentarios")).get("total") or 0
 
     por_tipo = list(
         registros.values("tipo")
@@ -1716,29 +1844,29 @@ def dashboard_pcfs(request):
 
     critical_rate = round((total_not_released / total) * 100, 1) if total else 0
 
-    return render(
-        request,
-        "automacoes/dashboard_pcfs.html",
-        {
-            "total": total,
-            "total_open": total_open,
-            "total_sem_status": total_sem_status,
-            "total_not_released": total_not_released,
-            "total_released": total_released,
-            "total_comentarios_abertos": total_comentarios_abertos,
-            "critical_rate": critical_rate,
-            "por_tipo": por_tipo,
-            "por_status": por_status,
-            "top_pendencias": top_pendencias,
-            "recentes": recentes,
-            "status_chart_labels": status_chart_labels,
-            "status_chart_values": status_chart_values,
-            "tipo_chart_labels": tipo_chart_labels,
-            "tipo_chart_values": tipo_chart_values,
-            "tipo_open_labels": tipo_open_labels,
-            "tipo_open_values": tipo_open_values,
-        },
-    )
+    context = {
+        **filtros_context,
+        "total": total,
+        "total_open": total_open,
+        "total_sem_status": total_sem_status,
+        "total_not_released": total_not_released,
+        "total_released": total_released,
+        "total_comentarios": total_comentarios,
+        "total_comentarios_abertos": total_comentarios_abertos,
+        "critical_rate": critical_rate,
+        "por_tipo": por_tipo,
+        "por_status": por_status,
+        "top_pendencias": top_pendencias,
+        "recentes": recentes,
+        "status_chart_labels": status_chart_labels,
+        "status_chart_values": status_chart_values,
+        "tipo_chart_labels": tipo_chart_labels,
+        "tipo_chart_values": tipo_chart_values,
+        "tipo_open_labels": tipo_open_labels,
+        "tipo_open_values": tipo_open_values,
+    }
+
+    return render(request, "automacoes/dashboard_pcfs.html", context)
 
 
 
