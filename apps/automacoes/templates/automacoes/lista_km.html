@@ -30,6 +30,15 @@
     text-overflow: ellipsis;
   }
 
+  .km-filter-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    padding-top: 4px;
+  }
+
   .km-table-wrap {
     overflow-x: auto;
   }
@@ -216,9 +225,9 @@
           Importar LD Kongsberg
         </a>
 
-        <a href="{% url 'automacoes:dashboard_km_ld' %}" class="ops-btn">
+        <a href="{% url 'automacoes:dashboard_km_ld' %}{% if querystring %}?{{ querystring }}{% endif %}" class="ops-btn">
           <i class="bi bi-diagram-3"></i>
-          Dashboard KM
+          Dashboard KM filtrado
         </a>
 
         <a href="{% url 'automacoes:transmittals_km' %}" class="ops-btn">
@@ -333,7 +342,20 @@
         </button>
 
         <a href="{% url 'automacoes:lista_km' %}" class="ops-btn">
+          <i class="bi bi-x-circle"></i>
           Limpar
+        </a>
+      </div>
+
+      <div class="km-filter-actions">
+        <a href="{% url 'automacoes:dashboard_km_ld' %}{% if querystring %}?{{ querystring }}{% endif %}" class="ops-btn ops-btn-primary">
+          <i class="bi bi-bar-chart-line"></i>
+          Ver Dashboard filtrado
+        </a>
+
+        <a href="{% url 'automacoes:lista_km' %}{% if querystring %}?{{ querystring }}{% endif %}" class="ops-btn">
+          <i class="bi bi-list-ul"></i>
+          Lista filtrada
         </a>
       </div>
     </form>
