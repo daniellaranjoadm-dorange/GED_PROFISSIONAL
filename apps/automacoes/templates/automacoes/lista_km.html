@@ -1,104 +1,7 @@
 {% extends "documentos/base.html" %}
 {% load static %}
 
-{% block title %}Lista LD Kongsberg
-<script>
-(function () {
-  function closeAll(except) {
-    document.querySelectorAll(".km-smart-wrap.is-open").forEach(function (wrap) {
-      if (wrap !== except) wrap.classList.remove("is-open");
-    });
-  }
-
-  document.querySelectorAll("select.km-smart-select").forEach(function (select) {
-    if (select.dataset.smartReady === "1") return;
-    select.dataset.smartReady = "1";
-
-    var wrap = document.createElement("div");
-    wrap.className = "km-smart-wrap";
-
-    var trigger = document.createElement("button");
-    trigger.type = "button";
-    trigger.className = "km-smart-trigger";
-
-    var menu = document.createElement("div");
-    menu.className = "km-smart-menu";
-
-    var search = document.createElement("input");
-    search.type = "text";
-    search.className = "km-smart-search";
-    search.placeholder = "Pesquisar...";
-
-    var optionsBox = document.createElement("div");
-    optionsBox.className = "km-smart-options";
-
-    function selectedText() {
-      var opt = select.options[select.selectedIndex];
-      return opt ? opt.text : "Todos";
-    }
-
-    function render() {
-      var term = search.value.trim().toLowerCase();
-      optionsBox.innerHTML = "";
-
-      Array.from(select.options).forEach(function (opt) {
-        var label = opt.text || "";
-        if (term && label.toLowerCase().indexOf(term) === -1) return;
-
-        var btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "km-smart-option";
-        if (opt.selected) btn.classList.add("is-selected");
-        btn.textContent = label;
-        btn.title = label;
-
-        btn.addEventListener("click", function () {
-          select.value = opt.value;
-          select.dispatchEvent(new Event("change", { bubbles: true }));
-          trigger.textContent = selectedText();
-          wrap.classList.remove("is-open");
-        });
-
-        optionsBox.appendChild(btn);
-      });
-    }
-
-    select.parentNode.insertBefore(wrap, select);
-    wrap.appendChild(select);
-    wrap.appendChild(trigger);
-    wrap.appendChild(menu);
-    menu.appendChild(search);
-    menu.appendChild(optionsBox);
-
-    select.classList.add("km-native-hidden");
-    trigger.textContent = selectedText();
-
-    trigger.addEventListener("click", function () {
-      var isOpen = wrap.classList.contains("is-open");
-      closeAll(wrap);
-      wrap.classList.toggle("is-open", !isOpen);
-      if (!isOpen) {
-        search.value = "";
-        render();
-        setTimeout(function () { search.focus(); }, 0);
-      }
-    });
-
-    search.addEventListener("input", render);
-    render();
-  });
-
-  document.addEventListener("click", function (event) {
-    if (!event.target.closest(".km-smart-wrap")) closeAll();
-  });
-
-  document.addEventListener("keydown", function (event) {
-    if (event.key === "Escape") closeAll();
-  });
-})();
-</script>
-
-{% endblock %}
+{% block title %}Lista LD Kongsberg{% endblock %}
 
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'automacoes/css/ops_enterprise.css' %}?v=1700">
@@ -249,103 +152,44 @@
     height: 1px !important;
   }
 
-</style>
 
-<script>
-(function () {
-  function closeAll(except) {
-    document.querySelectorAll(".km-smart-wrap.is-open").forEach(function (wrap) {
-      if (wrap !== except) wrap.classList.remove("is-open");
-    });
+  .km-smart-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
-  document.querySelectorAll("select.km-smart-select").forEach(function (select) {
-    if (select.dataset.smartReady === "1") return;
-    select.dataset.smartReady = "1";
+  .km-smart-check {
+    width: 14px;
+    height: 14px;
+    border: 1px solid rgba(15, 23, 42, .35);
+    border-radius: 4px;
+    flex: 0 0 14px;
+  }
 
-    var wrap = document.createElement("div");
-    wrap.className = "km-smart-wrap";
+  .km-smart-option.is-selected .km-smart-check {
+    background: rgba(14, 165, 233, .75);
+    border-color: rgba(14, 165, 233, .95);
+  }
 
-    var trigger = document.createElement("button");
-    trigger.type = "button";
-    trigger.className = "km-smart-trigger";
+  .km-smart-actions {
+    display: flex;
+    gap: 8px;
+    padding: 8px;
+    border-top: 1px solid rgba(15, 23, 42, .10);
+  }
 
-    var menu = document.createElement("div");
-    menu.className = "km-smart-menu";
-
-    var search = document.createElement("input");
-    search.type = "text";
-    search.className = "km-smart-search";
-    search.placeholder = "Pesquisar...";
-
-    var optionsBox = document.createElement("div");
-    optionsBox.className = "km-smart-options";
-
-    function selectedText() {
-      var opt = select.options[select.selectedIndex];
-      return opt ? opt.text : "Todos";
-    }
-
-    function render() {
-      var term = search.value.trim().toLowerCase();
-      optionsBox.innerHTML = "";
-
-      Array.from(select.options).forEach(function (opt) {
-        var label = opt.text || "";
-        if (term && label.toLowerCase().indexOf(term) === -1) return;
-
-        var btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "km-smart-option";
-        if (opt.selected) btn.classList.add("is-selected");
-        btn.textContent = label;
-        btn.title = label;
-
-        btn.addEventListener("click", function () {
-          select.value = opt.value;
-          select.dispatchEvent(new Event("change", { bubbles: true }));
-          trigger.textContent = selectedText();
-          wrap.classList.remove("is-open");
-        });
-
-        optionsBox.appendChild(btn);
-      });
-    }
-
-    select.parentNode.insertBefore(wrap, select);
-    wrap.appendChild(select);
-    wrap.appendChild(trigger);
-    wrap.appendChild(menu);
-    menu.appendChild(search);
-    menu.appendChild(optionsBox);
-
-    select.classList.add("km-native-hidden");
-    trigger.textContent = selectedText();
-
-    trigger.addEventListener("click", function () {
-      var isOpen = wrap.classList.contains("is-open");
-      closeAll(wrap);
-      wrap.classList.toggle("is-open", !isOpen);
-      if (!isOpen) {
-        search.value = "";
-        render();
-        setTimeout(function () { search.focus(); }, 0);
-      }
-    });
-
-    search.addEventListener("input", render);
-    render();
-  });
-
-  document.addEventListener("click", function (event) {
-    if (!event.target.closest(".km-smart-wrap")) closeAll();
-  });
-
-  document.addEventListener("keydown", function (event) {
-    if (event.key === "Escape") closeAll();
-  });
-})();
-</script>
+  .km-smart-mini {
+    flex: 1;
+    border: 1px solid rgba(15, 23, 42, .16);
+    background: #f8fafc;
+    color: #0f172a;
+    border-radius: 8px;
+    padding: 7px 8px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+</style>
 
 {% endblock %}
 
@@ -430,40 +274,36 @@
 
       <div>
         <label class="ops-filter-label">Phase</label>
-        <select name="phase" class="form-select km-smart-select">
-          <option value="">Todas</option>
+        <select name="phase" class="form-select km-smart-select" multiple data-placeholder="Todas">
           {% for item in phases %}
-          <option value="{{ item }}" {% if item == phase %}selected{% endif %}>{{ item }}</option>
+          <option value="{{ item }}" {% if item in phases_selected %}selected{% endif %}>{{ item }}</option>
           {% endfor %}
         </select>
       </div>
 
       <div>
         <label class="ops-filter-label">TOC</label>
-        <select name="toc" class="form-select km-smart-select">
-          <option value="">Todos</option>
+        <select name="toc" class="form-select km-smart-select" multiple data-placeholder="Todos">
           {% for item in tocs %}
-          <option value="{{ item }}" title="{{ item }}" {% if item == toc %}selected{% endif %}>{{ item|truncatechars:58 }}</option>
+          <option value="{{ item }}" title="{{ item }}" {% if item in tocs_selected %}selected{% endif %}>{{ item|truncatechars:58 }}</option>
           {% endfor %}
         </select>
       </div>
 
       <div>
         <label class="ops-filter-label">Discipline</label>
-        <select name="disciplina" class="form-select km-smart-select">
-          <option value="">Todas</option>
+        <select name="disciplina" class="form-select km-smart-select" multiple data-placeholder="Todas">
           {% for item in disciplinas %}
-          <option value="{{ item }}" {% if item == disciplina %}selected{% endif %}>{{ item }}</option>
+          <option value="{{ item }}" {% if item in disciplinas_selected %}selected{% endif %}>{{ item }}</option>
           {% endfor %}
         </select>
       </div>
 
       <div>
         <label class="ops-filter-label">Transmittal Number</label>
-        <select name="transmittal" class="form-select km-smart-select">
-          <option value="">Todos</option>
+        <select name="transmittal" class="form-select km-smart-select" multiple data-placeholder="Todos">
           {% for item in transmittals %}
-          <option value="{{ item }}" title="{{ item }}" {% if item == transmittal %}selected{% endif %}>{{ item|truncatechars:32 }}</option>
+          <option value="{{ item }}" title="{{ item }}" {% if item in transmittals_selected %}selected{% endif %}>{{ item|truncatechars:32 }}</option>
           {% endfor %}
         </select>
       </div>
@@ -596,9 +436,16 @@
     });
   }
 
+  function optionLabel(opt) {
+    return (opt.text || "").trim();
+  }
+
   document.querySelectorAll("select.km-smart-select").forEach(function (select) {
     if (select.dataset.smartReady === "1") return;
     select.dataset.smartReady = "1";
+
+    var isMultiple = select.multiple;
+    var placeholder = select.dataset.placeholder || "Todos";
 
     var wrap = document.createElement("div");
     wrap.className = "km-smart-wrap";
@@ -618,9 +465,41 @@
     var optionsBox = document.createElement("div");
     optionsBox.className = "km-smart-options";
 
+    var actions = document.createElement("div");
+    actions.className = "km-smart-actions";
+
+    var clearBtn = document.createElement("button");
+    clearBtn.type = "button";
+    clearBtn.className = "km-smart-mini";
+    clearBtn.textContent = "Limpar";
+
+    var applyBtn = document.createElement("button");
+    applyBtn.type = "button";
+    applyBtn.className = "km-smart-mini";
+    applyBtn.textContent = "Aplicar";
+
+    function selectedOptions() {
+      return Array.from(select.options).filter(function (opt) {
+        return opt.selected && opt.value !== "";
+      });
+    }
+
     function selectedText() {
-      var opt = select.options[select.selectedIndex];
-      return opt ? opt.text : "Todos";
+      var selected = selectedOptions();
+
+      if (!isMultiple) {
+        var opt = select.options[select.selectedIndex];
+        return opt ? optionLabel(opt) : placeholder;
+      }
+
+      if (!selected.length) return placeholder;
+      if (selected.length === 1) return optionLabel(selected[0]);
+      return selected.length + " selecionados";
+    }
+
+    function syncTrigger() {
+      trigger.textContent = selectedText();
+      trigger.title = selectedOptions().map(optionLabel).join(", ");
     }
 
     function render() {
@@ -628,21 +507,37 @@
       optionsBox.innerHTML = "";
 
       Array.from(select.options).forEach(function (opt) {
-        var label = opt.text || "";
+        var label = optionLabel(opt);
+        if (!label) return;
         if (term && label.toLowerCase().indexOf(term) === -1) return;
 
         var btn = document.createElement("button");
         btn.type = "button";
         btn.className = "km-smart-option";
         if (opt.selected) btn.classList.add("is-selected");
-        btn.textContent = label;
         btn.title = label;
 
+        if (isMultiple) {
+          var check = document.createElement("span");
+          check.className = "km-smart-check";
+          btn.appendChild(check);
+        }
+
+        var text = document.createElement("span");
+        text.textContent = label;
+        btn.appendChild(text);
+
         btn.addEventListener("click", function () {
-          select.value = opt.value;
-          select.dispatchEvent(new Event("change", { bubbles: true }));
-          trigger.textContent = selectedText();
-          wrap.classList.remove("is-open");
+          if (isMultiple) {
+            opt.selected = !opt.selected;
+            btn.classList.toggle("is-selected", opt.selected);
+          } else {
+            select.value = opt.value;
+            select.dispatchEvent(new Event("change", { bubbles: true }));
+            syncTrigger();
+            wrap.classList.remove("is-open");
+          }
+          syncTrigger();
         });
 
         optionsBox.appendChild(btn);
@@ -656,8 +551,14 @@
     menu.appendChild(search);
     menu.appendChild(optionsBox);
 
+    if (isMultiple) {
+      actions.appendChild(clearBtn);
+      actions.appendChild(applyBtn);
+      menu.appendChild(actions);
+    }
+
     select.classList.add("km-native-hidden");
-    trigger.textContent = selectedText();
+    syncTrigger();
 
     trigger.addEventListener("click", function () {
       var isOpen = wrap.classList.contains("is-open");
@@ -668,6 +569,18 @@
         render();
         setTimeout(function () { search.focus(); }, 0);
       }
+    });
+
+    clearBtn.addEventListener("click", function () {
+      Array.from(select.options).forEach(function (opt) { opt.selected = false; });
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+      syncTrigger();
+      render();
+    });
+
+    applyBtn.addEventListener("click", function () {
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+      wrap.classList.remove("is-open");
     });
 
     search.addEventListener("input", render);

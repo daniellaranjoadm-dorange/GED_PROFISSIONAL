@@ -3541,12 +3541,18 @@ def listar_km(request):
       Transmittal Number ou Data recebimento KM.
     """
     busca = request.GET.get("q", "").strip()
-    phase = request.GET.get("phase", "").strip()
-    toc = request.GET.get("toc", "").strip()
-    disciplina = request.GET.get("disciplina", "").strip()
-    transmittal = request.GET.get("transmittal", "").strip()
+    phases_selected = [v.strip() for v in request.GET.getlist("phase") if v.strip()]
+    tocs_selected = [v.strip() for v in request.GET.getlist("toc") if v.strip()]
+    disciplinas_selected = [v.strip() for v in request.GET.getlist("disciplina") if v.strip()]
+    transmittals_selected = [v.strip() for v in request.GET.getlist("transmittal") if v.strip()]
     recebimento = request.GET.get("recebimento", "").strip()
     tp = request.GET.get("tp", "").strip()
+
+    # Compatibilidade com templates/links antigos que esperavam valor único.
+    phase = phases_selected[0] if phases_selected else ""
+    toc = tocs_selected[0] if tocs_selected else ""
+    disciplina = disciplinas_selected[0] if disciplinas_selected else ""
+    transmittal = transmittals_selected[0] if transmittals_selected else ""
 
     registros = DocumentoKM.objects.all().order_by("numero_km")
 
@@ -3563,17 +3569,17 @@ def listar_km(request):
             | Q(released_for__icontains=busca)
         )
 
-    if phase and _model_has_field(DocumentoKM, "phase"):
-        registros = registros.filter(phase__iexact=phase)
+    if phases_selected and _model_has_field(DocumentoKM, "phase"):
+        registros = registros.filter(phase__in=phases_selected)
 
-    if toc and _model_has_field(DocumentoKM, "toc"):
-        registros = registros.filter(toc__iexact=toc)
+    if tocs_selected and _model_has_field(DocumentoKM, "toc"):
+        registros = registros.filter(toc__in=tocs_selected)
 
-    if disciplina and _model_has_field(DocumentoKM, "disciplina"):
-        registros = registros.filter(disciplina__iexact=disciplina)
+    if disciplinas_selected and _model_has_field(DocumentoKM, "disciplina"):
+        registros = registros.filter(disciplina__in=disciplinas_selected)
 
-    if transmittal and _model_has_field(DocumentoKM, "transmittal_numero"):
-        registros = registros.filter(transmittal_numero__iexact=transmittal)
+    if transmittals_selected and _model_has_field(DocumentoKM, "transmittal_numero"):
+        registros = registros.filter(transmittal_numero__in=transmittals_selected)
 
     recebido_q = (
         (
@@ -3638,6 +3644,10 @@ def listar_km(request):
             "toc": toc,
             "disciplina": disciplina,
             "transmittal": transmittal,
+            "phases_selected": phases_selected,
+            "tocs_selected": tocs_selected,
+            "disciplinas_selected": disciplinas_selected,
+            "transmittals_selected": transmittals_selected,
             "recebimento": recebimento,
             "tp": tp,
             "total": total,
