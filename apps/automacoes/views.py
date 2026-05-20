@@ -2225,29 +2225,68 @@ def _ld_filtrar_origem(queryset, origem):
 
 
 def _ld_revisao_peso(revisao):
+    """
+    Converte revisões LD para uma ordem comparável.
+
+    Ordem esperada:
+    vazio < 0 < 1 < 2 < A < B < C ...
+    Também aceita formatos como "REV 0", "REV. A", "0.0".
+    """
     texto = _ld_texto(revisao).upper()
 
     if not texto:
         return -1
 
-    if texto.isdigit():
-        return int(texto)
+    texto = (
+        texto.replace("REVISÃO", "")
+        .replace("REVISAO", "")
+        .replace("REV.", "")
+        .replace("REV", "")
+        .replace("R.", "")
+        .replace("R ", "")
+        .strip()
+    )
 
-    peso = 0
-    for char in texto:
-        if "A" <= char <= "Z":
-            peso = peso * 26 + (ord(char) - ord("A") + 1)
+    texto_compacto = re.sub(r"[^A-Z0-9]", "", texto)
 
-    return 1000 + peso
+    if not texto_compacto:
+        return -1
+
+    if texto_compacto.isdigit():
+        return int(texto_compacto)
+
+    # Revisões alfabéticas devem vir depois das numéricas.
+    letras = "".join(ch for ch in texto_compacto if "A" <= ch <= "Z")
+    numeros = "".join(ch for ch in texto_compacto if ch.isdigit())
+
+    peso_letras = 0
+    for char in letras:
+        peso_letras = peso_letras * 26 + (ord(char) - ord("A") + 1)
+
+    peso_numeros = int(numeros) if numeros else 0
+
+    return 1000 + (peso_letras * 100) + peso_numeros
 
 
 def _ld_filtrar_ultimas_revisoes(queryset):
+    """
+    Mantém apenas a maior revisão de cada documento dentro do recorte já filtrado.
+
+    Importante:
+    - Não altera os smart-selects nem a querystring.
+    - Respeita todos os filtros aplicados antes.
+    - Usa o campo Documento como chave operacional.
+    """
     dados = list(queryset.values_list("pk", "documento", "revisao"))
 
     ultimos = {}
 
     for pk, documento, revisao in dados:
         doc = _ld_texto(documento).upper()
+
+        if not doc:
+            doc = f"__PK__{pk}"
+
         peso = _ld_revisao_peso(revisao)
 
         if doc not in ultimos or peso > ultimos[doc][0]:
