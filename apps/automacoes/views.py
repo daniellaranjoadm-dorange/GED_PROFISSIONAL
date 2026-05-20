@@ -1769,12 +1769,21 @@ def _pcf_filtrar_aging_python(registros, aging):
     if not aging:
         return registros
 
-    itens = _pcf_enriquecer_runtime(list(registros))
+    agings = aging if isinstance(aging, (list, tuple, set)) else [aging]
+    agings = {str(item or "").strip() for item in agings if str(item or "").strip()}
 
-    if aging == "sem_data":
-        ids = [item.id for item in itens if item.aging_bucket_runtime == "SEM DATA"]
-    else:
-        ids = [item.id for item in itens if item.aging_bucket_runtime == aging]
+    if not agings:
+        return registros
+
+    itens = _pcf_enriquecer_runtime(list(registros))
+    ids = []
+
+    for item in itens:
+        bucket = getattr(item, "aging_bucket_runtime", "SEM DATA")
+        if "sem_data" in agings and bucket == "SEM DATA":
+            ids.append(item.id)
+        elif bucket in agings:
+            ids.append(item.id)
 
     return registros.filter(id__in=ids)
 
@@ -1785,23 +1794,39 @@ def _pcf_bool_param(request, nome):
 
 def _pcf_query_params(request):
     busca = request.GET.get("q", "").strip()
-    tipo = request.GET.get("tipo", "").strip()
-    status = request.GET.get("status", "").strip()
+
+    def _getlist(nome):
+        valores = []
+        for valor in request.GET.getlist(nome):
+            valor = str(valor or "").strip()
+            if valor:
+                valores.append(valor)
+        return valores
+
+    tipos_selecionados = _getlist("tipo")
+    status_selecionados = _getlist("status")
+    agings_selecionados = _getlist("aging")
+    faixas_comentarios_selecionadas = _getlist("faixa_comentarios")
+
     somente_open = _pcf_bool_param(request, "somente_open")
     somente_latest = _pcf_bool_param(request, "somente_latest")
     com_comentarios = _pcf_bool_param(request, "com_comentarios")
-    faixa_comentarios = request.GET.get("faixa_comentarios", "").strip()
-    aging = request.GET.get("aging", "").strip()
 
     return {
         "busca": busca,
-        "tipo": tipo,
-        "status": status,
+        # Mantém chaves antigas para compatibilidade com templates/links já existentes.
+        "tipo": tipos_selecionados[0] if len(tipos_selecionados) == 1 else "",
+        "status": status_selecionados[0] if len(status_selecionados) == 1 else "",
+        "aging": agings_selecionados[0] if len(agings_selecionados) == 1 else "",
+        "faixa_comentarios": faixas_comentarios_selecionadas[0] if len(faixas_comentarios_selecionadas) == 1 else "",
+        # Novas chaves enterprise multi-select.
+        "tipos_selecionados": tipos_selecionados,
+        "status_selecionados": status_selecionados,
+        "agings_selecionados": agings_selecionados,
+        "faixas_comentarios_selecionadas": faixas_comentarios_selecionadas,
         "somente_open": somente_open,
         "somente_latest": somente_latest,
         "com_comentarios": com_comentarios,
-        "faixa_comentarios": faixa_comentarios,
-        "aging": aging,
     }
 
 
@@ -1820,8 +1845,8 @@ def _filtrar_pcfs_timeline(request):
     )
 
     busca = filtros["busca"]
-    tipo = filtros["tipo"]
-    status = filtros["status"]
+    tipos_selecionados = filtros.get("tipos_selecionados", [])
+    status_selecionados = filtros.get("status_selecionados", [])
 
     if busca:
         registros = registros.filter(
@@ -1831,14 +1856,20 @@ def _filtrar_pcfs_timeline(request):
             | Q(titulo__icontains=busca)
         )
 
-    if tipo:
-        registros = registros.filter(tipo=tipo)
+    if tipos_selecionados:
+        registros = registros.filter(tipo__in=tipos_selecionados)
 
-    if status:
-        if status == "__SEM_STATUS__":
-            registros = registros.filter(Q(status_final__isnull=True) | Q(status_final=""))
-        else:
-            registros = registros.filter(status_final__iexact=status)
+    if status_selecionados:
+        status_q = Q()
+        status_normais = [s for s in status_selecionados if s != "__SEM_STATUS__"]
+
+        if status_normais:
+            status_q |= Q(status_final__in=status_normais)
+
+        if "__SEM_STATUS__" in status_selecionados:
+            status_q |= Q(status_final__isnull=True) | Q(status_final="")
+
+        registros = registros.filter(status_q)
 
     if filtros["somente_open"]:
         registros = registros.filter(open_comments__gt=0)
@@ -1846,23 +1877,30 @@ def _filtrar_pcfs_timeline(request):
     if filtros["com_comentarios"]:
         registros = registros.filter(qtd_comentarios__gt=0)
 
-    faixa = filtros["faixa_comentarios"]
+    faixas = filtros.get("faixas_comentarios_selecionadas", [])
+    if faixas:
+        faixa_q = Q()
 
-    if faixa == "0":
-        registros = registros.filter(open_comments=0)
+        if "0" in faixas:
+            faixa_q |= Q(open_comments=0)
 
-    elif faixa == "1-5":
-        registros = registros.filter(open_comments__gte=1, open_comments__lte=5)
+        if "1-5" in faixas:
+            faixa_q |= Q(open_comments__gte=1, open_comments__lte=5)
 
-    elif faixa == "6-10":
-        registros = registros.filter(open_comments__gte=6, open_comments__lte=10)
+        if "6-10" in faixas:
+            faixa_q |= Q(open_comments__gte=6, open_comments__lte=10)
 
-    elif faixa == "10+":
-        registros = registros.filter(open_comments__gt=10)
+        if "10+" in faixas:
+            faixa_q |= Q(open_comments__gt=10)
+
+        registros = registros.filter(faixa_q)
 
 
     if filtros["somente_latest"]:
         registros = _obter_queryset_latest_pcfs(registros)
+
+    if filtros.get("agings_selecionados"):
+        registros = _pcf_filtrar_aging_python(registros, filtros.get("agings_selecionados"))
 
     return registros
 
