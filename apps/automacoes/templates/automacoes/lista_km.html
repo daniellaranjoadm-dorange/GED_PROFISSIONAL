@@ -7,32 +7,35 @@
 <link rel="stylesheet" href="{% static 'automacoes/css/ops_enterprise.css' %}?v=1700">
 <style>
   .km-wide-page {
-    width: min(99vw, 1920px);
+    width: min(1820px, calc(100vw - 32px));
     max-width: none;
     margin-left: auto;
     margin-right: auto;
   }
 
-  .km-wide-page .ops-hero,
-  .km-wide-page .ops-panel,
-  .km-wide-page .ops-kpi-grid {
-    width: 100%;
-  }
-
   .km-filter-grid {
     display: grid;
-    grid-template-columns: minmax(220px, 1.2fr) minmax(180px, .9fr) minmax(220px, 1fr) minmax(170px, .8fr) minmax(190px, .9fr) minmax(190px, .9fr) minmax(220px, 1fr) auto;
-    gap: .75rem;
+    grid-template-columns: minmax(240px, 1.4fr) minmax(150px, .8fr) minmax(220px, 1.2fr) minmax(160px, .8fr) minmax(170px, .8fr) minmax(160px, .75fr) minmax(170px, .75fr) auto;
+    gap: 12px;
     align-items: end;
+  }
+
+  .km-filter-grid select,
+  .km-filter-grid input {
+    min-width: 0;
+  }
+
+  .km-filter-grid select {
+    max-width: 100%;
+    text-overflow: ellipsis;
   }
 
   .km-table-wrap {
     overflow-x: auto;
-    max-width: 100%;
   }
 
   .km-table {
-    min-width: 2350px;
+    min-width: 1900px;
     white-space: nowrap;
   }
 
@@ -42,20 +45,19 @@
   }
 
   .km-title-cell {
-    min-width: 380px;
-    max-width: 520px;
-    white-space: normal;
-  }
-
-  .km-toc-cell {
-    min-width: 300px;
-    max-width: 380px;
+    min-width: 360px;
     white-space: normal;
   }
 
   @media (max-width: 1400px) {
     .km-filter-grid {
-      grid-template-columns: repeat(3, minmax(180px, 1fr));
+      grid-template-columns: repeat(3, minmax(220px, 1fr));
+    }
+  }
+
+  @media (max-width: 900px) {
+    .km-filter-grid {
+      grid-template-columns: 1fr;
     }
   }
 </style>
@@ -117,7 +119,7 @@
     </div>
 
     <div class="ops-kpi">
-      <span>Pendentes</span>
+      <span>Não Recebidos</span>
       <strong>{{ total_pendentes }}</strong>
       <small>sem transmittal e sem data</small>
     </div>
@@ -155,7 +157,7 @@
         <select name="toc" class="form-select">
           <option value="">Todos</option>
           {% for item in tocs %}
-          <option value="{{ item }}" {% if item == toc %}selected{% endif %}>{{ item|truncatechars:70 }}</option>
+          <option value="{{ item }}" title="{{ item }}" {% if item == toc %}selected{% endif %}>{{ item|truncatechars:58 }}</option>
           {% endfor %}
         </select>
       </div>
@@ -172,33 +174,33 @@
 
       <div>
         <label class="ops-filter-label">Transmittal Number</label>
-        <input type="text"
-               name="transmittal"
-               value="{{ transmittal }}"
-               class="form-control"
-               placeholder="Ex.: T-43306">
-      </div>
-
-      <div>
-        <label class="ops-filter-label">Data recebimento KM</label>
-        <select name="data_recebimento" class="form-select">
-          <option value="">Todas</option>
-          {% for item in datas_recebimento %}
-          <option value="{{ item }}" {% if item == data_recebimento %}selected{% endif %}>{{ item }}</option>
+        <select name="transmittal" class="form-select">
+          <option value="">Todos</option>
+          {% for item in transmittals %}
+          <option value="{{ item }}" title="{{ item }}" {% if item == transmittal %}selected{% endif %}>{{ item|truncatechars:32 }}</option>
           {% endfor %}
         </select>
       </div>
 
       <div>
-        <label class="ops-filter-label">Numero Documento TP</label>
-        <input type="text"
-               name="documento_tp"
-               value="{{ documento_tp }}"
-               class="form-control"
-               placeholder="Documento TP...">
+        <label class="ops-filter-label">Recebimento</label>
+        <select name="recebimento" class="form-select">
+          <option value="">Todos</option>
+          <option value="recebido" {% if recebimento == "recebido" %}selected{% endif %}>Recebidos</option>
+          <option value="nao_recebido" {% if recebimento == "nao_recebido" %}selected{% endif %}>Não Recebidos</option>
+        </select>
       </div>
 
-      <div class="d-flex gap-2">
+      <div>
+        <label class="ops-filter-label">Documento TP</label>
+        <select name="tp" class="form-select">
+          <option value="">Todos</option>
+          <option value="com_tp" {% if tp == "com_tp" %}selected{% endif %}>Com Documento TP</option>
+          <option value="sem_tp" {% if tp == "sem_tp" %}selected{% endif %}>Sem Documento TP</option>
+        </select>
+      </div>
+
+      <div class="d-flex align-items-end gap-2">
         <button type="submit" class="ops-btn ops-btn-primary">
           <i class="bi bi-funnel"></i>
           Filtrar
@@ -246,7 +248,7 @@
           {% for item in registros %}
           <tr>
             <td>{{ item.phase|default:"—" }}</td>
-            <td class="km-toc-cell">{{ item.toc|default:"—" }}</td>
+            <td>{{ item.toc|default:"—" }}</td>
             <td><strong>{{ item.numero_km }}</strong></td>
             <td class="km-title-cell">{{ item.titulo|default:"—" }}</td>
             <td>{{ item.disciplina|default:"—" }}</td>

@@ -55,6 +55,14 @@ COLUNAS_MAPEADAS = {
     "data recebimento km": "data_recebimento_km",
     "numero documento tp": "documento_tp",
     "número documento tp": "documento_tp",
+    "documento tp": "documento_tp",
+    "document tp": "documento_tp",
+    "tp": "documento_tp",
+    "numero tp": "documento_tp",
+    "número tp": "documento_tp",
+    "num documento tp": "documento_tp",
+    "nº documento tp": "documento_tp",
+    "no documento tp": "documento_tp",
 }
 
 
@@ -227,7 +235,14 @@ def _montar_defaults(sheet, row_idx: int, colunas: dict[str, int], origem_planil
             continue
 
         valor = _valor_linha(sheet, row_idx, colunas, coluna_origem)
-        defaults[campo_model] = valor
+
+        # Várias colunas/aliases podem apontar para o mesmo campo do model.
+        # Não deixe um alias ausente/vazio sobrescrever um valor já encontrado.
+        if campo_model in defaults and defaults[campo_model] and not valor:
+            continue
+
+        if campo_model not in defaults or valor:
+            defaults[campo_model] = valor
 
     if _model_has_field(DocumentoKM, "origem_planilha"):
         defaults["origem_planilha"] = origem_planilha
@@ -413,11 +428,13 @@ def _buscar_ld_para_km(numero_km: str):
 
 def executar_cruzamento_ld_km(limite: int | None = None) -> dict:
     """
-    Cruza DocumentoKM importado com TransmittalKM e DocumentoLD.
+    Sincronização segura da Lista KM.
 
-    Atualiza:
-    - status_recebimento/transmittal/data_recebimento
-    - documento_ld/documento_tp/status_vinculo_ld/score_vinculo_ld
+    Regra atual:
+    - LD_KM é a fonte oficial da lista.
+    - Documento TP NUNCA é inferido por similaridade.
+    - Documento TP importado da planilha é preservado.
+    - Recebimento é derivado de Transmittal Number ou Data recebimento KM.
     """
     qs = DocumentoKM.objects.all().order_by("numero_km")
     if limite:
@@ -425,87 +442,67 @@ def executar_cruzamento_ld_km(limite: int | None = None) -> dict:
 
     processados = 0
     recebidos = 0
-    pendentes_recebimento = 0
-    vinculados = 0
-    sem_vinculo = 0
+    nao_recebidos = 0
+    com_tp = 0
+    sem_tp = 0
 
     for doc_km in qs:
         update_fields = []
 
-        transmittal = _buscar_transmittal_para_km(doc_km.numero_km)
+        transmittal_numero = _texto(getattr(doc_km, "transmittal_numero", ""))
+        data_recebimento = _texto(getattr(doc_km, "data_recebimento_km", ""))
+        documento_tp = _texto(getattr(doc_km, "documento_tp", ""))
 
-        if transmittal:
+        recebido = bool(transmittal_numero or data_recebimento)
+
+        if recebido:
+            recebidos += 1
             if _model_has_field(DocumentoKM, "status_recebimento"):
                 doc_km.status_recebimento = DocumentoKM.STATUS_RECEBIMENTO_RECEBIDO
                 update_fields.append("status_recebimento")
-
-            if _model_has_field(DocumentoKM, "transmittal_numero"):
-                doc_km.transmittal_numero = _texto(transmittal.transmittal_numero)
-                update_fields.append("transmittal_numero")
-
-            if _model_has_field(DocumentoKM, "data_recebimento_km"):
-                doc_km.data_recebimento_km = _texto(transmittal.data_envio)
-                update_fields.append("data_recebimento_km")
-
-            recebidos += 1
         else:
+            nao_recebidos += 1
             if _model_has_field(DocumentoKM, "status_recebimento"):
                 doc_km.status_recebimento = DocumentoKM.STATUS_RECEBIMENTO_PENDENTE
                 update_fields.append("status_recebimento")
-            pendentes_recebimento += 1
 
-        item_ld, score = _buscar_ld_para_km(doc_km.numero_km)
-
-        if item_ld and score >= 70:
-            if _model_has_field(DocumentoKM, "documento_ld"):
-                doc_km.documento_ld = item_ld
-                update_fields.append("documento_ld")
-
-            if _model_has_field(DocumentoKM, "documento_tp"):
-                doc_km.documento_tp = _texto(getattr(item_ld, "documento", ""))
-                update_fields.append("documento_tp")
-
+        if documento_tp:
+            com_tp += 1
             if _model_has_field(DocumentoKM, "status_vinculo_ld"):
                 doc_km.status_vinculo_ld = DocumentoKM.STATUS_VINCULO_LD_AUTO
                 update_fields.append("status_vinculo_ld")
-
-            if _model_has_field(DocumentoKM, "score_vinculo_ld"):
-                doc_km.score_vinculo_ld = score
-                update_fields.append("score_vinculo_ld")
-
-            if _model_has_field(DocumentoLD, "numero_documento_km"):
-                item_ld.numero_documento_km = doc_km.numero_km
-                item_ld.save(update_fields=["numero_documento_km"])
-
-            vinculados += 1
         else:
+            sem_tp += 1
             if _model_has_field(DocumentoKM, "status_vinculo_ld"):
                 doc_km.status_vinculo_ld = DocumentoKM.STATUS_VINCULO_LD_SEM_MATCH
                 update_fields.append("status_vinculo_ld")
 
-            if _model_has_field(DocumentoKM, "score_vinculo_ld"):
-                doc_km.score_vinculo_ld = score
-                update_fields.append("score_vinculo_ld")
-
-            sem_vinculo += 1
+        # Não atualiza documento_tp, documento_ld ou score_vinculo_ld.
+        # Esses campos não devem ser preenchidos por fuzzy/similaridade.
 
         if update_fields:
-            update_fields = sorted(set(update_fields + ["atualizado_em"])) if _model_has_field(DocumentoKM, "atualizado_em") else sorted(set(update_fields))
-            doc_km.save(update_fields=update_fields)
+            if _model_has_field(DocumentoKM, "atualizado_em"):
+                update_fields.append("atualizado_em")
+            doc_km.save(update_fields=sorted(set(update_fields)))
 
         processados += 1
 
     return {
         "ok": True,
         "mensagem": (
-            f"Cruzamento KM concluído: {processados} processados, "
-            f"{recebidos} recebidos, {vinculados} vinculados à LD."
+            f"Sincronização KM segura concluída: {processados} processados, "
+            f"{recebidos} recebidos, {nao_recebidos} não recebidos, "
+            f"{com_tp} com Documento TP importado."
         ),
         "processados": processados,
         "recebidos": recebidos,
-        "pendentes_recebimento": pendentes_recebimento,
-        "vinculados_ld": vinculados,
-        "sem_vinculo_ld": sem_vinculo,
+        "nao_recebidos": nao_recebidos,
+        "pendentes_recebimento": nao_recebidos,
+        "tp_importado_ld_km": com_tp,
+        "com_documento_tp": com_tp,
+        "sem_documento_tp": sem_tp,
+        "vinculados_ld": com_tp,
+        "sem_vinculo_ld": sem_tp,
         "quantidade_processada": processados,
     }
 

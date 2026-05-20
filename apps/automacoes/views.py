@@ -3469,18 +3469,14 @@ def listar_km(request):
     - Não inventa Documento TP.
     - Não calcula score.
     - Não executa vínculo automático com LD.
-    - A tela respeita os campos importados da planilha LD_KM.
+    - Recebido/Pendente é derivado somente dos campos importados:
+      Transmittal Number ou Data recebimento KM.
     """
     busca = request.GET.get("q", "").strip()
     phase = request.GET.get("phase", "").strip()
     toc = request.GET.get("toc", "").strip()
     disciplina = request.GET.get("disciplina", "").strip()
     transmittal = request.GET.get("transmittal", "").strip()
-    data_recebimento = request.GET.get("data_recebimento", "").strip()
-    documento_tp = request.GET.get("documento_tp", "").strip()
-
-    # Mantidos por compatibilidade com URLs antigas/favoritos.
-    status = request.GET.get("status", "").strip()
     recebimento = request.GET.get("recebimento", "").strip()
     tp = request.GET.get("tp", "").strip()
 
@@ -3497,7 +3493,6 @@ def listar_km(request):
             | Q(phase__icontains=busca)
             | Q(toc__icontains=busca)
             | Q(released_for__icontains=busca)
-            | Q(data_recebimento_km__icontains=busca)
         )
 
     if phase and _model_has_field(DocumentoKM, "phase"):
@@ -3510,16 +3505,7 @@ def listar_km(request):
         registros = registros.filter(disciplina__iexact=disciplina)
 
     if transmittal and _model_has_field(DocumentoKM, "transmittal_numero"):
-        registros = registros.filter(transmittal_numero__icontains=transmittal)
-
-    if data_recebimento and _model_has_field(DocumentoKM, "data_recebimento_km"):
-        registros = registros.filter(data_recebimento_km__iexact=data_recebimento)
-
-    if documento_tp and _model_has_field(DocumentoKM, "documento_tp"):
-        registros = registros.filter(documento_tp__icontains=documento_tp)
-
-    if status and _model_has_field(DocumentoKM, "status_km"):
-        registros = registros.filter(status_km__iexact=status)
+        registros = registros.filter(transmittal_numero__iexact=transmittal)
 
     recebido_q = (
         (
@@ -3534,7 +3520,7 @@ def listar_km(request):
 
     if recebimento == "recebido":
         registros = registros.filter(recebido_q)
-    elif recebimento == "pendente":
+    elif recebimento == "nao_recebido":
         registros = registros.exclude(recebido_q)
 
     if tp == "com_tp":
@@ -3551,7 +3537,7 @@ def listar_km(request):
     total_com_tp = base_total.exclude(documento_tp="").exclude(documento_tp__isnull=True).count()
     total_sem_tp = max(total_km - total_com_tp, 0)
 
-    def _valores_distintos(campo):
+    def _distinct_values(campo):
         if not _model_has_field(DocumentoKM, campo):
             return []
         return (
@@ -3562,11 +3548,10 @@ def listar_km(request):
             .order_by(campo)
         )
 
-    phases = _valores_distintos("phase")
-    tocs = _valores_distintos("toc")
-    disciplinas = _valores_distintos("disciplina")
-    datas_recebimento = _valores_distintos("data_recebimento_km")
-    status_km = _valores_distintos("status_km")
+    phases = _distinct_values("phase")
+    tocs = _distinct_values("toc")
+    disciplinas = _distinct_values("disciplina")
+    transmittals = _distinct_values("transmittal_numero")
 
     paginator = Paginator(registros, 50)
     page_obj = paginator.get_page(request.GET.get("page"))
@@ -3585,9 +3570,6 @@ def listar_km(request):
             "toc": toc,
             "disciplina": disciplina,
             "transmittal": transmittal,
-            "data_recebimento": data_recebimento,
-            "documento_tp": documento_tp,
-            "status": status,
             "recebimento": recebimento,
             "tp": tp,
             "total": total,
@@ -3600,11 +3582,11 @@ def listar_km(request):
             "phases": phases,
             "tocs": tocs,
             "disciplinas": disciplinas,
-            "datas_recebimento": datas_recebimento,
-            "status_km": status_km,
+            "transmittals": transmittals,
             "querystring": query_params.urlencode(),
         },
     )
+
 
 
 @login_required
