@@ -1,59 +1,80 @@
 {% extends "documentos/base.html" %}
 {% load static %}
 
-{% block title %}Lista LD Kongsberg{% endblock %}
+{% block title %}Dashboard KM ↔ LD{% endblock %}
 
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'automacoes/css/ops_enterprise.css' %}?v=1700">
 <style>
-  .km-wide-page {
-    width: min(1820px, calc(100vw - 32px));
-    max-width: none;
-    margin-left: auto;
-    margin-right: auto;
-  }
-
-  .km-filter-grid {
+  .km-dashboard-toolbar {
     display: grid;
-    grid-template-columns: minmax(240px, 1.4fr) minmax(150px, .8fr) minmax(220px, 1.2fr) minmax(160px, .8fr) minmax(170px, .8fr) minmax(160px, .75fr) minmax(170px, .75fr);
+    grid-template-columns: minmax(260px, 1.4fr) minmax(170px, .8fr) minmax(220px, 1.1fr) minmax(170px, .8fr) minmax(180px, .8fr) minmax(160px, .75fr) minmax(170px, .75fr);
     gap: 12px;
     align-items: end;
   }
-
-  .km-filter-grid select,
-  .km-filter-grid input {
-    min-width: 0;
+  .km-dashboard-toolbar input,
+  .km-dashboard-toolbar select {
+    width: 100%;
   }
-
-  .km-table-wrap {
-    overflow-x: auto;
-  }
-
-  .km-table {
-    min-width: 1900px;
-    white-space: nowrap;
-  }
-
-  .km-table th,
-  .km-table td {
-    vertical-align: middle;
-  }
-
-  .km-title-cell {
-    min-width: 360px;
-    white-space: normal;
-  }
-
   @media (max-width: 1400px) {
-    .km-filter-grid {
-      grid-template-columns: repeat(3, minmax(220px, 1fr));
-    }
+    .km-dashboard-toolbar { grid-template-columns: repeat(3, minmax(220px, 1fr)); }
+  }
+  @media (max-width: 700px) {
+    .km-dashboard-toolbar { grid-template-columns: 1fr; }
   }
 
-  @media (max-width: 900px) {
-    .km-filter-grid {
-      grid-template-columns: 1fr;
-    }
+  .km-chart-grid {
+    display:grid;
+    grid-template-columns: repeat(2, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  @media (max-width: 1000px) {
+    .km-chart-grid { grid-template-columns: 1fr; }
+  }
+  .km-bar-list {
+    display:flex;
+    flex-direction:column;
+    gap: 10px;
+  }
+  .km-bar-row {
+    display:grid;
+    grid-template-columns: minmax(120px, 1fr) minmax(140px, 2fr) 56px;
+    gap: 10px;
+    align-items:center;
+    color:#e2e8f0;
+    font-size: 13px;
+  }
+  .km-bar-label {
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .km-bar-track {
+    height: 10px;
+    border-radius: 999px;
+    background: rgba(148,163,184,.18);
+    overflow:hidden;
+  }
+  .km-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, rgba(14,165,233,.75), rgba(34,197,94,.75));
+  }
+  .km-mini-table {
+    width:100%;
+    border-collapse: collapse;
+  }
+  .km-mini-table th,
+  .km-mini-table td {
+    border-bottom: 1px solid rgba(148,163,184,.14);
+    padding: 10px 8px;
+    color:#e2e8f0;
+    font-size: 13px;
+  }
+  .km-mini-table th {
+    color:#94a3b8;
+    font-weight:600;
+    text-align:left;
   }
 
   .km-filter-actions, .km-dashboard-actions {
@@ -181,92 +202,60 @@
 {% endblock %}
 
 {% block content %}
-<div class="ops-page km-wide-page">
+<div class="ops-page">
 
   <section class="ops-hero">
     <div class="ops-hero-main">
       <div class="ops-eyebrow">
-        <span class="ged-status-dot"></span>
-        KM DOCUMENT MASTER
+        <i class="bi bi-diagram-3"></i>
+        Engineering Document Intelligence
       </div>
 
-      <h1>Lista LD Kongsberg</h1>
+      <h1>Dashboard KM ↔ LD</h1>
 
       <p>
-        Espelho operacional da aba LD_KM importada. Os campos abaixo respeitam a planilha:
-        nenhum Documento TP é inferido automaticamente.
+        Visão executiva da Lista Mestre Kongsberg, com KPIs recalculados conforme os filtros ativos.
       </p>
-
-      <div class="ops-actions mt-3">
-        <a href="{% url 'automacoes:importar_lista_km' %}" class="ops-btn ops-btn-primary">
-          <i class="bi bi-cloud-upload"></i>
-          Importar LD Kongsberg
-        </a>
-
-        <a href="{% url 'automacoes:dashboard_km_ld' %}{% if querystring %}?{{ querystring }}{% endif %}" class="ops-btn">
-          <i class="bi bi-diagram-3"></i>
-          Dashboard KM filtrado
-        </a>
-
-        <a href="?{% if querystring %}{{ querystring }}&{% endif %}export=xlsx" class="ops-btn">
-          <i class="bi bi-file-earmark-excel"></i>
-          Exportar Excel filtrado
-        </a>
-
-        <a href="{% url 'automacoes:transmittals_km' %}" class="ops-btn">
-          <i class="bi bi-box-seam"></i>
-          Transmittals KM
-        </a>
-      </div>
     </div>
 
-    <div class="ops-detail-card">
-      <span class="ops-filter-label">Registros filtrados</span>
-      <strong>{{ total }}</strong>
-      <div class="ops-muted mt-2">base importada da LD_KM.</div>
-    </div>
-  </section>
+    <div class="ops-actions">
+      <a href="{% url 'automacoes:lista_km' %}{% if querystring %}?{{ querystring }}{% endif %}" class="ops-btn ops-btn-primary">
+        <i class="bi bi-list-ul"></i>
+        Ver Lista KM filtrada
+      </a>
 
-  <section class="ops-kpi-grid ops-kpi-grid-4 mb-3">
-    <div class="ops-kpi">
-      <span>Total KM</span>
-      <strong>{{ total_km|default:total }}</strong>
-      <small>documentos importados</small>
-    </div>
+      <a href="{% url 'automacoes:lista_km' %}?{% if querystring %}{{ querystring }}&{% endif %}export=xlsx" class="ops-btn">
+        <i class="bi bi-file-earmark-excel"></i>
+        Exportar Excel filtrado
+      </a>
 
-    <div class="ops-kpi">
-      <span>Recebidos</span>
-      <strong>{{ total_filtrado_recebidos|default:total_recebidos }}</strong>
-      <small>no filtro atual</small>
-    </div>
+      <a href="{% url 'automacoes:dashboard_transmittals' %}" class="ops-btn">
+        <i class="bi bi-box-seam"></i>
+        Transmittals
+      </a>
 
-    <div class="ops-kpi">
-      <span>Não Recebidos</span>
-      <strong>{{ total_filtrado_pendentes|default:total_pendentes }}</strong>
-      <small>no filtro atual</small>
-    </div>
+      <a href="{% url 'automacoes:dashboard_ld' %}" class="ops-btn">
+        <i class="bi bi-folder2-open"></i>
+        Dashboard LD
+      </a>
 
-    <div class="ops-kpi">
-      <span>Com Documento TP</span>
-      <strong>{{ total_filtrado_com_tp|default:total_com_tp }}</strong>
-      <small>informado na LD_KM</small>
+      <a href="{% url 'automacoes:painel' %}" class="ops-btn">
+        <i class="bi bi-arrow-left"></i>
+        Voltar
+      </a>
     </div>
   </section>
 
   <section class="ops-panel mb-3">
-    <form method="get" class="km-filter-grid">
+    <form method="get" class="km-dashboard-toolbar">
       <div>
-        <label class="ops-filter-label">Buscar</label>
-        <input type="text"
-               name="q"
-               value="{{ busca }}"
-               class="form-control"
-               placeholder="Number, título, transmittal ou TP...">
+        <label class="ops-filter-label">Busca geral</label>
+        <input type="text" name="q" value="{{ busca }}" placeholder="Number, título, transmittal ou TP..." class="ops-input">
       </div>
 
       <div>
         <label class="ops-filter-label">Phase</label>
-        <select name="phase" class="form-select km-smart-select" multiple data-placeholder="Todas">
+        <select name="phase" class="ops-select km-smart-select" multiple data-placeholder="Todas">
           {% for item in phases %}
           <option value="{{ item }}" {% if item in phases_selecionadas %}selected{% endif %}>{{ item }}</option>
           {% endfor %}
@@ -275,7 +264,7 @@
 
       <div>
         <label class="ops-filter-label">TOC</label>
-        <select name="toc" class="form-select km-smart-select" multiple data-placeholder="Todos">
+        <select name="toc" class="ops-select km-smart-select" multiple data-placeholder="Todos">
           {% for item in tocs %}
           <option value="{{ item }}" title="{{ item }}" {% if item in tocs_selecionados %}selected{% endif %}>{{ item|truncatechars:58 }}</option>
           {% endfor %}
@@ -284,7 +273,7 @@
 
       <div>
         <label class="ops-filter-label">Discipline</label>
-        <select name="disciplina" class="form-select km-smart-select" multiple data-placeholder="Todas">
+        <select name="disciplina" class="ops-select km-smart-select" multiple data-placeholder="Todas">
           {% for item in disciplinas %}
           <option value="{{ item }}" {% if item in disciplinas_selecionadas %}selected{% endif %}>{{ item }}</option>
           {% endfor %}
@@ -292,8 +281,8 @@
       </div>
 
       <div>
-        <label class="ops-filter-label">Transmittal Number</label>
-        <select name="transmittal" class="form-select km-smart-select" multiple data-placeholder="Todos">
+        <label class="ops-filter-label">Transmittal</label>
+        <select name="transmittal" class="ops-select km-smart-select" multiple data-placeholder="Todos">
           {% for item in transmittals %}
           <option value="{{ item }}" title="{{ item }}" {% if item in transmittals_selecionados %}selected{% endif %}>{{ item|truncatechars:32 }}</option>
           {% endfor %}
@@ -302,7 +291,7 @@
 
       <div>
         <label class="ops-filter-label">Recebimento</label>
-        <select name="recebimento" class="form-select km-smart-select" multiple data-placeholder="Todos">
+        <select name="recebimento" class="ops-select km-smart-select" multiple data-placeholder="Todos">
           <option value="recebido" {% if "recebido" in recebimentos_selecionados %}selected{% endif %}>Recebidos</option>
           <option value="nao_recebido" {% if "nao_recebido" in recebimentos_selecionados %}selected{% endif %}>Não Recebidos</option>
         </select>
@@ -310,31 +299,31 @@
 
       <div>
         <label class="ops-filter-label">Documento TP</label>
-        <select name="tp" class="form-select km-smart-select" multiple data-placeholder="Todos">
-          <option value="com_tp" {% if "com_tp" in tps_selecionados %}selected{% endif %}>Com Documento TP</option>
-          <option value="sem_tp" {% if "sem_tp" in tps_selecionados %}selected{% endif %}>Sem Documento TP</option>
+        <select name="tp" class="ops-select km-smart-select" multiple data-placeholder="Todos">
+          <option value="com_tp" {% if "com_tp" in tps_selecionados %}selected{% endif %}>Com TP</option>
+          <option value="sem_tp" {% if "sem_tp" in tps_selecionados %}selected{% endif %}>Sem TP</option>
         </select>
       </div>
 
-      <div class="km-filter-actions">
+      <div class="km-dashboard-actions">
         <button type="submit" class="ops-btn ops-btn-primary">
           <i class="bi bi-funnel"></i>
           Aplicar filtros
         </button>
 
-        <a href="{% url 'automacoes:lista_km' %}" class="ops-btn">
+        <a href="{% url 'automacoes:dashboard_km_ld' %}" class="ops-btn">
           <i class="bi bi-x-circle"></i>
           Limpar filtros
         </a>
 
-        <a href="{% url 'automacoes:dashboard_km_ld' %}{% if querystring %}?{{ querystring }}{% endif %}" class="ops-btn">
-          <i class="bi bi-diagram-3"></i>
-          Dashboard filtrado
+        <a href="{% url 'automacoes:lista_km' %}{% if querystring %}?{{ querystring }}{% endif %}" class="ops-btn">
+          <i class="bi bi-list-ul"></i>
+          Lista filtrada
         </a>
 
-        <a href="?{% if querystring %}{{ querystring }}&{% endif %}export=xlsx" class="ops-btn">
+        <a href="{% url 'automacoes:lista_km' %}?{% if querystring %}{{ querystring }}&{% endif %}export=xlsx" class="ops-btn">
           <i class="bi bi-file-earmark-excel"></i>
-          Exportar Excel filtrado
+          Excel filtrado
         </a>
       </div>
     </form>
@@ -348,91 +337,159 @@
     {% endif %}
   </section>
 
-  <section class="ops-panel">
-    <div class="ops-panel-head">
-      <div>
-        <h2>Documentos KM</h2>
-        <p>Resultado operacional conforme filtros ativos.</p>
-      </div>
-      <span class="ops-chip">{{ total }} registros</span>
+  <section class="ops-kpi-grid ops-kpi-grid-6">
+    <a href="{% url 'automacoes:lista_km' %}{% if querystring %}?{{ querystring }}{% endif %}" class="ops-kpi">
+      <span>KM filtrados</span>
+      <strong>{{ total }}</strong>
+      <small>resultado atual</small>
+    </a>
+
+    <div class="ops-kpi">
+      <span>Recebidos</span>
+      <strong>{{ recebidos }}</strong>
+      <small>{{ cobertura_recebimento }}% do filtro</small>
     </div>
 
-    <div class="km-table-wrap">
-      <table class="table table-dark table-hover align-middle ops-table km-table">
+    <div class="ops-kpi">
+      <span>Não recebidos</span>
+      <strong>{{ pendentes }}</strong>
+      <small>sem transmittal/data</small>
+    </div>
+
+    <div class="ops-kpi">
+      <span>Com Documento TP</span>
+      <strong>{{ com_tp }}</strong>
+      <small>{{ cobertura_tp }}% do filtro</small>
+    </div>
+
+    <div class="ops-kpi">
+      <span>KM com LD</span>
+      <strong>{{ km_com_ld }}</strong>
+      <small>{{ cobertura_vinculo }}% vinculados</small>
+    </div>
+
+    <div class="ops-kpi">
+      <span>Transmittals</span>
+      <strong>{{ total_transmittals }}</strong>
+      <small>base KM</small>
+    </div>
+  </section>
+
+  <section class="km-chart-grid mt-3">
+    <div class="ops-panel">
+      <div class="ops-panel-head">
+        <div>
+          <h2>Distribuição por Disciplina</h2>
+          <p>Top disciplinas no filtro atual.</p>
+        </div>
+      </div>
+      <div class="km-bar-list">
+        {% for item in disciplina_chart %}
+        <div class="km-bar-row">
+          <span class="km-bar-label" title="{{ item.label }}">{{ item.label }}</span>
+          <span class="km-bar-track"><span class="km-bar-fill" style="width: {{ item.pct }}%;"></span></span>
+          <strong>{{ item.total }}</strong>
+        </div>
+        {% empty %}
+        <p class="ops-muted">Sem dados para os filtros atuais.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="ops-panel">
+      <div class="ops-panel-head">
+        <div>
+          <h2>Distribuição por Phase</h2>
+          <p>Volume por fase.</p>
+        </div>
+      </div>
+      <div class="km-bar-list">
+        {% for item in phase_chart %}
+        <div class="km-bar-row">
+          <span class="km-bar-label" title="{{ item.label }}">{{ item.label }}</span>
+          <span class="km-bar-track"><span class="km-bar-fill" style="width: {{ item.pct }}%;"></span></span>
+          <strong>{{ item.total }}</strong>
+        </div>
+        {% empty %}
+        <p class="ops-muted">Sem dados para os filtros atuais.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="ops-panel">
+      <div class="ops-panel-head">
+        <div>
+          <h2>Recebimento</h2>
+          <p>Documentos recebidos versus pendentes.</p>
+        </div>
+      </div>
+      <div class="km-bar-list">
+        {% for item in status_recebimento_chart %}
+        <div class="km-bar-row">
+          <span class="km-bar-label">{{ item.label }}</span>
+          <span class="km-bar-track"><span class="km-bar-fill" style="width: {{ item.pct }}%;"></span></span>
+          <strong>{{ item.total }}</strong>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="ops-panel">
+      <div class="ops-panel-head">
+        <div>
+          <h2>Documento TP</h2>
+          <p>Cobertura TP importada da LD_KM.</p>
+        </div>
+      </div>
+      <div class="km-bar-list">
+        {% for item in tp_chart %}
+        <div class="km-bar-row">
+          <span class="km-bar-label">{{ item.label }}</span>
+          <span class="km-bar-track"><span class="km-bar-fill" style="width: {{ item.pct }}%;"></span></span>
+          <strong>{{ item.total }}</strong>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <section class="ops-panel mt-3">
+    <div class="ops-panel-head">
+      <div>
+        <h2>Últimos documentos atualizados</h2>
+        <p>Amostra operacional do resultado filtrado.</p>
+      </div>
+      <a href="{% url 'automacoes:lista_km' %}{% if querystring %}?{{ querystring }}{% endif %}" class="ops-btn">
+        Ver lista completa
+      </a>
+    </div>
+
+    <div class="table-responsive">
+      <table class="km-mini-table">
         <thead>
           <tr>
-            <th>Phase</th>
-            <th>TOC</th>
             <th>Number</th>
             <th>Title</th>
             <th>Discipline</th>
-            <th>Contractual Delivery</th>
-            <th>Preliminary Delivery</th>
-            <th>Agreed Delivery</th>
-            <th>First Delivery</th>
-            <th>Released For</th>
-            <th>Status</th>
-            <th>Core Share Document</th>
-            <th>Core Share Folder</th>
-            <th>Transmittal Number</th>
-            <th>Data recebimento KM</th>
-            <th>Numero Documento TP</th>
+            <th>Transmittal</th>
+            <th>Documento TP</th>
           </tr>
         </thead>
         <tbody>
-          {% for item in registros %}
+          {% for item in recentes %}
           <tr>
-            <td>{{ item.phase|default:"—" }}</td>
-            <td>{{ item.toc|default:"—" }}</td>
             <td><strong>{{ item.numero_km }}</strong></td>
-            <td class="km-title-cell">{{ item.titulo|default:"—" }}</td>
+            <td>{{ item.titulo|default:"—"|truncatechars:80 }}</td>
             <td>{{ item.disciplina|default:"—" }}</td>
-            <td>{{ item.contractual_delivery|default:"—" }}</td>
-            <td>{{ item.preliminary_delivery|default:"—" }}</td>
-            <td>{{ item.agreed_delivery|default:"—" }}</td>
-            <td>{{ item.first_delivery|default:"—" }}</td>
-            <td>{{ item.released_for|default:"—" }}</td>
-            <td>{{ item.status_km|default:"—" }}</td>
-            <td>{{ item.core_share_document|default:"—" }}</td>
-            <td>{{ item.core_share_folder|default:"—" }}</td>
             <td>{{ item.transmittal_numero|default:"—" }}</td>
-            <td>{{ item.data_recebimento_km|default:"—" }}</td>
             <td>{{ item.documento_tp|default:"—" }}</td>
           </tr>
           {% empty %}
-          <tr>
-            <td colspan="16" class="text-center ops-muted py-4">
-              Nenhum documento KM encontrado para os filtros atuais.
-            </td>
-          </tr>
+          <tr><td colspan="5" class="ops-muted">Sem documentos para os filtros atuais.</td></tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
-
-    {% if page_obj.has_other_pages %}
-    <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
-      <span class="ops-muted">
-        Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
-      </span>
-
-      <div class="ops-actions">
-        {% if page_obj.has_previous %}
-        <a class="ops-btn"
-           href="?page={{ page_obj.previous_page_number }}{% if querystring %}&{{ querystring }}{% endif %}">
-          Anterior
-        </a>
-        {% endif %}
-
-        {% if page_obj.has_next %}
-        <a class="ops-btn"
-           href="?page={{ page_obj.next_page_number }}{% if querystring %}&{{ querystring }}{% endif %}">
-          Próxima
-        </a>
-        {% endif %}
-      </div>
-    </div>
-    {% endif %}
   </section>
 
 </div>
