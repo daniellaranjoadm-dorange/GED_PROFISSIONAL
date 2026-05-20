@@ -3654,33 +3654,330 @@ def executar_sync_km_ld(request):
 
 
 @login_required
+
+
+def _km_clean_getlist(request, nome):
+    valores = []
+    for valor in request.GET.getlist(nome):
+        valor = str(valor or "").strip()
+        if valor:
+            valores.append(valor)
+    legado = str(request.GET.get(nome, "") or "").strip()
+    if legado and legado not in valores:
+        valores.append(legado)
+    return valores
+
+
+def _km_recebido_q():
+    return (
+        (
+            ~Q(transmittal_numero="")
+            & Q(transmittal_numero__isnull=False)
+        )
+        | (
+            ~Q(data_recebimento_km="")
+            & Q(data_recebimento_km__isnull=False)
+        )
+    )
+
+
+def _km_distinct_values(campo):
+    if not _model_has_field(DocumentoKM, campo):
+        return []
+    return list(
+        DocumentoKM.objects.exclude(**{campo: ""})
+        .exclude(**{f"{campo}__isnull": True})
+        .values_list(campo, flat=True)
+        .distinct()
+        .order_by(campo)
+    )
+
+
+def _km_filter_state(request):
+    return {
+        "busca": request.GET.get("q", "").strip(),
+        "phases": _km_clean_getlist(request, "phase"),
+        "tocs": _km_clean_getlist(request, "toc"),
+        "disciplinas": _km_clean_getlist(request, "disciplina"),
+        "transmittals": _km_clean_getlist(request, "transmittal"),
+        "recebimentos": _km_clean_getlist(request, "recebimento"),
+        "tps": _km_clean_getlist(request, "tp"),
+    }
+
+
+def _km_apply_filters(registros, filtros):
+    busca = filtros.get("busca", "")
+    phases = filtros.get("phases", [])
+    tocs = filtros.get("tocs", [])
+    disciplinas = filtros.get("disciplinas", [])
+    transmittals = filtros.get("transmittals", [])
+    recebimentos = filtros.get("recebimentos", [])
+    tps = filtros.get("tps", [])
+
+    if busca:
+        registros = registros.filter(
+            Q(numero_km__icontains=busca)
+            | Q(titulo__icontains=busca)
+            | Q(disciplina__icontains=busca)
+            | Q(status_km__icontains=busca)
+            | Q(transmittal_numero__icontains=busca)
+            | Q(documento_tp__icontains=busca)
+            | Q(phase__icontains=busca)
+            | Q(toc__icontains=busca)
+            | Q(released_for__icontains=busca)
+        )
+
+    if phases and _model_has_field(DocumentoKM, "phase"):
+        registros = registros.filter(phase__in=phases)
+
+    if tocs and _model_has_field(DocumentoKM, "toc"):
+        registros = registros.filter(toc__in=tocs)
+
+    if disciplinas and _model_has_field(DocumentoKM, "disciplina"):
+        registros = registros.filter(disciplina__in=disciplinas)
+
+    if transmittals and _model_has_field(DocumentoKM, "transmittal_numero"):
+        registros = registros.filter(transmittal_numero__in=transmittals)
+
+    recebido_q = _km_recebido_q()
+
+    if recebimentos:
+        if "recebido" in recebimentos and "nao_recebido" not in recebimentos:
+            registros = registros.filter(recebido_q)
+        elif "nao_recebido" in recebimentos and "recebido" not in recebimentos:
+            registros = registros.exclude(recebido_q)
+
+    if tps:
+        if "com_tp" in tps and "sem_tp" not in tps:
+            registros = registros.exclude(documento_tp="").exclude(documento_tp__isnull=True)
+        elif "sem_tp" in tps and "com_tp" not in tps:
+            registros = registros.filter(Q(documento_tp="") | Q(documento_tp__isnull=True))
+
+    return registros
+
+
+def _km_pct(valor, total):
+    return round((valor / total) * 100, 1) if total else 0
+
+
+def _km_bar_chart(qs, campo, limite=8):
+    if not _model_has_field(DocumentoKM, campo):
+        return []
+
+    dados = list(
+        qs.exclude(**{campo: ""})
+        .exclude(**{f"{campo}__isnull": True})
+        .values(campo)
+        .annotate(total=Count("id"))
+        .order_by("-total", campo)[:limite]
+    )
+    maior = max([item["total"] for item in dados], default=0)
+
+    return [
+        {
+            "label": item.get(campo) or "—",
+            "total": item.get("total") or 0,
+            "pct": _km_pct(item.get("total") or 0, maior),
+        }
+        for item in dados
+    ]
+
+
+def _km_simple_chart(itens):
+    total = sum(valor for _, valor in itens)
+    return [
+        {
+            "label": label,
+            "total": valor,
+            "pct": _km_pct(valor, total),
+        }
+        for label, valor in itens
+    ]
+
+
+def _km_active_filter_chips(filtros):
+    chips = []
+    if filtros.get("busca"):
+        chips.append({"label": "Busca", "valor": filtros["busca"]})
+
+    mapa = [
+        ("Phase", "phases"),
+        ("TOC", "tocs"),
+        ("Discipline", "disciplinas"),
+        ("Transmittal", "transmittals"),
+        ("Recebimento", "recebimentos"),
+        ("Documento TP", "tps"),
+    ]
+
+    rotulos = {
+        "recebido": "Recebidos",
+        "nao_recebido": "Não recebidos",
+        "com_tp": "Com TP",
+        "sem_tp": "Sem TP",
+    }
+
+    for label, chave in mapa:
+        valores = filtros.get(chave) or []
+        if valores:
+            texto = ", ".join(rotulos.get(v, v) for v in valores[:4])
+            if len(valores) > 4:
+                texto += f" +{len(valores) - 4}"
+            chips.append({"label": label, "valor": texto})
+
+    return chips
+
+
+def _km_exportar_excel_filtrado(registros):
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Lista KM filtrada"
+
+    headers = [
+        "Number",
+        "Title",
+        "Discipline",
+        "TOC",
+        "Phase",
+        "Status KM",
+        "Transmittal Number",
+        "Data Recebimento KM",
+        "Documento TP",
+        "Released For",
+        "Responsible",
+    ]
+    ws.append(headers)
+
+    for cell in ws[1]:
+        cell.font = Font(bold=True)
+        cell.fill = PatternFill("solid", fgColor="D9EAF7")
+
+    for item in registros:
+        ws.append([
+            getattr(item, "numero_km", "") or "",
+            getattr(item, "titulo", "") or "",
+            getattr(item, "disciplina", "") or "",
+            getattr(item, "toc", "") or "",
+            getattr(item, "phase", "") or "",
+            getattr(item, "status_km", "") or "",
+            getattr(item, "transmittal_numero", "") or "",
+            getattr(item, "data_recebimento_km", "") or "",
+            getattr(item, "documento_tp", "") or "",
+            getattr(item, "released_for", "") or "",
+            getattr(item, "responsible", "") or "",
+        ])
+
+    for column_cells in ws.columns:
+        max_len = max(len(str(cell.value or "")) for cell in column_cells)
+        ws.column_dimensions[column_cells[0].column_letter].width = min(max(max_len + 2, 12), 55)
+
+    response = HttpResponse(
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    response["Content-Disposition"] = 'attachment; filename="lista_km_filtrada.xlsx"'
+    wb.save(response)
+    return response
+
+
 def dashboard_km_ld(request):
-    total_km = DocumentoKM.objects.count()
+    filtros = _km_filter_state(request)
+    registros_base = DocumentoKM.objects.all()
+    registros = _km_apply_filters(registros_base.order_by("numero_km"), filtros)
+
+    if request.GET.get("export") == "xlsx":
+        return _km_exportar_excel_filtrado(registros)
+
+    total = registros.count()
+    total_km = registros_base.count()
     total_ld = DocumentoLD.objects.count()
-    total_transmittals = TransmittalKM.objects.count()
+    total_transmittals = (
+        registros.exclude(transmittal_numero="")
+        .exclude(transmittal_numero__isnull=True)
+        .values("transmittal_numero")
+        .distinct()
+        .count()
+    )
 
-    recebidos = DocumentoKM.objects.filter(
-        status_recebimento=DocumentoKM.STATUS_RECEBIMENTO_RECEBIDO
-    ).count()
-    pendentes = DocumentoKM.objects.filter(
-        status_recebimento=DocumentoKM.STATUS_RECEBIMENTO_PENDENTE
-    ).count()
-    vinculados_ld = DocumentoKM.objects.exclude(documento_ld__isnull=True).count()
-    sem_vinculo_ld = DocumentoKM.objects.filter(documento_ld__isnull=True).count()
+    recebido_q = _km_recebido_q()
+    recebidos = registros.filter(recebido_q).count()
+    pendentes = max(total - recebidos, 0)
+    com_tp = registros.exclude(documento_tp="").exclude(documento_tp__isnull=True).count()
+    sem_tp = max(total - com_tp, 0)
+    km_com_ld = registros.exclude(documento_ld__isnull=True).count()
+    km_sem_ld = max(total - km_com_ld, 0)
 
-    recentes = DocumentoKM.objects.order_by("-atualizado_em")[:25]
+    cobertura_recebimento = _km_pct(recebidos, total)
+    cobertura_tp = _km_pct(com_tp, total)
+    cobertura_vinculo = _km_pct(km_com_ld, total)
+    saude_operacional = round((cobertura_recebimento + cobertura_tp + cobertura_vinculo) / 3, 1) if total else 0
+
+    if saude_operacional >= 80:
+        saude_label = "Saudável"
+        saude_class = "ok"
+    elif saude_operacional >= 55:
+        saude_label = "Atenção"
+        saude_class = "warn"
+    else:
+        saude_label = "Crítico"
+        saude_class = "danger"
+
+    recentes = registros.order_by("-atualizado_em", "numero_km")[:10]
+
+    query_params = request.GET.copy()
+    query_params.pop("page", None)
+    query_params.pop("export", None)
 
     context = {
+        "documento_km_disponivel": True,
+        "total": total,
         "total_km": total_km,
         "total_ld": total_ld,
         "total_transmittals": total_transmittals,
         "recebidos": recebidos,
         "pendentes": pendentes,
-        "vinculados_ld": vinculados_ld,
-        "sem_vinculo_ld": sem_vinculo_ld,
-        "cobertura_recebimento": round((recebidos / total_km) * 100, 1) if total_km else 0,
-        "cobertura_vinculo": round((vinculados_ld / total_km) * 100, 1) if total_km else 0,
+        "com_tp": com_tp,
+        "sem_tp": sem_tp,
+        "km_com_ld": km_com_ld,
+        "km_sem_ld": km_sem_ld,
+        "vinculados_ld": km_com_ld,
+        "sem_vinculo_ld": km_sem_ld,
+        "cobertura_recebimento": cobertura_recebimento,
+        "cobertura_tp": cobertura_tp,
+        "cobertura_vinculo": cobertura_vinculo,
+        "saude_operacional": saude_operacional,
+        "saude_label": saude_label,
+        "saude_class": saude_class,
         "recentes": recentes,
+        "disciplina_chart": _km_bar_chart(registros, "disciplina", 8),
+        "phase_chart": _km_bar_chart(registros, "phase", 8),
+        "toc_chart": _km_bar_chart(registros, "toc", 8),
+        "status_km_chart": _km_bar_chart(registros, "status_km", 8),
+        "status_recebimento_chart": _km_simple_chart([
+            ("Recebidos", recebidos),
+            ("Não recebidos", pendentes),
+        ]),
+        "tp_chart": _km_simple_chart([
+            ("Com Documento TP", com_tp),
+            ("Sem Documento TP", sem_tp),
+        ]),
+        "matriz_recebimento_tp": [
+            {"label": "Recebidos com TP", "total": registros.filter(recebido_q).exclude(documento_tp="").exclude(documento_tp__isnull=True).count()},
+            {"label": "Recebidos sem TP", "total": registros.filter(recebido_q).filter(Q(documento_tp="") | Q(documento_tp__isnull=True)).count()},
+            {"label": "Pendentes com TP", "total": registros.exclude(recebido_q).exclude(documento_tp="").exclude(documento_tp__isnull=True).count()},
+            {"label": "Pendentes sem TP", "total": registros.exclude(recebido_q).filter(Q(documento_tp="") | Q(documento_tp__isnull=True)).count()},
+        ],
+        "phases": _km_distinct_values("phase"),
+        "tocs": _km_distinct_values("toc"),
+        "disciplinas": _km_distinct_values("disciplina"),
+        "transmittals": _km_distinct_values("transmittal_numero"),
+        "busca": filtros["busca"],
+        "phases_selecionadas": filtros["phases"],
+        "tocs_selecionados": filtros["tocs"],
+        "disciplinas_selecionadas": filtros["disciplinas"],
+        "transmittals_selecionados": filtros["transmittals"],
+        "recebimentos_selecionados": filtros["recebimentos"],
+        "tps_selecionados": filtros["tps"],
+        "filtros_ativos": _km_active_filter_chips(filtros),
+        "querystring": query_params.urlencode(),
     }
 
     return render(
@@ -3751,69 +4048,21 @@ def listar_km(request):
     """
     Lista KM como espelho fiel da aba LD_KM importada.
 
-    Regra:
-    - Não inventa Documento TP.
-    - Não calcula score.
-    - Não executa vínculo automático com LD.
-    - Recebido/Pendente é derivado somente dos campos importados:
-      Transmittal Number ou Data recebimento KM.
+    Mantém a operação KM sem inferência automática:
+    - Documento TP vem apenas da planilha LD_KM.
+    - Recebido/Pendente deriva de Transmittal Number ou Data recebimento KM.
+    - Filtros usam multi-select via querystring repetida.
     """
-    busca = request.GET.get("q", "").strip()
-    phase = request.GET.get("phase", "").strip()
-    toc = request.GET.get("toc", "").strip()
-    disciplina = request.GET.get("disciplina", "").strip()
-    transmittal = request.GET.get("transmittal", "").strip()
-    recebimento = request.GET.get("recebimento", "").strip()
-    tp = request.GET.get("tp", "").strip()
-
-    registros = DocumentoKM.objects.all().order_by("numero_km")
-
-    if busca:
-        registros = registros.filter(
-            Q(numero_km__icontains=busca)
-            | Q(titulo__icontains=busca)
-            | Q(disciplina__icontains=busca)
-            | Q(status_km__icontains=busca)
-            | Q(transmittal_numero__icontains=busca)
-            | Q(documento_tp__icontains=busca)
-            | Q(phase__icontains=busca)
-            | Q(toc__icontains=busca)
-            | Q(released_for__icontains=busca)
-        )
-
-    if phase and _model_has_field(DocumentoKM, "phase"):
-        registros = registros.filter(phase__iexact=phase)
-
-    if toc and _model_has_field(DocumentoKM, "toc"):
-        registros = registros.filter(toc__iexact=toc)
-
-    if disciplina and _model_has_field(DocumentoKM, "disciplina"):
-        registros = registros.filter(disciplina__iexact=disciplina)
-
-    if transmittal and _model_has_field(DocumentoKM, "transmittal_numero"):
-        registros = registros.filter(transmittal_numero__iexact=transmittal)
-
-    recebido_q = (
-        (
-            ~Q(transmittal_numero="")
-            & Q(transmittal_numero__isnull=False)
-        )
-        | (
-            ~Q(data_recebimento_km="")
-            & Q(data_recebimento_km__isnull=False)
-        )
+    filtros = _km_filter_state(request)
+    registros = _km_apply_filters(
+        DocumentoKM.objects.all().order_by("numero_km"),
+        filtros,
     )
 
-    if recebimento == "recebido":
-        registros = registros.filter(recebido_q)
-    elif recebimento == "nao_recebido":
-        registros = registros.exclude(recebido_q)
+    if request.GET.get("export") == "xlsx":
+        return _km_exportar_excel_filtrado(registros)
 
-    if tp == "com_tp":
-        registros = registros.exclude(documento_tp="").exclude(documento_tp__isnull=True)
-    elif tp == "sem_tp":
-        registros = registros.filter(Q(documento_tp="") | Q(documento_tp__isnull=True))
-
+    recebido_q = _km_recebido_q()
     base_total = DocumentoKM.objects.all()
 
     total = registros.count()
@@ -3823,27 +4072,25 @@ def listar_km(request):
     total_com_tp = base_total.exclude(documento_tp="").exclude(documento_tp__isnull=True).count()
     total_sem_tp = max(total_km - total_com_tp, 0)
 
-    def _distinct_values(campo):
-        if not _model_has_field(DocumentoKM, campo):
-            return []
-        return (
-            DocumentoKM.objects.exclude(**{campo: ""})
-            .exclude(**{f"{campo}__isnull": True})
-            .values_list(campo, flat=True)
-            .distinct()
-            .order_by(campo)
-        )
-
-    phases = _distinct_values("phase")
-    tocs = _distinct_values("toc")
-    disciplinas = _distinct_values("disciplina")
-    transmittals = _distinct_values("transmittal_numero")
+    filtrados_recebidos = registros.filter(recebido_q).count()
+    filtrados_pendentes = max(total - filtrados_recebidos, 0)
+    filtrados_com_tp = registros.exclude(documento_tp="").exclude(documento_tp__isnull=True).count()
+    filtrados_sem_tp = max(total - filtrados_com_tp, 0)
 
     paginator = Paginator(registros, 50)
     page_obj = paginator.get_page(request.GET.get("page"))
 
     query_params = request.GET.copy()
     query_params.pop("page", None)
+    query_params.pop("export", None)
+
+    # Compatibilidade com templates antigos e novos.
+    phase = filtros["phases"][0] if filtros["phases"] else ""
+    toc = filtros["tocs"][0] if filtros["tocs"] else ""
+    disciplina = filtros["disciplinas"][0] if filtros["disciplinas"] else ""
+    transmittal = filtros["transmittals"][0] if filtros["transmittals"] else ""
+    recebimento = filtros["recebimentos"][0] if filtros["recebimentos"] else ""
+    tp = filtros["tps"][0] if filtros["tps"] else ""
 
     return render(
         request,
@@ -3851,13 +4098,20 @@ def listar_km(request):
         {
             "registros": page_obj,
             "page_obj": page_obj,
-            "busca": busca,
+            "busca": filtros["busca"],
             "phase": phase,
             "toc": toc,
             "disciplina": disciplina,
             "transmittal": transmittal,
             "recebimento": recebimento,
             "tp": tp,
+            "phases_selecionadas": filtros["phases"],
+            "tocs_selecionados": filtros["tocs"],
+            "disciplinas_selecionadas": filtros["disciplinas"],
+            "transmittals_selecionados": filtros["transmittals"],
+            "recebimentos_selecionados": filtros["recebimentos"],
+            "tps_selecionados": filtros["tps"],
+            "filtros_ativos": _km_active_filter_chips(filtros),
             "total": total,
             "total_km": total_km,
             "total_recebidos": total_recebidos,
@@ -3865,14 +4119,17 @@ def listar_km(request):
             "total_com_tp": total_com_tp,
             "total_sem_tp": total_sem_tp,
             "total_vinculados": total_com_tp,
-            "phases": phases,
-            "tocs": tocs,
-            "disciplinas": disciplinas,
-            "transmittals": transmittals,
+            "filtrados_recebidos": filtrados_recebidos,
+            "filtrados_pendentes": filtrados_pendentes,
+            "filtrados_com_tp": filtrados_com_tp,
+            "filtrados_sem_tp": filtrados_sem_tp,
+            "phases": _km_distinct_values("phase"),
+            "tocs": _km_distinct_values("toc"),
+            "disciplinas": _km_distinct_values("disciplina"),
+            "transmittals": _km_distinct_values("transmittal_numero"),
             "querystring": query_params.urlencode(),
         },
     )
-
 
 
 @login_required
