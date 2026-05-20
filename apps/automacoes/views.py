@@ -3462,9 +3462,21 @@ def dashboard_alertas_operacionais(request):
 
 @login_required
 def listar_km(request):
+    """
+    Lista KM como espelho fiel da aba LD_KM importada.
+
+    Regra:
+    - Não inventa Documento TP.
+    - Não calcula score.
+    - Não executa vínculo automático com LD.
+    - Recebido/Pendente é derivado somente dos campos importados:
+      Transmittal Number ou Data recebimento KM.
+    """
     busca = request.GET.get("q", "").strip()
     status = request.GET.get("status", "").strip()
     disciplina = request.GET.get("disciplina", "").strip()
+    recebimento = request.GET.get("recebimento", "").strip()
+    tp = request.GET.get("tp", "").strip()
 
     registros = DocumentoKM.objects.all().order_by("numero_km")
 
@@ -3476,39 +3488,46 @@ def listar_km(request):
             | Q(status_km__icontains=busca)
             | Q(transmittal_numero__icontains=busca)
             | Q(documento_tp__icontains=busca)
+            | Q(phase__icontains=busca)
+            | Q(toc__icontains=busca)
+            | Q(released_for__icontains=busca)
         )
 
     if status and _model_has_field(DocumentoKM, "status_km"):
-        registros = registros.filter(status_km__icontains=status)
+        registros = registros.filter(status_km__iexact=status)
 
     if disciplina and _model_has_field(DocumentoKM, "disciplina"):
-        registros = registros.filter(disciplina__icontains=disciplina)
+        registros = registros.filter(disciplina__iexact=disciplina)
+
+    recebido_q = (
+        (
+            ~Q(transmittal_numero="")
+            & Q(transmittal_numero__isnull=False)
+        )
+        | (
+            ~Q(data_recebimento_km="")
+            & Q(data_recebimento_km__isnull=False)
+        )
+    )
+
+    if recebimento == "recebido":
+        registros = registros.filter(recebido_q)
+    elif recebimento == "pendente":
+        registros = registros.exclude(recebido_q)
+
+    if tp == "com_tp":
+        registros = registros.exclude(documento_tp="").exclude(documento_tp__isnull=True)
+    elif tp == "sem_tp":
+        registros = registros.filter(Q(documento_tp="") | Q(documento_tp__isnull=True))
+
+    base_total = DocumentoKM.objects.all()
 
     total = registros.count()
-
-    total_recebidos = (
-        DocumentoKM.objects.filter(
-            status_recebimento=getattr(DocumentoKM, "STATUS_RECEBIMENTO_RECEBIDO", "RECEBIDO")
-        ).count()
-        if _model_has_field(DocumentoKM, "status_recebimento")
-        else 0
-    )
-
-    total_pendentes = (
-        DocumentoKM.objects.filter(
-            status_recebimento=getattr(DocumentoKM, "STATUS_RECEBIMENTO_PENDENTE", "PENDENTE")
-        ).count()
-        if _model_has_field(DocumentoKM, "status_recebimento")
-        else 0
-    )
-
-    total_vinculados = (
-        DocumentoKM.objects.filter(
-            status_vinculo_ld=getattr(DocumentoKM, "STATUS_VINCULO_LD_AUTO", "AUTO")
-        ).count()
-        if _model_has_field(DocumentoKM, "status_vinculo_ld")
-        else 0
-    )
+    total_km = base_total.count()
+    total_recebidos = base_total.filter(recebido_q).count()
+    total_pendentes = max(total_km - total_recebidos, 0)
+    total_com_tp = base_total.exclude(documento_tp="").exclude(documento_tp__isnull=True).count()
+    total_sem_tp = max(total_km - total_com_tp, 0)
 
     disciplinas = (
         DocumentoKM.objects.exclude(disciplina="")
@@ -3533,6 +3552,9 @@ def listar_km(request):
     paginator = Paginator(registros, 50)
     page_obj = paginator.get_page(request.GET.get("page"))
 
+    query_params = request.GET.copy()
+    query_params.pop("page", None)
+
     return render(
         request,
         "automacoes/lista_km.html",
@@ -3542,14 +3564,22 @@ def listar_km(request):
             "busca": busca,
             "status": status,
             "disciplina": disciplina,
+            "recebimento": recebimento,
+            "tp": tp,
             "total": total,
+            "total_km": total_km,
             "total_recebidos": total_recebidos,
             "total_pendentes": total_pendentes,
-            "total_vinculados": total_vinculados,
+            "total_com_tp": total_com_tp,
+            "total_sem_tp": total_sem_tp,
+            "total_vinculados": total_com_tp,
             "disciplinas": disciplinas,
             "status_km": status_km,
+            "querystring": query_params.urlencode(),
         },
     )
+
+
 
 @login_required
 def exportar_dashboard_pcfs_ppt(request):
