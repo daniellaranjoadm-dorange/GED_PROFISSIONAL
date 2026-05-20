@@ -1,7 +1,26 @@
 {% extends "documentos/base.html" %}
 {% load static %}
 
-{% block title %}Dashboard KM ↔ LD{% endblock %}
+{% block title %}Dashboard KM ↔ LD
+<style>
+  .km-dashboard-toolbar {
+    display: grid;
+    grid-template-columns: minmax(240px, 1.4fr) minmax(180px, .9fr) minmax(190px, .9fr) minmax(160px, .8fr) auto auto;
+    gap: 12px;
+    align-items: end;
+  }
+  .km-dashboard-toolbar input,
+  .km-dashboard-toolbar select {
+    width: 100%;
+  }
+  @media (max-width: 1200px) {
+    .km-dashboard-toolbar { grid-template-columns: repeat(2, minmax(220px, 1fr)); }
+  }
+  @media (max-width: 700px) {
+    .km-dashboard-toolbar { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
 
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'automacoes/css/ops_enterprise.css' %}?v=1700">
@@ -58,6 +77,41 @@
     </div>
   </section>
   {% endif %}
+  <section class="ops-panel">
+    <form method="get" class="km-dashboard-toolbar">
+      <input type="text" name="q" value="{{ busca }}" placeholder="Buscar número, título ou TP..." class="ops-input">
+
+      <select name="phase" class="ops-select km-smart-select">
+        <option value="">Todas as phases</option>
+        {% for item in phases %}
+        <option value="{{ item }}" {% if phase == item %}selected{% endif %}>{{ item }}</option>
+        {% endfor %}
+      </select>
+
+      <select name="disciplina" class="ops-select km-smart-select">
+        <option value="">Todas as disciplinas</option>
+        {% for item in disciplinas %}
+        <option value="{{ item }}" {% if disciplina == item %}selected{% endif %}>{{ item }}</option>
+        {% endfor %}
+      </select>
+
+      <select name="tp" class="ops-select km-smart-select">
+        <option value="">Documento TP</option>
+        <option value="com_tp" {% if tp == "com_tp" %}selected{% endif %}>Com TP</option>
+        <option value="sem_tp" {% if tp == "sem_tp" %}selected{% endif %}>Sem TP</option>
+      </select>
+
+      <button type="submit" class="ops-btn ops-btn-primary">
+        <i class="bi bi-funnel"></i>
+        Aplicar filtros
+      </button>
+
+      <a href="{% url 'automacoes:dashboard_km_ld' %}" class="ops-btn">
+        Limpar
+      </a>
+    </form>
+  </section>
+
 
   <section class="ops-kpi-grid ops-kpi-grid-6">
     <a href="{% url 'automacoes:transmittals_km' %}" class="ops-kpi">
