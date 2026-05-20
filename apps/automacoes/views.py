@@ -3470,10 +3470,27 @@ def _km_filtrar_registros(request):
     return registros, filtros
 
 
+def _km_percentual(parte, total):
+    try:
+        parte = float(parte or 0)
+        total = float(total or 0)
+    except (TypeError, ValueError):
+        return 0
+    return round((parte / total) * 100, 1) if total else 0
+
+
+def _km_css_percentual(valor):
+    try:
+        return str(round(float(valor or 0), 1)).replace(",", ".")
+    except (TypeError, ValueError):
+        return "0"
+
+
 def _km_chart_items(qs, campo, limite=8):
     if not _model_has_field(DocumentoKM, campo):
         return []
-    dados = (
+
+    dados = list(
         qs.exclude(**{campo: ""})
         .exclude(**{f"{campo}__isnull": True})
         .values(campo)
@@ -3481,14 +3498,71 @@ def _km_chart_items(qs, campo, limite=8):
         .order_by("-total", campo)[:limite]
     )
     maximo = max([item["total"] for item in dados], default=0)
-    return [
-        {
-            "label": item[campo] or "Não informado",
-            "total": item["total"],
-            "pct": round((item["total"] / maximo) * 100, 1) if maximo else 0,
-        }
-        for item in dados
-    ]
+
+    itens = []
+    for item in dados:
+        pct = _km_percentual(item["total"], maximo)
+        itens.append(
+            {
+                "label": item[campo] or "Não informado",
+                "total": item["total"],
+                "pct": pct,
+                "pct_css": _km_css_percentual(pct),
+            }
+        )
+    return itens
+
+
+def _km_status_badge(percentual, invertido=False):
+    valor = float(percentual or 0)
+    if invertido:
+        if valor <= 10:
+            return {"label": "Controlado", "classe": "ok"}
+        if valor <= 30:
+            return {"label": "Atenção", "classe": "warn"}
+        return {"label": "Crítico", "classe": "danger"}
+
+    if valor >= 85:
+        return {"label": "Excelente", "classe": "ok"}
+    if valor >= 60:
+        return {"label": "Atenção", "classe": "warn"}
+    return {"label": "Crítico", "classe": "danger"}
+
+
+def _km_bar_dupla(label, total, parte_a, parte_b, label_a="Recebidos", label_b="Pendentes"):
+    total = int(total or 0)
+    parte_a = int(parte_a or 0)
+    parte_b = int(parte_b or 0)
+
+    pct_a = _km_percentual(parte_a, total)
+    pct_b = _km_percentual(parte_b, total)
+
+    return {
+        "label": label,
+        "total": total,
+        "parte_a": parte_a,
+        "parte_b": parte_b,
+        "pct_a": pct_a,
+        "pct_b": pct_b,
+        "pct_a_css": _km_css_percentual(pct_a),
+        "pct_b_css": _km_css_percentual(pct_b),
+        "label_a": label_a,
+        "label_b": label_b,
+    }
+
+
+def _km_top_pendencias(qs, campo, limite=6):
+    return _km_chart_items(qs, campo, limite)
+
+
+def _km_alerta_item(titulo, valor, descricao, nivel="info", icone="bi-info-circle"):
+    return {
+        "titulo": titulo,
+        "valor": valor,
+        "descricao": descricao,
+        "nivel": nivel,
+        "icone": icone,
+    }
 
 
 def _km_contexto_opcoes(request, registros):
@@ -3603,6 +3677,201 @@ def _km_exportar_excel(registros):
     return response
 
 
+def _km_exportar_dashboard_ppt(request, contexto):
+    """
+    Exporta o Dashboard KM em PPTX executivo, respeitando os filtros ativos.
+    Mantém o conceito atual: Lista KM é espelho operacional da LD_KM.
+    """
+    from io import BytesIO
+
+    from django.http import HttpResponse
+    from pptx import Presentation
+    from pptx.dml.color import RGBColor
+    from pptx.enum.shapes import MSO_SHAPE
+    from pptx.util import Inches, Pt
+
+    prs = Presentation()
+    prs.slide_width = Inches(13.333)
+    prs.slide_height = Inches(7.5)
+
+    BG = RGBColor(5, 12, 27)
+    PANEL = RGBColor(12, 26, 49)
+    PANEL_2 = RGBColor(18, 42, 72)
+    CYAN = RGBColor(72, 190, 244)
+    ORANGE = RGBColor(255, 161, 35)
+    GREEN = RGBColor(65, 214, 128)
+    RED = RGBColor(255, 92, 92)
+    YELLOW = RGBColor(255, 205, 82)
+    WHITE = RGBColor(245, 248, 255)
+    MUTED = RGBColor(157, 180, 211)
+
+    filtros = contexto.get("filtros_ativos") or []
+    filtros_txt = " | ".join(f"{f.get('label')}: {f.get('valor')}" for f in filtros[:8]) if filtros else "Sem filtros aplicados"
+
+    def add_bg(slide):
+        bg = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0, prs.slide_width, prs.slide_height)
+        bg.fill.solid()
+        bg.fill.fore_color.rgb = BG
+        bg.line.fill.background()
+
+    def add_title(slide, title, subtitle=""):
+        box = slide.shapes.add_textbox(Inches(0.55), Inches(0.32), Inches(12.2), Inches(0.52))
+        tf = box.text_frame
+        tf.clear()
+        p = tf.paragraphs[0]
+        p.text = title
+        p.font.bold = True
+        p.font.size = Pt(26)
+        p.font.color.rgb = WHITE
+        if subtitle:
+            sub = slide.shapes.add_textbox(Inches(0.58), Inches(0.9), Inches(11.7), Inches(0.35))
+            sub.text_frame.text = subtitle
+            sub.text_frame.paragraphs[0].font.size = Pt(10)
+            sub.text_frame.paragraphs[0].font.color.rgb = MUTED
+
+    def add_footer(slide):
+        line = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0.55), Inches(7.08), Inches(12.2), Inches(0.025))
+        line.fill.solid()
+        line.fill.fore_color.rgb = ORANGE
+        line.line.fill.background()
+        foot = slide.shapes.add_textbox(Inches(0.58), Inches(7.13), Inches(12), Inches(0.25))
+        foot.text_frame.text = f"GED_PROFISSIONAL • KM Document Intelligence • {filtros_txt}"
+        foot.text_frame.paragraphs[0].font.size = Pt(8)
+        foot.text_frame.paragraphs[0].font.color.rgb = MUTED
+
+    def add_card(slide, x, y, w, h, label, value, sub="", accent=CYAN):
+        shp = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(x), Inches(y), Inches(w), Inches(h))
+        shp.fill.solid()
+        shp.fill.fore_color.rgb = PANEL
+        shp.line.color.rgb = PANEL_2
+        shp.line.width = Pt(1)
+        stripe = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(x), Inches(y + h - 0.07), Inches(w), Inches(0.06))
+        stripe.fill.solid()
+        stripe.fill.fore_color.rgb = accent
+        stripe.line.fill.background()
+
+        lab = slide.shapes.add_textbox(Inches(x + 0.16), Inches(y + 0.12), Inches(w - 0.32), Inches(0.22))
+        lab.text_frame.text = str(label).upper()
+        lab.text_frame.paragraphs[0].font.bold = True
+        lab.text_frame.paragraphs[0].font.size = Pt(8)
+        lab.text_frame.paragraphs[0].font.color.rgb = MUTED
+
+        val = slide.shapes.add_textbox(Inches(x + 0.16), Inches(y + 0.38), Inches(w - 0.32), Inches(0.45))
+        val.text_frame.text = str(value)
+        val.text_frame.paragraphs[0].font.bold = True
+        val.text_frame.paragraphs[0].font.size = Pt(22)
+        val.text_frame.paragraphs[0].font.color.rgb = WHITE
+
+        if sub:
+            s = slide.shapes.add_textbox(Inches(x + 0.16), Inches(y + 0.86), Inches(w - 0.32), Inches(0.26))
+            s.text_frame.text = str(sub)
+            s.text_frame.paragraphs[0].font.size = Pt(8)
+            s.text_frame.paragraphs[0].font.color.rgb = MUTED
+
+    def add_panel_title(slide, x, y, title, subtitle=""):
+        t = slide.shapes.add_textbox(Inches(x), Inches(y), Inches(5.6), Inches(0.28))
+        t.text_frame.text = title
+        t.text_frame.paragraphs[0].font.bold = True
+        t.text_frame.paragraphs[0].font.size = Pt(13)
+        t.text_frame.paragraphs[0].font.color.rgb = WHITE
+        if subtitle:
+            s = slide.shapes.add_textbox(Inches(x), Inches(y + 0.28), Inches(5.6), Inches(0.24))
+            s.text_frame.text = subtitle
+            s.text_frame.paragraphs[0].font.size = Pt(8)
+            s.text_frame.paragraphs[0].font.color.rgb = MUTED
+
+    def add_bar_list(slide, x, y, w, h, title, items, accent=CYAN):
+        panel = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(x), Inches(y), Inches(w), Inches(h))
+        panel.fill.solid()
+        panel.fill.fore_color.rgb = PANEL
+        panel.line.color.rgb = PANEL_2
+        panel.line.width = Pt(1)
+        add_panel_title(slide, x + 0.18, y + 0.15, title, "Top registros no filtro atual")
+        yy = y + 0.7
+        for item in (items or [])[:7]:
+            label = str(item.get("label", "-"))[:34]
+            total = item.get("total", 0)
+            pct = max(0, min(100, float(item.get("pct", 0) or 0)))
+            lab = slide.shapes.add_textbox(Inches(x + 0.2), Inches(yy), Inches(w * 0.42), Inches(0.23))
+            lab.text_frame.text = label
+            lab.text_frame.paragraphs[0].font.size = Pt(8)
+            lab.text_frame.paragraphs[0].font.color.rgb = WHITE
+            track = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(x + w * 0.48), Inches(yy + 0.04), Inches(w * 0.36), Inches(0.10))
+            track.fill.solid()
+            track.fill.fore_color.rgb = RGBColor(39, 55, 82)
+            track.line.fill.background()
+            fill_w = max(0.03, (w * 0.36) * (pct / 100))
+            fill = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(x + w * 0.48), Inches(yy + 0.04), Inches(fill_w), Inches(0.10))
+            fill.fill.solid()
+            fill.fill.fore_color.rgb = accent
+            fill.line.fill.background()
+            val = slide.shapes.add_textbox(Inches(x + w * 0.86), Inches(yy), Inches(w * 0.12), Inches(0.23))
+            val.text_frame.text = str(total)
+            val.text_frame.paragraphs[0].font.bold = True
+            val.text_frame.paragraphs[0].font.size = Pt(8)
+            val.text_frame.paragraphs[0].font.color.rgb = WHITE
+            yy += 0.36
+
+    # Slide 1
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    add_bg(slide)
+    add_title(slide, "Dashboard Executivo KM", "Lista Mestre Kongsberg • Cobertura TP • Recebimento • Rastreabilidade LD")
+    add_card(slide, 0.55, 1.3, 2.0, 1.15, "KM filtrados", contexto.get("total", 0), "resultado atual", CYAN)
+    add_card(slide, 2.72, 1.3, 2.0, 1.15, "Recebidos", contexto.get("recebidos", 0), f"{contexto.get('cobertura_recebimento', 0)}%", GREEN)
+    add_card(slide, 4.89, 1.3, 2.0, 1.15, "Pendentes", contexto.get("pendentes", 0), "sem transmittal/data", RED)
+    add_card(slide, 7.06, 1.3, 2.0, 1.15, "Com TP", contexto.get("com_tp", 0), f"{contexto.get('cobertura_tp', 0)}%", ORANGE)
+    add_card(slide, 9.23, 1.3, 2.0, 1.15, "KM com LD", contexto.get("km_com_ld", 0), f"{contexto.get('cobertura_vinculo', 0)}%", YELLOW)
+    add_card(slide, 11.40, 1.3, 1.38, 1.15, "Saúde", contexto.get("saude_operacional_label", "-"), "operacional", CYAN)
+
+    add_bar_list(slide, 0.55, 2.75, 6.05, 3.85, "Distribuição por Disciplina", contexto.get("disciplina_chart"), CYAN)
+    add_bar_list(slide, 6.85, 2.75, 5.93, 3.85, "Distribuição por Phase", contexto.get("phase_chart"), GREEN)
+    add_footer(slide)
+
+    # Slide 2
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    add_bg(slide)
+    add_title(slide, "Recebimento e cobertura documental", "Visão consolidada dos gaps operacionais da base KM")
+    add_bar_list(slide, 0.55, 1.25, 4.0, 2.6, "Recebimento", contexto.get("status_recebimento_chart"), GREEN)
+    add_bar_list(slide, 4.75, 1.25, 4.0, 2.6, "Documento TP", contexto.get("tp_chart"), ORANGE)
+    add_bar_list(slide, 8.95, 1.25, 3.85, 2.6, "Status KM", contexto.get("status_km_chart"), CYAN)
+    add_bar_list(slide, 0.55, 4.15, 6.05, 2.45, "Top TOC", contexto.get("toc_chart"), YELLOW)
+    add_bar_list(slide, 6.85, 4.15, 5.95, 2.45, "Pendências por disciplina", contexto.get("pendencias_disciplina_chart"), RED)
+    add_footer(slide)
+
+    # Slide 3
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    add_bg(slide)
+    add_title(slide, "Alertas executivos e próximos focos", "Itens que demandam atenção da gestão documental")
+    y = 1.25
+    for alerta in (contexto.get("dashboard_alertas") or [])[:5]:
+        accent = RED if alerta.get("nivel") == "danger" else YELLOW if alerta.get("nivel") == "warn" else CYAN
+        add_card(slide, 0.7, y, 3.0, 0.8, alerta.get("titulo"), alerta.get("valor"), alerta.get("descricao"), accent)
+        y += 0.95
+
+    add_panel_title(slide, 4.15, 1.28, "Amostra operacional", "Últimos documentos do filtro")
+    yy = 1.8
+    for item in list(contexto.get("recentes") or [])[:10]:
+        texto = f"{getattr(item, 'numero_km', '-') or '-'} • {getattr(item, 'disciplina', '-') or '-'} • TP: {getattr(item, 'documento_tp', '-') or '-'}"
+        box = slide.shapes.add_textbox(Inches(4.15), Inches(yy), Inches(8.35), Inches(0.25))
+        box.text_frame.text = texto[:115]
+        box.text_frame.paragraphs[0].font.size = Pt(9)
+        box.text_frame.paragraphs[0].font.color.rgb = WHITE
+        yy += 0.38
+
+    add_footer(slide)
+
+    output = BytesIO()
+    prs.save(output)
+    output.seek(0)
+
+    response = HttpResponse(
+        output.getvalue(),
+        content_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    )
+    response["Content-Disposition"] = 'attachment; filename="dashboard_km_executivo.pptx"'
+    return response
+
+
 @login_required
 def dashboard_km_ld(request):
     registros, filtros = _km_filtrar_registros(request)
@@ -3613,23 +3882,105 @@ def dashboard_km_ld(request):
     total_filtrado = contexto_base["total"]
 
     recebido_q = _km_recebido_q()
-    recebidos = registros.filter(recebido_q).count()
+    recebidos_qs = registros.filter(recebido_q)
+    pendentes_qs = registros.exclude(recebido_q)
+    com_tp_qs = registros.exclude(documento_tp="").exclude(documento_tp__isnull=True)
+    sem_tp_qs = registros.filter(Q(documento_tp="") | Q(documento_tp__isnull=True))
+    vinculados_qs = registros.exclude(documento_ld__isnull=True)
+
+    recebidos = recebidos_qs.count()
     pendentes = max(total_filtrado - recebidos, 0)
-    vinculados_ld = registros.exclude(documento_ld__isnull=True).count()
+    vinculados_ld = vinculados_qs.count()
     sem_vinculo_ld = max(total_filtrado - vinculados_ld, 0)
-    com_tp = registros.exclude(documento_tp="").exclude(documento_tp__isnull=True).count()
+    com_tp = com_tp_qs.count()
     sem_tp = max(total_filtrado - com_tp, 0)
 
+    cobertura_recebimento = _km_percentual(recebidos, total_filtrado)
+    cobertura_tp = _km_percentual(com_tp, total_filtrado)
+    cobertura_vinculo = _km_percentual(vinculados_ld, total_filtrado)
+    pendencia_pct = _km_percentual(pendentes, total_filtrado)
+
+    saude_score = round((cobertura_recebimento * 0.45) + (cobertura_tp * 0.35) + (cobertura_vinculo * 0.20), 1)
+    saude_badge = _km_status_badge(saude_score)
+
     status_recebimento_chart = [
-        {"label": "Recebidos", "total": recebidos, "pct": round((recebidos / total_filtrado) * 100, 1) if total_filtrado else 0},
-        {"label": "Não recebidos", "total": pendentes, "pct": round((pendentes / total_filtrado) * 100, 1) if total_filtrado else 0},
+        {
+            "label": "Recebidos",
+            "total": recebidos,
+            "pct": _km_percentual(recebidos, total_filtrado),
+            "pct_css": _km_css_percentual(_km_percentual(recebidos, total_filtrado)),
+        },
+        {
+            "label": "Não recebidos",
+            "total": pendentes,
+            "pct": _km_percentual(pendentes, total_filtrado),
+            "pct_css": _km_css_percentual(_km_percentual(pendentes, total_filtrado)),
+        },
     ]
     tp_chart = [
-        {"label": "Com Documento TP", "total": com_tp, "pct": round((com_tp / total_filtrado) * 100, 1) if total_filtrado else 0},
-        {"label": "Sem Documento TP", "total": sem_tp, "pct": round((sem_tp / total_filtrado) * 100, 1) if total_filtrado else 0},
+        {
+            "label": "Com Documento TP",
+            "total": com_tp,
+            "pct": _km_percentual(com_tp, total_filtrado),
+            "pct_css": _km_css_percentual(_km_percentual(com_tp, total_filtrado)),
+        },
+        {
+            "label": "Sem Documento TP",
+            "total": sem_tp,
+            "pct": _km_percentual(sem_tp, total_filtrado),
+            "pct_css": _km_css_percentual(_km_percentual(sem_tp, total_filtrado)),
+        },
     ]
 
-    recentes = registros.order_by("-atualizado_em")[:20]
+    recebidos_com_tp = recebidos_qs.exclude(documento_tp="").exclude(documento_tp__isnull=True).count()
+    recebidos_sem_tp = max(recebidos - recebidos_com_tp, 0)
+    pendentes_com_tp = pendentes_qs.exclude(documento_tp="").exclude(documento_tp__isnull=True).count()
+    pendentes_sem_tp = max(pendentes - pendentes_com_tp, 0)
+
+    matriz_operacional = [
+        _km_bar_dupla("Recebidos", recebidos, recebidos_com_tp, recebidos_sem_tp, "Com TP", "Sem TP"),
+        _km_bar_dupla("Pendentes", pendentes, pendentes_com_tp, pendentes_sem_tp, "Com TP", "Sem TP"),
+    ]
+
+    disciplina_chart = _km_chart_items(registros, "disciplina", 10)
+    phase_chart = _km_chart_items(registros, "phase", 8)
+    toc_chart = _km_chart_items(registros, "toc", 8)
+    status_km_chart = _km_chart_items(registros, "status_km", 8)
+    pendencias_disciplina_chart = _km_top_pendencias(pendentes_qs, "disciplina", 6)
+    pendencias_toc_chart = _km_top_pendencias(pendentes_qs, "toc", 6)
+
+    recentes = list(registros.order_by("-atualizado_em")[:20])
+
+    dashboard_alertas = [
+        _km_alerta_item(
+            "Não recebidos",
+            pendentes,
+            f"{_km_percentual(pendentes, total_filtrado)}% do filtro atual",
+            "danger" if pendentes else "ok",
+            "bi-exclamation-triangle",
+        ),
+        _km_alerta_item(
+            "Sem Documento TP",
+            sem_tp,
+            "Campo TP ausente na LD_KM importada",
+            "warn" if sem_tp else "ok",
+            "bi-link-45deg",
+        ),
+        _km_alerta_item(
+            "Sem vínculo LD",
+            sem_vinculo_ld,
+            "Itens sem relacionamento LD registrado",
+            "warn" if sem_vinculo_ld else "ok",
+            "bi-diagram-2",
+        ),
+        _km_alerta_item(
+            "Cobertura operacional",
+            f"{saude_score}%",
+            "Score combinado: recebimento, TP e vínculo",
+            saude_badge["classe"],
+            "bi-activity",
+        ),
+    ]
 
     context = {
         **contexto_base,
@@ -3648,21 +3999,40 @@ def dashboard_km_ld(request):
         "total_km_filtrado": total_filtrado,
         "com_tp": com_tp,
         "sem_tp": sem_tp,
-        "cobertura_km_ld": contexto_base["cobertura_vinculo"],
-        "score_medio": "-",
+        "cobertura_recebimento": cobertura_recebimento,
+        "cobertura_tp": cobertura_tp,
+        "cobertura_vinculo": cobertura_vinculo,
+        "cobertura_km_ld": cobertura_vinculo,
+        "cobertura_recebimento_css": _km_css_percentual(cobertura_recebimento),
+        "cobertura_tp_css": _km_css_percentual(cobertura_tp),
+        "cobertura_vinculo_css": _km_css_percentual(cobertura_vinculo),
+        "pendencia_pct": pendencia_pct,
+        "pendencia_pct_css": _km_css_percentual(pendencia_pct),
+        "saude_operacional_score": saude_score,
+        "saude_operacional_css": _km_css_percentual(saude_score),
+        "saude_operacional_label": saude_badge["label"],
+        "saude_operacional_classe": saude_badge["classe"],
+        "score_medio": f"{saude_score}%",
         "revisao_divergente": 0,
         "emitidos_petobras": total_ld,
         "recebido_sem_emissao": sem_vinculo_ld,
         "emitido_sem_recebimento": max(total_ld - vinculados_ld, 0),
         "revisao_pendente": 0,
-        "disciplina_chart": _km_chart_items(registros, "disciplina", 10),
-        "phase_chart": _km_chart_items(registros, "phase", 8),
-        "toc_chart": _km_chart_items(registros, "toc", 8),
-        "status_km_chart": _km_chart_items(registros, "status_km", 8),
+        "disciplina_chart": disciplina_chart,
+        "phase_chart": phase_chart,
+        "toc_chart": toc_chart,
+        "status_km_chart": status_km_chart,
         "status_recebimento_chart": status_recebimento_chart,
         "tp_chart": tp_chart,
+        "pendencias_disciplina_chart": pendencias_disciplina_chart,
+        "pendencias_toc_chart": pendencias_toc_chart,
+        "matriz_operacional": matriz_operacional,
+        "dashboard_alertas": dashboard_alertas,
         "recentes": recentes,
     }
+
+    if request.GET.get("export") == "pptx":
+        return _km_exportar_dashboard_ppt(request, context)
 
     return render(request, "automacoes/dashboard_km_ld.html", context)
 

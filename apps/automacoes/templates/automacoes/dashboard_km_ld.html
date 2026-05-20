@@ -1,33 +1,115 @@
 {% extends "documentos/base.html" %}
 {% load static %}
 
-{% block title %}Dashboard KM ↔ LD{% endblock %}
+{% block title %}Dashboard KM Executivo{% endblock %}
 
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'automacoes/css/ops_enterprise.css' %}?v=1700">
 <style>
-  .km-dashboard-toolbar {
+  .km-exec-page {
+    width: min(1680px, calc(100vw - 36px));
+    max-width: none;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .km-hero-split {
     display: grid;
-    grid-template-columns: minmax(240px, 1.4fr) minmax(180px, .9fr) minmax(190px, .9fr) minmax(160px, .8fr) auto auto;
+    grid-template-columns: minmax(420px, 1fr) minmax(300px, 420px);
+    gap: 18px;
+    align-items: stretch;
+  }
+
+  .km-exec-status {
+    border: 1px solid rgba(72, 190, 244, .24);
+    border-radius: 18px;
+    padding: 18px;
+    background:
+      radial-gradient(circle at 10% 0%, rgba(72, 190, 244, .17), transparent 32%),
+      linear-gradient(135deg, rgba(15, 23, 42, .72), rgba(8, 15, 32, .92));
+    min-height: 145px;
+  }
+
+  .km-status-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     gap: 12px;
-    align-items: end;
   }
-  .km-dashboard-toolbar input,
-  .km-dashboard-toolbar select {
-    width: 100%;
+
+  .km-status-label {
+    color: #93c5fd;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    font-weight: 800;
   }
-  @media (max-width: 1200px) {
-    .km-dashboard-toolbar { grid-template-columns: repeat(2, minmax(220px, 1fr)); }
+
+  .km-status-value {
+    color: #f8fafc;
+    font-size: 38px;
+    line-height: 1;
+    font-weight: 900;
+    margin-top: 8px;
   }
-  @media (max-width: 700px) {
-    .km-dashboard-toolbar { grid-template-columns: 1fr; }
+
+  .km-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 999px;
+    padding: 7px 10px;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    border: 1px solid rgba(148, 163, 184, .24);
+  }
+
+  .km-status-badge.ok { color: #86efac; background: rgba(34, 197, 94, .12); border-color: rgba(34, 197, 94, .28); }
+  .km-status-badge.warn { color: #fde68a; background: rgba(245, 158, 11, .12); border-color: rgba(245, 158, 11, .28); }
+  .km-status-badge.danger { color: #fecaca; background: rgba(239, 68, 68, .12); border-color: rgba(239, 68, 68, .28); }
+
+  .km-progress {
+    height: 9px;
+    border-radius: 999px;
+    background: rgba(148, 163, 184, .18);
+    margin-top: 15px;
+    overflow: hidden;
+  }
+
+  .km-progress > span {
+    display: block;
+    height: 100%;
+    width: var(--p);
+    border-radius: 999px;
+    background: linear-gradient(90deg, #38bdf8, #22c55e);
+  }
+
+  .km-status-foot {
+    color: #9fb8d9;
+    font-size: 12px;
+    margin-top: 12px;
   }
 
   .km-dashboard-toolbar {
     display: grid;
-    grid-template-columns: minmax(260px, 1.4fr) minmax(170px, .8fr) minmax(220px, 1.1fr) minmax(170px, .8fr) minmax(180px, .8fr) minmax(160px, .75fr) minmax(170px, .75fr) auto;
+    grid-template-columns: minmax(260px, 1.4fr) minmax(170px, .8fr) minmax(220px, 1.1fr) minmax(170px, .8fr) minmax(180px, .8fr) minmax(160px, .75fr) minmax(170px, .75fr);
     gap: 12px;
     align-items: end;
+  }
+
+  .km-dashboard-toolbar input,
+  .km-dashboard-toolbar select {
+    width: 100%;
+  }
+
+  @media (max-width: 1400px) {
+    .km-hero-split { grid-template-columns: 1fr; }
+    .km-dashboard-toolbar { grid-template-columns: repeat(3, minmax(220px, 1fr)); }
+  }
+
+  @media (max-width: 700px) {
+    .km-dashboard-toolbar { grid-template-columns: 1fr; }
   }
 
   .km-dashboard-actions {
@@ -39,24 +121,356 @@
     padding-top: 4px;
   }
 
-  .km-dashboard-toolbar label {
-    display: block;
-    margin-bottom: 6px;
+  .km-chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
   }
 
-  .km-smart-wrap {
+  .km-chip {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+    border: 1px solid rgba(148, 163, 184, .35);
+    border-radius: 999px;
+    padding: 6px 10px;
+    color: #e2e8f0;
+    background: rgba(15, 23, 42, .32);
+    font-size: 12px;
+  }
+
+  .km-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(170px, 1fr));
+    gap: 12px;
+  }
+
+  @media (max-width: 1450px) {
+    .km-kpi-grid { grid-template-columns: repeat(3, minmax(190px, 1fr)); }
+  }
+
+  @media (max-width: 760px) {
+    .km-kpi-grid { grid-template-columns: 1fr; }
+  }
+
+  .km-kpi-card {
     position: relative;
-    min-width: 0;
+    overflow: hidden;
+    border-radius: 18px;
+    border: 1px solid rgba(148, 163, 184, .18);
+    background:
+      radial-gradient(circle at 0% 0%, rgba(72, 190, 244, .13), transparent 36%),
+      linear-gradient(180deg, rgba(15, 23, 42, .88), rgba(11, 18, 36, .92));
+    padding: 15px 16px;
+    min-height: 118px;
   }
 
+  .km-kpi-card::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 3px;
+    background: var(--accent, #38bdf8);
+    opacity: .9;
+  }
+
+  .km-kpi-label {
+    color: #93c5fd;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    font-weight: 900;
+  }
+
+  .km-kpi-value {
+    color: #f8fafc;
+    font-size: 30px;
+    line-height: 1;
+    font-weight: 900;
+    margin-top: 10px;
+  }
+
+  .km-kpi-sub {
+    color: #8aa6c8;
+    font-size: 12px;
+    margin-top: 9px;
+  }
+
+  .km-kpi-card.danger { --accent: #ef4444; }
+  .km-kpi-card.warn { --accent: #f59e0b; }
+  .km-kpi-card.ok { --accent: #22c55e; }
+  .km-kpi-card.info { --accent: #38bdf8; }
+
+  .km-exec-layout {
+    display: grid;
+    grid-template-columns: 1.15fr .85fr;
+    gap: 16px;
+    margin-top: 16px;
+  }
+
+  @media (max-width: 1150px) {
+    .km-exec-layout { grid-template-columns: 1fr; }
+  }
+
+  .km-panel {
+    border: 1px solid rgba(148, 163, 184, .18);
+    border-radius: 18px;
+    background:
+      radial-gradient(circle at 0% 0%, rgba(72, 190, 244, .07), transparent 26%),
+      linear-gradient(180deg, rgba(15, 23, 42, .72), rgba(8, 14, 29, .90));
+    padding: 16px;
+  }
+
+  .km-panel-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: flex-start;
+    margin-bottom: 14px;
+  }
+
+  .km-panel-head h2 {
+    margin: 0;
+    color: #f8fafc;
+    font-size: 18px;
+    font-weight: 900;
+  }
+
+  .km-panel-head p {
+    margin: 4px 0 0;
+    color: #8fb4df;
+    font-size: 12px;
+  }
+
+  .km-panel-badge {
+    border-radius: 999px;
+    padding: 5px 8px;
+    color: #93c5fd;
+    background: rgba(14, 165, 233, .12);
+    border: 1px solid rgba(14, 165, 233, .25);
+    font-size: 11px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .km-ring-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(140px, 1fr));
+    gap: 14px;
+  }
+
+  @media (max-width: 780px) {
+    .km-ring-grid { grid-template-columns: 1fr; }
+  }
+
+  .km-ring-card {
+    text-align: center;
+    border-radius: 16px;
+    border: 1px solid rgba(148, 163, 184, .14);
+    background: rgba(15, 23, 42, .45);
+    padding: 15px 10px;
+  }
+
+  .km-ring {
+    position: relative;
+    width: 104px;
+    height: 104px;
+    border-radius: 50%;
+    margin: 0 auto 10px;
+    background: conic-gradient(var(--ring, #38bdf8) var(--p), rgba(148, 163, 184, .16) 0);
+    display: grid;
+    place-items: center;
+  }
+
+  .km-ring::before {
+    content: "";
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: #081225;
+    position: absolute;
+  }
+
+  .km-ring-value {
+    position: relative;
+    z-index: 1;
+    color: #f8fafc;
+    font-weight: 900;
+    font-size: 20px;
+  }
+
+  .km-ring-card span {
+    display: block;
+    color: #93c5fd;
+    font-size: 11px;
+    text-transform: uppercase;
+    font-weight: 900;
+    letter-spacing: .06em;
+  }
+
+  .km-ring-card small {
+    display: block;
+    margin-top: 5px;
+    color: #8aa6c8;
+  }
+
+  .km-bar-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .km-bar-row {
+    display: grid;
+    grid-template-columns: minmax(135px, 1.1fr) minmax(150px, 2fr) 60px;
+    gap: 10px;
+    align-items: center;
+    color: #e2e8f0;
+    font-size: 13px;
+  }
+
+  .km-bar-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .km-bar-track {
+    height: 10px;
+    border-radius: 999px;
+    background: rgba(148, 163, 184, .18);
+    overflow: hidden;
+  }
+
+  .km-bar-fill {
+    display: block;
+    height: 100%;
+    width: var(--p);
+    border-radius: 999px;
+    background: linear-gradient(90deg, #38bdf8, #22c55e);
+  }
+
+  .km-bar-fill.warn { background: linear-gradient(90deg, #f59e0b, #facc15); }
+  .km-bar-fill.danger { background: linear-gradient(90deg, #ef4444, #fb7185); }
+
+  .km-stack-row {
+    display: grid;
+    grid-template-columns: 140px 1fr 88px;
+    gap: 10px;
+    align-items: center;
+    color: #e2e8f0;
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+
+  .km-stack-track {
+    display: flex;
+    height: 14px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(148, 163, 184, .16);
+  }
+
+  .km-stack-a {
+    width: var(--a);
+    background: linear-gradient(90deg, #38bdf8, #22c55e);
+  }
+
+  .km-stack-b {
+    width: var(--b);
+    background: linear-gradient(90deg, #f59e0b, #ef4444);
+  }
+
+  .km-alert-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .km-alert {
+    display: grid;
+    grid-template-columns: 34px 1fr auto;
+    gap: 10px;
+    align-items: center;
+    border-radius: 14px;
+    padding: 11px 12px;
+    border: 1px solid rgba(148, 163, 184, .16);
+    background: rgba(15, 23, 42, .42);
+  }
+
+  .km-alert i {
+    color: #38bdf8;
+    font-size: 18px;
+  }
+
+  .km-alert.danger i { color: #fb7185; }
+  .km-alert.warn i { color: #facc15; }
+  .km-alert.ok i { color: #86efac; }
+
+  .km-alert strong {
+    color: #f8fafc;
+    display: block;
+    font-size: 13px;
+  }
+
+  .km-alert small {
+    color: #8aa6c8;
+    display: block;
+    margin-top: 2px;
+    font-size: 12px;
+  }
+
+  .km-alert-value {
+    color: #f8fafc;
+    font-size: 20px;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+
+  .km-chart-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(280px, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+  }
+
+  @media (max-width: 1000px) {
+    .km-chart-grid { grid-template-columns: 1fr; }
+  }
+
+  .km-mini-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .km-mini-table th,
+  .km-mini-table td {
+    border-bottom: 1px solid rgba(148, 163, 184, .14);
+    padding: 10px 8px;
+    color: #e2e8f0;
+    font-size: 13px;
+  }
+
+  .km-mini-table th {
+    color: #93c5fd;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    text-align: left;
+  }
+
+  .km-smart-wrap { position: relative; min-width: 0; }
   .km-smart-trigger {
     width: 100%;
-    min-height: 34px;
+    min-height: 38px;
     border: 1px solid rgba(148, 163, 184, .28);
     border-radius: 10px;
     background: #ffffff;
     color: #0f172a;
-    padding: 7px 34px 7px 10px;
+    padding: 8px 34px 8px 10px;
     text-align: left;
     font-size: 13px;
     line-height: 1.2;
@@ -69,7 +483,7 @@
     content: "⌄";
     position: absolute;
     right: 12px;
-    top: 7px;
+    top: 9px;
     color: #334155;
     pointer-events: none;
   }
@@ -88,9 +502,7 @@
     overflow: hidden;
   }
 
-  .km-smart-wrap.is-open .km-smart-menu {
-    display: block;
-  }
+  .km-smart-wrap.is-open .km-smart-menu { display: block; }
 
   .km-smart-search {
     width: calc(100% - 16px);
@@ -103,11 +515,7 @@
     font-size: 13px;
   }
 
-  .km-smart-options {
-    max-height: 260px;
-    overflow-y: auto;
-    padding: 4px;
-  }
+  .km-smart-options { max-height: 260px; overflow-y: auto; padding: 4px; }
 
   .km-smart-option {
     width: 100%;
@@ -120,12 +528,13 @@
     font-size: 13px;
     line-height: 1.25;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
   .km-smart-option:hover,
-  .km-smart-option.is-selected {
-    background: rgba(14, 165, 233, .14);
-  }
+  .km-smart-option.is-selected { background: rgba(14, 165, 233, .14); }
 
   .km-smart-select.km-native-hidden {
     position: absolute !important;
@@ -133,13 +542,6 @@
     pointer-events: none !important;
     width: 1px !important;
     height: 1px !important;
-  }
-
-
-  .km-smart-option {
-    display: flex;
-    align-items: center;
-    gap: 8px;
   }
 
   .km-smart-check {
@@ -172,67 +574,75 @@
     font-size: 12px;
     cursor: pointer;
   }
-
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="ops-page">
+<div class="ops-page km-exec-page">
 
-  <section class="ops-hero">
+  <section class="ops-hero km-hero-split">
     <div class="ops-hero-main">
       <div class="ops-eyebrow">
         <i class="bi bi-diagram-3"></i>
-        Engineering Document Intelligence
+        KM DOCUMENT INTELLIGENCE
       </div>
 
-      <h1>Dashboard Comparativo KM ↔ LD</h1>
+      <h1>Dashboard Executivo KM</h1>
 
       <p>
-        Visão executiva da rastreabilidade entre Lista Mestre Kongsberg, transmittals KM e LD Petrobras/Transpetro.
+        Visão executiva da Lista Mestre Kongsberg: recebimento, cobertura TP, rastreabilidade LD,
+        disciplinas críticas e pendências por filtro.
       </p>
-    </div>
 
-    <div class="ops-actions">
-      <a href="{% url 'automacoes:lista_km' %}{% if querystring %}?{{ querystring }}{% endif %}" class="ops-btn ops-btn-primary">
-        <i class="bi bi-list-ul"></i>
-        Ver Lista KM filtrada
-      </a>
+      <div class="ops-actions mt-3">
+        <a href="{% url 'automacoes:lista_km' %}{% if querystring %}?{{ querystring }}{% endif %}" class="ops-btn ops-btn-primary">
+          <i class="bi bi-list-ul"></i>
+          Ver Lista KM filtrada
+        </a>
 
-      <a href="{% url 'automacoes:dashboard_transmittals' %}" class="ops-btn">
-        <i class="bi bi-box-seam"></i>
-        Transmittals
-      </a>
+        <a href="{% url 'automacoes:lista_km' %}?{% if querystring %}{{ querystring }}&{% endif %}export=xlsx" class="ops-btn">
+          <i class="bi bi-file-earmark-excel"></i>
+          Excel filtrado
+        </a>
 
-      <a href="{% url 'automacoes:dashboard_ld' %}" class="ops-btn">
-        <i class="bi bi-folder2-open"></i>
-        Dashboard LD
-      </a>
+        <a href="{% url 'automacoes:dashboard_km_ld' %}?{% if querystring %}{{ querystring }}&{% endif %}export=pptx" class="ops-btn">
+          <i class="bi bi-file-earmark-ppt"></i>
+          PPT Executivo
+        </a>
 
-      <a href="{% url 'automacoes:dashboard_excecoes_documentais' %}" class="ops-btn">
-        <i class="bi bi-exclamation-triangle"></i>
-        Exceções
-      </a>
+        <a href="{% url 'automacoes:dashboard_transmittals' %}" class="ops-btn">
+          <i class="bi bi-box-seam"></i>
+          Transmittals
+        </a>
 
-      <a href="{% url 'automacoes:painel' %}" class="ops-btn">
-        <i class="bi bi-arrow-left"></i>
-        Voltar
-      </a>
-    </div>
-  </section>
-
-  {% if not documento_km_disponivel %}
-  <section class="ops-panel">
-    <div class="ops-panel-head">
-      <div>
-        <h2>DocumentoKM não localizado</h2>
-        <p>O dashboard está ativo, mas os KPIs KM ficam zerados até o model DocumentoKM estar disponível no app automacoes.</p>
+        <a href="{% url 'automacoes:painel' %}" class="ops-btn">
+          <i class="bi bi-arrow-left"></i>
+          Voltar
+        </a>
       </div>
-      <span class="ops-chip">Modo compatibilidade</span>
     </div>
+
+    <aside class="km-exec-status">
+      <div class="km-status-top">
+        <div>
+          <div class="km-status-label">Saúde operacional KM</div>
+          <div class="km-status-value">{{ saude_operacional_score|floatformat:1 }}%</div>
+        </div>
+        <span class="km-status-badge {{ saude_operacional_classe }}">
+          <i class="bi bi-activity"></i>
+          {{ saude_operacional_label }}
+        </span>
+      </div>
+      <div class="km-progress" style="--p: {{ saude_operacional_css }}%;">
+        <span></span>
+      </div>
+      <div class="km-status-foot">
+        Score combinado de recebimento, cobertura TP e vínculo LD no filtro atual.
+      </div>
+    </aside>
   </section>
-  {% endif %}
-  <section class="ops-panel">
+
+  <section class="ops-panel mb-3">
     <form method="get" class="km-dashboard-toolbar">
       <div>
         <label class="ops-filter-label">Busca geral</label>
@@ -243,7 +653,7 @@
         <label class="ops-filter-label">Phase</label>
         <select name="phase" class="ops-select km-smart-select" multiple data-placeholder="Todas">
           {% for item in phases %}
-          <option value="{{ item }}" {% if item in phases_selected %}selected{% endif %}>{{ item }}</option>
+          <option value="{{ item }}" {% if item in phases_selecionadas %}selected{% endif %}>{{ item }}</option>
           {% endfor %}
         </select>
       </div>
@@ -252,7 +662,7 @@
         <label class="ops-filter-label">TOC</label>
         <select name="toc" class="ops-select km-smart-select" multiple data-placeholder="Todos">
           {% for item in tocs %}
-          <option value="{{ item }}" title="{{ item }}" {% if item in tocs_selected %}selected{% endif %}>{{ item|truncatechars:58 }}</option>
+          <option value="{{ item }}" title="{{ item }}" {% if item in tocs_selecionados %}selected{% endif %}>{{ item|truncatechars:58 }}</option>
           {% endfor %}
         </select>
       </div>
@@ -261,7 +671,7 @@
         <label class="ops-filter-label">Discipline</label>
         <select name="disciplina" class="ops-select km-smart-select" multiple data-placeholder="Todas">
           {% for item in disciplinas %}
-          <option value="{{ item }}" {% if item in disciplinas_selected %}selected{% endif %}>{{ item }}</option>
+          <option value="{{ item }}" {% if item in disciplinas_selecionadas %}selected{% endif %}>{{ item }}</option>
           {% endfor %}
         </select>
       </div>
@@ -270,284 +680,330 @@
         <label class="ops-filter-label">Transmittal</label>
         <select name="transmittal" class="ops-select km-smart-select" multiple data-placeholder="Todos">
           {% for item in transmittals %}
-          <option value="{{ item }}" title="{{ item }}" {% if item in transmittals_selected %}selected{% endif %}>{{ item|truncatechars:32 }}</option>
+          <option value="{{ item }}" title="{{ item }}" {% if item in transmittals_selecionados %}selected{% endif %}>{{ item|truncatechars:32 }}</option>
           {% endfor %}
         </select>
       </div>
 
       <div>
         <label class="ops-filter-label">Recebimento</label>
-        <select name="recebimento" class="ops-select km-smart-select">
-          <option value="">Todos</option>
-          <option value="recebido" {% if recebimento == "recebido" %}selected{% endif %}>Recebidos</option>
-          <option value="nao_recebido" {% if recebimento == "nao_recebido" %}selected{% endif %}>Não Recebidos</option>
+        <select name="recebimento" class="ops-select km-smart-select" multiple data-placeholder="Todos">
+          <option value="recebido" {% if "recebido" in recebimentos_selecionados %}selected{% endif %}>Recebidos</option>
+          <option value="nao_recebido" {% if "nao_recebido" in recebimentos_selecionados %}selected{% endif %}>Não Recebidos</option>
         </select>
       </div>
 
       <div>
         <label class="ops-filter-label">Documento TP</label>
-        <select name="tp" class="ops-select km-smart-select">
-          <option value="">Todos</option>
-          <option value="com_tp" {% if tp == "com_tp" %}selected{% endif %}>Com Documento TP</option>
-          <option value="sem_tp" {% if tp == "sem_tp" %}selected{% endif %}>Sem Documento TP</option>
+        <select name="tp" class="ops-select km-smart-select" multiple data-placeholder="Todos">
+          <option value="com_tp" {% if "com_tp" in tps_selecionados %}selected{% endif %}>Com TP</option>
+          <option value="sem_tp" {% if "sem_tp" in tps_selecionados %}selected{% endif %}>Sem TP</option>
         </select>
       </div>
 
-      <div>
+      <div class="km-dashboard-actions">
         <button type="submit" class="ops-btn ops-btn-primary">
           <i class="bi bi-funnel"></i>
           Aplicar filtros
         </button>
-      </div>
-
-      <div class="km-dashboard-actions">
-        <a href="{% url 'automacoes:lista_km' %}{% if querystring %}?{{ querystring }}{% endif %}" class="ops-btn ops-btn-primary">
-          <i class="bi bi-list-ul"></i>
-          Ver Lista KM filtrada
-        </a>
 
         <a href="{% url 'automacoes:dashboard_km_ld' %}" class="ops-btn">
           <i class="bi bi-x-circle"></i>
           Limpar filtros
         </a>
+
+        <a href="{% url 'automacoes:lista_km' %}{% if querystring %}?{{ querystring }}{% endif %}" class="ops-btn">
+          <i class="bi bi-list-ul"></i>
+          Lista filtrada
+        </a>
+
+        <a href="{% url 'automacoes:dashboard_km_ld' %}?{% if querystring %}{{ querystring }}&{% endif %}export=pptx" class="ops-btn">
+          <i class="bi bi-file-earmark-ppt"></i>
+          Exportar PPT Executivo
+        </a>
       </div>
     </form>
+
+    {% if filtros_ativos %}
+    <div class="km-chip-row">
+      {% for filtro in filtros_ativos %}
+      <span class="km-chip"><strong>{{ filtro.label }}</strong> {{ filtro.valor }}</span>
+      {% endfor %}
+    </div>
+    {% endif %}
   </section>
 
-
-  <section class="ops-kpi-grid ops-kpi-grid-6">
-    <a href="{% url 'automacoes:transmittals_km' %}" class="ops-kpi">
-      <span>KM filtrados</span>
-      <strong>{{ total_km }}</strong>
-      <small>Lista Mestre KM</small>
+  <section class="km-kpi-grid">
+    <a href="{% url 'automacoes:lista_km' %}{% if querystring %}?{{ querystring }}{% endif %}" class="km-kpi-card info">
+      <div class="km-kpi-label">KM filtrados</div>
+      <div class="km-kpi-value">{{ total }}</div>
+      <div class="km-kpi-sub">resultado atual da LD_KM</div>
     </a>
 
-    <a href="{% url 'automacoes:lista_ld' %}" class="ops-kpi">
-      <span>Linhas LD</span>
-      <strong>{{ total_ld }}</strong>
-      <small>Petrobras/Transpetro</small>
-    </a>
-
-    <div class="ops-kpi">
-      <span>Recebidos</span>
-      <strong>{{ recebidos }}</strong>
-      <small>eventos KM únicos</small>
+    <div class="km-kpi-card ok">
+      <div class="km-kpi-label">Recebidos</div>
+      <div class="km-kpi-value">{{ recebidos }}</div>
+      <div class="km-kpi-sub">{{ cobertura_recebimento|floatformat:1 }}% do filtro</div>
     </div>
 
-    <div class="ops-kpi">
-      <span>Com Documento TP</span>
-      <strong>{{ com_tp }}</strong>
-      <small>vínculos detectados</small>
+    <div class="km-kpi-card {% if pendentes %}danger{% else %}ok{% endif %}">
+      <div class="km-kpi-label">Não recebidos</div>
+      <div class="km-kpi-value">{{ pendentes }}</div>
+      <div class="km-kpi-sub">sem transmittal/data</div>
     </div>
 
-    <a href="{% url 'automacoes:dashboard_excecoes_documentais' %}" class="ops-kpi">
-      <span>Não recebidos</span>
-      <strong>{{ pendentes }}</strong>
-      <small>KM vs LD</small>
-    </a>
-
-    <div class="ops-kpi">
-      <span>Cobertura TP</span>
-      <strong>{{ cobertura_tp }}%</strong>
-      <small>qualidade do vínculo</small>
-    </div>
-  </section>
-
-  <section class="ops-kpi-grid ops-kpi-grid-4">
-    <div class="ops-kpi">
-      <span>KM com LD</span>
-      <strong>{{ km_com_ld }}</strong>
-      <small>documentos vinculados</small>
+    <div class="km-kpi-card warn">
+      <div class="km-kpi-label">Com Documento TP</div>
+      <div class="km-kpi-value">{{ com_tp }}</div>
+      <div class="km-kpi-sub">{{ cobertura_tp|floatformat:1 }}% de cobertura</div>
     </div>
 
-    <a href="{% url 'automacoes:dashboard_excecoes_documentais' %}" class="ops-kpi">
-      <span>KM sem LD</span>
-      <strong>{{ km_sem_ld }}</strong>
-      <small>recebido sem vínculo</small>
-    </a>
-
-    <div class="ops-kpi">
-      <span>LD com KM</span>
-      <strong>{{ ld_com_km }}</strong>
-      <small>LD rastreada</small>
+    <div class="km-kpi-card info">
+      <div class="km-kpi-label">KM com LD</div>
+      <div class="km-kpi-value">{{ km_com_ld }}</div>
+      <div class="km-kpi-sub">{{ cobertura_vinculo|floatformat:1 }}% vinculados</div>
     </div>
 
-    <a href="{% url 'automacoes:dashboard_excecoes_documentais' %}" class="ops-kpi">
-      <span>LD sem KM</span>
-      <strong>{{ ld_sem_km }}</strong>
-      <small>emitido ou cadastrado sem KM</small>
-    </a>
-  </section>
-
-  <section class="ops-kpi-grid ops-kpi-grid-4">
-    <div class="ops-kpi">
-      <span>Emitidos Petrobras</span>
-      <strong>{{ emitidos_petobras }}</strong>
-      <small>GRD emitido</small>
-    </div>
-
-    <div class="ops-kpi">
-      <span>Recebido sem emissão</span>
-      <strong>{{ recebido_sem_emissao }}</strong>
-      <small>KM aguardando LD</small>
-    </div>
-
-    <div class="ops-kpi">
-      <span>Emitido sem recebimento</span>
-      <strong>{{ emitido_sem_recebimento }}</strong>
-      <small>LD sem rastreio KM</small>
-    </div>
-
-    <div class="ops-kpi">
-      <span>Revisão pendente</span>
-      <strong>{{ revisao_pendente }}</strong>
-      <small>comparação KM ↔ LD</small>
+    <div class="km-kpi-card info">
+      <div class="km-kpi-label">Transmittals</div>
+      <div class="km-kpi-value">{{ total_transmittals }}</div>
+      <div class="km-kpi-sub">base KM consolidada</div>
     </div>
   </section>
 
-  {{ disciplina_labels|json_script:"kmld-disciplina-labels" }}
-  {{ disciplina_values|json_script:"kmld-disciplina-values" }}
-  {{ status_km_labels|json_script:"kmld-status-km-labels" }}
-  {{ status_km_values|json_script:"kmld-status-km-values" }}
-  {{ status_ld_labels|json_script:"kmld-status-ld-labels" }}
-  {{ status_ld_values|json_script:"kmld-status-ld-values" }}
-
-  <section class="ops-grid ops-grid-3 ops-stack">
-    <div class="ops-panel">
-      <div class="ops-panel-head">
+  <section class="km-exec-layout">
+    <div class="km-panel">
+      <div class="km-panel-head">
         <div>
-          <h2>Por disciplina</h2>
-          <p>Distribuição documental KM/LD.</p>
+          <h2>Cobertura executiva</h2>
+          <p>Percentuais recalculados conforme os filtros ativos.</p>
+        </div>
+        <span class="km-panel-badge">Executive KPIs</span>
+      </div>
+
+      <div class="km-ring-grid">
+        <div class="km-ring-card">
+          <div class="km-ring" style="--p: {{ cobertura_recebimento_css }}%; --ring:#22c55e;">
+            <span class="km-ring-value">{{ cobertura_recebimento|floatformat:0 }}%</span>
+          </div>
+          <span>Recebimento</span>
+          <small>{{ recebidos }} recebidos</small>
+        </div>
+
+        <div class="km-ring-card">
+          <div class="km-ring" style="--p: {{ cobertura_tp_css }}%; --ring:#f59e0b;">
+            <span class="km-ring-value">{{ cobertura_tp|floatformat:0 }}%</span>
+          </div>
+          <span>Documento TP</span>
+          <small>{{ com_tp }} com TP</small>
+        </div>
+
+        <div class="km-ring-card">
+          <div class="km-ring" style="--p: {{ cobertura_vinculo_css }}%; --ring:#38bdf8;">
+            <span class="km-ring-value">{{ cobertura_vinculo|floatformat:0 }}%</span>
+          </div>
+          <span>Vínculo LD</span>
+          <small>{{ km_com_ld }} vinculados</small>
         </div>
       </div>
-      <div class="ops-chart-wrap">
-        <canvas id="kmldDisciplinaChart"></canvas>
+    </div>
+
+    <div class="km-panel">
+      <div class="km-panel-head">
+        <div>
+          <h2>Alertas operacionais</h2>
+          <p>Focos de atenção para a gestão documental.</p>
+        </div>
+        <span class="km-panel-badge">Ação</span>
+      </div>
+
+      <div class="km-alert-list">
+        {% for alerta in dashboard_alertas %}
+        <div class="km-alert {{ alerta.nivel }}">
+          <i class="bi {{ alerta.icone }}"></i>
+          <div>
+            <strong>{{ alerta.titulo }}</strong>
+            <small>{{ alerta.descricao }}</small>
+          </div>
+          <div class="km-alert-value">{{ alerta.valor }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <section class="km-chart-grid">
+    <div class="km-panel">
+      <div class="km-panel-head">
+        <div>
+          <h2>Distribuição por Disciplina</h2>
+          <p>Top disciplinas no filtro atual.</p>
+        </div>
+        <span class="km-panel-badge">{{ total }} KM</span>
+      </div>
+
+      <div class="km-bar-list">
+        {% for item in disciplina_chart %}
+        <div class="km-bar-row">
+          <span class="km-bar-label" title="{{ item.label }}">{{ item.label }}</span>
+          <span class="km-bar-track"><span class="km-bar-fill" style="--p: {{ item.pct_css }}%;"></span></span>
+          <strong>{{ item.total }}</strong>
+        </div>
+        {% empty %}
+        <p class="ops-muted">Sem dados para os filtros atuais.</p>
+        {% endfor %}
       </div>
     </div>
 
-    <div class="ops-panel">
-      <div class="ops-panel-head">
+    <div class="km-panel">
+      <div class="km-panel-head">
+        <div>
+          <h2>Distribuição por Phase</h2>
+          <p>Volume documental por fase.</p>
+        </div>
+        <span class="km-panel-badge">Phase</span>
+      </div>
+
+      <div class="km-bar-list">
+        {% for item in phase_chart %}
+        <div class="km-bar-row">
+          <span class="km-bar-label" title="{{ item.label }}">{{ item.label }}</span>
+          <span class="km-bar-track"><span class="km-bar-fill" style="--p: {{ item.pct_css }}%;"></span></span>
+          <strong>{{ item.total }}</strong>
+        </div>
+        {% empty %}
+        <p class="ops-muted">Sem dados para os filtros atuais.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="km-panel">
+      <div class="km-panel-head">
+        <div>
+          <h2>Top TOC</h2>
+          <p>Áreas documentais mais representativas.</p>
+        </div>
+        <span class="km-panel-badge">TOC</span>
+      </div>
+
+      <div class="km-bar-list">
+        {% for item in toc_chart %}
+        <div class="km-bar-row">
+          <span class="km-bar-label" title="{{ item.label }}">{{ item.label }}</span>
+          <span class="km-bar-track"><span class="km-bar-fill warn" style="--p: {{ item.pct_css }}%;"></span></span>
+          <strong>{{ item.total }}</strong>
+        </div>
+        {% empty %}
+        <p class="ops-muted">Sem dados para os filtros atuais.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="km-panel">
+      <div class="km-panel-head">
+        <div>
+          <h2>Pendências por disciplina</h2>
+          <p>Disciplinas com documentos ainda não recebidos.</p>
+        </div>
+        <span class="km-panel-badge">Pendências</span>
+      </div>
+
+      <div class="km-bar-list">
+        {% for item in pendencias_disciplina_chart %}
+        <div class="km-bar-row">
+          <span class="km-bar-label" title="{{ item.label }}">{{ item.label }}</span>
+          <span class="km-bar-track"><span class="km-bar-fill danger" style="--p: {{ item.pct_css }}%;"></span></span>
+          <strong>{{ item.total }}</strong>
+        </div>
+        {% empty %}
+        <p class="ops-muted">Sem pendências para os filtros atuais.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <section class="km-exec-layout">
+    <div class="km-panel">
+      <div class="km-panel-head">
+        <div>
+          <h2>Matriz recebimento × TP</h2>
+          <p>Mostra onde há recebimento com ou sem Documento TP informado.</p>
+        </div>
+        <span class="km-panel-badge">Coverage</span>
+      </div>
+
+      {% for item in matriz_operacional %}
+      <div class="km-stack-row">
+        <strong>{{ item.label }}</strong>
+        <div class="km-stack-track">
+          <span class="km-stack-a" style="--a: {{ item.pct_a_css }}%;"></span>
+          <span class="km-stack-b" style="--b: {{ item.pct_b_css }}%;"></span>
+        </div>
+        <span>{{ item.total }}</span>
+      </div>
+      {% endfor %}
+
+      <div class="ops-muted mt-2">
+        Azul/verde = com TP. Amarelo/vermelho = sem TP.
+      </div>
+    </div>
+
+    <div class="km-panel">
+      <div class="km-panel-head">
         <div>
           <h2>Status KM</h2>
-          <p>Situação da Lista Mestre KM.</p>
+          <p>Situação declarada na Lista Mestre KM.</p>
         </div>
+        <span class="km-panel-badge">Status</span>
       </div>
-      <div class="ops-chart-wrap">
-        <canvas id="kmldStatusKmChart"></canvas>
-      </div>
-    </div>
 
-    <div class="ops-panel">
-      <div class="ops-panel-head">
-        <div>
-          <h2>Status LD</h2>
-          <p>Situação documental Petrobras/Transpetro.</p>
+      <div class="km-bar-list">
+        {% for item in status_km_chart %}
+        <div class="km-bar-row">
+          <span class="km-bar-label" title="{{ item.label }}">{{ item.label }}</span>
+          <span class="km-bar-track"><span class="km-bar-fill" style="--p: {{ item.pct_css }}%;"></span></span>
+          <strong>{{ item.total }}</strong>
         </div>
-      </div>
-      <div class="ops-chart-wrap">
-        <canvas id="kmldStatusLdChart"></canvas>
+        {% empty %}
+        <p class="ops-muted">Sem status KM informado no filtro atual.</p>
+        {% endfor %}
       </div>
     </div>
   </section>
 
-  <section class="ops-grid ops-grid-2 ops-stack">
-    <div class="ops-panel">
-      <div class="ops-panel-head">
-        <div>
-          <h2>Responsáveis KM</h2>
-          <p>Top responsáveis por volume documental.</p>
-        </div>
-      </div>
-
-      <div class="ops-table-wrap">
-        <table class="ops-table">
-          <thead>
-            <tr>
-              <th>Responsável</th>
-              <th>Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for item in por_responsavel %}
-            <tr>
-              <td>{{ item.responsible|default:"N/I" }}</td>
-              <td>{{ item.total }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-              <td colspan="2">Sem dados disponíveis.</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="ops-panel">
-      <div class="ops-panel-head">
-        <div>
-          <h2>Fases KM</h2>
-          <p>Distribuição por fase da Lista Mestre.</p>
-        </div>
-      </div>
-
-      <div class="ops-table-wrap">
-        <table class="ops-table">
-          <thead>
-            <tr>
-              <th>Fase</th>
-              <th>Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for item in por_fase %}
-            <tr>
-              <td>{{ item.phase|default:"N/I" }}</td>
-              <td>{{ item.total }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-              <td colspan="2">Sem dados disponíveis.</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </section>
-
-  <section class="ops-panel">
-    <div class="ops-panel-head">
+  <section class="km-panel mt-3">
+    <div class="km-panel-head">
       <div>
-        <h2>Últimos documentos KM</h2>
-        <p>Amostra operacional da Lista Mestre Kongsberg.</p>
+        <h2>Amostra operacional</h2>
+        <p>Últimos documentos atualizados no resultado filtrado.</p>
       </div>
+      <a href="{% url 'automacoes:lista_km' %}{% if querystring %}?{{ querystring }}{% endif %}" class="ops-btn">
+        Ver lista completa
+      </a>
     </div>
 
-    <div class="ops-table-wrap">
-      <table class="ops-table">
+    <div class="table-responsive">
+      <table class="km-mini-table">
         <thead>
           <tr>
-            <th>Número KM</th>
-            <th>Título</th>
-            <th>Disciplina</th>
-            <th>Status</th>
-            <th>Revisão</th>
+            <th>Number</th>
+            <th>Title</th>
+            <th>Discipline</th>
+            <th>Transmittal</th>
+            <th>Documento TP</th>
           </tr>
         </thead>
         <tbody>
-          {% for doc in ultimos_km %}
+          {% for item in recentes %}
           <tr>
-            <td>{{ doc.numero_km|default:"-" }}</td>
-            <td>{{ doc.titulo|default:"-" }}</td>
-            <td>{{ doc.disciplina|default:"-" }}</td>
-            <td>{{ doc.status_km|default:"-" }}</td>
-            <td>{{ doc.revisao_km|default:"-" }}</td>
+            <td><strong>{{ item.numero_km }}</strong></td>
+            <td>{{ item.titulo|default:"—"|truncatechars:90 }}</td>
+            <td>{{ item.disciplina|default:"—" }}</td>
+            <td>{{ item.transmittal_numero|default:"—" }}</td>
+            <td>{{ item.documento_tp|default:"—" }}</td>
           </tr>
           {% empty %}
-          <tr>
-            <td colspan="5">Nenhum documento KM encontrado.</td>
-          </tr>
+          <tr><td colspan="5" class="ops-muted">Sem documentos para os filtros atuais.</td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -564,16 +1020,9 @@
     });
   }
 
-  function optionLabel(opt) {
-    return (opt.text || "").trim();
-  }
-
   document.querySelectorAll("select.km-smart-select").forEach(function (select) {
     if (select.dataset.smartReady === "1") return;
     select.dataset.smartReady = "1";
-
-    var isMultiple = select.multiple;
-    var placeholder = select.dataset.placeholder || "Todos";
 
     var wrap = document.createElement("div");
     wrap.className = "km-smart-wrap";
@@ -596,38 +1045,31 @@
     var actions = document.createElement("div");
     actions.className = "km-smart-actions";
 
+    var allBtn = document.createElement("button");
+    allBtn.type = "button";
+    allBtn.className = "km-smart-mini";
+    allBtn.textContent = "Selecionar visíveis";
+
     var clearBtn = document.createElement("button");
     clearBtn.type = "button";
     clearBtn.className = "km-smart-mini";
     clearBtn.textContent = "Limpar";
 
-    var applyBtn = document.createElement("button");
-    applyBtn.type = "button";
-    applyBtn.className = "km-smart-mini";
-    applyBtn.textContent = "Aplicar";
-
     function selectedOptions() {
       return Array.from(select.options).filter(function (opt) {
-        return opt.selected && opt.value !== "";
+        return opt.value && opt.selected;
       });
     }
 
-    function selectedText() {
+    function updateTrigger() {
       var selected = selectedOptions();
-
-      if (!isMultiple) {
-        var opt = select.options[select.selectedIndex];
-        return opt ? optionLabel(opt) : placeholder;
+      if (!selected.length) {
+        trigger.textContent = select.getAttribute("data-placeholder") || "Todos";
+      } else if (selected.length === 1) {
+        trigger.textContent = selected[0].text;
+      } else {
+        trigger.textContent = selected.length + " selecionados";
       }
-
-      if (!selected.length) return placeholder;
-      if (selected.length === 1) return optionLabel(selected[0]);
-      return selected.length + " selecionados";
-    }
-
-    function syncTrigger() {
-      trigger.textContent = selectedText();
-      trigger.title = selectedOptions().map(optionLabel).join(", ");
     }
 
     function render() {
@@ -635,8 +1077,8 @@
       optionsBox.innerHTML = "";
 
       Array.from(select.options).forEach(function (opt) {
-        var label = optionLabel(opt);
-        if (!label) return;
+        if (!opt.value) return;
+        var label = opt.text || "";
         if (term && label.toLowerCase().indexOf(term) === -1) return;
 
         var btn = document.createElement("button");
@@ -645,27 +1087,20 @@
         if (opt.selected) btn.classList.add("is-selected");
         btn.title = label;
 
-        if (isMultiple) {
-          var check = document.createElement("span");
-          check.className = "km-smart-check";
-          btn.appendChild(check);
-        }
+        var check = document.createElement("span");
+        check.className = "km-smart-check";
 
         var text = document.createElement("span");
         text.textContent = label;
+
+        btn.appendChild(check);
         btn.appendChild(text);
 
         btn.addEventListener("click", function () {
-          if (isMultiple) {
-            opt.selected = !opt.selected;
-            btn.classList.toggle("is-selected", opt.selected);
-          } else {
-            select.value = opt.value;
-            select.dispatchEvent(new Event("change", { bubbles: true }));
-            syncTrigger();
-            wrap.classList.remove("is-open");
-          }
-          syncTrigger();
+          opt.selected = !opt.selected;
+          select.dispatchEvent(new Event("change", { bubbles: true }));
+          updateTrigger();
+          render();
         });
 
         optionsBox.appendChild(btn);
@@ -678,15 +1113,12 @@
     wrap.appendChild(menu);
     menu.appendChild(search);
     menu.appendChild(optionsBox);
-
-    if (isMultiple) {
-      actions.appendChild(clearBtn);
-      actions.appendChild(applyBtn);
-      menu.appendChild(actions);
-    }
+    actions.appendChild(allBtn);
+    actions.appendChild(clearBtn);
+    menu.appendChild(actions);
 
     select.classList.add("km-native-hidden");
-    syncTrigger();
+    updateTrigger();
 
     trigger.addEventListener("click", function () {
       var isOpen = wrap.classList.contains("is-open");
@@ -699,19 +1131,26 @@
       }
     });
 
-    clearBtn.addEventListener("click", function () {
-      Array.from(select.options).forEach(function (opt) { opt.selected = false; });
+    search.addEventListener("input", render);
+
+    allBtn.addEventListener("click", function () {
+      var term = search.value.trim().toLowerCase();
+      Array.from(select.options).forEach(function (opt) {
+        if (!opt.value) return;
+        if (!term || (opt.text || "").toLowerCase().indexOf(term) !== -1) opt.selected = true;
+      });
       select.dispatchEvent(new Event("change", { bubbles: true }));
-      syncTrigger();
+      updateTrigger();
       render();
     });
 
-    applyBtn.addEventListener("click", function () {
+    clearBtn.addEventListener("click", function () {
+      Array.from(select.options).forEach(function (opt) { opt.selected = false; });
       select.dispatchEvent(new Event("change", { bubbles: true }));
-      wrap.classList.remove("is-open");
+      updateTrigger();
+      render();
     });
 
-    search.addEventListener("input", render);
     render();
   });
 
@@ -725,45 +1164,4 @@
 })();
 </script>
 
-
-<script>
-(function () {
-  function data(id) {
-    const node = document.getElementById(id);
-    return node ? JSON.parse(node.textContent) : [];
-  }
-
-  function buildChart(canvasId, labelsId, valuesId, type) {
-    const canvas = document.getElementById(canvasId);
-    if (!canvas || typeof Chart === "undefined") {
-      return;
-    }
-
-    const labels = data(labelsId);
-    const values = data(valuesId);
-
-    new Chart(canvas, {
-      type: type || "bar",
-      data: {
-        labels: labels,
-        datasets: [{
-          label: "Total",
-          data: values
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false }
-        }
-      }
-    });
-  }
-
-  buildChart("kmldDisciplinaChart", "kmld-disciplina-labels", "kmld-disciplina-values", "bar");
-  buildChart("kmldStatusKmChart", "kmld-status-km-labels", "kmld-status-km-values", "doughnut");
-  buildChart("kmldStatusLdChart", "kmld-status-ld-labels", "kmld-status-ld-values", "doughnut");
-})();
-</script>
 {% endblock %}
