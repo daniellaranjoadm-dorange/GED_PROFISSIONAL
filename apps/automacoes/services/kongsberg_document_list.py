@@ -238,7 +238,13 @@ def _montar_defaults(sheet, row_idx: int, colunas: dict[str, int], origem_planil
     return defaults
 
 
-def importar_lista_kongsberg(arquivo, usuario=None, origem_planilha: str | None = None) -> dict:
+def importar_lista_kongsberg(
+    arquivo,
+    usuario=None,
+    origem_planilha: str | None = None,
+    nome_arquivo: str | None = None,
+    **kwargs,
+) -> dict:
     """
     Importa a LD Kongsberg para DocumentoKM.
 
@@ -247,7 +253,7 @@ def importar_lista_kongsberg(arquivo, usuario=None, origem_planilha: str | None 
     - UploadedFile do Django
     - file-like object
     """
-    origem = origem_planilha or getattr(arquivo, "name", "") or str(arquivo)
+    origem = origem_planilha or nome_arquivo or getattr(arquivo, "name", "") or str(arquivo)
 
     wb = load_workbook(arquivo, data_only=True, read_only=True)
     sheet = _detectar_aba(wb)
