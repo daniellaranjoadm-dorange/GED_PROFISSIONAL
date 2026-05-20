@@ -3469,12 +3469,18 @@ def listar_km(request):
     - Não inventa Documento TP.
     - Não calcula score.
     - Não executa vínculo automático com LD.
-    - Recebido/Pendente é derivado somente dos campos importados:
-      Transmittal Number ou Data recebimento KM.
+    - A tela respeita os campos importados da planilha LD_KM.
     """
     busca = request.GET.get("q", "").strip()
-    status = request.GET.get("status", "").strip()
+    phase = request.GET.get("phase", "").strip()
+    toc = request.GET.get("toc", "").strip()
     disciplina = request.GET.get("disciplina", "").strip()
+    transmittal = request.GET.get("transmittal", "").strip()
+    data_recebimento = request.GET.get("data_recebimento", "").strip()
+    documento_tp = request.GET.get("documento_tp", "").strip()
+
+    # Mantidos por compatibilidade com URLs antigas/favoritos.
+    status = request.GET.get("status", "").strip()
     recebimento = request.GET.get("recebimento", "").strip()
     tp = request.GET.get("tp", "").strip()
 
@@ -3491,13 +3497,29 @@ def listar_km(request):
             | Q(phase__icontains=busca)
             | Q(toc__icontains=busca)
             | Q(released_for__icontains=busca)
+            | Q(data_recebimento_km__icontains=busca)
         )
 
-    if status and _model_has_field(DocumentoKM, "status_km"):
-        registros = registros.filter(status_km__iexact=status)
+    if phase and _model_has_field(DocumentoKM, "phase"):
+        registros = registros.filter(phase__iexact=phase)
+
+    if toc and _model_has_field(DocumentoKM, "toc"):
+        registros = registros.filter(toc__iexact=toc)
 
     if disciplina and _model_has_field(DocumentoKM, "disciplina"):
         registros = registros.filter(disciplina__iexact=disciplina)
+
+    if transmittal and _model_has_field(DocumentoKM, "transmittal_numero"):
+        registros = registros.filter(transmittal_numero__icontains=transmittal)
+
+    if data_recebimento and _model_has_field(DocumentoKM, "data_recebimento_km"):
+        registros = registros.filter(data_recebimento_km__iexact=data_recebimento)
+
+    if documento_tp and _model_has_field(DocumentoKM, "documento_tp"):
+        registros = registros.filter(documento_tp__icontains=documento_tp)
+
+    if status and _model_has_field(DocumentoKM, "status_km"):
+        registros = registros.filter(status_km__iexact=status)
 
     recebido_q = (
         (
@@ -3529,25 +3551,22 @@ def listar_km(request):
     total_com_tp = base_total.exclude(documento_tp="").exclude(documento_tp__isnull=True).count()
     total_sem_tp = max(total_km - total_com_tp, 0)
 
-    disciplinas = (
-        DocumentoKM.objects.exclude(disciplina="")
-        .exclude(disciplina__isnull=True)
-        .values_list("disciplina", flat=True)
-        .distinct()
-        .order_by("disciplina")
-        if _model_has_field(DocumentoKM, "disciplina")
-        else []
-    )
+    def _valores_distintos(campo):
+        if not _model_has_field(DocumentoKM, campo):
+            return []
+        return (
+            DocumentoKM.objects.exclude(**{campo: ""})
+            .exclude(**{f"{campo}__isnull": True})
+            .values_list(campo, flat=True)
+            .distinct()
+            .order_by(campo)
+        )
 
-    status_km = (
-        DocumentoKM.objects.exclude(status_km="")
-        .exclude(status_km__isnull=True)
-        .values_list("status_km", flat=True)
-        .distinct()
-        .order_by("status_km")
-        if _model_has_field(DocumentoKM, "status_km")
-        else []
-    )
+    phases = _valores_distintos("phase")
+    tocs = _valores_distintos("toc")
+    disciplinas = _valores_distintos("disciplina")
+    datas_recebimento = _valores_distintos("data_recebimento_km")
+    status_km = _valores_distintos("status_km")
 
     paginator = Paginator(registros, 50)
     page_obj = paginator.get_page(request.GET.get("page"))
@@ -3562,8 +3581,13 @@ def listar_km(request):
             "registros": page_obj,
             "page_obj": page_obj,
             "busca": busca,
-            "status": status,
+            "phase": phase,
+            "toc": toc,
             "disciplina": disciplina,
+            "transmittal": transmittal,
+            "data_recebimento": data_recebimento,
+            "documento_tp": documento_tp,
+            "status": status,
             "recebimento": recebimento,
             "tp": tp,
             "total": total,
@@ -3573,12 +3597,14 @@ def listar_km(request):
             "total_com_tp": total_com_tp,
             "total_sem_tp": total_sem_tp,
             "total_vinculados": total_com_tp,
+            "phases": phases,
+            "tocs": tocs,
             "disciplinas": disciplinas,
+            "datas_recebimento": datas_recebimento,
             "status_km": status_km,
             "querystring": query_params.urlencode(),
         },
     )
-
 
 
 @login_required

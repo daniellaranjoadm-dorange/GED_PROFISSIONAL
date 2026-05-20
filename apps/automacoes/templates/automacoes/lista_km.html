@@ -7,17 +7,32 @@
 <link rel="stylesheet" href="{% static 'automacoes/css/ops_enterprise.css' %}?v=1700">
 <style>
   .km-wide-page {
-    max-width: 98vw;
+    width: min(99vw, 1920px);
+    max-width: none;
     margin-left: auto;
     margin-right: auto;
   }
 
+  .km-wide-page .ops-hero,
+  .km-wide-page .ops-panel,
+  .km-wide-page .ops-kpi-grid {
+    width: 100%;
+  }
+
+  .km-filter-grid {
+    display: grid;
+    grid-template-columns: minmax(220px, 1.2fr) minmax(180px, .9fr) minmax(220px, 1fr) minmax(170px, .8fr) minmax(190px, .9fr) minmax(190px, .9fr) minmax(220px, 1fr) auto;
+    gap: .75rem;
+    align-items: end;
+  }
+
   .km-table-wrap {
     overflow-x: auto;
+    max-width: 100%;
   }
 
   .km-table {
-    min-width: 1900px;
+    min-width: 2350px;
     white-space: nowrap;
   }
 
@@ -27,8 +42,21 @@
   }
 
   .km-title-cell {
-    min-width: 360px;
+    min-width: 380px;
+    max-width: 520px;
     white-space: normal;
+  }
+
+  .km-toc-cell {
+    min-width: 300px;
+    max-width: 380px;
+    white-space: normal;
+  }
+
+  @media (max-width: 1400px) {
+    .km-filter-grid {
+      grid-template-columns: repeat(3, minmax(180px, 1fr));
+    }
   }
 </style>
 {% endblock %}
@@ -102,18 +130,38 @@
   </section>
 
   <section class="ops-panel mb-3">
-    <form method="get" class="ops-filter-grid">
+    <form method="get" class="km-filter-grid">
       <div>
         <label class="ops-filter-label">Buscar</label>
         <input type="text"
                name="q"
                value="{{ busca }}"
                class="form-control"
-               placeholder="Número KM, título, disciplina, transmittal ou TP...">
+               placeholder="Number, título, transmittal ou TP...">
       </div>
 
       <div>
-        <label class="ops-filter-label">Disciplina</label>
+        <label class="ops-filter-label">Phase</label>
+        <select name="phase" class="form-select">
+          <option value="">Todas</option>
+          {% for item in phases %}
+          <option value="{{ item }}" {% if item == phase %}selected{% endif %}>{{ item }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="ops-filter-label">TOC</label>
+        <select name="toc" class="form-select">
+          <option value="">Todos</option>
+          {% for item in tocs %}
+          <option value="{{ item }}" {% if item == toc %}selected{% endif %}>{{ item|truncatechars:70 }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="ops-filter-label">Discipline</label>
         <select name="disciplina" class="form-select">
           <option value="">Todas</option>
           {% for item in disciplinas %}
@@ -123,35 +171,35 @@
       </div>
 
       <div>
-        <label class="ops-filter-label">Status KM</label>
-        <select name="status" class="form-select">
-          <option value="">Todos</option>
-          {% for item in status_km %}
-          <option value="{{ item }}" {% if item == status %}selected{% endif %}>{{ item }}</option>
+        <label class="ops-filter-label">Transmittal Number</label>
+        <input type="text"
+               name="transmittal"
+               value="{{ transmittal }}"
+               class="form-control"
+               placeholder="Ex.: T-43306">
+      </div>
+
+      <div>
+        <label class="ops-filter-label">Data recebimento KM</label>
+        <select name="data_recebimento" class="form-select">
+          <option value="">Todas</option>
+          {% for item in datas_recebimento %}
+          <option value="{{ item }}" {% if item == data_recebimento %}selected{% endif %}>{{ item }}</option>
           {% endfor %}
         </select>
       </div>
 
       <div>
-        <label class="ops-filter-label">Recebimento</label>
-        <select name="recebimento" class="form-select">
-          <option value="">Todos</option>
-          <option value="recebido" {% if recebimento == "recebido" %}selected{% endif %}>Recebidos</option>
-          <option value="pendente" {% if recebimento == "pendente" %}selected{% endif %}>Pendentes</option>
-        </select>
+        <label class="ops-filter-label">Numero Documento TP</label>
+        <input type="text"
+               name="documento_tp"
+               value="{{ documento_tp }}"
+               class="form-control"
+               placeholder="Documento TP...">
       </div>
 
-      <div>
-        <label class="ops-filter-label">Documento TP</label>
-        <select name="tp" class="form-select">
-          <option value="">Todos</option>
-          <option value="com_tp" {% if tp == "com_tp" %}selected{% endif %}>Com TP</option>
-          <option value="sem_tp" {% if tp == "sem_tp" %}selected{% endif %}>Sem TP</option>
-        </select>
-      </div>
-
-      <div class="d-flex align-items-end gap-2">
-        <button type="submit" class="ops-btn ops-btn-primary w-100">
+      <div class="d-flex gap-2">
+        <button type="submit" class="ops-btn ops-btn-primary">
           <i class="bi bi-funnel"></i>
           Filtrar
         </button>
@@ -198,7 +246,7 @@
           {% for item in registros %}
           <tr>
             <td>{{ item.phase|default:"—" }}</td>
-            <td>{{ item.toc|default:"—" }}</td>
+            <td class="km-toc-cell">{{ item.toc|default:"—" }}</td>
             <td><strong>{{ item.numero_km }}</strong></td>
             <td class="km-title-cell">{{ item.titulo|default:"—" }}</td>
             <td>{{ item.disciplina|default:"—" }}</td>
