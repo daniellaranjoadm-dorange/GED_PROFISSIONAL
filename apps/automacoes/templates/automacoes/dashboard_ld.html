@@ -1,414 +1,734 @@
 {% extends "documentos/base.html" %}
 {% load static %}
 
-{% block title %}Dashboard LD{% endblock %}
+{% block title %}Dashboard LD Executivo{% endblock %}
 
 {% block extra_head %}
-<link rel="stylesheet" href="{% static 'automacoes/css/ops_enterprise.css' %}?v=1500">
+<link rel="stylesheet" href="{% static 'automacoes/css/ops_enterprise.css' %}?v=1701">
+<style>
+
+  .ld-wide-page {
+    width: min(1760px, calc(100vw - 36px));
+    max-width: none;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .ld-filter-grid {
+    display: grid;
+    grid-template-columns: minmax(260px, 1.35fr) minmax(170px, .8fr) minmax(150px, .7fr) minmax(180px, .9fr) minmax(190px, .9fr) minmax(170px, .85fr) minmax(180px, .85fr);
+    gap: 12px;
+    align-items: end;
+  }
+  .ld-filter-actions {
+    grid-column: 1 / -1;
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    align-items:center;
+    padding-top:4px;
+  }
+  @media (max-width: 1400px) {
+    .ld-filter-grid { grid-template-columns: repeat(3, minmax(220px, 1fr)); }
+  }
+  @media (max-width: 800px) {
+    .ld-filter-grid { grid-template-columns: 1fr; }
+  }
+  .ld-smart-wrap { position:relative; min-width:0; }
+  .ld-smart-trigger {
+    width:100%;
+    min-height:38px;
+    border:1px solid rgba(148,163,184,.28);
+    border-radius:10px;
+    background:#fff;
+    color:#0f172a;
+    padding:8px 34px 8px 10px;
+    text-align:left;
+    font-size:13px;
+    line-height:1.2;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .ld-smart-trigger::after {
+    content:"⌄";
+    position:absolute;
+    right:12px;
+    top:9px;
+    color:#334155;
+    pointer-events:none;
+  }
+  .ld-smart-menu {
+    position:absolute;
+    z-index:2200;
+    top:calc(100% + 6px);
+    left:0;
+    right:0;
+    display:none;
+    background:#fff;
+    border:1px solid rgba(15,23,42,.18);
+    border-radius:12px;
+    box-shadow:0 18px 45px rgba(0,0,0,.35);
+    overflow:hidden;
+  }
+  .ld-smart-wrap.is-open .ld-smart-menu { display:block; }
+  .ld-smart-search {
+    width:calc(100% - 16px);
+    margin:8px;
+    border:1px solid rgba(15,23,42,.20);
+    border-radius:9px;
+    padding:8px 10px;
+    color:#0f172a;
+    background:#fff;
+    font-size:13px;
+  }
+  .ld-smart-options { max-height:260px; overflow-y:auto; padding:4px; }
+  .ld-smart-option {
+    width:100%;
+    border:0;
+    background:transparent;
+    color:#0f172a;
+    text-align:left;
+    padding:8px 10px;
+    border-radius:8px;
+    font-size:13px;
+    line-height:1.25;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .ld-smart-option:hover,
+  .ld-smart-option.is-selected { background:rgba(14,165,233,.14); }
+  .ld-smart-select.ld-native-hidden {
+    position:absolute !important;
+    opacity:0 !important;
+    pointer-events:none !important;
+    width:1px !important;
+    height:1px !important;
+  }
+  .ld-smart-check {
+    width:14px;
+    height:14px;
+    border:1px solid rgba(15,23,42,.35);
+    border-radius:4px;
+    flex:0 0 14px;
+  }
+  .ld-smart-option.is-selected .ld-smart-check {
+    background:rgba(14,165,233,.75);
+    border-color:rgba(14,165,233,.95);
+  }
+  .ld-smart-actions {
+    display:flex;
+    gap:8px;
+    padding:8px;
+    border-top:1px solid rgba(15,23,42,.10);
+  }
+  .ld-smart-mini {
+    flex:1;
+    border:1px solid rgba(15,23,42,.16);
+    background:#f8fafc;
+    color:#0f172a;
+    border-radius:8px;
+    padding:7px 8px;
+    font-size:12px;
+    cursor:pointer;
+  }
+  .ld-chip-row { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+  .ld-chip {
+    display:inline-flex;
+    gap:6px;
+    align-items:center;
+    border:1px solid rgba(148,163,184,.35);
+    border-radius:999px;
+    padding:6px 10px;
+    color:#e2e8f0;
+    background:rgba(15,23,42,.32);
+    font-size:12px;
+  }
+
+
+  .ld-exec-page {
+    width: min(1680px, calc(100vw - 36px));
+    max-width: none;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .ld-hero-split {
+    display:grid;
+    grid-template-columns:minmax(420px,1fr) minmax(300px,420px);
+    gap:18px;
+    align-items:stretch;
+  }
+  .ld-health-card {
+    border:1px solid rgba(56,189,248,.32);
+    background:linear-gradient(135deg, rgba(15,23,42,.92), rgba(30,41,59,.58));
+    border-radius:18px;
+    padding:18px;
+  }
+  .ld-health-score {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+  }
+  .ld-health-score strong {
+    font-size:36px;
+    line-height:1;
+    color:#fff;
+  }
+  .ld-health-bar {
+    height:8px;
+    border-radius:999px;
+    background:rgba(148,163,184,.22);
+    overflow:hidden;
+    margin:14px 0 10px;
+  }
+  .ld-health-fill {
+    height:100%;
+    border-radius:999px;
+    background:linear-gradient(90deg, #38bdf8, #22c55e);
+  }
+  .ld-kpi-card {
+    position:relative;
+    overflow:hidden;
+  }
+  .ld-kpi-card::after {
+    content:"";
+    position:absolute;
+    left:0;
+    right:0;
+    bottom:0;
+    height:3px;
+    background:linear-gradient(90deg, rgba(56,189,248,.85), rgba(34,197,94,.8));
+  }
+  .ld-dashboard-grid {
+    display:grid;
+    grid-template-columns: 1.15fr .85fr;
+    gap:16px;
+  }
+  .ld-chart-grid {
+    display:grid;
+    grid-template-columns: repeat(2, minmax(280px,1fr));
+    gap:16px;
+  }
+  .ld-bar-list { display:flex; flex-direction:column; gap:10px; }
+  .ld-bar-row {
+    display:grid;
+    grid-template-columns:minmax(130px,1fr) minmax(150px,2fr) 56px;
+    gap:10px;
+    align-items:center;
+    color:#e2e8f0;
+    font-size:13px;
+  }
+  .ld-bar-label {
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .ld-bar-track {
+    height:10px;
+    border-radius:999px;
+    background:rgba(148,163,184,.18);
+    overflow:hidden;
+  }
+  .ld-bar-fill {
+    height:100%;
+    border-radius:999px;
+    background:linear-gradient(90deg, rgba(14,165,233,.75), rgba(34,197,94,.75));
+  }
+  .ld-donut-grid {
+    display:grid;
+    grid-template-columns: repeat(3, minmax(160px,1fr));
+    gap:12px;
+  }
+  .ld-donut-card {
+    border:1px solid rgba(148,163,184,.16);
+    background:rgba(15,23,42,.35);
+    border-radius:16px;
+    padding:16px;
+    text-align:center;
+  }
+  .ld-ring {
+    width:112px;
+    height:112px;
+    border-radius:50%;
+    margin:0 auto 12px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:conic-gradient(#22c55e calc(var(--value) * 1%), rgba(30,41,59,.85) 0);
+    position:relative;
+  }
+  .ld-ring::after {
+    content:"";
+    position:absolute;
+    inset:15px;
+    border-radius:50%;
+    background:#0f172a;
+  }
+  .ld-ring strong {
+    position:relative;
+    z-index:1;
+    color:#fff;
+    font-size:16px;
+  }
+  .ld-alert-list { display:flex; flex-direction:column; gap:10px; }
+  .ld-alert-row {
+    display:grid;
+    grid-template-columns:34px 1fr auto;
+    gap:12px;
+    align-items:center;
+    padding:14px;
+    border:1px solid rgba(148,163,184,.16);
+    border-radius:14px;
+    background:rgba(15,23,42,.34);
+  }
+  .ld-alert-row strong { color:#fff; font-size:20px; }
+  .ld-mini-table { width:100%; border-collapse:collapse; }
+  .ld-mini-table th, .ld-mini-table td {
+    border-bottom:1px solid rgba(148,163,184,.14);
+    padding:10px 8px;
+    color:#e2e8f0;
+    font-size:13px;
+  }
+  .ld-mini-table th {
+    color:#93c5fd;
+    font-weight:700;
+    text-align:left;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+  }
+  @media (max-width: 1200px) {
+    .ld-hero-split, .ld-dashboard-grid, .ld-chart-grid { grid-template-columns:1fr; }
+    .ld-donut-grid { grid-template-columns:1fr; }
+  }
+
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="ops-page">
-  <section class="ops-hero">
+<div class="ops-page ld-exec-page">
+
+  <section class="ops-hero ld-hero-split">
     <div class="ops-hero-main">
       <div class="ops-eyebrow">
         <i class="bi bi-folder2-open"></i>
-        LD Intelligence
+        LD DOCUMENT INTELLIGENCE
       </div>
 
-      <h1>Dashboard LD</h1>
+      <h1>Dashboard Executivo LD</h1>
 
       <p>
-        Cockpit executivo da Lista de Documentos: origem, disciplina, status documental, GRD, PCF e pendências críticas.
+        Cockpit executivo da Lista de Documentos: recebimento, GRD, PCF, últimas revisões, pendências e rastreabilidade operacional.
       </p>
+
+      <div class="ops-actions mt-3">
+        <a href="{% url 'automacoes:lista_ld' %}{% if querystring %}?{{ querystring }}{% endif %}" class="ops-btn ops-btn-primary">
+          <i class="bi bi-list-ul"></i>
+          Ver Lista LD filtrada
+        </a>
+
+        <a href="{% url 'automacoes:exportar_ld_excel' %}{% if querystring %}?{{ querystring }}{% endif %}" class="ops-btn ops-btn-success">
+          <i class="bi bi-file-earmark-excel"></i>
+          Excel filtrado
+        </a>
+
+        <a href="{% url 'automacoes:dashboard_ld' %}?{% if querystring %}{{ querystring }}&{% endif %}export=pptx" class="ops-btn">
+          <i class="bi bi-file-earmark-slides"></i>
+          PPT Executivo
+        </a>
+
+        <a href="{% url 'automacoes:painel' %}" class="ops-btn">
+          <i class="bi bi-arrow-left"></i>
+          Voltar
+        </a>
+      </div>
     </div>
 
-    <div class="ops-actions">
-      <a href="{% url 'automacoes:lista_ld' %}" class="ops-btn ops-btn-primary">
-        <i class="bi bi-table"></i>
-        Abrir Lista LD
-      </a>
+    <aside class="ld-health-card">
+      <span class="ops-filter-label">Saúde operacional LD</span>
+      <div class="ld-health-score">
+        <strong>{{ saude_operacional }}%</strong>
+        {% if saude_operacional >= 75 %}
+        <span class="ops-status-pill ops-status-ok">Saudável</span>
+        {% elif saude_operacional >= 50 %}
+        <span class="ops-status-pill ops-status-warn">Atenção</span>
+        {% else %}
+        <span class="ops-status-pill ops-status-risk">Crítico</span>
+        {% endif %}
+      </div>
+      <div class="ld-health-bar">
+        <div class="ld-health-fill" style="width: {{ saude_operacional }}%;"></div>
+      </div>
+      <div class="ops-muted">Score combinado de recebimento, GRD emitido e cobertura PCF no filtro atual.</div>
+    </aside>
+  </section>
 
-      <a href="{% url 'automacoes:dashboard_km_ld' %}" class="ops-btn">
-        <i class="bi bi-diagram-3"></i>
-        KM ↔ LD
-      </a>
+  <section class="ops-panel mb-3">
+    <form method="get" class="ld-filter-grid">
+      <div>
+        <label class="ops-filter-label">Busca geral</label>
+        <input type="text" name="q" value="{{ busca }}" placeholder="Documento, título, GRD ou PCF..." class="ops-input">
+      </div>
 
-      <a href="{% url 'automacoes:painel' %}" class="ops-btn">
-        <i class="bi bi-arrow-left"></i>
-        Voltar
-      </a>
+      <div>
+        <label class="ops-filter-label">Origem</label>
+        <select name="origem" class="ops-select ld-smart-select" multiple data-placeholder="Todas">
+          {% for item in origens %}
+          <option value="{{ item }}" {% if item in origens_selecionadas %}selected{% endif %}>{{ item }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="ops-filter-label">Tipo</label>
+        <select name="tipo_doc" class="ops-select ld-smart-select" multiple data-placeholder="Todos">
+          {% for item in tipos_documentais %}
+          <option value="{{ item }}" {% if item in tipos_doc_selecionados %}selected{% endif %}>{{ item }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="ops-filter-label">Disciplina</label>
+        <select name="disciplina" class="ops-select ld-smart-select" multiple data-placeholder="Todas">
+          {% for item in disciplinas %}
+          <option value="{{ item }}" {% if item in disciplinas_selecionadas %}selected{% endif %}>{{ item }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="ops-filter-label">Status Documento</label>
+        <select name="status_doc" class="ops-select ld-smart-select" multiple data-placeholder="Todos">
+          {% for item in status_documentos %}
+          <option value="{{ item }}" {% if item in status_docs_selecionados %}selected{% endif %}>{{ item }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="ops-filter-label">Status GRD</label>
+        <select name="status_grd" class="ops-select ld-smart-select" multiple data-placeholder="Todos">
+          {% for item in status_grds %}
+          <option value="{{ item }}" {% if item in status_grds_selecionados %}selected{% endif %}>{{ item }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="ops-filter-label">Status PCF</label>
+        <select name="status_pcf" class="ops-select ld-smart-select" multiple data-placeholder="Todos">
+          {% for item in status_pcfs %}
+          <option value="{{ item }}" {% if item in status_pcfs_selecionados %}selected{% endif %}>{{ item }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="ld-filter-actions">
+        <label class="ops-chip"><input class="form-check-input" type="checkbox" name="com_pcf" value="1" {% if com_pcf %}checked{% endif %}> Com PCF</label>
+        <label class="ops-chip"><input class="form-check-input" type="checkbox" name="sem_pcf" value="1" {% if sem_pcf %}checked{% endif %}> Sem PCF</label>
+        <label class="ops-chip"><input class="form-check-input" type="checkbox" name="com_resposta" value="1" {% if com_resposta %}checked{% endif %}> Com resposta</label>
+        <label class="ops-chip"><input class="form-check-input" type="checkbox" name="ultimas_revisoes" value="1" {% if ultimas_revisoes %}checked{% endif %}> Últimas revisões</label>
+
+        <button type="submit" class="ops-btn ops-btn-primary"><i class="bi bi-funnel"></i> Aplicar filtros</button>
+        <a href="{% url 'automacoes:dashboard_ld' %}" class="ops-btn"><i class="bi bi-x-circle"></i> Limpar filtros</a>
+        <a href="{% url 'automacoes:lista_ld' %}{% if querystring %}?{{ querystring }}{% endif %}" class="ops-btn"><i class="bi bi-list-ul"></i> Lista filtrada</a>
+        <a href="{% url 'automacoes:dashboard_ld' %}?{% if querystring %}{{ querystring }}&{% endif %}export=pptx" class="ops-btn"><i class="bi bi-file-earmark-slides"></i> Exportar PPT Executivo</a>
+      </div>
+    </form>
+
+    {% if filtros_ativos %}
+    <div class="ld-chip-row">
+      {% for filtro in filtros_ativos %}
+      <span class="ld-chip"><strong>{{ filtro.label }}</strong> {{ filtro.valor }}</span>
+      {% endfor %}
     </div>
+    {% endif %}
   </section>
 
   <section class="ops-kpi-grid ops-kpi-grid-6">
-    <a href="{% url 'automacoes:lista_ld' %}" class="ops-kpi">
-      <span>Total linhas</span>
-      <strong>{{ total }}</strong>
-      <small>registros LD</small>
-    </a>
-
-    <div class="ops-kpi">
-      <span>Documentos únicos</span>
-      <strong>{{ total_exclusivos }}</strong>
-      <small>sem duplicidade por revisão</small>
-    </div>
-
-    <a href="{% url 'automacoes:lista_ld' %}?status_doc=Recebido" class="ops-kpi">
-      <span>Recebidos</span>
-      <strong>{{ total_recebidos }}</strong>
-      <small>status documental</small>
-    </a>
-
-    <a href="{% url 'automacoes:lista_ld' %}?status_doc=Aprovado" class="ops-kpi">
-      <span>Aprovados</span>
-      <strong>{{ total_aprovados }}</strong>
-      <small>documentos aprovados</small>
-    </a>
-
-    <a href="{% url 'automacoes:lista_ld' %}?status_grd=Emitido" class="ops-kpi">
-      <span>GRD emitido</span>
-      <strong>{{ total_emitidos }}</strong>
-      <small>envios formalizados</small>
-    </a>
-
-    <a href="{% url 'automacoes:lista_ld' %}?status_pcf=NOT%20RELEASED" class="ops-kpi">
-      <span>Not Released</span>
-      <strong>{{ total_not_released }}</strong>
-      <small>pendência crítica</small>
-    </a>
+    <a href="{% url 'automacoes:lista_ld' %}{% if querystring %}?{{ querystring }}{% endif %}" class="ops-kpi ld-kpi-card"><span>Linhas LD</span><strong>{{ total }}</strong><small>resultado atual</small></a>
+    <div class="ops-kpi ld-kpi-card"><span>Documentos únicos</span><strong>{{ total_exclusivos }}</strong><small>sem duplicidade</small></div>
+    <div class="ops-kpi ld-kpi-card"><span>Recebidos</span><strong>{{ total_recebidos }}</strong><small>{{ taxa_recebimento }}% do filtro</small></div>
+    <div class="ops-kpi ld-kpi-card"><span>GRD emitido</span><strong>{{ total_emitidos }}</strong><small>{{ taxa_grd }}% de cobertura</small></div>
+    <div class="ops-kpi ld-kpi-card"><span>Com PCF</span><strong>{{ total_com_pcf }}</strong><small>{{ taxa_pcf }}% de cobertura</small></div>
+    <div class="ops-kpi ld-kpi-card"><span>Not Released</span><strong>{{ total_not_released }}</strong><small>status final PCF</small></div>
   </section>
 
-  <section class="ops-grid ops-grid-3 ops-stack">
+  <section class="ld-dashboard-grid mt-3">
     <div class="ops-panel">
       <div class="ops-panel-head">
         <div>
-          <h2>Taxa PCF</h2>
-          <p>Registros LD com PCF vinculado.</p>
+          <h2>Cobertura executiva</h2>
+          <p>Percentuais recalculados conforme os filtros ativos.</p>
         </div>
-
-        <span class="ops-chip">{{ taxa_pcf }}%</span>
+        <span class="ops-chip">Executive KPIs</span>
       </div>
 
-      <div class="ops-progress">
-        <span style="width: {{ taxa_pcf }}%;"></span>
+      <div class="ld-donut-grid">
+        <div class="ld-donut-card">
+          <div class="ld-ring" style="--value: {{ taxa_recebimento }};"><strong>{{ taxa_recebimento }}%</strong></div>
+          <span class="ops-filter-label">Recebimento</span>
+        </div>
+        <div class="ld-donut-card">
+          <div class="ld-ring" style="--value: {{ taxa_grd }};"><strong>{{ taxa_grd }}%</strong></div>
+          <span class="ops-filter-label">GRD emitido</span>
+        </div>
+        <div class="ld-donut-card">
+          <div class="ld-ring" style="--value: {{ taxa_pcf }};"><strong>{{ taxa_pcf }}%</strong></div>
+          <span class="ops-filter-label">PCF</span>
+        </div>
       </div>
     </div>
 
     <div class="ops-panel">
       <div class="ops-panel-head">
         <div>
-          <h2>Taxa GRD</h2>
-          <p>Registros LD com GRD emitido.</p>
+          <h2>Alertas operacionais</h2>
+          <p>Focos de atenção para gestão documental.</p>
         </div>
-
-        <span class="ops-chip">{{ taxa_grd }}%</span>
+        <span class="ops-chip">Ação</span>
       </div>
 
-      <div class="ops-progress">
-        <span style="width: {{ taxa_grd }}%;"></span>
-      </div>
-    </div>
-
-    <div class="ops-panel">
-      <div class="ops-panel-head">
-        <div>
-          <h2>Taxa Aprovação</h2>
-          <p>Registros LD com status aprovado.</p>
-        </div>
-
-        <span class="ops-chip">{{ taxa_aprovacao }}%</span>
-      </div>
-
-      <div class="ops-progress">
-        <span style="width: {{ taxa_aprovacao }}%;"></span>
+      <div class="ld-alert-list">
+        <div class="ld-alert-row"><i class="bi bi-file-earmark-x text-warning"></i><span>Sem PCF</span><strong>{{ total_sem_pcf }}</strong></div>
+        <div class="ld-alert-row"><i class="bi bi-reply text-warning"></i><span>PCF sem resposta</span><strong>{{ total_sem_resposta }}</strong></div>
+        <div class="ld-alert-row"><i class="bi bi-exclamation-triangle text-danger"></i><span>Not Released</span><strong>{{ total_not_released }}</strong></div>
+        <div class="ld-alert-row"><i class="bi bi-activity text-info"></i><span>Cobertura operacional</span><strong>{{ saude_operacional }}%</strong></div>
       </div>
     </div>
   </section>
 
-  {{ disciplina_labels|json_script:"ld-disciplina-labels" }}
-  {{ disciplina_values|json_script:"ld-disciplina-values" }}
-  {{ origem_labels|json_script:"ld-origem-labels" }}
-  {{ origem_values|json_script:"ld-origem-values" }}
-  {{ status_doc_labels|json_script:"ld-status-doc-labels" }}
-  {{ status_doc_values|json_script:"ld-status-doc-values" }}
-  {{ status_grd_labels|json_script:"ld-status-grd-labels" }}
-  {{ status_grd_values|json_script:"ld-status-grd-values" }}
-  {{ pcf_labels|json_script:"ld-pcf-labels" }}
-  {{ pcf_values|json_script:"ld-pcf-values" }}
-
-  <section class="ops-grid ops-grid-2 ops-stack">
+  <section class="ld-chart-grid mt-3">
     <div class="ops-panel">
-      <div class="ops-panel-head">
-        <div>
-          <h2>Documentos por Disciplina</h2>
-          <p>Top 12 disciplinas por volume documental.</p>
-        </div>
-
-        <span class="ops-chip">Clique para filtrar</span>
-      </div>
-
-      <div class="ops-chart-wrap">
-        <canvas id="ldDisciplinaChart"></canvas>
+      <div class="ops-panel-head"><div><h2>Distribuição por Disciplina</h2><p>Top disciplinas no filtro atual.</p></div><span class="ops-chip">{{ total }} LD</span></div>
+      <div class="ld-bar-list">
+        {% for item in disciplina_chart %}
+        <div class="ld-bar-row"><span class="ld-bar-label" title="{{ item.label }}">{{ item.label }}</span><span class="ld-bar-track"><span class="ld-bar-fill" style="width: {{ item.pct }}%;"></span></span><strong>{{ item.total }}</strong></div>
+        {% empty %}<p class="ops-muted">Sem dados para os filtros atuais.</p>{% endfor %}
       </div>
     </div>
 
     <div class="ops-panel">
-      <div class="ops-panel-head">
-        <div>
-          <h2>Origem LD</h2>
-          <p>Distribuição por origem da lista.</p>
-        </div>
-
-        <span class="ops-chip">LD / Marenova</span>
-      </div>
-
-      <div class="ops-chart-wrap">
-        <canvas id="ldOrigemChart"></canvas>
-      </div>
-    </div>
-  </section>
-
-  <section class="ops-grid ops-grid-3 ops-stack">
-    <div class="ops-panel">
-      <div class="ops-panel-head">
-        <div>
-          <h2>Status Documento</h2>
-          <p>Visão operacional do status documental.</p>
-        </div>
-
-        <span class="ops-chip">Operacional</span>
-      </div>
-
-      <div class="ops-chart-wrap">
-        <canvas id="ldStatusDocChart"></canvas>
+      <div class="ops-panel-head"><div><h2>Status Documento</h2><p>Situação documental por status.</p></div><span class="ops-chip">Status</span></div>
+      <div class="ld-bar-list">
+        {% for item in status_doc_chart %}
+        <div class="ld-bar-row"><span class="ld-bar-label" title="{{ item.label }}">{{ item.label }}</span><span class="ld-bar-track"><span class="ld-bar-fill" style="width: {{ item.pct }}%;"></span></span><strong>{{ item.total }}</strong></div>
+        {% empty %}<p class="ops-muted">Sem dados para os filtros atuais.</p>{% endfor %}
       </div>
     </div>
 
     <div class="ops-panel">
-      <div class="ops-panel-head">
-        <div>
-          <h2>Status GRD</h2>
-          <p>Status de emissão de GRD.</p>
-        </div>
-
-        <span class="ops-chip">Emissão</span>
-      </div>
-
-      <div class="ops-chart-wrap">
-        <canvas id="ldStatusGrdChart"></canvas>
+      <div class="ops-panel-head"><div><h2>Status GRD</h2><p>Controle de emissão GRD.</p></div><span class="ops-chip">GRD</span></div>
+      <div class="ld-bar-list">
+        {% for item in status_grd_chart %}
+        <div class="ld-bar-row"><span class="ld-bar-label" title="{{ item.label }}">{{ item.label }}</span><span class="ld-bar-track"><span class="ld-bar-fill" style="width: {{ item.pct }}%;"></span></span><strong>{{ item.total }}</strong></div>
+        {% empty %}<p class="ops-muted">Sem dados para os filtros atuais.</p>{% endfor %}
       </div>
     </div>
 
     <div class="ops-panel">
-      <div class="ops-panel-head">
-        <div>
-          <h2>PCF / Respostas</h2>
-          <p>Fluxo PCF e respostas vinculadas.</p>
-        </div>
-
-        <span class="ops-chip">Workflow</span>
-      </div>
-
-      <div class="ops-chart-wrap">
-        <canvas id="ldPcfChart"></canvas>
-      </div>
-    </div>
-  </section>
-
-  <section class="ops-grid-main">
-    <div class="ops-panel">
-      <div class="ops-panel-head">
-        <div>
-          <h2>Top Disciplinas Sem PCF</h2>
-          <p>Maiores pendências de PCF por disciplina.</p>
-        </div>
-
-        <span class="ops-chip ops-chip-warn">Pendências</span>
-      </div>
-
-      <div class="ops-table-wrap">
-        <table class="ops-table">
-          <thead>
-            <tr>
-              <th>Disciplina</th>
-              <th>Total pendente</th>
-              <th>Ação</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {% for item in top_disciplinas_pendentes %}
-            <tr>
-              <td>{{ item.disciplina|default:"Sem disciplina" }}</td>
-
-              <td>
-                <span class="ops-chip ops-chip-warn">{{ item.total }}</span>
-              </td>
-
-              <td>
-                {% if item.disciplina %}
-                <a href="{% url 'automacoes:lista_ld' %}?disciplina={{ item.disciplina|urlencode }}&sem_pcf=1"
-                   class="ops-btn">
-                  Abrir
-                </a>
-                {% endif %}
-              </td>
-            </tr>
-            {% empty %}
-            <tr>
-              <td colspan="3" class="ops-empty">Sem pendências.</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <aside class="ops-panel">
-      <div class="ops-panel-head">
-        <div>
-          <h2>Not Released</h2>
-          <p>Documentos críticos com PCF não liberada.</p>
-        </div>
-
-        <span class="ops-chip ops-chip-risk">Crítico</span>
-      </div>
-
-      <div class="ops-list">
-        {% for item in top_not_released %}
-        <a href="{% url 'automacoes:lista_ld' %}?q={{ item.documento|urlencode }}"
-           class="ops-list-item">
-          <strong>{{ item.documento }}</strong>
-
-          <small class="ops-muted">
-            Rev {{ item.revisao|default:"—" }} · {{ item.disciplina|default:"—" }} · {{ item.status_final_pcf|default:"—" }}
-          </small>
-        </a>
-        {% empty %}
-        <div class="ops-muted">Nenhum documento NOT RELEASED.</div>
+      <div class="ops-panel-head"><div><h2>Cobertura PCF</h2><p>PCFs e respostas por filtro.</p></div><span class="ops-chip">PCF</span></div>
+      <div class="ld-bar-list">
+        {% for item in pcf_chart %}
+        <div class="ld-bar-row"><span class="ld-bar-label">{{ item.label }}</span><span class="ld-bar-track"><span class="ld-bar-fill" style="width: {{ item.pct }}%;"></span></span><strong>{{ item.total }}</strong></div>
+        {% endfor %}
+        {% for item in resposta_chart %}
+        <div class="ld-bar-row"><span class="ld-bar-label">{{ item.label }}</span><span class="ld-bar-track"><span class="ld-bar-fill" style="width: {{ item.pct }}%;"></span></span><strong>{{ item.total }}</strong></div>
         {% endfor %}
       </div>
-    </aside>
+    </div>
   </section>
-</div>
-{% endblock %}
 
-{% block extra_js %}
+  <section class="ops-panel mt-3">
+    <div class="ops-panel-head">
+      <div>
+        <h2>Últimos documentos atualizados</h2>
+        <p>Amostra operacional do resultado filtrado.</p>
+      </div>
+      <a href="{% url 'automacoes:lista_ld' %}{% if querystring %}?{{ querystring }}{% endif %}" class="ops-btn">Ver lista completa</a>
+    </div>
+
+    <div class="table-responsive">
+      <table class="ld-mini-table">
+        <thead>
+          <tr>
+            <th>Documento</th>
+            <th>Rev</th>
+            <th>Disciplina</th>
+            <th>Status</th>
+            <th>GRD</th>
+            <th>PCF</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in recentes %}
+          <tr>
+            <td><strong>{{ item.documento }}</strong></td>
+            <td>{{ item.revisao|default:"—" }}</td>
+            <td>{{ item.disciplina|default:"—" }}</td>
+            <td>{{ item.status_documento|default:"—" }}</td>
+            <td>{{ item.grd|default:"—" }}</td>
+            <td>{{ item.pcf|default:"—" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="ops-muted">Sem documentos para os filtros atuais.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+
+
 <script>
 (function () {
-  const listaLdUrl = "{% url 'automacoes:lista_ld' %}";
-
-  function readJsonScript(id) {
-    const element = document.getElementById(id);
-    if (!element) return [];
-    try {
-      return JSON.parse(element.textContent || "[]");
-    } catch (error) {
-      console.warn("Falha ao ler dados do gráfico:", id, error);
-      return [];
-    }
+  function closeAll(except) {
+    document.querySelectorAll(".ld-smart-wrap.is-open").forEach(function (wrap) {
+      if (wrap !== except) wrap.classList.remove("is-open");
+    });
   }
 
-  function goToList(params) {
-    const url = new URL(listaLdUrl, window.location.origin);
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && String(value).trim() !== "") {
-        url.searchParams.set(key, value);
+  document.querySelectorAll("select.ld-smart-select").forEach(function (select) {
+    if (select.dataset.smartReady === "1") return;
+    select.dataset.smartReady = "1";
+
+    var isMultiple = select.multiple;
+    var placeholder = select.dataset.placeholder || "Todos";
+
+    var wrap = document.createElement("div");
+    wrap.className = "ld-smart-wrap";
+
+    var trigger = document.createElement("button");
+    trigger.type = "button";
+    trigger.className = "ld-smart-trigger";
+
+    var menu = document.createElement("div");
+    menu.className = "ld-smart-menu";
+
+    var search = document.createElement("input");
+    search.type = "text";
+    search.className = "ld-smart-search";
+    search.placeholder = "Pesquisar...";
+
+    var optionsBox = document.createElement("div");
+    optionsBox.className = "ld-smart-options";
+
+    var actions = document.createElement("div");
+    actions.className = "ld-smart-actions";
+
+    var clearBtn = document.createElement("button");
+    clearBtn.type = "button";
+    clearBtn.className = "ld-smart-mini";
+    clearBtn.textContent = "Limpar";
+
+    var applyBtn = document.createElement("button");
+    applyBtn.type = "button";
+    applyBtn.className = "ld-smart-mini";
+    applyBtn.textContent = "Aplicar";
+
+    actions.appendChild(clearBtn);
+    actions.appendChild(applyBtn);
+
+    function selectedOptions() {
+      return Array.from(select.options).filter(function (opt) { return opt.selected && opt.value !== ""; });
+    }
+
+    function selectedText() {
+      var selected = selectedOptions();
+      if (!selected.length) return placeholder;
+      if (!isMultiple) return selected[0].text || placeholder;
+      if (selected.length === 1) return selected[0].text;
+      return selected.length + " selecionados";
+    }
+
+    function render() {
+      var term = search.value.trim().toLowerCase();
+      optionsBox.innerHTML = "";
+
+      Array.from(select.options).forEach(function (opt) {
+        var label = opt.text || "";
+        if (term && label.toLowerCase().indexOf(term) === -1) return;
+
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "ld-smart-option";
+        if (opt.selected) btn.classList.add("is-selected");
+        btn.title = label;
+
+        var check = document.createElement("span");
+        check.className = "ld-smart-check";
+
+        var text = document.createElement("span");
+        text.textContent = label;
+
+        btn.appendChild(check);
+        btn.appendChild(text);
+
+        btn.addEventListener("click", function () {
+          if (isMultiple) {
+            opt.selected = !opt.selected;
+          } else {
+            Array.from(select.options).forEach(function (other) { other.selected = false; });
+            opt.selected = true;
+            wrap.classList.remove("is-open");
+          }
+          select.dispatchEvent(new Event("change", { bubbles: true }));
+          trigger.textContent = selectedText();
+          render();
+        });
+
+        optionsBox.appendChild(btn);
+      });
+    }
+
+    select.parentNode.insertBefore(wrap, select);
+    wrap.appendChild(select);
+    wrap.appendChild(trigger);
+    wrap.appendChild(menu);
+    menu.appendChild(search);
+    menu.appendChild(optionsBox);
+    if (isMultiple) menu.appendChild(actions);
+
+    select.classList.add("ld-native-hidden");
+    trigger.textContent = selectedText();
+
+    trigger.addEventListener("click", function () {
+      var isOpen = wrap.classList.contains("is-open");
+      closeAll(wrap);
+      wrap.classList.toggle("is-open", !isOpen);
+      if (!isOpen) {
+        search.value = "";
+        render();
+        setTimeout(function () { search.focus(); }, 0);
       }
     });
-    window.location.href = url.toString();
-  }
 
-  function clickedLabel(chart, event) {
-    const points = chart.getElementsAtEventForMode(event, "nearest", { intersect: true }, true);
-    if (!points.length) return null;
-    return chart.data.labels[points[0].index];
-  }
+    clearBtn.addEventListener("click", function () {
+      Array.from(select.options).forEach(function (opt) { opt.selected = false; });
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+      trigger.textContent = selectedText();
+      render();
+    });
 
-  const disciplinaLabels = readJsonScript("ld-disciplina-labels");
-  const disciplinaValues = readJsonScript("ld-disciplina-values");
-  const origemLabels = readJsonScript("ld-origem-labels");
-  const origemValues = readJsonScript("ld-origem-values");
-  const statusDocLabels = readJsonScript("ld-status-doc-labels");
-  const statusDocValues = readJsonScript("ld-status-doc-values");
-  const statusGrdLabels = readJsonScript("ld-status-grd-labels");
-  const statusGrdValues = readJsonScript("ld-status-grd-values");
-  const pcfLabels = readJsonScript("ld-pcf-labels");
-  const pcfValues = readJsonScript("ld-pcf-values");
+    applyBtn.addEventListener("click", function () {
+      wrap.classList.remove("is-open");
+    });
 
-  if (!window.Chart) return;
-
-  new Chart(document.getElementById("ldDisciplinaChart"), {
-    type: "bar",
-    data: { labels: disciplinaLabels, datasets: [{ label: "Documentos", data: disciplinaValues }] },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      indexAxis: "y",
-      plugins: { legend: { display: false } },
-      onClick: function (event) {
-        const label = clickedLabel(this, event);
-        if (label && label !== "Sem disciplina") goToList({ disciplina: label });
-      }
-    }
+    search.addEventListener("input", render);
+    render();
   });
 
-  new Chart(document.getElementById("ldOrigemChart"), {
-    type: "doughnut",
-    data: { labels: origemLabels, datasets: [{ data: origemValues }] },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      onClick: function (event) {
-        const label = clickedLabel(this, event);
-        if (label && label !== "Sem origem") goToList({ origem: label });
-      }
-    }
+  document.addEventListener("click", function (event) {
+    if (!event.target.closest(".ld-smart-wrap")) closeAll();
   });
 
-  new Chart(document.getElementById("ldStatusDocChart"), {
-    type: "doughnut",
-    data: { labels: statusDocLabels, datasets: [{ data: statusDocValues }] },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      onClick: function (event) {
-        const label = clickedLabel(this, event);
-        if (label && label !== "Sem status") goToList({ status_doc: label });
-      }
-    }
-  });
-
-  new Chart(document.getElementById("ldStatusGrdChart"), {
-    type: "doughnut",
-    data: { labels: statusGrdLabels, datasets: [{ data: statusGrdValues }] },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      onClick: function (event) {
-        const label = clickedLabel(this, event);
-        if (label && label !== "Sem status") goToList({ status_grd: label });
-      }
-    }
-  });
-
-  new Chart(document.getElementById("ldPcfChart"), {
-    type: "bar",
-    data: { labels: pcfLabels, datasets: [{ label: "Quantidade", data: pcfValues }] },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      onClick: function (event) {
-        const label = clickedLabel(this, event);
-        if (label === "Com PCF") goToList({ com_pcf: "1" });
-        if (label === "Sem PCF") goToList({ sem_pcf: "1" });
-        if (label === "Com resposta") goToList({ com_resposta: "1" });
-        if (label === "Sem resposta") goToList({ com_pcf: "1" });
-      }
-    }
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") closeAll();
   });
 })();
 </script>
+
 {% endblock %}

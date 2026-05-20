@@ -2258,13 +2258,84 @@ def _ld_filtrar_ultimas_revisoes(queryset):
     return queryset.filter(pk__in=ids)
 
 
+def _ld_getlist(request, nome):
+    valores = []
+    for valor in request.GET.getlist(nome):
+        texto = _ld_texto(valor)
+        if texto:
+            valores.append(texto)
+
+    if not valores:
+        texto = _ld_texto(request.GET.get(nome))
+        if texto:
+            valores.append(texto)
+
+    # Remove duplicados preservando ordem.
+    unicos = []
+    vistos = set()
+    for valor in valores:
+        chave = valor.casefold()
+        if chave not in vistos:
+            vistos.add(chave)
+            unicos.append(valor)
+
+    return unicos
+
+
+def _ld_filtro_origens(queryset, origens):
+    origens = [_ld_texto(item) for item in origens if _ld_texto(item)]
+
+    if not origens or not _ld_has_field("origem_aba"):
+        return queryset
+
+    if len(origens) == 1:
+        return _ld_filtrar_origem(queryset, origens[0])
+
+    condicao = Q()
+
+    for origem in origens:
+        origem_norm = _ld_normalizar_origem(origem)
+
+        if origem_norm == "ld marenova":
+            condicao |= Q(origem_aba__icontains="Marenova")
+        elif origem_norm == "ld":
+            condicao |= (
+                Q(origem_aba__isnull=True)
+                | Q(origem_aba="")
+                | Q(origem_aba__iexact="LD")
+                | Q(origem_aba__iexact="Lista LD")
+                | Q(origem_aba__icontains="LD")
+            )
+        else:
+            condicao |= Q(origem_aba__icontains=origem)
+
+    return queryset.filter(condicao)
+
+
+def _ld_filtrar_por_tipos_documentais(queryset, tipos_doc):
+    tipos_doc = {_ld_texto(tipo).upper() for tipo in tipos_doc if _ld_texto(tipo)}
+
+    if not tipos_doc:
+        return queryset
+
+    ids_tipo_doc = [
+        pk
+        for pk, documento in queryset.values_list("pk", "documento")
+        if extrair_tipo_documental(documento) in tipos_doc
+    ]
+
+    return queryset.filter(pk__in=ids_tipo_doc)
+
+
 def _ld_filtrar_queryset(request):
     busca = _ld_texto(request.GET.get("q"))
-    origem = _ld_texto(request.GET.get("origem"))
-    disciplina = _ld_texto(request.GET.get("disciplina"))
-    status_doc = _ld_texto(request.GET.get("status_doc"))
-    status_grd = _ld_texto(request.GET.get("status_grd"))
-    status_pcf = _ld_texto(request.GET.get("status_pcf"))
+
+    origens = _ld_getlist(request, "origem")
+    disciplinas = _ld_getlist(request, "disciplina")
+    tipos_doc = [item.upper() for item in _ld_getlist(request, "tipo_doc")]
+    status_docs = _ld_getlist(request, "status_doc")
+    status_grds = _ld_getlist(request, "status_grd")
+    status_pcfs = _ld_getlist(request, "status_pcf")
 
     com_pcf = _ld_bool(request.GET.get("com_pcf"))
     sem_pcf = _ld_bool(request.GET.get("sem_pcf"))
@@ -2274,25 +2345,27 @@ def _ld_filtrar_queryset(request):
     filtro_rapido = _ld_texto(request.GET.get("filtro"))
 
     if filtro_rapido == "recebidos":
-        status_doc = "Recebido"
+        status_docs = ["Recebido"]
     elif filtro_rapido == "aprovados":
-        status_doc = "Aprovado"
+        status_docs = ["Aprovado"]
     elif filtro_rapido == "grd_emitido":
-        status_grd = "Emitido"
+        status_grds = ["Emitido"]
     elif filtro_rapido == "com_pcf":
         com_pcf = True
+        sem_pcf = False
     elif filtro_rapido == "sem_pcf":
         sem_pcf = True
+        com_pcf = False
     elif filtro_rapido == "com_resposta":
         com_resposta = True
     elif filtro_rapido == "not_released":
-        status_pcf = "NOT RELEASED"
+        status_pcfs = ["NOT RELEASED"]
     elif filtro_rapido == "ultimas_revisoes":
         ultimas_revisoes = True
 
     registros = DocumentoLD.objects.all().order_by("documento", "revisao")
 
-    registros = _ld_filtrar_origem(registros, origem)
+    registros = _ld_filtro_origens(registros, origens)
 
     if busca:
         registros = registros.filter(
@@ -2305,21 +2378,27 @@ def _ld_filtrar_queryset(request):
             | Q(grd_resposta__icontains=busca)
         )
 
-    if disciplina:
-        registros = registros.filter(disciplina__icontains=disciplina)
+    registros = _ld_filtrar_por_tipos_documentais(registros, tipos_doc)
 
-    if status_doc:
-        registros = registros.filter(status_documento__iexact=status_doc)
+    if disciplinas:
+        registros = registros.filter(disciplina__in=disciplinas)
 
-    if status_grd:
-        registros = registros.filter(status_grd__iexact=status_grd)
+    if status_docs:
+        registros = registros.filter(status_documento__in=status_docs)
 
-    if status_pcf:
-        status_pcf_norm = status_pcf.strip().upper()
-        if status_pcf_norm in ["RELEASED", "NOT RELEASED"]:
-            registros = registros.filter(status_final_pcf__iexact=status_pcf)
-        else:
-            registros = registros.filter(status_final_pcf__icontains=status_pcf)
+    if status_grds:
+        registros = registros.filter(status_grd__in=status_grds)
+
+    if status_pcfs:
+        condicao_status_pcf = Q()
+        for status_pcf in status_pcfs:
+            status_pcf_norm = status_pcf.strip().upper()
+            if status_pcf_norm in ["RELEASED", "NOT RELEASED"]:
+                condicao_status_pcf |= Q(status_final_pcf__iexact=status_pcf)
+            else:
+                condicao_status_pcf |= Q(status_final_pcf__icontains=status_pcf)
+
+        registros = registros.filter(condicao_status_pcf)
 
     if com_pcf and not sem_pcf:
         registros = registros.exclude(pcf__isnull=True).exclude(pcf="")
@@ -2335,11 +2414,18 @@ def _ld_filtrar_queryset(request):
 
     filtros = {
         "busca": busca,
-        "origem": origem,
-        "disciplina": disciplina,
-        "status_doc": status_doc,
-        "status_grd": status_grd,
-        "status_pcf": status_pcf,
+        "origem": origens[0] if len(origens) == 1 else "",
+        "disciplina": disciplinas[0] if len(disciplinas) == 1 else "",
+        "tipo_doc": tipos_doc[0] if len(tipos_doc) == 1 else "",
+        "status_doc": status_docs[0] if len(status_docs) == 1 else "",
+        "status_grd": status_grds[0] if len(status_grds) == 1 else "",
+        "status_pcf": status_pcfs[0] if len(status_pcfs) == 1 else "",
+        "origens_selecionadas": origens,
+        "disciplinas_selecionadas": disciplinas,
+        "tipos_doc_selecionados": tipos_doc,
+        "status_docs_selecionados": status_docs,
+        "status_grds_selecionados": status_grds,
+        "status_pcfs_selecionados": status_pcfs,
         "com_pcf": com_pcf,
         "sem_pcf": sem_pcf,
         "com_resposta": com_resposta,
@@ -2555,28 +2641,19 @@ def _ld_montar_chips(request, filtros, status_documentos, status_grds):
 
 @login_required
 def listar_ld(request):
-    tipo_doc = _ld_texto(request.GET.get("tipo_doc")).upper()
-
     registros, filtros = _ld_filtrar_queryset(request)
 
     tipos_encontrados = {
         extrair_tipo_documental(documento)
-        for documento in registros.values_list("documento", flat=True)
+        for documento in DocumentoLD.objects.values_list("documento", flat=True)
     }
     tipos_documentais = sorted(tipo for tipo in tipos_encontrados if tipo)
-
-    if tipo_doc:
-        ids_tipo_doc = [
-            pk
-            for pk, documento in registros.values_list("pk", "documento")
-            if extrair_tipo_documental(documento) == tipo_doc
-        ]
-        registros = registros.filter(pk__in=ids_tipo_doc)
 
     kpis = _ld_kpis(registros)
 
     disciplinas = _ld_valores_distintos("disciplina")
     origens = _ld_valores_distintos("origem_aba", extras=["LD", "LD Marenova"])
+
     # Mantém as duas origens operacionais sempre disponíveis, mesmo quando a
     # importação antiga gravou origem_aba em branco.
     origens_norm = []
@@ -2584,8 +2661,11 @@ def listar_ld(request):
         if origem_item not in origens_norm:
             origens_norm.append(origem_item)
     origens = origens_norm
+
     status_documentos = _ld_valores_distintos("status_documento")
     status_grds = _ld_valores_distintos("status_grd")
+    status_pcfs = _ld_valores_distintos("status_final_pcf", extras=["RELEASED", "NOT RELEASED"])
+
     chips_ld = _ld_montar_chips(
         request,
         filtros,
@@ -2599,7 +2679,33 @@ def listar_ld(request):
 
     query_params = request.GET.copy()
     query_params.pop("page", None)
+    query_params.pop("export", None)
     query_string = query_params.urlencode()
+
+    filtros_ativos = []
+
+    if filtros["busca"]:
+        filtros_ativos.append({"label": "Busca", "valor": filtros["busca"]})
+
+    for label, valores in [
+        ("Origem", filtros["origens_selecionadas"]),
+        ("Tipo", filtros["tipos_doc_selecionados"]),
+        ("Disciplina", filtros["disciplinas_selecionadas"]),
+        ("Status documento", filtros["status_docs_selecionados"]),
+        ("Status GRD", filtros["status_grds_selecionados"]),
+        ("Status PCF", filtros["status_pcfs_selecionados"]),
+    ]:
+        for valor in valores:
+            filtros_ativos.append({"label": label, "valor": valor})
+
+    if filtros["com_pcf"]:
+        filtros_ativos.append({"label": "Filtro", "valor": "Com PCF"})
+    if filtros["sem_pcf"]:
+        filtros_ativos.append({"label": "Filtro", "valor": "Sem PCF"})
+    if filtros["com_resposta"]:
+        filtros_ativos.append({"label": "Filtro", "valor": "Com resposta"})
+    if filtros["ultimas_revisoes"]:
+        filtros_ativos.append({"label": "Filtro", "valor": "Últimas revisões"})
 
     return render(
         request,
@@ -2608,13 +2714,15 @@ def listar_ld(request):
             "registros": page_obj,
             "page_obj": page_obj,
             "query_string": query_string,
+            "querystring": query_string,
+            "filtros_ativos": filtros_ativos,
             "tipos_documentais": tipos_documentais,
-            "tipo_doc": tipo_doc,
 
             "origens": origens,
             "disciplinas": disciplinas,
             "status_documentos": status_documentos,
             "status_grds": status_grds,
+            "status_pcfs": status_pcfs,
 
             **chips_ld,
             **filtros,
@@ -2742,9 +2850,161 @@ def exportar_ld_excel(request):
 
 
 
+def _ld_chart_items(queryset, campo, limite=10):
+    dados = list(
+        queryset.values(campo)
+        .annotate(total=Count("id"))
+        .order_by("-total")[:limite]
+    )
+
+    maior = max([item.get("total") or 0 for item in dados] or [1])
+
+    return [
+        {
+            "label": item.get(campo) or "Sem informação",
+            "total": item.get("total") or 0,
+            "pct": round(((item.get("total") or 0) / maior) * 100, 1) if maior else 0,
+        }
+        for item in dados
+    ]
+
+
+def _ld_binary_chart(label_ok, total_ok, label_gap, total_gap):
+    maior = max(total_ok, total_gap, 1)
+    return [
+        {"label": label_ok, "total": total_ok, "pct": round((total_ok / maior) * 100, 1)},
+        {"label": label_gap, "total": total_gap, "pct": round((total_gap / maior) * 100, 1)},
+    ]
+
+
+def _ld_exportar_dashboard_ppt(request):
+    from io import BytesIO
+
+    from pptx import Presentation
+    from pptx.dml.color import RGBColor
+    from pptx.util import Inches, Pt
+
+    registros, filtros = _ld_filtrar_queryset(request)
+    kpis = _ld_kpis(registros)
+
+    total = kpis["total"] or 0
+    total_sem_resposta = registros.filter(
+        Q(pcf_resposta__isnull=True) | Q(pcf_resposta="")
+    ).exclude(Q(pcf__isnull=True) | Q(pcf="")).count()
+
+    total_not_released = registros.filter(status_final_pcf__iexact="NOT RELEASED").count()
+
+    taxa_pcf = round((kpis["total_com_pcf"] / total) * 100, 1) if total else 0
+    taxa_grd = round((kpis["total_emitidos"] / total) * 100, 1) if total else 0
+    taxa_aprovacao = round((kpis["total_aprovados"] / total) * 100, 1) if total else 0
+    saude = round((taxa_pcf + taxa_grd + taxa_aprovacao) / 3, 1) if total else 0
+
+    disciplina_chart = _ld_chart_items(registros, "disciplina", 7)
+    status_doc_chart = _ld_chart_items(registros, "status_documento", 7)
+    status_grd_chart = _ld_chart_items(registros, "status_grd", 7)
+
+    prs = Presentation()
+    prs.slide_width = Inches(13.333)
+    prs.slide_height = Inches(7.5)
+
+    bg = RGBColor(8, 13, 28)
+    cyan = RGBColor(56, 189, 248)
+    white = RGBColor(248, 250, 252)
+    muted = RGBColor(148, 163, 184)
+    green = RGBColor(34, 197, 94)
+    orange = RGBColor(251, 191, 36)
+
+    def add_text(slide, text, x, y, w, h, size=22, bold=False, color=white):
+        box = slide.shapes.add_textbox(Inches(x), Inches(y), Inches(w), Inches(h))
+        tf = box.text_frame
+        tf.clear()
+        p = tf.paragraphs[0]
+        run = p.add_run()
+        run.text = str(text)
+        run.font.size = Pt(size)
+        run.font.bold = bold
+        run.font.color.rgb = color
+        return box
+
+    def add_card(slide, title, value, subtitle, x, y, w=2.1, h=1.0, accent=cyan):
+        shape = slide.shapes.add_shape(1, Inches(x), Inches(y), Inches(w), Inches(h))
+        shape.fill.solid()
+        shape.fill.fore_color.rgb = RGBColor(15, 23, 42)
+        shape.line.color.rgb = RGBColor(51, 65, 85)
+        add_text(slide, title.upper(), x + .12, y + .10, w - .24, .22, 8, True, cyan)
+        add_text(slide, value, x + .12, y + .34, w - .24, .34, 21, True, white)
+        add_text(slide, subtitle, x + .12, y + .72, w - .24, .20, 8, False, muted)
+        bar = slide.shapes.add_shape(1, Inches(x), Inches(y + h - .05), Inches(w), Inches(.04))
+        bar.fill.solid()
+        bar.fill.fore_color.rgb = accent
+        bar.line.fill.background()
+
+    def add_bars(slide, title, items, x, y, w, h):
+        add_text(slide, title, x, y, w, .28, 15, True, white)
+        add_text(slide, "Top registros no filtro atual", x, y + .32, w, .20, 8, False, muted)
+        top_y = y + .70
+        max_total = max([item["total"] for item in items] or [1])
+        for idx, item in enumerate(items[:7]):
+            yy = top_y + idx * .42
+            add_text(slide, item["label"][:34], x, yy, w * .55, .20, 9, False, white)
+            track = slide.shapes.add_shape(1, Inches(x + w * .55), Inches(yy + .04), Inches(w * .30), Inches(.09))
+            track.fill.solid()
+            track.fill.fore_color.rgb = RGBColor(30, 41, 59)
+            track.line.fill.background()
+            fill_w = (w * .30) * ((item["total"] or 0) / max_total) if max_total else 0
+            fill = slide.shapes.add_shape(1, Inches(x + w * .55), Inches(yy + .04), Inches(fill_w), Inches(.09))
+            fill.fill.solid()
+            fill.fill.fore_color.rgb = cyan
+            fill.line.fill.background()
+            add_text(slide, item["total"], x + w * .88, yy - .02, w * .12, .20, 10, True, white)
+
+    # Slide 1
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    slide.background.fill.solid()
+    slide.background.fill.fore_color.rgb = bg
+    add_text(slide, "Dashboard Executivo LD", .45, .35, 8.6, .45, 28, True, white)
+    add_text(slide, "Lista de Documentos • GRD • PCF • Revisões • Status documental", .45, .86, 8.8, .30, 12, False, cyan)
+    add_card(slide, "Total linhas", total, "resultado atual", .45, 1.45)
+    add_card(slide, "Únicos", kpis["total_exclusivos"], "documentos únicos", 2.75, 1.45)
+    add_card(slide, "Recebidos", kpis["total_recebidos"], f"{taxa_aprovacao}% aprov.", 5.05, 1.45, accent=green)
+    add_card(slide, "GRD emitido", kpis["total_emitidos"], f"{taxa_grd}% cobertura", 7.35, 1.45, accent=orange)
+    add_card(slide, "Com PCF", kpis["total_com_pcf"], f"{taxa_pcf}% cobertura", 9.65, 1.45, accent=cyan)
+    add_card(slide, "Saúde", f"{saude}%", "score operacional", 11.95, 1.45, w=1.0)
+    add_bars(slide, "Distribuição por Disciplina", disciplina_chart, .55, 2.85, 5.8, 3.8)
+    add_bars(slide, "Status Documento", status_doc_chart, 6.9, 2.85, 5.7, 3.8)
+    add_text(slide, "GED_PROFISSIONAL • LD Intelligence", .45, 7.05, 7.0, .20, 8, False, muted)
+
+    # Slide 2
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    slide.background.fill.solid()
+    slide.background.fill.fore_color.rgb = bg
+    add_text(slide, "Cobertura documental LD", .45, .35, 8.8, .45, 26, True, white)
+    add_card(slide, "Com PCF", kpis["total_com_pcf"], f"{taxa_pcf}% da base", .45, 1.15)
+    add_card(slide, "Sem PCF", kpis["total_sem_pcf"], "gaps operacionais", 2.75, 1.15, accent=orange)
+    add_card(slide, "Com resposta", kpis["total_com_resposta"], "respostas PCF", 5.05, 1.15, accent=green)
+    add_card(slide, "Sem resposta", total_sem_resposta, "PCFs sem retorno", 7.35, 1.15, accent=orange)
+    add_card(slide, "Not Released", total_not_released, "status crítico PCF", 9.65, 1.15, accent=RGBColor(248, 113, 113))
+    add_bars(slide, "Status GRD", status_grd_chart, .55, 2.65, 5.8, 3.9)
+    add_bars(slide, "Pendências por disciplina", _ld_chart_items(registros.filter(Q(pcf__isnull=True) | Q(pcf="")), "disciplina", 7), 6.9, 2.65, 5.7, 3.9)
+
+    output = BytesIO()
+    prs.save(output)
+    output.seek(0)
+
+    response = HttpResponse(
+        output.getvalue(),
+        content_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    )
+    response["Content-Disposition"] = 'attachment; filename="dashboard_ld_executivo.pptx"'
+    return response
+
+
 @login_required
 def dashboard_ld(request):
-    registros = DocumentoLD.objects.all()
+    if request.GET.get("export") == "pptx":
+        return _ld_exportar_dashboard_ppt(request)
+
+    registros, filtros = _ld_filtrar_queryset(request)
 
     kpis = _ld_kpis(registros)
 
@@ -2770,29 +3030,18 @@ def dashboard_ld(request):
         Q(pcf__isnull=True) | Q(pcf="")
     ).count()
 
-    por_disciplina = list(
-        registros.values("disciplina")
-        .annotate(total=Count("id"))
-        .order_by("-total")[:12]
-    )
+    taxa_pcf = round((kpis["total_com_pcf"] / kpis["total"]) * 100, 1) if kpis["total"] else 0
+    taxa_grd = round((kpis["total_emitidos"] / kpis["total"]) * 100, 1) if kpis["total"] else 0
+    taxa_aprovacao = round((kpis["total_aprovados"] / kpis["total"]) * 100, 1) if kpis["total"] else 0
+    taxa_recebimento = round((kpis["total_recebidos"] / kpis["total"]) * 100, 1) if kpis["total"] else 0
+    saude_operacional = round((taxa_pcf + taxa_grd + taxa_recebimento) / 3, 1) if kpis["total"] else 0
 
-    por_origem = list(
-        registros.values("origem_aba")
-        .annotate(total=Count("id"))
-        .order_by("-total")
-    )
-
-    por_status_documento = list(
-        registros.values("status_documento")
-        .annotate(total=Count("id"))
-        .order_by("-total")[:10]
-    )
-
-    por_status_grd = list(
-        registros.values("status_grd")
-        .annotate(total=Count("id"))
-        .order_by("-total")[:10]
-    )
+    disciplina_chart = _ld_chart_items(registros, "disciplina", 10)
+    origem_chart = _ld_chart_items(registros, "origem_aba", 8)
+    status_doc_chart = _ld_chart_items(registros, "status_documento", 8)
+    status_grd_chart = _ld_chart_items(registros, "status_grd", 8)
+    pcf_chart = _ld_binary_chart("Com PCF", kpis["total_com_pcf"], "Sem PCF", kpis["total_sem_pcf"])
+    resposta_chart = _ld_binary_chart("Com resposta", kpis["total_com_resposta"], "Sem resposta", total_sem_resposta)
 
     top_disciplinas_pendentes = list(
         registros.filter(Q(pcf__isnull=True) | Q(pcf=""))
@@ -2807,67 +3056,70 @@ def dashboard_ld(request):
 
     recentes = registros.order_by("-id")[:12]
 
-    disciplina_labels = [
-        item.get("disciplina") or "Sem disciplina"
-        for item in por_disciplina
-    ]
-    disciplina_values = [
-        item.get("total") or 0
-        for item in por_disciplina
-    ]
+    disciplinas = _ld_valores_distintos("disciplina")
+    origens = _ld_valores_distintos("origem_aba", extras=["LD", "LD Marenova"])
+    origens_norm = []
+    for origem_item in ["LD", "LD Marenova", *origens]:
+        if origem_item not in origens_norm:
+            origens_norm.append(origem_item)
+    origens = origens_norm
 
-    origem_labels = [
-        item.get("origem_aba") or "Sem origem"
-        for item in por_origem
-    ]
-    origem_values = [
-        item.get("total") or 0
-        for item in por_origem
-    ]
+    status_documentos = _ld_valores_distintos("status_documento")
+    status_grds = _ld_valores_distintos("status_grd")
+    status_pcfs = _ld_valores_distintos("status_final_pcf", extras=["RELEASED", "NOT RELEASED"])
+    tipos_encontrados = {
+        extrair_tipo_documental(documento)
+        for documento in DocumentoLD.objects.values_list("documento", flat=True)
+    }
+    tipos_documentais = sorted(tipo for tipo in tipos_encontrados if tipo)
 
-    status_doc_labels = [
-        item.get("status_documento") or "Sem status"
-        for item in por_status_documento
-    ]
-    status_doc_values = [
-        item.get("total") or 0
-        for item in por_status_documento
-    ]
+    query_params = request.GET.copy()
+    query_params.pop("page", None)
+    query_params.pop("export", None)
+    querystring = query_params.urlencode()
 
-    status_grd_labels = [
-        item.get("status_grd") or "Sem status"
-        for item in por_status_grd
-    ]
-    status_grd_values = [
-        item.get("total") or 0
-        for item in por_status_grd
-    ]
+    filtros_ativos = []
 
-    pcf_labels = ["Com PCF", "Sem PCF", "Com resposta", "Sem resposta"]
-    pcf_values = [
-        kpis["total_com_pcf"],
-        kpis["total_sem_pcf"],
-        kpis["total_com_resposta"],
-        total_sem_resposta,
-    ]
+    if filtros["busca"]:
+        filtros_ativos.append({"label": "Busca", "valor": filtros["busca"]})
 
-    taxa_pcf = 0
-    if kpis["total"]:
-        taxa_pcf = round((kpis["total_com_pcf"] / kpis["total"]) * 100, 1)
+    for label, valores in [
+        ("Origem", filtros["origens_selecionadas"]),
+        ("Tipo", filtros["tipos_doc_selecionados"]),
+        ("Disciplina", filtros["disciplinas_selecionadas"]),
+        ("Status documento", filtros["status_docs_selecionados"]),
+        ("Status GRD", filtros["status_grds_selecionados"]),
+        ("Status PCF", filtros["status_pcfs_selecionados"]),
+    ]:
+        for valor in valores:
+            filtros_ativos.append({"label": label, "valor": valor})
 
-    taxa_grd = 0
-    if kpis["total"]:
-        taxa_grd = round((kpis["total_emitidos"] / kpis["total"]) * 100, 1)
-
-    taxa_aprovacao = 0
-    if kpis["total"]:
-        taxa_aprovacao = round((kpis["total_aprovados"] / kpis["total"]) * 100, 1)
+    if filtros["com_pcf"]:
+        filtros_ativos.append({"label": "Filtro", "valor": "Com PCF"})
+    if filtros["sem_pcf"]:
+        filtros_ativos.append({"label": "Filtro", "valor": "Sem PCF"})
+    if filtros["com_resposta"]:
+        filtros_ativos.append({"label": "Filtro", "valor": "Com resposta"})
+    if filtros["ultimas_revisoes"]:
+        filtros_ativos.append({"label": "Filtro", "valor": "Últimas revisões"})
 
     return render(
         request,
         "automacoes/dashboard_ld.html",
         {
             **kpis,
+            **filtros,
+            "querystring": querystring,
+            "query_string": querystring,
+            "filtros_ativos": filtros_ativos,
+
+            "tipos_documentais": tipos_documentais,
+            "origens": origens,
+            "disciplinas": disciplinas,
+            "status_documentos": status_documentos,
+            "status_grds": status_grds,
+            "status_pcfs": status_pcfs,
+
             "total_not_released": total_not_released,
             "total_released": total_released,
             "total_sem_status_doc": total_sem_status_doc,
@@ -2876,23 +3128,18 @@ def dashboard_ld(request):
             "taxa_pcf": taxa_pcf,
             "taxa_grd": taxa_grd,
             "taxa_aprovacao": taxa_aprovacao,
-            "por_disciplina": por_disciplina,
-            "por_origem": por_origem,
-            "por_status_documento": por_status_documento,
-            "por_status_grd": por_status_grd,
+            "taxa_recebimento": taxa_recebimento,
+            "saude_operacional": saude_operacional,
+
+            "disciplina_chart": disciplina_chart,
+            "origem_chart": origem_chart,
+            "status_doc_chart": status_doc_chart,
+            "status_grd_chart": status_grd_chart,
+            "pcf_chart": pcf_chart,
+            "resposta_chart": resposta_chart,
             "top_disciplinas_pendentes": top_disciplinas_pendentes,
             "top_not_released": top_not_released,
             "recentes": recentes,
-            "disciplina_labels": disciplina_labels,
-            "disciplina_values": disciplina_values,
-            "origem_labels": origem_labels,
-            "origem_values": origem_values,
-            "status_doc_labels": status_doc_labels,
-            "status_doc_values": status_doc_values,
-            "status_grd_labels": status_grd_labels,
-            "status_grd_values": status_grd_values,
-            "pcf_labels": pcf_labels,
-            "pcf_values": pcf_values,
         },
     )
 
@@ -3367,674 +3614,41 @@ def executar_sync_km_ld(request):
     return redirect("automacoes:dashboard_km_ld")
 
 
-
-def _km_getlist(request, nome):
-    valores = []
-    for valor in request.GET.getlist(nome):
-        if valor is None:
-            continue
-        valor = str(valor).strip()
-        if valor:
-            valores.append(valor)
-    return valores
-
-
-def _km_recebido_q():
-    return (
-        (
-            ~Q(transmittal_numero="")
-            & Q(transmittal_numero__isnull=False)
-        )
-        | (
-            ~Q(data_recebimento_km="")
-            & Q(data_recebimento_km__isnull=False)
-        )
-    )
-
-
-def _km_distinct_values(campo):
-    if not _model_has_field(DocumentoKM, campo):
-        return []
-    return list(
-        DocumentoKM.objects.exclude(**{campo: ""})
-        .exclude(**{f"{campo}__isnull": True})
-        .values_list(campo, flat=True)
-        .distinct()
-        .order_by(campo)
-    )
-
-
-def _km_filtrar_registros(request):
-    busca = request.GET.get("q", "").strip()
-    phases = _km_getlist(request, "phase")
-    tocs = _km_getlist(request, "toc")
-    disciplinas = _km_getlist(request, "disciplina")
-    transmittals = _km_getlist(request, "transmittal")
-    recebimentos = _km_getlist(request, "recebimento")
-    tps = _km_getlist(request, "tp")
-
-    registros = DocumentoKM.objects.all().order_by("numero_km")
-
-    if busca:
-        registros = registros.filter(
-            Q(numero_km__icontains=busca)
-            | Q(titulo__icontains=busca)
-            | Q(disciplina__icontains=busca)
-            | Q(status_km__icontains=busca)
-            | Q(transmittal_numero__icontains=busca)
-            | Q(documento_tp__icontains=busca)
-            | Q(phase__icontains=busca)
-            | Q(toc__icontains=busca)
-            | Q(released_for__icontains=busca)
-        )
-
-    if phases and _model_has_field(DocumentoKM, "phase"):
-        registros = registros.filter(phase__in=phases)
-
-    if tocs and _model_has_field(DocumentoKM, "toc"):
-        registros = registros.filter(toc__in=tocs)
-
-    if disciplinas and _model_has_field(DocumentoKM, "disciplina"):
-        registros = registros.filter(disciplina__in=disciplinas)
-
-    if transmittals and _model_has_field(DocumentoKM, "transmittal_numero"):
-        registros = registros.filter(transmittal_numero__in=transmittals)
-
-    recebido_q = _km_recebido_q()
-    if "recebido" in recebimentos and "nao_recebido" not in recebimentos:
-        registros = registros.filter(recebido_q)
-    elif "nao_recebido" in recebimentos and "recebido" not in recebimentos:
-        registros = registros.exclude(recebido_q)
-
-    if "com_tp" in tps and "sem_tp" not in tps:
-        registros = registros.exclude(documento_tp="").exclude(documento_tp__isnull=True)
-    elif "sem_tp" in tps and "com_tp" not in tps:
-        registros = registros.filter(Q(documento_tp="") | Q(documento_tp__isnull=True))
-
-    filtros = {
-        "busca": busca,
-        "phases_selecionadas": phases,
-        "tocs_selecionados": tocs,
-        "disciplinas_selecionadas": disciplinas,
-        "transmittals_selecionados": transmittals,
-        "recebimentos_selecionados": recebimentos,
-        "tps_selecionados": tps,
-        # compatibilidade com templates antigos
-        "phase": phases[0] if phases else "",
-        "toc": tocs[0] if tocs else "",
-        "disciplina": disciplinas[0] if disciplinas else "",
-        "transmittal": transmittals[0] if transmittals else "",
-        "recebimento": recebimentos[0] if recebimentos else "",
-        "tp": tps[0] if tps else "",
-    }
-    return registros, filtros
-
-
-def _km_percentual(parte, total):
-    try:
-        parte = float(parte or 0)
-        total = float(total or 0)
-    except (TypeError, ValueError):
-        return 0
-    return round((parte / total) * 100, 1) if total else 0
-
-
-def _km_css_percentual(valor):
-    try:
-        return str(round(float(valor or 0), 1)).replace(",", ".")
-    except (TypeError, ValueError):
-        return "0"
-
-
-def _km_chart_items(qs, campo, limite=8):
-    if not _model_has_field(DocumentoKM, campo):
-        return []
-
-    dados = list(
-        qs.exclude(**{campo: ""})
-        .exclude(**{f"{campo}__isnull": True})
-        .values(campo)
-        .annotate(total=Count("id"))
-        .order_by("-total", campo)[:limite]
-    )
-    maximo = max([item["total"] for item in dados], default=0)
-
-    itens = []
-    for item in dados:
-        pct = _km_percentual(item["total"], maximo)
-        itens.append(
-            {
-                "label": item[campo] or "Não informado",
-                "total": item["total"],
-                "pct": pct,
-                "pct_css": _km_css_percentual(pct),
-            }
-        )
-    return itens
-
-
-def _km_status_badge(percentual, invertido=False):
-    valor = float(percentual or 0)
-    if invertido:
-        if valor <= 10:
-            return {"label": "Controlado", "classe": "ok"}
-        if valor <= 30:
-            return {"label": "Atenção", "classe": "warn"}
-        return {"label": "Crítico", "classe": "danger"}
-
-    if valor >= 85:
-        return {"label": "Excelente", "classe": "ok"}
-    if valor >= 60:
-        return {"label": "Atenção", "classe": "warn"}
-    return {"label": "Crítico", "classe": "danger"}
-
-
-def _km_bar_dupla(label, total, parte_a, parte_b, label_a="Recebidos", label_b="Pendentes"):
-    total = int(total or 0)
-    parte_a = int(parte_a or 0)
-    parte_b = int(parte_b or 0)
-
-    pct_a = _km_percentual(parte_a, total)
-    pct_b = _km_percentual(parte_b, total)
-
-    return {
-        "label": label,
-        "total": total,
-        "parte_a": parte_a,
-        "parte_b": parte_b,
-        "pct_a": pct_a,
-        "pct_b": pct_b,
-        "pct_a_css": _km_css_percentual(pct_a),
-        "pct_b_css": _km_css_percentual(pct_b),
-        "label_a": label_a,
-        "label_b": label_b,
-    }
-
-
-def _km_top_pendencias(qs, campo, limite=6):
-    return _km_chart_items(qs, campo, limite)
-
-
-def _km_alerta_item(titulo, valor, descricao, nivel="info", icone="bi-info-circle"):
-    return {
-        "titulo": titulo,
-        "valor": valor,
-        "descricao": descricao,
-        "nivel": nivel,
-        "icone": icone,
-    }
-
-
-def _km_contexto_opcoes(request, registros):
-    query_params = request.GET.copy()
-    query_params.pop("page", None)
-    query_params.pop("export", None)
-
-    recebido_q = _km_recebido_q()
-    base_total = DocumentoKM.objects.all()
-    total_km = base_total.count()
-    total_recebidos = base_total.filter(recebido_q).count()
-    total_com_tp = base_total.exclude(documento_tp="").exclude(documento_tp__isnull=True).count()
-    total_filtrado = registros.count()
-    total_filtrado_recebidos = registros.filter(recebido_q).count()
-    total_filtrado_com_tp = registros.exclude(documento_tp="").exclude(documento_tp__isnull=True).count()
-    total_filtrado_com_ld = registros.exclude(documento_ld__isnull=True).count()
-
-    filtros_ativos = []
-    if request.GET.get("q", "").strip():
-        filtros_ativos.append({"label": "Busca", "valor": request.GET.get("q", "").strip()})
-    for nome, label in [
-        ("phase", "Phase"),
-        ("toc", "TOC"),
-        ("disciplina", "Discipline"),
-        ("transmittal", "Transmittal"),
-        ("recebimento", "Recebimento"),
-        ("tp", "Documento TP"),
-    ]:
-        valores = _km_getlist(request, nome)
-        for valor in valores:
-            filtros_ativos.append({"label": label, "valor": valor})
-
-    return {
-        "total": total_filtrado,
-        "total_km": total_km,
-        "total_recebidos": total_recebidos,
-        "total_pendentes": max(total_km - total_recebidos, 0),
-        "total_com_tp": total_com_tp,
-        "total_sem_tp": max(total_km - total_com_tp, 0),
-        "total_vinculados": total_com_tp,
-        "total_filtrado_recebidos": total_filtrado_recebidos,
-        "total_filtrado_pendentes": max(total_filtrado - total_filtrado_recebidos, 0),
-        "total_filtrado_com_tp": total_filtrado_com_tp,
-        "total_filtrado_sem_tp": max(total_filtrado - total_filtrado_com_tp, 0),
-        "total_filtrado_com_ld": total_filtrado_com_ld,
-        "total_filtrado_sem_ld": max(total_filtrado - total_filtrado_com_ld, 0),
-        "cobertura_recebimento": round((total_filtrado_recebidos / total_filtrado) * 100, 1) if total_filtrado else 0,
-        "cobertura_tp": round((total_filtrado_com_tp / total_filtrado) * 100, 1) if total_filtrado else 0,
-        "cobertura_vinculo": round((total_filtrado_com_ld / total_filtrado) * 100, 1) if total_filtrado else 0,
-        "phases": _km_distinct_values("phase"),
-        "tocs": _km_distinct_values("toc"),
-        "disciplinas": _km_distinct_values("disciplina"),
-        "transmittals": _km_distinct_values("transmittal_numero"),
-        "querystring": query_params.urlencode(),
-        "filtros_ativos": filtros_ativos,
-    }
-
-
-def _km_exportar_excel(registros):
-    from io import BytesIO
-
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "Lista KM filtrada"
-
-    colunas = [
-        ("numero_km", "Número KM"),
-        ("titulo", "Título"),
-        ("phase", "Phase"),
-        ("toc", "TOC"),
-        ("disciplina", "Discipline"),
-        ("status_km", "Status KM"),
-        ("revisao_km", "Rev. KM"),
-        ("transmittal_numero", "Transmittal"),
-        ("data_recebimento_km", "Data recebimento KM"),
-        ("documento_tp", "Documento TP"),
-        ("documento_ld", "Documento LD"),
-        ("released_for", "Released For"),
-        ("contractual_delivery", "Contractual Delivery"),
-        ("preliminary_delivery", "Preliminary Delivery"),
-        ("agreed_delivery", "Agreed Delivery"),
-        ("first_delivery", "First Delivery"),
-    ]
-
-    ws.append([cabecalho for _, cabecalho in colunas])
-    for cell in ws[1]:
-        cell.font = Font(bold=True, color="FFFFFF")
-        cell.fill = PatternFill("solid", fgColor="1F2937")
-
-    for item in registros:
-        linha = []
-        for campo, _ in colunas:
-            valor = getattr(item, campo, "")
-            if campo == "documento_ld" and valor:
-                valor = str(valor)
-            linha.append(str(valor or ""))
-        ws.append(linha)
-
-    for column_cells in ws.columns:
-        length = max(len(str(cell.value or "")) for cell in column_cells)
-        ws.column_dimensions[column_cells[0].column_letter].width = min(max(length + 2, 12), 55)
-
-    output = BytesIO()
-    wb.save(output)
-    output.seek(0)
-
-    response = HttpResponse(
-        output.getvalue(),
-        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    )
-    response["Content-Disposition"] = 'attachment; filename="lista_km_filtrada.xlsx"'
-    return response
-
-
-def _km_exportar_dashboard_ppt(request, contexto):
-    """
-    Exporta o Dashboard KM em PPTX executivo, respeitando os filtros ativos.
-    Mantém o conceito atual: Lista KM é espelho operacional da LD_KM.
-    """
-    from io import BytesIO
-
-    from django.http import HttpResponse
-    from pptx import Presentation
-    from pptx.dml.color import RGBColor
-    from pptx.enum.shapes import MSO_SHAPE
-    from pptx.util import Inches, Pt
-
-    prs = Presentation()
-    prs.slide_width = Inches(13.333)
-    prs.slide_height = Inches(7.5)
-
-    BG = RGBColor(5, 12, 27)
-    PANEL = RGBColor(12, 26, 49)
-    PANEL_2 = RGBColor(18, 42, 72)
-    CYAN = RGBColor(72, 190, 244)
-    ORANGE = RGBColor(255, 161, 35)
-    GREEN = RGBColor(65, 214, 128)
-    RED = RGBColor(255, 92, 92)
-    YELLOW = RGBColor(255, 205, 82)
-    WHITE = RGBColor(245, 248, 255)
-    MUTED = RGBColor(157, 180, 211)
-
-    filtros = contexto.get("filtros_ativos") or []
-    filtros_txt = " | ".join(f"{f.get('label')}: {f.get('valor')}" for f in filtros[:8]) if filtros else "Sem filtros aplicados"
-
-    def add_bg(slide):
-        bg = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0, prs.slide_width, prs.slide_height)
-        bg.fill.solid()
-        bg.fill.fore_color.rgb = BG
-        bg.line.fill.background()
-
-    def add_title(slide, title, subtitle=""):
-        box = slide.shapes.add_textbox(Inches(0.55), Inches(0.32), Inches(12.2), Inches(0.52))
-        tf = box.text_frame
-        tf.clear()
-        p = tf.paragraphs[0]
-        p.text = title
-        p.font.bold = True
-        p.font.size = Pt(26)
-        p.font.color.rgb = WHITE
-        if subtitle:
-            sub = slide.shapes.add_textbox(Inches(0.58), Inches(0.9), Inches(11.7), Inches(0.35))
-            sub.text_frame.text = subtitle
-            sub.text_frame.paragraphs[0].font.size = Pt(10)
-            sub.text_frame.paragraphs[0].font.color.rgb = MUTED
-
-    def add_footer(slide):
-        line = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0.55), Inches(7.08), Inches(12.2), Inches(0.025))
-        line.fill.solid()
-        line.fill.fore_color.rgb = ORANGE
-        line.line.fill.background()
-        foot = slide.shapes.add_textbox(Inches(0.58), Inches(7.13), Inches(12), Inches(0.25))
-        foot.text_frame.text = f"GED_PROFISSIONAL • KM Document Intelligence • {filtros_txt}"
-        foot.text_frame.paragraphs[0].font.size = Pt(8)
-        foot.text_frame.paragraphs[0].font.color.rgb = MUTED
-
-    def add_card(slide, x, y, w, h, label, value, sub="", accent=CYAN):
-        shp = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(x), Inches(y), Inches(w), Inches(h))
-        shp.fill.solid()
-        shp.fill.fore_color.rgb = PANEL
-        shp.line.color.rgb = PANEL_2
-        shp.line.width = Pt(1)
-        stripe = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(x), Inches(y + h - 0.07), Inches(w), Inches(0.06))
-        stripe.fill.solid()
-        stripe.fill.fore_color.rgb = accent
-        stripe.line.fill.background()
-
-        lab = slide.shapes.add_textbox(Inches(x + 0.16), Inches(y + 0.12), Inches(w - 0.32), Inches(0.22))
-        lab.text_frame.text = str(label).upper()
-        lab.text_frame.paragraphs[0].font.bold = True
-        lab.text_frame.paragraphs[0].font.size = Pt(8)
-        lab.text_frame.paragraphs[0].font.color.rgb = MUTED
-
-        val = slide.shapes.add_textbox(Inches(x + 0.16), Inches(y + 0.38), Inches(w - 0.32), Inches(0.45))
-        val.text_frame.text = str(value)
-        val.text_frame.paragraphs[0].font.bold = True
-        val.text_frame.paragraphs[0].font.size = Pt(22)
-        val.text_frame.paragraphs[0].font.color.rgb = WHITE
-
-        if sub:
-            s = slide.shapes.add_textbox(Inches(x + 0.16), Inches(y + 0.86), Inches(w - 0.32), Inches(0.26))
-            s.text_frame.text = str(sub)
-            s.text_frame.paragraphs[0].font.size = Pt(8)
-            s.text_frame.paragraphs[0].font.color.rgb = MUTED
-
-    def add_panel_title(slide, x, y, title, subtitle=""):
-        t = slide.shapes.add_textbox(Inches(x), Inches(y), Inches(5.6), Inches(0.28))
-        t.text_frame.text = title
-        t.text_frame.paragraphs[0].font.bold = True
-        t.text_frame.paragraphs[0].font.size = Pt(13)
-        t.text_frame.paragraphs[0].font.color.rgb = WHITE
-        if subtitle:
-            s = slide.shapes.add_textbox(Inches(x), Inches(y + 0.28), Inches(5.6), Inches(0.24))
-            s.text_frame.text = subtitle
-            s.text_frame.paragraphs[0].font.size = Pt(8)
-            s.text_frame.paragraphs[0].font.color.rgb = MUTED
-
-    def add_bar_list(slide, x, y, w, h, title, items, accent=CYAN):
-        panel = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(x), Inches(y), Inches(w), Inches(h))
-        panel.fill.solid()
-        panel.fill.fore_color.rgb = PANEL
-        panel.line.color.rgb = PANEL_2
-        panel.line.width = Pt(1)
-        add_panel_title(slide, x + 0.18, y + 0.15, title, "Top registros no filtro atual")
-        yy = y + 0.7
-        for item in (items or [])[:7]:
-            label = str(item.get("label", "-"))[:34]
-            total = item.get("total", 0)
-            pct = max(0, min(100, float(item.get("pct", 0) or 0)))
-            lab = slide.shapes.add_textbox(Inches(x + 0.2), Inches(yy), Inches(w * 0.42), Inches(0.23))
-            lab.text_frame.text = label
-            lab.text_frame.paragraphs[0].font.size = Pt(8)
-            lab.text_frame.paragraphs[0].font.color.rgb = WHITE
-            track = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(x + w * 0.48), Inches(yy + 0.04), Inches(w * 0.36), Inches(0.10))
-            track.fill.solid()
-            track.fill.fore_color.rgb = RGBColor(39, 55, 82)
-            track.line.fill.background()
-            fill_w = max(0.03, (w * 0.36) * (pct / 100))
-            fill = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(x + w * 0.48), Inches(yy + 0.04), Inches(fill_w), Inches(0.10))
-            fill.fill.solid()
-            fill.fill.fore_color.rgb = accent
-            fill.line.fill.background()
-            val = slide.shapes.add_textbox(Inches(x + w * 0.86), Inches(yy), Inches(w * 0.12), Inches(0.23))
-            val.text_frame.text = str(total)
-            val.text_frame.paragraphs[0].font.bold = True
-            val.text_frame.paragraphs[0].font.size = Pt(8)
-            val.text_frame.paragraphs[0].font.color.rgb = WHITE
-            yy += 0.36
-
-    # Slide 1
-    slide = prs.slides.add_slide(prs.slide_layouts[6])
-    add_bg(slide)
-    add_title(slide, "Dashboard Executivo KM", "Lista Mestre Kongsberg • Cobertura TP • Recebimento • Rastreabilidade LD")
-    add_card(slide, 0.55, 1.3, 2.0, 1.15, "KM filtrados", contexto.get("total", 0), "resultado atual", CYAN)
-    add_card(slide, 2.72, 1.3, 2.0, 1.15, "Recebidos", contexto.get("recebidos", 0), f"{contexto.get('cobertura_recebimento', 0)}%", GREEN)
-    add_card(slide, 4.89, 1.3, 2.0, 1.15, "Pendentes", contexto.get("pendentes", 0), "sem transmittal/data", RED)
-    add_card(slide, 7.06, 1.3, 2.0, 1.15, "Com TP", contexto.get("com_tp", 0), f"{contexto.get('cobertura_tp', 0)}%", ORANGE)
-    add_card(slide, 9.23, 1.3, 2.0, 1.15, "KM com LD", contexto.get("km_com_ld", 0), f"{contexto.get('cobertura_vinculo', 0)}%", YELLOW)
-    add_card(slide, 11.40, 1.3, 1.38, 1.15, "Saúde", contexto.get("saude_operacional_label", "-"), "operacional", CYAN)
-
-    add_bar_list(slide, 0.55, 2.75, 6.05, 3.85, "Distribuição por Disciplina", contexto.get("disciplina_chart"), CYAN)
-    add_bar_list(slide, 6.85, 2.75, 5.93, 3.85, "Distribuição por Phase", contexto.get("phase_chart"), GREEN)
-    add_footer(slide)
-
-    # Slide 2
-    slide = prs.slides.add_slide(prs.slide_layouts[6])
-    add_bg(slide)
-    add_title(slide, "Recebimento e cobertura documental", "Visão consolidada dos gaps operacionais da base KM")
-    add_bar_list(slide, 0.55, 1.25, 4.0, 2.6, "Recebimento", contexto.get("status_recebimento_chart"), GREEN)
-    add_bar_list(slide, 4.75, 1.25, 4.0, 2.6, "Documento TP", contexto.get("tp_chart"), ORANGE)
-    add_bar_list(slide, 8.95, 1.25, 3.85, 2.6, "Status KM", contexto.get("status_km_chart"), CYAN)
-    add_bar_list(slide, 0.55, 4.15, 6.05, 2.45, "Top TOC", contexto.get("toc_chart"), YELLOW)
-    add_bar_list(slide, 6.85, 4.15, 5.95, 2.45, "Pendências por disciplina", contexto.get("pendencias_disciplina_chart"), RED)
-    add_footer(slide)
-
-    # Slide 3
-    slide = prs.slides.add_slide(prs.slide_layouts[6])
-    add_bg(slide)
-    add_title(slide, "Alertas executivos e próximos focos", "Itens que demandam atenção da gestão documental")
-    y = 1.25
-    for alerta in (contexto.get("dashboard_alertas") or [])[:5]:
-        accent = RED if alerta.get("nivel") == "danger" else YELLOW if alerta.get("nivel") == "warn" else CYAN
-        add_card(slide, 0.7, y, 3.0, 0.8, alerta.get("titulo"), alerta.get("valor"), alerta.get("descricao"), accent)
-        y += 0.95
-
-    add_panel_title(slide, 4.15, 1.28, "Amostra operacional", "Últimos documentos do filtro")
-    yy = 1.8
-    for item in list(contexto.get("recentes") or [])[:10]:
-        texto = f"{getattr(item, 'numero_km', '-') or '-'} • {getattr(item, 'disciplina', '-') or '-'} • TP: {getattr(item, 'documento_tp', '-') or '-'}"
-        box = slide.shapes.add_textbox(Inches(4.15), Inches(yy), Inches(8.35), Inches(0.25))
-        box.text_frame.text = texto[:115]
-        box.text_frame.paragraphs[0].font.size = Pt(9)
-        box.text_frame.paragraphs[0].font.color.rgb = WHITE
-        yy += 0.38
-
-    add_footer(slide)
-
-    output = BytesIO()
-    prs.save(output)
-    output.seek(0)
-
-    response = HttpResponse(
-        output.getvalue(),
-        content_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
-    )
-    response["Content-Disposition"] = 'attachment; filename="dashboard_km_executivo.pptx"'
-    return response
-
-
 @login_required
 def dashboard_km_ld(request):
-    registros, filtros = _km_filtrar_registros(request)
-    contexto_base = _km_contexto_opcoes(request, registros)
-
+    total_km = DocumentoKM.objects.count()
     total_ld = DocumentoLD.objects.count()
     total_transmittals = TransmittalKM.objects.count()
-    total_filtrado = contexto_base["total"]
 
-    recebido_q = _km_recebido_q()
-    recebidos_qs = registros.filter(recebido_q)
-    pendentes_qs = registros.exclude(recebido_q)
-    com_tp_qs = registros.exclude(documento_tp="").exclude(documento_tp__isnull=True)
-    sem_tp_qs = registros.filter(Q(documento_tp="") | Q(documento_tp__isnull=True))
-    vinculados_qs = registros.exclude(documento_ld__isnull=True)
+    recebidos = DocumentoKM.objects.filter(
+        status_recebimento=DocumentoKM.STATUS_RECEBIMENTO_RECEBIDO
+    ).count()
+    pendentes = DocumentoKM.objects.filter(
+        status_recebimento=DocumentoKM.STATUS_RECEBIMENTO_PENDENTE
+    ).count()
+    vinculados_ld = DocumentoKM.objects.exclude(documento_ld__isnull=True).count()
+    sem_vinculo_ld = DocumentoKM.objects.filter(documento_ld__isnull=True).count()
 
-    recebidos = recebidos_qs.count()
-    pendentes = max(total_filtrado - recebidos, 0)
-    vinculados_ld = vinculados_qs.count()
-    sem_vinculo_ld = max(total_filtrado - vinculados_ld, 0)
-    com_tp = com_tp_qs.count()
-    sem_tp = max(total_filtrado - com_tp, 0)
-
-    cobertura_recebimento = _km_percentual(recebidos, total_filtrado)
-    cobertura_tp = _km_percentual(com_tp, total_filtrado)
-    cobertura_vinculo = _km_percentual(vinculados_ld, total_filtrado)
-    pendencia_pct = _km_percentual(pendentes, total_filtrado)
-
-    saude_score = round((cobertura_recebimento * 0.45) + (cobertura_tp * 0.35) + (cobertura_vinculo * 0.20), 1)
-    saude_badge = _km_status_badge(saude_score)
-
-    status_recebimento_chart = [
-        {
-            "label": "Recebidos",
-            "total": recebidos,
-            "pct": _km_percentual(recebidos, total_filtrado),
-            "pct_css": _km_css_percentual(_km_percentual(recebidos, total_filtrado)),
-        },
-        {
-            "label": "Não recebidos",
-            "total": pendentes,
-            "pct": _km_percentual(pendentes, total_filtrado),
-            "pct_css": _km_css_percentual(_km_percentual(pendentes, total_filtrado)),
-        },
-    ]
-    tp_chart = [
-        {
-            "label": "Com Documento TP",
-            "total": com_tp,
-            "pct": _km_percentual(com_tp, total_filtrado),
-            "pct_css": _km_css_percentual(_km_percentual(com_tp, total_filtrado)),
-        },
-        {
-            "label": "Sem Documento TP",
-            "total": sem_tp,
-            "pct": _km_percentual(sem_tp, total_filtrado),
-            "pct_css": _km_css_percentual(_km_percentual(sem_tp, total_filtrado)),
-        },
-    ]
-
-    recebidos_com_tp = recebidos_qs.exclude(documento_tp="").exclude(documento_tp__isnull=True).count()
-    recebidos_sem_tp = max(recebidos - recebidos_com_tp, 0)
-    pendentes_com_tp = pendentes_qs.exclude(documento_tp="").exclude(documento_tp__isnull=True).count()
-    pendentes_sem_tp = max(pendentes - pendentes_com_tp, 0)
-
-    matriz_operacional = [
-        _km_bar_dupla("Recebidos", recebidos, recebidos_com_tp, recebidos_sem_tp, "Com TP", "Sem TP"),
-        _km_bar_dupla("Pendentes", pendentes, pendentes_com_tp, pendentes_sem_tp, "Com TP", "Sem TP"),
-    ]
-
-    disciplina_chart = _km_chart_items(registros, "disciplina", 10)
-    phase_chart = _km_chart_items(registros, "phase", 8)
-    toc_chart = _km_chart_items(registros, "toc", 8)
-    status_km_chart = _km_chart_items(registros, "status_km", 8)
-    pendencias_disciplina_chart = _km_top_pendencias(pendentes_qs, "disciplina", 6)
-    pendencias_toc_chart = _km_top_pendencias(pendentes_qs, "toc", 6)
-
-    recentes = list(registros.order_by("-atualizado_em")[:20])
-
-    dashboard_alertas = [
-        _km_alerta_item(
-            "Não recebidos",
-            pendentes,
-            f"{_km_percentual(pendentes, total_filtrado)}% do filtro atual",
-            "danger" if pendentes else "ok",
-            "bi-exclamation-triangle",
-        ),
-        _km_alerta_item(
-            "Sem Documento TP",
-            sem_tp,
-            "Campo TP ausente na LD_KM importada",
-            "warn" if sem_tp else "ok",
-            "bi-link-45deg",
-        ),
-        _km_alerta_item(
-            "Sem vínculo LD",
-            sem_vinculo_ld,
-            "Itens sem relacionamento LD registrado",
-            "warn" if sem_vinculo_ld else "ok",
-            "bi-diagram-2",
-        ),
-        _km_alerta_item(
-            "Cobertura operacional",
-            f"{saude_score}%",
-            "Score combinado: recebimento, TP e vínculo",
-            saude_badge["classe"],
-            "bi-activity",
-        ),
-    ]
+    recentes = DocumentoKM.objects.order_by("-atualizado_em")[:25]
 
     context = {
-        **contexto_base,
-        **filtros,
-        "documento_km_disponivel": True,
+        "total_km": total_km,
         "total_ld": total_ld,
         "total_transmittals": total_transmittals,
         "recebidos": recebidos,
         "pendentes": pendentes,
         "vinculados_ld": vinculados_ld,
         "sem_vinculo_ld": sem_vinculo_ld,
-        "km_com_ld": vinculados_ld,
-        "km_sem_ld": sem_vinculo_ld,
-        "ld_com_km": vinculados_ld,
-        "ld_sem_km": max(total_ld - vinculados_ld, 0),
-        "total_km_filtrado": total_filtrado,
-        "com_tp": com_tp,
-        "sem_tp": sem_tp,
-        "cobertura_recebimento": cobertura_recebimento,
-        "cobertura_tp": cobertura_tp,
-        "cobertura_vinculo": cobertura_vinculo,
-        "cobertura_km_ld": cobertura_vinculo,
-        "cobertura_recebimento_css": _km_css_percentual(cobertura_recebimento),
-        "cobertura_tp_css": _km_css_percentual(cobertura_tp),
-        "cobertura_vinculo_css": _km_css_percentual(cobertura_vinculo),
-        "pendencia_pct": pendencia_pct,
-        "pendencia_pct_css": _km_css_percentual(pendencia_pct),
-        "saude_operacional_score": saude_score,
-        "saude_operacional_css": _km_css_percentual(saude_score),
-        "saude_operacional_label": saude_badge["label"],
-        "saude_operacional_classe": saude_badge["classe"],
-        "score_medio": f"{saude_score}%",
-        "revisao_divergente": 0,
-        "emitidos_petobras": total_ld,
-        "recebido_sem_emissao": sem_vinculo_ld,
-        "emitido_sem_recebimento": max(total_ld - vinculados_ld, 0),
-        "revisao_pendente": 0,
-        "disciplina_chart": disciplina_chart,
-        "phase_chart": phase_chart,
-        "toc_chart": toc_chart,
-        "status_km_chart": status_km_chart,
-        "status_recebimento_chart": status_recebimento_chart,
-        "tp_chart": tp_chart,
-        "pendencias_disciplina_chart": pendencias_disciplina_chart,
-        "pendencias_toc_chart": pendencias_toc_chart,
-        "matriz_operacional": matriz_operacional,
-        "dashboard_alertas": dashboard_alertas,
+        "cobertura_recebimento": round((recebidos / total_km) * 100, 1) if total_km else 0,
+        "cobertura_vinculo": round((vinculados_ld / total_km) * 100, 1) if total_km else 0,
         "recentes": recentes,
     }
 
-    if request.GET.get("export") == "pptx":
-        return _km_exportar_dashboard_ppt(request, context)
-
-    return render(request, "automacoes/dashboard_km_ld.html", context)
+    return render(
+        request,
+        "automacoes/dashboard_km_ld.html",
+        context,
+    )
 
 
 @login_required
@@ -4096,27 +3710,127 @@ def dashboard_alertas_operacionais(request):
 @login_required
 def listar_km(request):
     """
-    Lista KM como espelho fiel da aba LD_KM importada, com filtros preservados
-    entre Lista KM, Dashboard KM e exportação Excel.
+    Lista KM como espelho fiel da aba LD_KM importada.
+
+    Regra:
+    - Não inventa Documento TP.
+    - Não calcula score.
+    - Não executa vínculo automático com LD.
+    - Recebido/Pendente é derivado somente dos campos importados:
+      Transmittal Number ou Data recebimento KM.
     """
-    registros, filtros = _km_filtrar_registros(request)
+    busca = request.GET.get("q", "").strip()
+    phase = request.GET.get("phase", "").strip()
+    toc = request.GET.get("toc", "").strip()
+    disciplina = request.GET.get("disciplina", "").strip()
+    transmittal = request.GET.get("transmittal", "").strip()
+    recebimento = request.GET.get("recebimento", "").strip()
+    tp = request.GET.get("tp", "").strip()
 
-    if request.GET.get("export") == "xlsx":
-        return _km_exportar_excel(registros)
+    registros = DocumentoKM.objects.all().order_by("numero_km")
 
-    contexto_base = _km_contexto_opcoes(request, registros)
+    if busca:
+        registros = registros.filter(
+            Q(numero_km__icontains=busca)
+            | Q(titulo__icontains=busca)
+            | Q(disciplina__icontains=busca)
+            | Q(status_km__icontains=busca)
+            | Q(transmittal_numero__icontains=busca)
+            | Q(documento_tp__icontains=busca)
+            | Q(phase__icontains=busca)
+            | Q(toc__icontains=busca)
+            | Q(released_for__icontains=busca)
+        )
+
+    if phase and _model_has_field(DocumentoKM, "phase"):
+        registros = registros.filter(phase__iexact=phase)
+
+    if toc and _model_has_field(DocumentoKM, "toc"):
+        registros = registros.filter(toc__iexact=toc)
+
+    if disciplina and _model_has_field(DocumentoKM, "disciplina"):
+        registros = registros.filter(disciplina__iexact=disciplina)
+
+    if transmittal and _model_has_field(DocumentoKM, "transmittal_numero"):
+        registros = registros.filter(transmittal_numero__iexact=transmittal)
+
+    recebido_q = (
+        (
+            ~Q(transmittal_numero="")
+            & Q(transmittal_numero__isnull=False)
+        )
+        | (
+            ~Q(data_recebimento_km="")
+            & Q(data_recebimento_km__isnull=False)
+        )
+    )
+
+    if recebimento == "recebido":
+        registros = registros.filter(recebido_q)
+    elif recebimento == "nao_recebido":
+        registros = registros.exclude(recebido_q)
+
+    if tp == "com_tp":
+        registros = registros.exclude(documento_tp="").exclude(documento_tp__isnull=True)
+    elif tp == "sem_tp":
+        registros = registros.filter(Q(documento_tp="") | Q(documento_tp__isnull=True))
+
+    base_total = DocumentoKM.objects.all()
+
+    total = registros.count()
+    total_km = base_total.count()
+    total_recebidos = base_total.filter(recebido_q).count()
+    total_pendentes = max(total_km - total_recebidos, 0)
+    total_com_tp = base_total.exclude(documento_tp="").exclude(documento_tp__isnull=True).count()
+    total_sem_tp = max(total_km - total_com_tp, 0)
+
+    def _distinct_values(campo):
+        if not _model_has_field(DocumentoKM, campo):
+            return []
+        return (
+            DocumentoKM.objects.exclude(**{campo: ""})
+            .exclude(**{f"{campo}__isnull": True})
+            .values_list(campo, flat=True)
+            .distinct()
+            .order_by(campo)
+        )
+
+    phases = _distinct_values("phase")
+    tocs = _distinct_values("toc")
+    disciplinas = _distinct_values("disciplina")
+    transmittals = _distinct_values("transmittal_numero")
 
     paginator = Paginator(registros, 50)
     page_obj = paginator.get_page(request.GET.get("page"))
+
+    query_params = request.GET.copy()
+    query_params.pop("page", None)
 
     return render(
         request,
         "automacoes/lista_km.html",
         {
-            **contexto_base,
-            **filtros,
             "registros": page_obj,
             "page_obj": page_obj,
+            "busca": busca,
+            "phase": phase,
+            "toc": toc,
+            "disciplina": disciplina,
+            "transmittal": transmittal,
+            "recebimento": recebimento,
+            "tp": tp,
+            "total": total,
+            "total_km": total_km,
+            "total_recebidos": total_recebidos,
+            "total_pendentes": total_pendentes,
+            "total_com_tp": total_com_tp,
+            "total_sem_tp": total_sem_tp,
+            "total_vinculados": total_com_tp,
+            "phases": phases,
+            "tocs": tocs,
+            "disciplinas": disciplinas,
+            "transmittals": transmittals,
+            "querystring": query_params.urlencode(),
         },
     )
 
