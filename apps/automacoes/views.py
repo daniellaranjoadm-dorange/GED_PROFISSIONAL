@@ -3916,10 +3916,150 @@ def _km_exportar_excel_filtrado(registros):
     return response
 
 
+
+
+def _km_exportar_dashboard_ppt(request):
+    from io import BytesIO
+
+    from django.http import HttpResponse
+    from pptx import Presentation
+    from pptx.dml.color import RGBColor
+    from pptx.enum.shapes import MSO_SHAPE
+    from pptx.util import Inches, Pt
+
+    filtros = _km_filter_state(request)
+    registros_base = DocumentoKM.objects.all()
+    registros = _km_apply_filters(registros_base.order_by("numero_km"), filtros)
+
+    recebido_q = _km_recebido_q()
+
+    total = registros.count()
+    total_km = registros_base.count()
+    total_ld = DocumentoLD.objects.count()
+    recebidos = registros.filter(recebido_q).count()
+    pendentes = max(total - recebidos, 0)
+    com_tp = registros.exclude(documento_tp="").exclude(documento_tp__isnull=True).count()
+    sem_tp = max(total - com_tp, 0)
+    km_com_ld = registros.exclude(documento_ld__isnull=True).count()
+    km_sem_ld = max(total - km_com_ld, 0)
+
+    cobertura_recebimento = _km_pct(recebidos, total)
+    cobertura_tp = _km_pct(com_tp, total)
+    cobertura_vinculo = _km_pct(km_com_ld, total)
+    saude_operacional = round(
+        (cobertura_recebimento + cobertura_tp + cobertura_vinculo) / 3, 1
+    ) if total else 0
+
+    disciplina_chart = _km_bar_chart(registros, "disciplina", 7)
+    phase_chart = _km_bar_chart(registros, "phase", 7)
+    toc_chart = _km_bar_chart(registros, "toc", 7)
+    status_km_chart = _km_bar_chart(registros, "status_km", 7)
+
+    prs = Presentation()
+    prs.slide_width = Inches(13.333)
+    prs.slide_height = Inches(7.5)
+
+    bg = RGBColor(8, 13, 28)
+    panel = RGBColor(15, 23, 42)
+    border = RGBColor(51, 65, 85)
+    cyan = RGBColor(56, 189, 248)
+    white = RGBColor(248, 250, 252)
+    muted = RGBColor(148, 163, 184)
+    green = RGBColor(34, 197, 94)
+    orange = RGBColor(251, 191, 36)
+
+    def add_text(slide, text, x, y, w, h, size=18, bold=False, color=white):
+        box = slide.shapes.add_textbox(Inches(x), Inches(y), Inches(w), Inches(h))
+        tf = box.text_frame
+        tf.clear()
+        p = tf.paragraphs[0]
+        run = p.add_run()
+        run.text = str(text)
+        run.font.size = Pt(size)
+        run.font.bold = bold
+        run.font.color.rgb = color
+        return box
+
+    def add_card(slide, title, value, subtitle, x, y, w=2.35, h=1.05, accent=cyan):
+        shape = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(x), Inches(y), Inches(w), Inches(h))
+        shape.fill.solid()
+        shape.fill.fore_color.rgb = panel
+        shape.line.color.rgb = border
+        add_text(slide, title.upper(), x + .14, y + .10, w - .28, .22, 8, True, accent)
+        add_text(slide, value, x + .14, y + .34, w - .28, .34, 21, True, white)
+        add_text(slide, subtitle, x + .14, y + .72, w - .28, .22, 8, False, muted)
+
+    def add_bar_list(slide, title, items, x, y, w, h):
+        shape = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(x), Inches(y), Inches(w), Inches(h))
+        shape.fill.solid()
+        shape.fill.fore_color.rgb = panel
+        shape.line.color.rgb = border
+        add_text(slide, title, x + .16, y + .12, w - .32, .28, 12, True, white)
+
+        if not items:
+            add_text(slide, "Sem dados para os filtros atuais", x + .16, y + .55, w - .32, .3, 10, False, muted)
+            return
+
+        max_total = max([item.get("total") or 0 for item in items] + [1])
+        current_y = y + .55
+        for item in items[:7]:
+            label = item.get("label") or "—"
+            total_item = item.get("total") or 0
+            pct = (total_item / max_total) if max_total else 0
+            add_text(slide, f"{label}", x + .16, current_y, w * .55, .18, 8, False, muted)
+            add_text(slide, str(total_item), x + w - .55, current_y, .35, .18, 8, True, white)
+
+            bar_bg = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(x + .16), Inches(current_y + .22), Inches(w - .5), Inches(.08))
+            bar_bg.fill.solid()
+            bar_bg.fill.fore_color.rgb = RGBColor(30, 41, 59)
+            bar_bg.line.fill.background()
+
+            bar = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(x + .16), Inches(current_y + .22), Inches(max((w - .5) * pct, .03)), Inches(.08))
+            bar.fill.solid()
+            bar.fill.fore_color.rgb = cyan
+            bar.line.fill.background()
+            current_y += .45
+
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    slide.background.fill.solid()
+    slide.background.fill.fore_color.rgb = bg
+
+    add_text(slide, "Dashboard Executivo KM", .55, .35, 7.8, .45, 26, True, white)
+    add_text(slide, "Exportação PPTX gerada com os filtros aplicados no dashboard", .58, .82, 7.5, .28, 10, False, muted)
+
+    add_card(slide, "Total filtrado", total, f"Base KM total: {total_km}", .55, 1.35)
+    add_card(slide, "Recebidos", recebidos, f"{cobertura_recebimento}% de cobertura", 3.05, 1.35, accent=green)
+    add_card(slide, "Pendentes", pendentes, "Sem recebimento identificado", 5.55, 1.35, accent=orange)
+    add_card(slide, "Com TP", com_tp, f"{cobertura_tp}% com TP", 8.05, 1.35, accent=green)
+    add_card(slide, "Vínculo LD", km_com_ld, f"{cobertura_vinculo}% vinculados", 10.55, 1.35)
+
+    add_card(slide, "Saúde operacional", f"{saude_operacional}%", "Recebimento + TP + vínculo", .55, 2.65, w=3.0, accent=green if saude_operacional >= 80 else orange)
+    add_card(slide, "Sem TP", sem_tp, "Itens sem documento TP", 3.75, 2.65, w=2.55, accent=orange)
+    add_card(slide, "Sem LD", km_sem_ld, f"LD total: {total_ld}", 6.5, 2.65, w=2.55, accent=orange)
+
+    add_bar_list(slide, "Por disciplina", disciplina_chart, .55, 4.0, 3.0, 2.8)
+    add_bar_list(slide, "Por phase", phase_chart, 3.85, 4.0, 3.0, 2.8)
+    add_bar_list(slide, "Por TOC", toc_chart, 7.15, 4.0, 2.75, 2.8)
+    add_bar_list(slide, "Status KM", status_km_chart, 10.2, 4.0, 2.55, 2.8)
+
+    output = BytesIO()
+    prs.save(output)
+    output.seek(0)
+
+    response = HttpResponse(
+        output.read(),
+        content_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    )
+    response["Content-Disposition"] = 'attachment; filename="dashboard_km_executivo.pptx"'
+    return response
+
 def dashboard_km_ld(request):
     filtros = _km_filter_state(request)
     registros_base = DocumentoKM.objects.all()
     registros = _km_apply_filters(registros_base.order_by("numero_km"), filtros)
+
+    if request.GET.get("export") == "pptx":
+        return _km_exportar_dashboard_ppt(request)
 
     if request.GET.get("export") == "xlsx":
         return _km_exportar_excel_filtrado(registros)
