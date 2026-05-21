@@ -1004,6 +1004,54 @@ def _km_buscar_documento(documento, permitir_transmittal=False):
 
     candidatos.sort(key=lambda par: (par[0], -len(str(par[1]))), reverse=True)
     return candidatos[0][1]
+
+
+def _km_resumo_filtros_ppt(request):
+    filtros = []
+
+    recebimentos = request.GET.getlist("recebimento")
+    if recebimentos:
+        filtros.append(f"Recebimento: {', '.join(recebimentos)}")
+
+    tp = request.GET.getlist("tp")
+    if tp:
+        labels = []
+        for item in tp:
+            if item == "com_tp":
+                labels.append("Com Nº Transpetro")
+            elif item == "sem_tp":
+                labels.append("Sem Nº Transpetro")
+            else:
+                labels.append(item)
+        filtros.append(f"TP: {', '.join(labels)}")
+
+    toc = request.GET.getlist("toc")
+    if toc:
+        filtros.append(f"TOCs selecionados: {len(toc)}")
+
+    disciplinas = request.GET.getlist("disciplina")
+    if disciplinas:
+        filtros.append(f"Disciplinas: {len(disciplinas)}")
+
+    phases = request.GET.getlist("phase")
+    if phases:
+        filtros.append(f"Phases: {len(phases)}")
+
+    if not filtros:
+        return "Sem filtros aplicados"
+
+    return " • ".join(filtros)
+
+
+def _ppt_truncate(texto, limite=42):
+    texto = str(texto or "").strip()
+    texto = texto.replace("¤", " → ")
+
+    if len(texto) <= limite:
+        return texto
+
+    return texto[: limite - 3].rstrip() + "..."
+
 def _km_buscar_documento_com_debug(documento):
     candidatos = []
 
@@ -3798,6 +3846,54 @@ def _km_pct(valor, total):
     return round((valor / total) * 100, 1) if total else 0
 
 
+
+
+def _km_ld_base_unica_sem_marenova():
+    """
+    Base LD executiva para o PPT KM.
+
+    Regra oficial:
+    - considerar somente registros da origem "LD";
+    - não considerar "LD Marenova";
+    - contar somente documentos únicos não vazios.
+
+    A Lista LD exibe esse mesmo conceito como "Documentos únicos"
+    quando o filtro Origem = LD está aplicado.
+    """
+    qs = DocumentoLD.objects.all()
+
+    if _model_has_field(DocumentoLD, "origem_aba"):
+        qs = qs.filter(origem_aba__iexact="LD")
+    else:
+        marenova_q = Q()
+        for campo in (
+            "documento",
+            "titulo",
+            "disciplina",
+            "contratada",
+            "fornecedor",
+            "origem",
+            "empresa",
+        ):
+            if _model_has_field(DocumentoLD, campo):
+                marenova_q |= Q(**{f"{campo}__icontains": "marenova"})
+
+        if marenova_q:
+            qs = qs.exclude(marenova_q)
+
+    if not _model_has_field(DocumentoLD, "documento"):
+        return qs.count()
+
+    return (
+        qs.exclude(documento="")
+        .exclude(documento__isnull=True)
+        .order_by()
+        .values("documento")
+        .distinct()
+        .count()
+    )
+
+
 def _km_bar_chart(qs, campo, limite=8):
     if not _model_has_field(DocumentoKM, campo):
         return []
@@ -3850,8 +3946,8 @@ def _km_active_filter_chips(filtros):
     rotulos = {
         "recebido": "Recebidos",
         "nao_recebido": "Não recebidos",
-        "com_tp": "Com TP",
-        "sem_tp": "Sem TP",
+        "com_tp": "Com N° Transpetro",
+        "sem_tp": "Sem Nº Transpetro",
     }
 
     for label, chave in mapa:
@@ -3935,25 +4031,83 @@ def _km_exportar_dashboard_ppt(request):
 
     total = registros.count()
     total_km = registros_base.count()
-    total_ld = DocumentoLD.objects.count()
+    total_ld = _km_ld_base_unica_sem_marenova()
     recebidos = registros.filter(recebido_q).count()
-    pendentes = max(total - recebidos, 0)
     com_tp = registros.exclude(documento_tp="").exclude(documento_tp__isnull=True).count()
-    sem_tp = max(total - com_tp, 0)
-    km_com_ld = registros.exclude(documento_ld__isnull=True).count()
-    km_sem_ld = max(total - km_com_ld, 0)
+
+    # Regra operacional KM:
+    # pendência executiva é o recebido ainda sem Nº Transpetro.
+    pendentes = max(recebidos - com_tp, 0)
+    sem_tp = pendentes
+
+    # Vínculo LD executivo:
+    # percentual de documentos com Nº Transpetro sobre a base LD única válida
+    # sem considerar Marenova.
+    km_com_ld = com_tp
+    km_sem_ld = max(total_ld - km_com_ld, 0)
 
     cobertura_recebimento = _km_pct(recebidos, total)
-    cobertura_tp = _km_pct(com_tp, total)
-    cobertura_vinculo = _km_pct(km_com_ld, total)
+    cobertura_tp = _km_pct(com_tp, recebidos)
+    cobertura_vinculo = _km_pct(km_com_ld, total_ld)
+
     saude_operacional = round(
-        (cobertura_recebimento + cobertura_tp + cobertura_vinculo) / 3, 1
+        (cobertura_recebimento * 0.20)
+        + (cobertura_tp * 0.40)
+        + (cobertura_vinculo * 0.40),
+        1,
     ) if total else 0
 
-    disciplina_chart = _km_bar_chart(registros, "disciplina", 7)
-    phase_chart = _km_bar_chart(registros, "phase", 7)
-    toc_chart = _km_bar_chart(registros, "toc", 7)
-    status_km_chart = _km_bar_chart(registros, "status_km", 7)
+    disciplina_chart = _km_bar_chart(registros, "disciplina", 8)
+    phase_chart = _km_bar_chart(registros, "phase", 8)
+    toc_chart = _km_bar_chart(registros, "toc", 8)
+    status_km_chart = _km_bar_chart(registros, "status_km", 8)
+
+    recebimento_chart = _km_simple_chart([
+        ("Recebidos", recebidos),
+        ("Pendentes", pendentes),
+    ])
+    tp_chart = _km_simple_chart([
+        ("Com N° Transpetro", com_tp),
+        ("Sem Nº Transpetro", sem_tp),
+    ])
+    vinculo_chart = _km_simple_chart([
+        ("Com Nº Transpetro", km_com_ld),
+        ("Base LD única", total_ld),
+    ])
+
+    matriz_recebimento_tp = [
+        {
+            "label": "Recebidos com TP",
+            "total": registros.filter(recebido_q)
+            .exclude(documento_tp="")
+            .exclude(documento_tp__isnull=True)
+            .count(),
+        },
+        {
+            "label": "Recebidos sem TP",
+            "total": registros.filter(recebido_q)
+            .filter(Q(documento_tp="") | Q(documento_tp__isnull=True))
+            .count(),
+        },
+        {
+            "label": "Pendentes com TP",
+            "total": registros.exclude(recebido_q)
+            .exclude(documento_tp="")
+            .exclude(documento_tp__isnull=True)
+            .count(),
+        },
+        {
+            "label": "Pendentes sem TP",
+            "total": registros.exclude(recebido_q)
+            .filter(Q(documento_tp="") | Q(documento_tp__isnull=True))
+            .count(),
+        },
+    ]
+
+    query_params = request.GET.copy()
+    query_params.pop("page", None)
+    query_params.pop("export", None)
+    filtros_ativos = _km_resumo_filtros_ppt(request)
 
     prs = Presentation()
     prs.slide_width = Inches(13.333)
@@ -3961,35 +4115,77 @@ def _km_exportar_dashboard_ppt(request):
 
     bg = RGBColor(8, 13, 28)
     panel = RGBColor(15, 23, 42)
+    panel_2 = RGBColor(17, 34, 64)
     border = RGBColor(51, 65, 85)
     cyan = RGBColor(56, 189, 248)
+    blue = RGBColor(59, 130, 246)
     white = RGBColor(248, 250, 252)
     muted = RGBColor(148, 163, 184)
     green = RGBColor(34, 197, 94)
     orange = RGBColor(251, 191, 36)
+    red = RGBColor(248, 113, 113)
+
+    def clean_text(value, limit=None):
+        texto = str(value or "—")
+        texto = texto.replace("¤", " → ").replace("\xa4", " → ")
+        texto = " ".join(texto.split())
+        if limit and len(texto) > limit:
+            return texto[: max(limit - 1, 1)].rstrip() + "…"
+        return texto
 
     def add_text(slide, text, x, y, w, h, size=18, bold=False, color=white):
         box = slide.shapes.add_textbox(Inches(x), Inches(y), Inches(w), Inches(h))
         tf = box.text_frame
         tf.clear()
+        tf.word_wrap = True
         p = tf.paragraphs[0]
         run = p.add_run()
-        run.text = str(text)
+        run.text = clean_text(text)
         run.font.size = Pt(size)
         run.font.bold = bold
         run.font.color.rgb = color
         return box
+
+    def add_slide(title, subtitle=None):
+        slide = prs.slides.add_slide(prs.slide_layouts[6])
+        slide.background.fill.solid()
+        slide.background.fill.fore_color.rgb = bg
+
+        add_text(slide, title, .55, .32, 8.8, .42, 25, True, white)
+        if subtitle:
+            add_text(slide, subtitle, .58, .78, 8.8, .28, 9, False, muted)
+
+        logo_paths = [
+            Path(settings.BASE_DIR) / "static" / "documentos" / "logo_dorange.png",
+            Path(settings.BASE_DIR) / "staticfiles" / "documentos" / "logo_dorange.png",
+        ]
+        for logo_path in logo_paths:
+            if logo_path.exists():
+                try:
+                    slide.shapes.add_picture(str(logo_path), Inches(11.25), Inches(.30), height=Inches(.45))
+                except Exception:
+                    pass
+                break
+
+        add_text(slide, "GED PROFISSIONAL • KM", 10.15, .84, 2.6, .22, 8, False, muted)
+        return slide
 
     def add_card(slide, title, value, subtitle, x, y, w=2.35, h=1.05, accent=cyan):
         shape = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(x), Inches(y), Inches(w), Inches(h))
         shape.fill.solid()
         shape.fill.fore_color.rgb = panel
         shape.line.color.rgb = border
-        add_text(slide, title.upper(), x + .14, y + .10, w - .28, .22, 8, True, accent)
-        add_text(slide, value, x + .14, y + .34, w - .28, .34, 21, True, white)
-        add_text(slide, subtitle, x + .14, y + .72, w - .28, .22, 8, False, muted)
 
-    def add_bar_list(slide, title, items, x, y, w, h):
+        marker = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(x), Inches(y), Inches(.06), Inches(h))
+        marker.fill.solid()
+        marker.fill.fore_color.rgb = accent
+        marker.line.fill.background()
+
+        add_text(slide, title.upper(), x + .16, y + .10, w - .28, .22, 8, True, accent)
+        add_text(slide, value, x + .16, y + .34, w - .28, .35, 22, True, white)
+        add_text(slide, subtitle, x + .16, y + .74, w - .28, .22, 8, False, muted)
+
+    def add_bar_list(slide, title, items, x, y, w, h, accent=cyan, label_limit=42):
         shape = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(x), Inches(y), Inches(w), Inches(h))
         shape.fill.solid()
         shape.fill.fore_color.rgb = panel
@@ -4001,46 +4197,129 @@ def _km_exportar_dashboard_ppt(request):
             return
 
         max_total = max([item.get("total") or 0 for item in items] + [1])
-        current_y = y + .55
-        for item in items[:7]:
-            label = item.get("label") or "—"
+        current_y = y + .52
+        step = min(.43, max(.31, (h - .75) / max(len(items[:8]), 1)))
+
+        for item in items[:8]:
+            label = clean_text(item.get("label") or "—", label_limit)
             total_item = item.get("total") or 0
             pct = (total_item / max_total) if max_total else 0
-            add_text(slide, f"{label}", x + .16, current_y, w * .55, .18, 8, False, muted)
-            add_text(slide, str(total_item), x + w - .55, current_y, .35, .18, 8, True, white)
 
-            bar_bg = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(x + .16), Inches(current_y + .22), Inches(w - .5), Inches(.08))
+            add_text(slide, label, x + .16, current_y, w - .78, .18, 7.8, False, muted)
+            add_text(slide, str(total_item), x + w - .50, current_y, .34, .18, 8, True, white)
+
+            bar_bg = slide.shapes.add_shape(
+                MSO_SHAPE.RECTANGLE,
+                Inches(x + .16),
+                Inches(current_y + .22),
+                Inches(w - .50),
+                Inches(.07),
+            )
             bar_bg.fill.solid()
             bar_bg.fill.fore_color.rgb = RGBColor(30, 41, 59)
             bar_bg.line.fill.background()
 
-            bar = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(x + .16), Inches(current_y + .22), Inches(max((w - .5) * pct, .03)), Inches(.08))
+            bar = slide.shapes.add_shape(
+                MSO_SHAPE.RECTANGLE,
+                Inches(x + .16),
+                Inches(current_y + .22),
+                Inches(max((w - .50) * pct, .03)),
+                Inches(.07),
+            )
             bar.fill.solid()
-            bar.fill.fore_color.rgb = cyan
+            bar.fill.fore_color.rgb = accent
             bar.line.fill.background()
-            current_y += .45
 
-    slide = prs.slides.add_slide(prs.slide_layouts[6])
-    slide.background.fill.solid()
-    slide.background.fill.fore_color.rgb = bg
+            current_y += step
 
-    add_text(slide, "Dashboard Executivo KM", .55, .35, 7.8, .45, 26, True, white)
-    add_text(slide, "Exportação PPTX gerada com os filtros aplicados no dashboard", .58, .82, 7.5, .28, 10, False, muted)
+    def add_progress_panel(slide, title, chart, x, y, w, h, accent=cyan):
+        add_bar_list(slide, title, chart, x, y, w, h, accent=accent, label_limit=36)
 
-    add_card(slide, "Total filtrado", total, f"Base KM total: {total_km}", .55, 1.35)
-    add_card(slide, "Recebidos", recebidos, f"{cobertura_recebimento}% de cobertura", 3.05, 1.35, accent=green)
-    add_card(slide, "Pendentes", pendentes, "Sem recebimento identificado", 5.55, 1.35, accent=orange)
-    add_card(slide, "Com TP", com_tp, f"{cobertura_tp}% com TP", 8.05, 1.35, accent=green)
-    add_card(slide, "Vínculo LD", km_com_ld, f"{cobertura_vinculo}% vinculados", 10.55, 1.35)
+    def add_insight_box(slide, title, lines, x, y, w, h, accent=cyan):
+        shape = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(x), Inches(y), Inches(w), Inches(h))
+        shape.fill.solid()
+        shape.fill.fore_color.rgb = panel_2
+        shape.line.color.rgb = border
+        add_text(slide, title, x + .18, y + .15, w - .36, .3, 13, True, accent)
 
-    add_card(slide, "Saúde operacional", f"{saude_operacional}%", "Recebimento + TP + vínculo", .55, 2.65, w=3.0, accent=green if saude_operacional >= 80 else orange)
-    add_card(slide, "Sem TP", sem_tp, "Itens sem documento TP", 3.75, 2.65, w=2.55, accent=orange)
-    add_card(slide, "Sem LD", km_sem_ld, f"LD total: {total_ld}", 6.5, 2.65, w=2.55, accent=orange)
+        current_y = y + .62
+        for line in lines:
+            add_text(slide, f"• {line}", x + .20, current_y, w - .38, .28, 9, False, white)
+            current_y += .34
 
-    add_bar_list(slide, "Por disciplina", disciplina_chart, .55, 4.0, 3.0, 2.8)
-    add_bar_list(slide, "Por phase", phase_chart, 3.85, 4.0, 3.0, 2.8)
-    add_bar_list(slide, "Por TOC", toc_chart, 7.15, 4.0, 2.75, 2.8)
-    add_bar_list(slide, "Status KM", status_km_chart, 10.2, 4.0, 2.55, 2.8)
+    health_color = green if saude_operacional >= 80 else orange if saude_operacional >= 55 else red
+    health_label = "Saudável" if saude_operacional >= 80 else "Atenção" if saude_operacional >= 55 else "Crítico"
+
+    # Slide 1: visão executiva
+    slide = add_slide(
+        "Dashboard Executivo KM",
+        "Exportação PPTX enterprise com filtros aplicados ao dashboard",
+    )
+    add_text(slide, f"Filtros: {filtros_ativos}", .58, 1.10, 12.2, .24, 8, False, muted)
+
+    add_card(slide, "Total filtrado", total, f"Base KM total: {total_km}", .55, 1.45)
+    add_card(slide, "Recebidos", recebidos, f"{cobertura_recebimento}% de cobertura", 3.05, 1.45, accent=green)
+    add_card(slide, "Pendentes TP", pendentes, "Recebidos sem Nº Transpetro", 5.55, 1.45, accent=orange if pendentes else green)
+    add_card(slide, "Com N° Transpetro", com_tp, f"{cobertura_tp}% com TP", 8.05, 1.45, accent=green if com_tp else orange)
+    add_card(slide, "Vínculo LD", f"{cobertura_vinculo}%", f"{km_com_ld} com Nº Transpetro / {total_ld} LD únicos", 10.55, 1.45, accent=green if cobertura_vinculo >= 80 else orange)
+
+    add_card(
+        slide,
+        "Saúde operacional",
+        f"{saude_operacional}%",
+        f"{health_label} • 20% recebimento, 40% TP, 40% LD",
+        .55,
+        2.72,
+        w=3.3,
+        accent=health_color,
+    )
+    add_card(slide, "Sem Nº Transpetro", sem_tp, "Itens sem Nº Transpetro", 4.05, 2.72, w=2.55, accent=orange if sem_tp else green)
+    add_card(slide, "Base LD", total_ld, "Arquivos únicos LD válidos", 6.82, 2.72, w=2.55, accent=blue)
+
+    add_progress_panel(slide, "Recebimento", recebimento_chart, .55, 4.05, 3.7, 2.65, accent=green)
+    add_progress_panel(slide, "Documento TP", tp_chart, 4.55, 4.05, 3.7, 2.65, accent=orange if sem_tp else green)
+    add_progress_panel(slide, "Vínculo LD", vinculo_chart, 8.55, 4.05, 3.7, 2.65, accent=blue)
+
+    # Slide 2: analytics operacionais
+    slide = add_slide(
+        "Analytics Operacionais KM",
+        "Distribuição por disciplina, fase e matriz recebimento x TP",
+    )
+    add_bar_list(slide, "Por disciplina", disciplina_chart, .55, 1.25, 3.9, 2.55, accent=cyan, label_limit=36)
+    add_bar_list(slide, "Por phase", phase_chart, 4.75, 1.25, 3.9, 2.55, accent=blue, label_limit=36)
+    add_bar_list(slide, "Matriz recebimento x TP", matriz_recebimento_tp, 8.95, 1.25, 3.75, 2.55, accent=orange, label_limit=36)
+
+    add_bar_list(slide, "Status KM", status_km_chart, .55, 4.25, 5.8, 2.55, accent=green, label_limit=52)
+    add_bar_list(slide, "Top TOC", toc_chart, 6.75, 4.25, 5.95, 2.55, accent=cyan, label_limit=58)
+
+    # Slide 3: leitura executiva
+    slide = add_slide(
+        "Leitura Executiva",
+        "Resumo automático dos principais pontos de atenção",
+    )
+
+    insights = [
+        f"{recebidos} de {total} itens filtrados possuem recebimento identificado.",
+        f"{sem_tp} itens filtrados ainda não possuem documento TP associado.",
+        f"Vínculo LD executivo: {cobertura_vinculo}% ({km_com_ld} com Nº Transpetro / {total_ld} LD únicos).",
+        f"Saúde operacional ponderada: {saude_operacional}% ({health_label}).",
+    ]
+    add_insight_box(slide, "Principais sinais", insights, .65, 1.25, 5.95, 2.35, accent=health_color)
+
+    acoes = []
+    if sem_tp:
+        acoes.append("Priorizar saneamento dos documentos sem TP.")
+    if cobertura_vinculo < 80:
+        acoes.append("Revisar vínculo LD executivo contra a base LD única válida.")
+    if pendentes:
+        acoes.append("Validar pendências de recebimento/transmittal.")
+    if not acoes:
+        acoes.append("Manter monitoramento e evolução dos analytics executivos.")
+
+    add_insight_box(slide, "Ações recomendadas", acoes, 6.95, 1.25, 5.65, 2.35, accent=orange)
+
+    add_bar_list(slide, "Status KM", status_km_chart, .65, 4.05, 5.8, 2.65, accent=green, label_limit=52)
+    add_bar_list(slide, "Top TOC", toc_chart, 6.95, 4.05, 5.65, 2.65, accent=cyan, label_limit=54)
 
     output = BytesIO()
     prs.save(output)
@@ -4066,7 +4345,7 @@ def dashboard_km_ld(request):
 
     total = registros.count()
     total_km = registros_base.count()
-    total_ld = DocumentoLD.objects.count()
+    total_ld = _km_ld_base_unica_sem_marenova()
     total_transmittals = (
         registros.exclude(transmittal_numero="")
         .exclude(transmittal_numero__isnull=True)
@@ -4077,16 +4356,25 @@ def dashboard_km_ld(request):
 
     recebido_q = _km_recebido_q()
     recebidos = registros.filter(recebido_q).count()
-    pendentes = max(total - recebidos, 0)
     com_tp = registros.exclude(documento_tp="").exclude(documento_tp__isnull=True).count()
-    sem_tp = max(total - com_tp, 0)
-    km_com_ld = registros.exclude(documento_ld__isnull=True).count()
-    km_sem_ld = max(total - km_com_ld, 0)
+
+    # Regra operacional: recebido sem Nº Transpetro ainda é pendência.
+    pendentes = max(recebidos - com_tp, 0)
+    sem_tp = pendentes
+
+    # Indicador executivo LD: Nº Transpetro sobre base LD única válida, sem Marenova.
+    km_com_ld = com_tp
+    km_sem_ld = max(total_ld - km_com_ld, 0)
 
     cobertura_recebimento = _km_pct(recebidos, total)
-    cobertura_tp = _km_pct(com_tp, total)
-    cobertura_vinculo = _km_pct(km_com_ld, total)
-    saude_operacional = round((cobertura_recebimento + cobertura_tp + cobertura_vinculo) / 3, 1) if total else 0
+    cobertura_tp = _km_pct(com_tp, recebidos)
+    cobertura_vinculo = _km_pct(km_com_ld, total_ld)
+    saude_operacional = round(
+        (cobertura_recebimento * 0.20)
+        + (cobertura_tp * 0.40)
+        + (cobertura_vinculo * 0.40),
+        1,
+    ) if total else 0
 
     if saude_operacional >= 80:
         saude_label = "Saudável"
@@ -4131,7 +4419,7 @@ def dashboard_km_ld(request):
         "status_km_chart": _km_bar_chart(registros, "status_km", 8),
         "status_recebimento_chart": _km_simple_chart([
             ("Recebidos", recebidos),
-            ("Não recebidos", pendentes),
+            ("Pendentes TP", pendentes),
         ]),
         "tp_chart": _km_simple_chart([
             ("Com Documento TP", com_tp),
@@ -4140,8 +4428,8 @@ def dashboard_km_ld(request):
         "matriz_recebimento_tp": [
             {"label": "Recebidos com TP", "total": registros.filter(recebido_q).exclude(documento_tp="").exclude(documento_tp__isnull=True).count()},
             {"label": "Recebidos sem TP", "total": registros.filter(recebido_q).filter(Q(documento_tp="") | Q(documento_tp__isnull=True)).count()},
-            {"label": "Pendentes com TP", "total": registros.exclude(recebido_q).exclude(documento_tp="").exclude(documento_tp__isnull=True).count()},
-            {"label": "Pendentes sem TP", "total": registros.exclude(recebido_q).filter(Q(documento_tp="") | Q(documento_tp__isnull=True)).count()},
+            {"label": "Base LD única", "total": total_ld},
+            {"label": "Vínculo LD %", "total": cobertura_vinculo},
         ],
         "phases": _km_distinct_values("phase"),
         "tocs": _km_distinct_values("toc"),
@@ -4627,3 +4915,5 @@ def exportar_dashboard_pcfs_ppt(request):
     )
     response["Content-Disposition"] = 'attachment; filename="pcf_executive_report.pptx"'
     return response
+
+# PPT footer enhancement placeholder: Gerado em runtime.
