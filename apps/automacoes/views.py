@@ -1285,6 +1285,78 @@ def _km_buscar_documentos_em_lote(documentos, permitir_transmittal=False):
     return resultados
 
 
+
+
+def _tr_data_envio_sort_key(valor):
+    texto = str(valor or "").strip()
+    if not texto:
+        return (0, 0, 0)
+
+    m = re.search(r"\b(\d{2})[-.](\d{2})[-.](\d{4})\b", texto)
+    if m:
+        dia, mes, ano = m.groups()
+        return (int(ano), int(mes), int(dia))
+
+    m = re.search(r"\b(\d{4})-(\d{2})-(\d{2})\b", texto)
+    if m:
+        ano, mes, dia = m.groups()
+        return (int(ano), int(mes), int(dia))
+
+    return (0, 0, 0)
+
+
+def _tr_transmittal_sort_key(valor):
+    m = re.search(r"(\d+)", str(valor or ""))
+    return int(m.group(1)) if m else 0
+
+
+def _tr_documento_latest_key(valor):
+    return "".join(ch for ch in str(valor or "").strip().upper() if ch.isalnum())
+
+
+def _tr_latest_por_documento(registros):
+    """
+    Mantém somente o Transmittal KM mais recente por documento.
+
+    A planilha KM não possui revisões formais; duplicidades por documento
+    representam atualizações. O registro válido é o de maior Data Envio.
+    """
+    latest = {}
+
+    for item in registros:
+        chave = _tr_documento_latest_key(getattr(item, "documento", ""))
+        if not chave:
+            continue
+
+        atual = latest.get(chave)
+        if atual is None:
+            latest[chave] = item
+            continue
+
+        novo_key = (
+            _tr_data_envio_sort_key(getattr(item, "data_envio", "")),
+            _tr_transmittal_sort_key(getattr(item, "transmittal_numero", "")),
+            getattr(item, "id", 0) or 0,
+        )
+        atual_key = (
+            _tr_data_envio_sort_key(getattr(atual, "data_envio", "")),
+            _tr_transmittal_sort_key(getattr(atual, "transmittal_numero", "")),
+            getattr(atual, "id", 0) or 0,
+        )
+
+        if novo_key >= atual_key:
+            latest[chave] = item
+
+    return sorted(
+        latest.values(),
+        key=lambda item: (
+            str(getattr(item, "transmittal_numero", "") or "").lower(),
+            str(getattr(item, "pasta", "") or "").lower(),
+            str(getattr(item, "documento", "") or "").lower(),
+        ),
+    )
+
+
 def _tr_montar_central_transmittals(registros):
     grupos = {}
 
@@ -1408,7 +1480,7 @@ def listar_transmittals_km(request):
         registros = registros.filter(transmittal_numero__iexact=transmittal)
 
     cache_key = (
-        "automacoes:transmittals:list:"
+        "automacoes:transmittals:list:latest-doc-v1:"
         f"{busca}:{pasta}:{emissao}:{transmittal}"
     )
 
@@ -1418,7 +1490,9 @@ def listar_transmittals_km(request):
         registros_lista = cached_payload["registros"]
         transmittals_agrupados = cached_payload["transmittals"]
     else:
-        registros_lista = list(registros[:2000])
+        # Lista operacional: documentos únicos pela coluna Documento,
+        # mantendo somente a atualização mais recente por Data Envio.
+        registros_lista = _tr_latest_por_documento(list(registros[:5000]))
         transmittals_agrupados = _tr_montar_central_transmittals(registros_lista)
 
         cache.set(
@@ -1430,7 +1504,9 @@ def listar_transmittals_km(request):
             _cache_ttl("CACHE_TTL_SHORT", 60),
         )
 
+    total_documentos_brutos = registros.count()
     total_documentos = len(registros_lista)
+    total_documentos_duplicados = max(total_documentos_brutos - total_documentos, 0)
     total_transmittals = len(transmittals_agrupados)
     total_com_pdf = sum(1 for grupo in transmittals_agrupados if grupo.get("pdf_id"))
     total_sem_pdf = max(total_transmittals - total_com_pdf, 0)
@@ -1446,6 +1522,8 @@ def listar_transmittals_km(request):
             "emissao": emissao,
             "transmittal": transmittal,
             "total_documentos": total_documentos,
+            "total_documentos_brutos": total_documentos_brutos,
+            "total_documentos_duplicados": total_documentos_duplicados,
             "total_transmittals": total_transmittals,
             "total_com_pdf": total_com_pdf,
             "total_sem_pdf": total_sem_pdf,

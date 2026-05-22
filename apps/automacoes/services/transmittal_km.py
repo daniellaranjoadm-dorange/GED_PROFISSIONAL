@@ -59,6 +59,109 @@ def limpar_valor(valor: str) -> str:
     return valor.strip()
 
 
+
+
+def normalizar_documento_chave(valor: str) -> str:
+    """
+    Chave operacional do documento KM.
+
+    A planilha de transmittal não possui revisão formal por linha.
+    Portanto, o documento único é a coluna Documento normalizada.
+    """
+    valor = limpar_valor(str(valor or "")).upper()
+    return re.sub(r"\s+", "", valor)
+
+
+def _data_envio_sort_key(valor: str):
+    """
+    Converte Data Envio para chave comparável.
+
+    Formatos esperados:
+    - dd-mm-aaaa, gerado por normalizar_data()
+    - dd.mm.aaaa, vindo direto do PDF
+    - aaaa-mm-dd, caso venha do banco/Excel em formato ISO
+    """
+    texto = limpar_valor(str(valor or ""))
+    if not texto:
+        return (0, 0, 0)
+
+    m = re.search(r"\b(\d{2})[-.](\d{2})[-.](\d{4})\b", texto)
+    if m:
+        dia, mes, ano = m.groups()
+        return (int(ano), int(mes), int(dia))
+
+    m = re.search(r"\b(\d{4})-(\d{2})-(\d{2})\b", texto)
+    if m:
+        ano, mes, dia = m.groups()
+        return (int(ano), int(mes), int(dia))
+
+    return (0, 0, 0)
+
+
+def _transmittal_sort_key(valor: str) -> int:
+    m = re.search(r"(\d+)", str(valor or ""))
+    return int(m.group(1)) if m else 0
+
+
+def _registro_mais_recente(novo: dict, atual: dict) -> bool:
+    """
+    Define se o novo registro deve substituir o atual.
+
+    Critério oficial:
+    1. maior Data Envio;
+    2. empate: maior Transmittal N°;
+    3. empate: último registro processado.
+    """
+    data_nova = _data_envio_sort_key(novo.get("Data Envio", ""))
+    data_atual = _data_envio_sort_key(atual.get("Data Envio", ""))
+
+    if data_nova != data_atual:
+        return data_nova > data_atual
+
+    trans_novo = _transmittal_sort_key(novo.get("Transmittal N°", ""))
+    trans_atual = _transmittal_sort_key(atual.get("Transmittal N°", ""))
+
+    if trans_novo != trans_atual:
+        return trans_novo > trans_atual
+
+    return True
+
+
+def filtrar_registros_latest_por_documento(registros: List[Dict[str, str]]) -> Tuple[List[Dict[str, str]], int]:
+    """
+    Mantém somente o registro mais recente por documento KM.
+
+    A coluna A da planilha é o cadastro do documento.
+    Como não existe revisão formal, registros duplicados representam atualizações.
+    """
+    latest = {}
+    duplicados = 0
+
+    for dados in registros:
+        chave = normalizar_documento_chave(dados.get("Documento", ""))
+        if not chave:
+            continue
+
+        atual = latest.get(chave)
+        if atual is None:
+            latest[chave] = dados
+            continue
+
+        duplicados += 1
+        if _registro_mais_recente(dados, atual):
+            latest[chave] = dados
+
+    ordenados = sorted(
+        latest.values(),
+        key=lambda item: (
+            normalizar_documento_chave(item.get("Documento", "")),
+            _data_envio_sort_key(item.get("Data Envio", "")),
+            _transmittal_sort_key(item.get("Transmittal N°", "")),
+        ),
+    )
+    return ordenados, duplicados
+
+
 def extrair_texto_pdf(caminho_pdf: Path) -> str:
     textos = []
     try:
@@ -404,6 +507,13 @@ def salvar_no_banco(dados: dict):
     if not documento:
         return False
 
+    # Regra oficial: manter somente o registro mais recente por documento.
+    # A deduplicação é feita antes de salvar; esta limpeza remove históricos antigos
+    # do banco quando o mesmo documento já existia em outro Transmittal.
+    TransmittalKM.objects.filter(documento__iexact=documento).exclude(
+        transmittal_numero=transmittal
+    ).delete()
+
     TransmittalKM.objects.update_or_create(
         documento=documento,
         transmittal_numero=transmittal,
@@ -447,8 +557,8 @@ def processar():
 
     total_pdfs_lidos = 0
     total_registros = 0
-
-    vistos = set()
+    total_duplicados = 0
+    registros_extraidos = []
 
     for pdf in pdfs:
         print(f"[INFO] Processando: {pdf.name}")
@@ -478,23 +588,9 @@ def processar():
             )
             continue
 
+        registros_extraidos.extend(registros)
+
         for dados in registros:
-            chave = (dados["Documento"], dados["Transmittal N°"])
-            if chave in vistos:
-                registrar_log(
-                    ws_log,
-                    dados.get("Arquivo PDF", ""),
-                    dados.get("Transmittal N°", ""),
-                    "AVISO",
-                    f"Duplicado ignorado para documento {dados.get('Documento', '')}.",
-                )
-                continue
-
-            vistos.add(chave)
-            adicionar_linha(ws, dados)
-            salvar_no_banco(dados)
-            total_registros += 1
-
             if dados.get("Status Parse", "OK") != "OK":
                 registrar_log(
                     ws_log,
@@ -504,6 +600,22 @@ def processar():
                     dados.get("Observação Parse", ""),
                 )
 
+    registros_latest, total_duplicados = filtrar_registros_latest_por_documento(registros_extraidos)
+
+    for dados in registros_latest:
+        adicionar_linha(ws, dados)
+        salvar_no_banco(dados)
+        total_registros += 1
+
+    if total_duplicados:
+        registrar_log(
+            ws_log,
+            str(PASTA_PDFS),
+            "",
+            "INFO",
+            f"{total_duplicados} duplicidade(s) por documento ignorada(s); mantida a Data Envio mais recente.",
+        )
+
     ajustar_largura(ws)
     ajustar_largura_log(ws_log)
     wb.save(ARQUIVO_EXCEL_NOVO)
@@ -511,17 +623,20 @@ def processar():
     print("\n=== RESUMO TRANSMITTAL KM ===")
     print(f"PDFs lidos: {total_pdfs_lidos}")
     print(f"Linhas gravadas: {total_registros}")
+    print(f"Duplicados ignorados por documento: {total_duplicados}")
     print(f"Arquivo gerado: {ARQUIVO_EXCEL_NOVO}")
 
     return {
         "ok": True,
         "pdfs_lidos": total_pdfs_lidos,
         "linhas_gravadas": total_registros,
+        "duplicados_ignorados": total_duplicados,
         "arquivo": str(ARQUIVO_EXCEL_NOVO),
         "quantidade_processada": total_registros,
         "detalhes": {
             "pdfs_lidos": total_pdfs_lidos,
             "linhas_gravadas": total_registros,
+            "duplicados_ignorados": total_duplicados,
             "arquivo": str(ARQUIVO_EXCEL_NOVO),
         },
     }
