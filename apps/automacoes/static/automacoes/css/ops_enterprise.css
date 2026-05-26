@@ -1005,3 +1005,72 @@
   }
 }
 
+/* ==========================================================
+   LIVE EVENT STREAM VISIBILITY FIX
+   Garante contraste e legibilidade dos eventos no painel.
+   ========================================================== */
+
+.ops-live-feed {
+  color: #e5e7eb !important;
+}
+
+.ops-live-event {
+  opacity: 1 !important;
+  color: #e5e7eb !important;
+}
+
+.ops-live-event > div {
+  min-width: 0 !important;
+  opacity: 1 !important;
+  filter: none !important;
+}
+
+.ops-live-title {
+  color: #f8fafc !important;
+  font-weight: 850 !important;
+  font-size: 13px !important;
+  line-height: 1.3 !important;
+  opacity: 1 !important;
+}
+
+.ops-live-title span:first-child {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  text-shadow: 0 0 10px rgba(15, 23, 42, .35);
+}
+
+.ops-live-severity {
+  color: #7dd3fc !important;
+  font-size: 10px !important;
+  font-weight: 950 !important;
+  letter-spacing: .08em !important;
+  text-transform: uppercase !important;
+  opacity: 1 !important;
+}
+
+.ops-live-event .ops-muted,
+.ops-live-event .small,
+.ops-live-event div.ops-muted {
+  color: rgba(226, 232, 240, .82) !important;
+  font-size: 12px !important;
+  line-height: 1.45 !important;
+  opacity: 1 !important;
+  filter: none !important;
+}
+
+.ops-live-event.is-ok .ops-live-severity {
+  color: #86efac !important;
+}
+
+.ops-live-event.is-error .ops-live-severity {
+  color: #fca5a5 !important;
+}
+
+.ops-live-event.is-run .ops-live-severity {
+  color: #fbbf24 !important;
+}
+
+.ops-live-event * {
+  filter: none !important;
+}
+

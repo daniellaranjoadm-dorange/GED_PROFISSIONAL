@@ -6,6 +6,7 @@ import os
 import time
 import traceback
 import re
+import shutil
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -195,6 +196,252 @@ def _health_automacoes(nomes):
         }
 
     return health
+
+
+
+def _ops_format_bytes(valor):
+    try:
+        valor = float(valor or 0)
+    except Exception:
+        return "0 B"
+
+    unidades = ["B", "KB", "MB", "GB", "TB"]
+    idx = 0
+
+    while valor >= 1024 and idx < len(unidades) - 1:
+        valor /= 1024
+        idx += 1
+
+    if idx == 0:
+        return f"{int(valor)} {unidades[idx]}"
+
+    return f"{valor:.1f} {unidades[idx]}"
+
+
+def _ops_backup_snapshot():
+    backup_dir = Path(r"D:\GED_BACKUPS")
+
+    snapshot = {
+        "status": "NÃO CONFIGURADO",
+        "classe": "ops-status-warn",
+        "arquivo": "",
+        "tamanho": "-",
+        "idade": "-",
+        "pasta": str(backup_dir),
+    }
+
+    try:
+        if not backup_dir.exists():
+            return snapshot
+
+        backups = sorted(
+            backup_dir.glob("GED_DB_BACKUP_*.zip"),
+            key=lambda item: item.stat().st_mtime,
+            reverse=True,
+        )
+
+        if not backups:
+            snapshot.update({
+                "status": "SEM BACKUP",
+                "classe": "ops-status-error",
+            })
+            return snapshot
+
+        ultimo = backups[0]
+        idade_horas = max((time.time() - ultimo.stat().st_mtime) / 3600, 0)
+
+        if idade_horas <= 30:
+            status = "OK"
+            classe = "ops-status-online"
+        elif idade_horas <= 72:
+            status = "ATENÇÃO"
+            classe = "ops-status-warn"
+        else:
+            status = "ATRASADO"
+            classe = "ops-status-error"
+
+        snapshot.update({
+            "status": status,
+            "classe": classe,
+            "arquivo": ultimo.name,
+            "tamanho": _ops_format_bytes(ultimo.stat().st_size),
+            "idade": f"{idade_horas:.1f}h",
+        })
+    except Exception as exc:
+        snapshot.update({
+            "status": "ERRO",
+            "classe": "ops-status-error",
+            "arquivo": str(exc),
+        })
+
+    return snapshot
+
+
+def _ops_database_snapshot():
+    db_config = settings.DATABASES.get("default", {})
+    db_name = db_config.get("NAME", "")
+
+    snapshot = {
+        "status": "ONLINE",
+        "classe": "ops-status-online",
+        "engine": db_config.get("ENGINE", "").split(".")[-1] or "database",
+        "path": str(db_name),
+        "tamanho": "-",
+    }
+
+    try:
+        db_path = Path(db_name)
+        if db_path.exists():
+            snapshot["tamanho"] = _ops_format_bytes(db_path.stat().st_size)
+        else:
+            snapshot.update({
+                "status": "NÃO ENCONTRADO",
+                "classe": "ops-status-error",
+            })
+    except Exception as exc:
+        snapshot.update({
+            "status": "ERRO",
+            "classe": "ops-status-error",
+            "path": str(exc),
+        })
+
+    return snapshot
+
+
+def _ops_disk_snapshot():
+    candidatos = [Path(r"D:\\"), Path(r"C:\\")]
+
+    for candidato in candidatos:
+        try:
+            if candidato.exists():
+                usage = shutil.disk_usage(candidato)
+                livre_pct = round((usage.free / usage.total) * 100, 1) if usage.total else 0
+
+                if livre_pct >= 15:
+                    status = "OK"
+                    classe = "ops-status-online"
+                elif livre_pct >= 8:
+                    status = "ATENÇÃO"
+                    classe = "ops-status-warn"
+                else:
+                    status = "CRÍTICO"
+                    classe = "ops-status-error"
+
+                return {
+                    "status": status,
+                    "classe": classe,
+                    "unidade": str(candidato),
+                    "livre": _ops_format_bytes(usage.free),
+                    "total": _ops_format_bytes(usage.total),
+                    "livre_pct": livre_pct,
+                }
+        except Exception:
+            continue
+
+    return {
+        "status": "INDISPONÍVEL",
+        "classe": "ops-status-warn",
+        "unidade": "-",
+        "livre": "-",
+        "total": "-",
+        "livre_pct": 0,
+    }
+
+
+def _ops_km_ld_snapshot():
+    total_km = DocumentoKM.objects.count()
+    total_ld = DocumentoLD.objects.count()
+
+    km_recebidos = 0
+    if _model_has_field(DocumentoKM, "status_recebimento"):
+        km_recebidos = DocumentoKM.objects.filter(
+            status_recebimento=DocumentoKM.STATUS_RECEBIMENTO_RECEBIDO
+        ).count()
+
+    km_vinculados = 0
+    km_criticos = 0
+
+    if _model_has_field(DocumentoKM, "status_vinculo_ld"):
+        km_vinculados = DocumentoKM.objects.filter(
+            status_vinculo_ld__in=[
+                DocumentoKM.STATUS_VINCULO_LD_AUTO,
+                DocumentoKM.STATUS_VINCULO_LD_MANUAL,
+            ]
+        ).count()
+
+        km_criticos = DocumentoKM.objects.filter(
+            status_vinculo_ld__in=[
+                DocumentoKM.STATUS_VINCULO_LD_CONFLITO,
+                DocumentoKM.STATUS_VINCULO_LD_SEM_MATCH,
+                DocumentoKM.STATUS_VINCULO_LD_MULTIPLO,
+            ]
+        ).count()
+
+    recebimento_pct = round((km_recebidos / total_km) * 100, 1) if total_km else 0
+    cobertura_pct = round((km_vinculados / total_km) * 100, 1) if total_km else 0
+
+    return {
+        "total_km": total_km,
+        "total_ld": total_ld,
+        "km_recebidos": km_recebidos,
+        "km_vinculados": km_vinculados,
+        "km_criticos": km_criticos,
+        "recebimento_pct": recebimento_pct,
+        "cobertura_pct": cobertura_pct,
+    }
+
+
+
+
+def _humanize_event_title(value):
+    labels = {
+        "km_index_rebuild": "Reconstrução do índice KM",
+        "runtime_health_check": "Verificação de saúde do runtime",
+        "ld_import": "Importação da Lista LD",
+        "km_ld_sync": "Sincronização KM ↔ LD",
+        "backup": "Backup operacional",
+        "Atualização LD": "Atualização LD",
+        "Timeline PCFs": "Timeline PCFs",
+        "Transmittal KM": "Transmittal KM",
+        "Índice KM": "Reconstrução do índice KM",
+    }
+
+    text = str(value or "").strip()
+
+    if not text:
+        return "Evento operacional"
+
+    key = text.lower()
+
+    if key in labels:
+        return labels[key]
+
+    return text.replace("_", " ").replace("-", " ").title()
+
+
+def _ops_live_events_initial(limit=8):
+    eventos = []
+
+    for item in ExecucaoAutomacao.objects.select_related("usuario").order_by("-iniciado_em")[:limit]:
+        status = item.status or "info"
+
+        if status == ExecucaoAutomacao.STATUS_ERRO:
+            severidade = "ERROR"
+        elif status in {ExecucaoAutomacao.STATUS_SUCESSO, ExecucaoAutomacao.STATUS_SUCESSO_PARCIAL}:
+            severidade = "OK"
+        elif status in {ExecucaoAutomacao.STATUS_INICIADO, ExecucaoAutomacao.STATUS_PROCESSANDO}:
+            severidade = "RUN"
+        else:
+            severidade = "INFO"
+
+        eventos.append({
+            "severidade": severidade,
+            "titulo": _humanize_event_title(item.nome),
+            "mensagem": item.mensagem or item.status,
+            "timestamp": item.iniciado_em,
+        })
+
+    return eventos
 
 
 
@@ -419,6 +666,13 @@ def painel(request):
             "total_km_docs_index": total_km_docs_index,
             "total_km_transmittals_index": total_km_transmittals_index,
             "ultima_indexacao_km": ultima_indexacao_km,
+            "runtime_intelligence": {
+                "database": _ops_database_snapshot(),
+                "backup": _ops_backup_snapshot(),
+                "disk": _ops_disk_snapshot(),
+                "km_ld": _ops_km_ld_snapshot(),
+            },
+            "live_events_initial": _ops_live_events_initial(),
         }
 
     context = _cache_get_or_set(
@@ -489,22 +743,6 @@ def _executar_automacao(request, executor, nome):
         cache.delete("automacoes:painel:context:v1")
 
     return redirect("automacoes:painel")
-
-
-
-
-@login_required
-def progresso_importacao_km(request):
-    return JsonResponse(
-        cache.get(
-            "ld_km_progress",
-            {
-                "percentual": 0,
-                "etapa": "Aguardando importação",
-                "mensagem": "",
-            },
-        )
-    )
 
 
 @login_required
@@ -3751,10 +3989,300 @@ def runtime_metrics_api(request):
     return JsonResponse(RuntimeHealthAPIService.metrics())
 
 
+
+def _runtime_severity(evento):
+    """
+    Classifica eventos do OPS Center por criticidade operacional.
+    Mantém a regra centralizada para o Live Event Stream e futuros alertas.
+    """
+    texto = " ".join([
+        str(evento.get("status", "")),
+        str(evento.get("message", "")),
+        str(evento.get("title", "")),
+        str(evento.get("source", "")),
+    ]).upper()
+
+    if any(token in texto for token in [
+        "CRITICAL",
+        "FATAL",
+        "CORROMPIDO",
+        "SQLITE",
+        "DISK FULL",
+        "SEM ESPAÇO",
+        "SEM ESPACO",
+        "CRÍTICO",
+        "CRITICO",
+    ]):
+        return "CRITICAL"
+
+    if any(token in texto for token in [
+        "ERROR",
+        "ERRO",
+        "FAILED",
+        "FALHA",
+        "EXCEPTION",
+        "TRACEBACK",
+    ]):
+        return "ERROR"
+
+    if any(token in texto for token in [
+        "WARNING",
+        "WARN",
+        "ATENÇÃO",
+        "ATENCAO",
+        "SEM VÍNCULO",
+        "SEM VINCULO",
+        "INCONSISTÊNCIA",
+        "INCONSISTENCIA",
+        "ATRASADO",
+        "PENDENTE",
+    ]):
+        return "WARNING"
+
+    if any(token in texto for token in [
+        "RUN",
+        "PROCESSANDO",
+        "IMPORTANDO",
+        "EXECUTANDO",
+        "INICIADO",
+    ]):
+        return "RUN"
+
+    return "OK"
+
 @login_required
 def runtime_events_api(request):
-    return JsonResponse(RuntimeHealthAPIService.events())
+    """
+    API do Live Event Stream.
 
+    Serializa eventos com segurança, ignorando métodos Python/callables
+    para evitar textos como "<built-in method title of str object ...>".
+    """
+    def _clean_value(value, default=""):
+        if value is None:
+            return default
+
+        if callable(value):
+            return default
+
+        text = str(value).strip()
+
+        if not text:
+            return default
+
+        invalid_fragments = [
+            "<built-in method",
+            "<bound method",
+            "method-wrapper",
+            "object at 0x",
+        ]
+
+        if any(fragment in text for fragment in invalid_fragments):
+            return default
+
+        return text
+
+    def _first_attr(obj, names, default=""):
+        if isinstance(obj, dict):
+            for name in names:
+                value = _clean_value(obj.get(name), "")
+                if value:
+                    return value
+            return default
+
+        for name in names:
+            value = _clean_value(getattr(obj, name, None), "")
+            if value:
+                return value
+
+        return default
+
+    def _first_datetime(obj, names):
+        if isinstance(obj, dict):
+            for name in names:
+                value = obj.get(name)
+                if hasattr(value, "isoformat"):
+                    return value
+                value = _clean_value(value, "")
+                if value:
+                    return value
+            return None
+
+        for name in names:
+            value = getattr(obj, name, None)
+            if callable(value):
+                continue
+            if value:
+                return value
+
+        return None
+
+    def _serialize_datetime(value):
+        if hasattr(value, "isoformat"):
+            return value.isoformat()
+        return _clean_value(value, "")
+
+    def _severity_from_payload(status, title, message, source):
+        if "def _runtime_severity(" in globals():
+            return _runtime_severity({
+                "status": status,
+                "title": title,
+                "message": message,
+                "source": source,
+            })
+
+        text = f"{status} {title} {message} {source}".upper()
+
+        if any(token in text for token in ["CRITICAL", "FATAL", "CRÍTICO", "CRITICO"]):
+            return "CRITICAL"
+        if any(token in text for token in ["ERROR", "ERRO", "FALHA", "FAILED", "EXCEPTION"]):
+            return "ERROR"
+        if any(token in text for token in ["WARNING", "WARN", "ATENÇÃO", "ATENCAO", "PENDENTE"]):
+            return "WARNING"
+        if any(token in text for token in ["RUN", "PROCESSANDO", "EXECUTANDO", "INICIADO"]):
+            return "RUN"
+
+        return "OK"
+
+    def _event_payload(event_id, title, message, status, source, timestamp):
+        title = _humanize_event_title(_clean_value(title, "Evento operacional"))
+        message = _clean_value(message, "Runtime ativo")
+        status = _clean_value(status, "INFO")
+        source = _clean_value(source, "RuntimeEvent")
+        timestamp_value = _serialize_datetime(timestamp)
+
+        severity = _severity_from_payload(status, title, message, source)
+
+        return {
+            "id": event_id,
+            "severity": severity,
+            "severidade": severity,
+            "level": severity,
+            "status": status,
+            "title": title,
+            "titulo": title,
+            "message": message,
+            "mensagem": message,
+            "description": message,
+            "descricao": message,
+            "source": source,
+            "origem": source,
+            "timestamp": timestamp_value,
+            "created_at": timestamp_value,
+            "criado_em": timestamp_value,
+        }
+
+    try:
+        raw_events = RuntimeHealthAPIService.events()
+    except Exception as exc:
+        return JsonResponse({
+            "ok": False,
+            "events": [
+                _event_payload(
+                    None,
+                    "Runtime Events API",
+                    f"Falha ao carregar eventos: {exc}",
+                    "ERROR",
+                    "RuntimeHealthAPIService",
+                    timezone.now(),
+                )
+            ],
+        }, status=200)
+
+    # RuntimeHealthAPIService.events() pode retornar:
+    # - lista direta de eventos
+    # - dict com {"events": [...], "summary": ..., "generated_at": ...}
+    # Neste endpoint, somente itens reais de events devem alimentar o Live Stream.
+    if isinstance(raw_events, dict):
+        events = (
+            raw_events.get("events")
+            or raw_events.get("eventos")
+            or raw_events.get("results")
+            or raw_events.get("data")
+            or []
+        )
+    else:
+        events = raw_events
+
+    if events is None:
+        events = []
+
+    if not isinstance(events, (list, tuple)):
+        events = [events]
+
+    serialized_events = []
+
+    for event in events:
+        if isinstance(event, str):
+            serialized_events.append(
+                _event_payload(
+                    None,
+                    "Evento operacional",
+                    event,
+                    "INFO",
+                    "RuntimeEvent",
+                    timezone.now(),
+                )
+            )
+            continue
+
+        timestamp = _first_datetime(
+            event,
+            ["created_at", "timestamp", "criado_em", "iniciado_em", "data"],
+        )
+
+        title = _first_attr(
+            event,
+            ["titulo", "nome", "name", "source", "origem"],
+            "Evento operacional",
+        )
+
+        # Só usa "title" para dict/model se for valor real, nunca método str.title.
+        explicit_title = _first_attr(event, ["title"], "")
+        if explicit_title:
+            title = explicit_title
+
+        message = _first_attr(
+            event,
+            ["mensagem", "message", "description", "descricao", "detalhe"],
+            "Runtime ativo",
+        )
+
+        status = _first_attr(
+            event,
+            ["status", "severity", "severidade", "level", "tipo"],
+            "INFO",
+        )
+
+        source = _first_attr(
+            event,
+            ["source", "origem"],
+            "RuntimeEvent",
+        )
+
+        event_id = event.get("id") if isinstance(event, dict) else getattr(event, "id", None)
+
+        serialized_events.append(
+            _event_payload(event_id, title, message, status, source, timestamp)
+        )
+
+    if not serialized_events:
+        for item in ExecucaoAutomacao.objects.select_related("usuario").order_by("-iniciado_em")[:8]:
+            serialized_events.append(
+                _event_payload(
+                    item.id,
+                    item.nome or "Execução operacional",
+                    item.mensagem or item.status or "Rotina operacional registrada",
+                    item.status or "INFO",
+                    "ExecucaoAutomacao",
+                    item.iniciado_em,
+                )
+            )
+
+    return JsonResponse({
+        "ok": True,
+        "events": serialized_events,
+    })
 
 @login_required
 def runtime_retention_dry_run_api(request):
@@ -3773,12 +4301,6 @@ def importar_lista_km(request):
     """
     Importa a LD mestre Kongsberg para DocumentoKM e executa o cruzamento
     inicial com TransmittalKM e DocumentoLD.
-
-    Ajuste operacional:
-    - registra ExecucaoAutomacao própria;
-    - emite progresso no terminal;
-    - persiste etapa atual em detalhes;
-    - mantém o mesmo redirect final para não quebrar a UX existente.
     """
     if request.method == "POST":
         arquivo = (
@@ -3792,141 +4314,25 @@ def importar_lista_km(request):
             messages.error(request, "Selecione a planilha .xlsx da LD Kongsberg.")
             return redirect("automacoes:importar_lista_km")
 
-        inicio = time.monotonic()
-        nome_arquivo = getattr(arquivo, "name", "LD Kongsberg")
-        log = ExecucaoAutomacao.objects.create(
-            nome="Importar LD Kongsberg",
-            usuario=request.user if request.user.is_authenticated else None,
-            status=ExecucaoAutomacao.STATUS_INICIADO,
-            mensagem=f"Importação iniciada: {nome_arquivo}",
-            detalhes={
-                "arquivo": nome_arquivo,
-                "etapa": "INICIO",
-                "percentual": 0,
-                "eventos": [],
-            },
-        )
-
-        def _registrar_progresso(payload):
-            etapa = str(payload.get("etapa") or "PROCESSANDO")
-            mensagem = str(payload.get("mensagem") or etapa)
-            percentual = payload.get("percentual")
-            detalhes_payload = payload.get("detalhes") or {}
-
-            try:
-                print(f"[GED][Importar LD Kongsberg][{etapa}] {mensagem}", flush=True)
-            except Exception:
-                pass
-
-            detalhes = log.detalhes if isinstance(log.detalhes, dict) else {}
-            eventos = detalhes.get("eventos")
-            if not isinstance(eventos, list):
-                eventos = []
-
-            eventos.append(
-                {
-                    "ts": timezone.now().isoformat(),
-                    "etapa": etapa,
-                    "mensagem": mensagem,
-                    "percentual": percentual,
-                    "detalhes": detalhes_payload,
-                }
-            )
-
-            # Mantém o log leve: guarda apenas os 30 eventos mais recentes.
-            detalhes.update(
-                {
-                    "arquivo": nome_arquivo,
-                    "etapa": etapa,
-                    "mensagem_atual": mensagem,
-                    "percentual": percentual,
-                    "eventos": eventos[-30:],
-                }
-            )
-
-            log.mensagem = mensagem
-            log.detalhes = detalhes
-            log.save(update_fields=["mensagem", "detalhes"])
-
         try:
-            _registrar_progresso(
-                {
-                    "etapa": "UPLOAD_RECEBIDO",
-                    "mensagem": f"Arquivo recebido: {nome_arquivo}",
-                    "percentual": 1,
-                    "detalhes": {"arquivo": nome_arquivo},
-                }
-            )
-
             resultado = importar_ld_kongsberg(
                 arquivo,
-                nome_arquivo=nome_arquivo,
+                nome_arquivo=getattr(arquivo, "name", "LD Kongsberg"),
                 executar_cruzamento=True,
-                progress_callback=_registrar_progresso,
             )
 
-            ok = bool(resultado.get("ok"))
-            mensagem = resultado.get("mensagem", "LD Kongsberg importada.")
-
-            log.status = ExecucaoAutomacao.STATUS_SUCESSO if ok else ExecucaoAutomacao.STATUS_ERRO
-            log.sucesso = ok
-            log.mensagem = mensagem
-            log.quantidade_processada = _extrair_quantidade_processada(resultado)
-            log.detalhes = _detalhes_execucao(resultado)
-            log.finalizado_em = timezone.now()
-            log.duracao_segundos = round(time.monotonic() - inicio, 3)
-            log.save(
-                update_fields=[
-                    "status",
-                    "sucesso",
-                    "mensagem",
-                    "detalhes",
-                    "quantidade_processada",
-                    "duracao_segundos",
-                    "finalizado_em",
-                ]
-            )
-
-            cache.delete("automacoes:painel:context:v1")
-
-            if ok:
-                messages.success(
-                    request,
-                    f"{mensagem} Duração: {_formatar_duracao(log.duracao_segundos)}."
-                )
+            if resultado.get("ok"):
+                messages.success(request, resultado.get("mensagem", "LD Kongsberg importada."))
             else:
                 messages.warning(
                     request,
-                    f"{mensagem} Erros: {resultado.get('total_erros', 0)}. "
-                    f"Duração: {_formatar_duracao(log.duracao_segundos)}."
+                    f"{resultado.get('mensagem', 'Importação concluída com alertas.')} "
+                    f"Erros: {resultado.get('total_erros', 0)}"
                 )
 
             return redirect("automacoes:dashboard_km_ld")
 
         except Exception as exc:
-            erro = traceback.format_exc()
-
-            log.status = ExecucaoAutomacao.STATUS_ERRO
-            log.sucesso = False
-            log.mensagem = f"Erro ao importar LD Kongsberg: {exc}"
-            log.detalhes = {
-                "arquivo": nome_arquivo,
-                "erro": str(exc),
-                "traceback": erro[-4000:],
-            }
-            log.finalizado_em = timezone.now()
-            log.duracao_segundos = round(time.monotonic() - inicio, 3)
-            log.save(
-                update_fields=[
-                    "status",
-                    "sucesso",
-                    "mensagem",
-                    "detalhes",
-                    "duracao_segundos",
-                    "finalizado_em",
-                ]
-            )
-
             messages.error(request, f"Erro ao importar LD Kongsberg: {exc}")
             return redirect("automacoes:importar_lista_km")
 
@@ -3935,6 +4341,7 @@ def importar_lista_km(request):
         "automacoes/importar_lista_km.html",
         {},
     )
+
 
 @login_required
 def executar_sync_km_ld(request):
