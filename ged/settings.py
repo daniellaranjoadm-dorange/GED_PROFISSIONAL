@@ -152,12 +152,57 @@ if DATABASE_URL:
         )
     }
 else:
+    # SQLite local hardened.
+    #
+    # IMPORTANTE:
+    # - O código pode continuar no compartilhamento de rede.
+    # - O banco NÃO deve ficar em SMB/UNC, pois isso causa "database is locked".
+    # - Por padrão, em Windows, usamos C:\GED_DATA\db.sqlite3.
+    # - Pode sobrescrever via .env:
+    #   SQLITE_DB_PATH=C:\GED_DATA\db.sqlite3
+    SQLITE_DB_PATH = os.getenv("SQLITE_DB_PATH", r"C:\GED_DATA\db.sqlite3").strip()
+    SQLITE_DB_FILE = Path(SQLITE_DB_PATH)
+
+    try:
+        SQLITE_DB_FILE.parent.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        # Em ambientes restritos, apenas deixa o Django reportar erro ao conectar.
+        pass
+
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
+            "NAME": str(SQLITE_DB_FILE),
+            "OPTIONS": {
+                # Evita falhas rápidas em imports pesados quando há lock momentâneo.
+                "timeout": 60,
+            },
         }
     }
+
+
+# ======================
+# SQLITE HARDENING
+# ======================
+#
+# WAL melhora concorrência de leitura/escrita em SQLite local.
+# Não resolve SQLite em rede SMB. Por isso o banco foi movido para C:\GED_DATA.
+try:
+    from django.db.backends.signals import connection_created
+    from django.dispatch import receiver
+
+    @receiver(connection_created)
+    def _ged_sqlite_hardening(sender, connection, **kwargs):
+        if connection.vendor != "sqlite":
+            return
+
+        with connection.cursor() as cursor:
+            cursor.execute("PRAGMA journal_mode=WAL;")
+            cursor.execute("PRAGMA synchronous=NORMAL;")
+            cursor.execute("PRAGMA busy_timeout=60000;")
+except Exception:
+    # Nunca impede o Django de iniciar por causa do hardening.
+    pass
 
 # ======================
 # VALIDAÇÃO DE SENHAS

@@ -14,6 +14,7 @@ Este service é propositalmente defensivo:
 
 from __future__ import annotations
 import re
+import time
 
 from pathlib import Path
 from typing import Any
@@ -253,28 +254,95 @@ def _montar_defaults(sheet, row_idx: int, colunas: dict[str, int], origem_planil
     return defaults
 
 
+
+def _emitir_progresso(callback, etapa: str, mensagem: str, percentual: int | None = None, **detalhes) -> None:
+    """
+    Emite progresso operacional sem acoplar o service à camada de views.
+
+    - Se callback existir, envia payload estruturado.
+    - Também imprime no terminal para acompanhamento durante imports longos.
+    - Não deixa falha de callback interromper a importação.
+    """
+    payload = {
+        "etapa": etapa,
+        "mensagem": mensagem,
+        "percentual": percentual,
+        "detalhes": detalhes,
+    }
+
+    prefixo = f"[LD_KONGSBERG][{etapa}]"
+    sufixo = f" ({percentual}%)" if percentual is not None else ""
+
+    try:
+        print(f"{prefixo} {mensagem}{sufixo}", flush=True)
+    except Exception:
+        pass
+
+    if not callback:
+        return
+
+    try:
+        callback(payload)
+    except Exception:
+        # Progresso nunca pode quebrar a rotina principal.
+        pass
+
 def importar_lista_kongsberg(
     arquivo,
     usuario=None,
     origem_planilha: str | None = None,
     nome_arquivo: str | None = None,
+    progress_callback=None,
+    executar_cruzamento: bool = False,
     **kwargs,
 ) -> dict:
     """
     Importa a LD Kongsberg para DocumentoKM.
 
-    Aceita:
-    - caminho string/path
-    - UploadedFile do Django
-    - file-like object
+    Compatível com chamadas antigas e com execução operacional assistida:
+    - aceita caminho string/path, UploadedFile ou file-like object;
+    - emite progresso por callback e no terminal;
+    - opcionalmente executa o cruzamento KM ↔ LD ao final quando
+      executar_cruzamento=True.
     """
+    inicio = time.monotonic()
     origem = origem_planilha or nome_arquivo or getattr(arquivo, "name", "") or str(arquivo)
+
+    _emitir_progresso(
+        progress_callback,
+        "INICIO",
+        f"Iniciando importação da LD Kongsberg: {origem}",
+        1,
+        origem=origem,
+    )
+
+    if hasattr(arquivo, "seek"):
+        try:
+            arquivo.seek(0)
+        except Exception:
+            pass
+
+    _emitir_progresso(progress_callback, "LEITURA_XLSX", "Abrindo planilha XLSX.", 5)
 
     wb = load_workbook(arquivo, data_only=True, read_only=True)
     sheet = _detectar_aba(wb)
     header_row, colunas = _detectar_cabecalho(sheet)
 
+    _emitir_progresso(
+        progress_callback,
+        "CABECALHO",
+        f"Aba '{sheet.title}' detectada. Cabeçalho na linha {header_row}.",
+        10,
+        aba=sheet.title,
+        linha_cabecalho=header_row,
+    )
+
     if "number" not in colunas:
+        try:
+            wb.close()
+        except Exception:
+            pass
+
         return {
             "ok": False,
             "mensagem": "Coluna obrigatória 'Number' não encontrada na LD Kongsberg.",
@@ -284,46 +352,82 @@ def importar_lista_kongsberg(
             "criados": 0,
             "atualizados": 0,
             "ignorados": 0,
+            "duracao_segundos": round(time.monotonic() - inicio, 3),
         }
 
+    total_linhas_estimado = max((sheet.max_row or 0) - header_row, 0)
     processados = 0
     criados = 0
     atualizados = 0
     ignorados = 0
     erros = []
 
-    with transaction.atomic():
-        for row_idx in range(header_row + 1, sheet.max_row + 1):
-            numero_km = _valor_linha(sheet, row_idx, colunas, "number")
+    _emitir_progresso(
+        progress_callback,
+        "IMPORTACAO",
+        f"Importando registros da planilha ({total_linhas_estimado} linhas estimadas).",
+        15,
+        total_linhas_estimado=total_linhas_estimado,
+    )
 
-            if not numero_km:
-                ignorados += 1
-                continue
+    try:
+        with transaction.atomic():
+            for row_idx in range(header_row + 1, sheet.max_row + 1):
+                numero_km = _valor_linha(sheet, row_idx, colunas, "number")
 
-            defaults = _montar_defaults(sheet, row_idx, colunas, origem)
+                if not numero_km:
+                    ignorados += 1
+                    continue
 
-            try:
-                _, created = DocumentoKM.objects.update_or_create(
-                    numero_km=numero_km,
-                    defaults=defaults,
-                )
-                processados += 1
+                defaults = _montar_defaults(sheet, row_idx, colunas, origem)
 
-                if created:
-                    criados += 1
-                else:
-                    atualizados += 1
+                try:
+                    _, created = DocumentoKM.objects.update_or_create(
+                        numero_km=numero_km,
+                        defaults=defaults,
+                    )
+                    processados += 1
 
-            except Exception as exc:
-                erros.append(
-                    {
-                        "linha": row_idx,
-                        "numero_km": numero_km,
-                        "erro": str(exc),
-                    }
-                )
+                    if created:
+                        criados += 1
+                    else:
+                        atualizados += 1
 
-    return {
+                except Exception as exc:
+                    erros.append(
+                        {
+                            "linha": row_idx,
+                            "numero_km": numero_km,
+                            "erro": str(exc),
+                        }
+                    )
+
+                if processados and processados % 100 == 0:
+                    percentual = 15
+                    if total_linhas_estimado:
+                        percentual = min(75, 15 + int((processados / total_linhas_estimado) * 60))
+
+                    _emitir_progresso(
+                        progress_callback,
+                        "IMPORTACAO",
+                        (
+                            f"{processados} processados, {criados} criados, "
+                            f"{atualizados} atualizados, {ignorados} ignorados."
+                        ),
+                        percentual,
+                        processados=processados,
+                        criados=criados,
+                        atualizados=atualizados,
+                        ignorados=ignorados,
+                        erros=len(erros),
+                    )
+    finally:
+        try:
+            wb.close()
+        except Exception:
+            pass
+
+    resultado = {
         "ok": not erros,
         "mensagem": (
             f"LD Kongsberg importada: {processados} processados, "
@@ -336,8 +440,53 @@ def importar_lista_kongsberg(
         "atualizados": atualizados,
         "ignorados": ignorados,
         "erros": erros[:20],
+        "total_erros": len(erros),
         "quantidade_processada": processados,
+        "duracao_segundos": round(time.monotonic() - inicio, 3),
     }
+
+    _emitir_progresso(
+        progress_callback,
+        "IMPORTACAO_CONCLUIDA",
+        resultado["mensagem"],
+        80,
+        processados=processados,
+        criados=criados,
+        atualizados=atualizados,
+        ignorados=ignorados,
+        erros=len(erros),
+    )
+
+    if executar_cruzamento:
+        _emitir_progresso(
+            progress_callback,
+            "CRUZAMENTO",
+            "Executando cruzamento operacional KM ↔ LD.",
+            85,
+        )
+
+        cruzamento = executar_cruzamento_ld_km(progress_callback=progress_callback)
+        resultado["cruzamento"] = cruzamento
+
+        if not cruzamento.get("ok"):
+            resultado["ok"] = False
+
+        resultado["mensagem"] = (
+            f"{resultado['mensagem']} "
+            f"{cruzamento.get('mensagem', 'Cruzamento executado.')}"
+        )
+
+    resultado["duracao_segundos"] = round(time.monotonic() - inicio, 3)
+
+    _emitir_progresso(
+        progress_callback,
+        "FIM",
+        f"Rotina LD Kongsberg finalizada em {resultado['duracao_segundos']}s.",
+        100,
+        duracao_segundos=resultado["duracao_segundos"],
+    )
+
+    return resultado
 
 
 def importar_ld_kongsberg(*args, **kwargs) -> dict:
@@ -426,7 +575,7 @@ def _buscar_ld_para_km(numero_km: str):
     return melhor, melhor_score
 
 
-def executar_cruzamento_ld_km(limite: int | None = None) -> dict:
+def executar_cruzamento_ld_km(limite: int | None = None, progress_callback=None) -> dict:
     """
     Sincronização segura da Lista KM.
 
@@ -436,8 +585,13 @@ def executar_cruzamento_ld_km(limite: int | None = None) -> dict:
     - Documento TP importado da planilha é preservado.
     - Recebimento é derivado de Transmittal Number ou Data recebimento KM.
     """
+    inicio = time.monotonic()
+    _emitir_progresso(progress_callback, "CRUZAMENTO", "Preparando documentos KM para sincronização.", 86)
+
     qs = DocumentoKM.objects.all().order_by("numero_km")
+    total_estimado = DocumentoKM.objects.count()
     if limite:
+        total_estimado = min(total_estimado, int(limite))
         qs = qs[: int(limite)]
 
     processados = 0
@@ -487,6 +641,35 @@ def executar_cruzamento_ld_km(limite: int | None = None) -> dict:
 
         processados += 1
 
+        if processados and processados % 500 == 0:
+            percentual = 86
+            if total_estimado:
+                percentual = min(98, 86 + int((processados / total_estimado) * 12))
+            _emitir_progresso(
+                progress_callback,
+                "CRUZAMENTO",
+                f"{processados} documentos KM sincronizados.",
+                percentual,
+                processados=processados,
+                recebidos=recebidos,
+                nao_recebidos=nao_recebidos,
+                com_tp=com_tp,
+                sem_tp=sem_tp,
+            )
+
+    duracao_cruzamento = round(time.monotonic() - inicio, 3)
+    _emitir_progresso(
+        progress_callback,
+        "CRUZAMENTO_CONCLUIDO",
+        f"Cruzamento KM ↔ LD seguro concluído em {duracao_cruzamento}s.",
+        99,
+        processados=processados,
+        recebidos=recebidos,
+        nao_recebidos=nao_recebidos,
+        com_tp=com_tp,
+        sem_tp=sem_tp,
+    )
+
     return {
         "ok": True,
         "mensagem": (
@@ -504,6 +687,7 @@ def executar_cruzamento_ld_km(limite: int | None = None) -> dict:
         "vinculados_ld": com_tp,
         "sem_vinculo_ld": sem_tp,
         "quantidade_processada": processados,
+        "duracao_segundos": duracao_cruzamento,
     }
 
 

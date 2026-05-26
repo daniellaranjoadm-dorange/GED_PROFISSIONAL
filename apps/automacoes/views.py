@@ -3757,6 +3757,12 @@ def importar_lista_km(request):
     """
     Importa a LD mestre Kongsberg para DocumentoKM e executa o cruzamento
     inicial com TransmittalKM e DocumentoLD.
+
+    Ajuste operacional:
+    - registra ExecucaoAutomacao própria;
+    - emite progresso no terminal;
+    - persiste etapa atual em detalhes;
+    - mantém o mesmo redirect final para não quebrar a UX existente.
     """
     if request.method == "POST":
         arquivo = (
@@ -3770,25 +3776,141 @@ def importar_lista_km(request):
             messages.error(request, "Selecione a planilha .xlsx da LD Kongsberg.")
             return redirect("automacoes:importar_lista_km")
 
-        try:
-            resultado = importar_ld_kongsberg(
-                arquivo,
-                nome_arquivo=getattr(arquivo, "name", "LD Kongsberg"),
-                executar_cruzamento=True,
+        inicio = time.monotonic()
+        nome_arquivo = getattr(arquivo, "name", "LD Kongsberg")
+        log = ExecucaoAutomacao.objects.create(
+            nome="Importar LD Kongsberg",
+            usuario=request.user if request.user.is_authenticated else None,
+            status=ExecucaoAutomacao.STATUS_INICIADO,
+            mensagem=f"Importação iniciada: {nome_arquivo}",
+            detalhes={
+                "arquivo": nome_arquivo,
+                "etapa": "INICIO",
+                "percentual": 0,
+                "eventos": [],
+            },
+        )
+
+        def _registrar_progresso(payload):
+            etapa = str(payload.get("etapa") or "PROCESSANDO")
+            mensagem = str(payload.get("mensagem") or etapa)
+            percentual = payload.get("percentual")
+            detalhes_payload = payload.get("detalhes") or {}
+
+            try:
+                print(f"[GED][Importar LD Kongsberg][{etapa}] {mensagem}", flush=True)
+            except Exception:
+                pass
+
+            detalhes = log.detalhes if isinstance(log.detalhes, dict) else {}
+            eventos = detalhes.get("eventos")
+            if not isinstance(eventos, list):
+                eventos = []
+
+            eventos.append(
+                {
+                    "ts": timezone.now().isoformat(),
+                    "etapa": etapa,
+                    "mensagem": mensagem,
+                    "percentual": percentual,
+                    "detalhes": detalhes_payload,
+                }
             )
 
-            if resultado.get("ok"):
-                messages.success(request, resultado.get("mensagem", "LD Kongsberg importada."))
+            # Mantém o log leve: guarda apenas os 30 eventos mais recentes.
+            detalhes.update(
+                {
+                    "arquivo": nome_arquivo,
+                    "etapa": etapa,
+                    "mensagem_atual": mensagem,
+                    "percentual": percentual,
+                    "eventos": eventos[-30:],
+                }
+            )
+
+            log.mensagem = mensagem
+            log.detalhes = detalhes
+            log.save(update_fields=["mensagem", "detalhes"])
+
+        try:
+            _registrar_progresso(
+                {
+                    "etapa": "UPLOAD_RECEBIDO",
+                    "mensagem": f"Arquivo recebido: {nome_arquivo}",
+                    "percentual": 1,
+                    "detalhes": {"arquivo": nome_arquivo},
+                }
+            )
+
+            resultado = importar_ld_kongsberg(
+                arquivo,
+                nome_arquivo=nome_arquivo,
+                executar_cruzamento=True,
+                progress_callback=_registrar_progresso,
+            )
+
+            ok = bool(resultado.get("ok"))
+            mensagem = resultado.get("mensagem", "LD Kongsberg importada.")
+
+            log.status = ExecucaoAutomacao.STATUS_SUCESSO if ok else ExecucaoAutomacao.STATUS_ERRO
+            log.sucesso = ok
+            log.mensagem = mensagem
+            log.quantidade_processada = _extrair_quantidade_processada(resultado)
+            log.detalhes = _detalhes_execucao(resultado)
+            log.finalizado_em = timezone.now()
+            log.duracao_segundos = round(time.monotonic() - inicio, 3)
+            log.save(
+                update_fields=[
+                    "status",
+                    "sucesso",
+                    "mensagem",
+                    "detalhes",
+                    "quantidade_processada",
+                    "duracao_segundos",
+                    "finalizado_em",
+                ]
+            )
+
+            cache.delete("automacoes:painel:context:v1")
+
+            if ok:
+                messages.success(
+                    request,
+                    f"{mensagem} Duração: {_formatar_duracao(log.duracao_segundos)}."
+                )
             else:
                 messages.warning(
                     request,
-                    f"{resultado.get('mensagem', 'Importação concluída com alertas.')} "
-                    f"Erros: {resultado.get('total_erros', 0)}"
+                    f"{mensagem} Erros: {resultado.get('total_erros', 0)}. "
+                    f"Duração: {_formatar_duracao(log.duracao_segundos)}."
                 )
 
             return redirect("automacoes:dashboard_km_ld")
 
         except Exception as exc:
+            erro = traceback.format_exc()
+
+            log.status = ExecucaoAutomacao.STATUS_ERRO
+            log.sucesso = False
+            log.mensagem = f"Erro ao importar LD Kongsberg: {exc}"
+            log.detalhes = {
+                "arquivo": nome_arquivo,
+                "erro": str(exc),
+                "traceback": erro[-4000:],
+            }
+            log.finalizado_em = timezone.now()
+            log.duracao_segundos = round(time.monotonic() - inicio, 3)
+            log.save(
+                update_fields=[
+                    "status",
+                    "sucesso",
+                    "mensagem",
+                    "detalhes",
+                    "duracao_segundos",
+                    "finalizado_em",
+                ]
+            )
+
             messages.error(request, f"Erro ao importar LD Kongsberg: {exc}")
             return redirect("automacoes:importar_lista_km")
 
@@ -3797,7 +3919,6 @@ def importar_lista_km(request):
         "automacoes/importar_lista_km.html",
         {},
     )
-
 
 @login_required
 def executar_sync_km_ld(request):
