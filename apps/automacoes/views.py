@@ -491,6 +491,22 @@ def _executar_automacao(request, executor, nome):
     return redirect("automacoes:painel")
 
 
+
+
+@login_required
+def progresso_importacao_km(request):
+    return JsonResponse(
+        cache.get(
+            "ld_km_progress",
+            {
+                "percentual": 0,
+                "etapa": "Aguardando importação",
+                "mensagem": "",
+            },
+        )
+    )
+
+
 @login_required
 def logs_automacoes(request):
     busca = request.GET.get("q", "").strip()
