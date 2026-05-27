@@ -1001,6 +1001,41 @@ def atualizar_medicao(wb, aba_origem):
 
     log(f"✅ {qtd_linhas} linhas copiadas para '{ABA_MEDICAO}' a partir de '{aba_origem}': A4:F{last_dest_row}.")
 
+
+def aplicar_cor_status_linha(ws, row, status):
+    """
+    Colore a linha A:Q conforme status operacional da coluna H.
+    """
+    status = str(status or "").strip().upper()
+
+    cores = {
+        "APROVADO": 0x50B000,                    # Verde médio
+        "APROVADO COM COMENTÁRIOS": 0x50D092,   # Verde claro
+        "APROVADO COM COMENTARIOS": 0x50D092,
+
+        "NÃO APROVADO": 0xCCCCF4,               # Vermelho fraco
+        "NAO APROVADO": 0xCCCCF4,
+
+        "CANCELAR": 0x99E6FF,                   # Amarelo claro
+        "CANCELADO": 0x6666E0,                  # Vermelho médio
+
+        "PARA INFORMAÇÃO": 0x9CCBF9,            # Laranja fraco
+
+        "PARA CONSTRUÇÃO": 0x00B000,            # Verde forte
+	"EM ANÁLISE": 0x00B000,            # Verde forte
+    }
+
+    cor = cores.get(status)
+
+    if cor is None:
+        return
+
+    try:
+        ws.range(f"A{row}:Q{row}").api.Interior.Color = cor
+    except Exception:
+        pass
+
+
 # ==========================================================
 # PROCESSAR UMA ABA (LD / LD MARENOVA)
 # ==========================================================
@@ -1035,6 +1070,7 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
 
             # ✅ REGRA: se a coluna H estiver em status final, não substitui/atualiza nada na linha
             status_h = str(ws[f"H{r}"].value or "").strip().upper()
+            # aplicar_cor_status_linha(ws, r, status_h)
             STATUS_H_BLOQUEADOS = {
                 "APROVADO",
                 "APROVADO COM COMENTÁRIOS",
