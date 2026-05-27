@@ -3,6 +3,7 @@ import shutil
 from datetime import datetime, timedelta, date
 import xlwings as xw
 import re
+import threading
 
 from apps.automacoes.models import DocumentoLD
 
@@ -78,6 +79,74 @@ DATE_NUMBERFORMAT_FALLBACK = "dd/mm/yyyy"  # formato invariável do Excel, funci
 # LOG
 # ==========================================================
 LOG_FILE = None  # será definido no processar()
+
+# ==========================================================
+# PROGRESSO RUNTIME LD (para UI / polling)
+# ==========================================================
+_PROGRESSO_LOCK = threading.Lock()
+PROGRESSO_LD = {
+    "status": "idle",
+    "percentual": 0,
+    "etapa": "Aguardando execução.",
+    "mensagem": "Aguardando execução da Atualização LD.",
+    "iniciado_em": "",
+    "finalizado_em": "",
+    "erro": "",
+}
+
+
+def atualizar_progresso_ld(percentual=None, etapa=None, status=None, mensagem=None, erro=None):
+    """Atualiza o estado de progresso da Atualização LD para leitura pela interface."""
+    with _PROGRESSO_LOCK:
+        if percentual is not None:
+            try:
+                PROGRESSO_LD["percentual"] = max(0, min(100, int(percentual)))
+            except Exception:
+                pass
+
+        if etapa is not None:
+            PROGRESSO_LD["etapa"] = str(etapa)
+
+        if status is not None:
+            PROGRESSO_LD["status"] = str(status)
+
+        if mensagem is not None:
+            PROGRESSO_LD["mensagem"] = str(mensagem)
+
+        if erro is not None:
+            PROGRESSO_LD["erro"] = str(erro)
+
+        if status == "running" and not PROGRESSO_LD.get("iniciado_em"):
+            PROGRESSO_LD["iniciado_em"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            PROGRESSO_LD["finalizado_em"] = ""
+            PROGRESSO_LD["erro"] = ""
+
+        if status in {"done", "error", "blocked", "cancelado"}:
+            PROGRESSO_LD["finalizado_em"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+
+    return obter_progresso_ld()
+
+
+def obter_progresso_ld():
+    """Retorna uma cópia segura do progresso atual."""
+    with _PROGRESSO_LOCK:
+        return dict(PROGRESSO_LD)
+
+
+def resetar_progresso_ld():
+    """Reseta o progresso antes de uma nova execução."""
+    with _PROGRESSO_LOCK:
+        PROGRESSO_LD.update({
+            "status": "idle",
+            "percentual": 0,
+            "etapa": "Aguardando execução.",
+            "mensagem": "Aguardando execução da Atualização LD.",
+            "iniciado_em": "",
+            "finalizado_em": "",
+            "erro": "",
+        })
+    return obter_progresso_ld()
+
 
 def log(msg: str):
     print(msg)
@@ -964,11 +1033,23 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
             codigo = str(ws[f"B{r}"].value or "").strip()
             rev = normalizar_rev(ws[f"C{r}"].value)
 
-            # ✅ REGRA: se a coluna H estiver "Aprovado", não substitui/atualiza nada na linha
+            # ✅ REGRA: se a coluna H estiver em status final, não substitui/atualiza nada na linha
             status_h = str(ws[f"H{r}"].value or "").strip().upper()
-            if status_h == "APROVADO":
+            STATUS_H_BLOQUEADOS = {
+                "APROVADO",
+                "APROVADO COM COMENTÁRIOS",
+                "APROVADO COM COMENTARIOS",
+                "NÃO APROVADO",
+                "NAO APROVADO",
+                "CANCELAR",
+                "CANCELADO",
+		"PARA INFORMAÇÃO",
+		"PARA CONSTRUÇÃO",
+            }
+
+            if status_h in STATUS_H_BLOQUEADOS:
                 if LOG_DETALHADO:
-                    log(f"   [SKIP] {aba_nome} L{r} ignorada (H = Aprovado)")
+                    log(f"   [SKIP] {aba_nome} L{r} ignorada (H = {status_h})")
                 continue
 
             if not codigo:
@@ -1271,25 +1352,31 @@ def importar_ld_banco(wb):
 
 def processar():
     global LOG_FILE
+    atualizar_progresso_ld(2, "Preparando atualização LD...", "running", "Inicializando rotina da Atualização LD.")
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     LOG_FILE = os.path.join(PASTA_LOGS, f"LDP_{ts}.log")
     log(f"🧾 Log: {LOG_FILE}")
 
     backup_path = backup_planilha()
+    atualizar_progresso_ld(8, "Backup criado.", "running", "Backup da planilha LD criado com segurança.")
 
     log("🔎 Indexando Engenharia (código + revisão + pasta)...")
     idx_eng = indexar_engenharia_info()
     idx_eng_codigos = set(idx_eng.keys())
     log(f"   - Códigos na Engenharia: {len(idx_eng_codigos)}")
+    atualizar_progresso_ld(18, "Engenharia indexada.", "running", f"{len(idx_eng_codigos)} códigos encontrados na Engenharia.")
 
     log("🔎 Indexando GRDs/PCFs...")
     idx_grd = indexar_grds()
+    atualizar_progresso_ld(28, "GRDs indexadas.", "running", "Índice de GRDs concluído.")
 
     # ✅ PCF normal (L/M): EXCLUI a subpasta de respostas
     idx_pcf = indexar_pcfs(PASTA_PCF, excluir_subpastas=[PASTA_PCF_RESPOSTA], data_origem=DATA_PCF_ORIGEM)
+    atualizar_progresso_ld(38, "PCFs indexadas.", "running", "Índice de PCFs recebidas concluído.")
 
     # ✅ PCF resposta (O/P): SOMENTE a pasta de respostas
     idx_pcf_resp = indexar_pcfs(PASTA_PCF_RESPOSTA, data_origem=DATA_PCF_RESP_ORIGEM)
+    atualizar_progresso_ld(46, "Respostas PCF indexadas.", "running", "Índice de respostas PCF concluído.")
 
     # ✅ Mapa PCF -> GRD para preencher Q
     idx_grd_resp = indexar_grd_resposta_pcf()
@@ -1300,22 +1387,32 @@ def processar():
             app.display_alerts = False
             app.screen_updating = False
 
+            atualizar_progresso_ld(52, "Carregando Timeline PCFs...", "running", "Abrindo Timeline PCFs para status final.")
             status_pcfs = carregar_status_pcfs_timeline(app)
 
+            atualizar_progresso_ld(58, "Abrindo planilha LD...", "running", "Abrindo planilha principal LD.")
             wb = app.books.open(PLANILHA)
 
+            atualizar_progresso_ld(65, "Processando aba LD...", "running", "Atualizando status, GRDs, PCFs e respostas da aba LD.")
             processar_aba(wb, ABA_LD, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_pcf_resp, idx_grd_resp, status_pcfs)
+
+            atualizar_progresso_ld(78, "Processando aba LD MARENOVA...", "running", "Atualizando status, GRDs, PCFs e respostas da aba LD MARENOVA.")
             processar_aba(wb, ABA_LD_MARENOVA, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_pcf_resp, idx_grd_resp, status_pcfs)
 
+            atualizar_progresso_ld(86, "Atualizando medição...", "running", "Copiando dados consolidados para a aba MEDIÇÃO.")
             atualizar_medicao(wb, ABA_LD)
 
+            atualizar_progresso_ld(92, "Importando LD para o banco...", "running", "Atualizando registros DocumentoLD no banco Django.")
             log("💾 Importando LD para banco do GED...")
             resumo_ld = importar_ld_banco(wb)
             log(f"✅ LD importada para o banco: {resumo_ld.get('total', 0)} registros.")
 
+            atualizar_progresso_ld(97, "Salvando planilha LD...", "running", "Salvando alterações na planilha LD.")
             wb.save()
+            atualizar_progresso_ld(100, "Atualização LD concluída.", "done", "Atualização LD finalizada com sucesso.")
             log("✅ LDP finalizado com sucesso!")
     except Exception as e:
+        atualizar_progresso_ld(100, "Erro na Atualização LD.", "error", f"Erro durante processamento: {e}", erro=str(e))
         log(f"❌ Erro durante processamento: {e}")
         log(f"🧯 Tentando restaurar backup: {backup_path}")
         try:
@@ -1384,7 +1481,15 @@ def executar():
     Protege contra execução simultânea.
     Retorna dicionário padrão para a view exibir messages.
     """
+    resetar_progresso_ld()
+
     if _lock_ativo_recente(LOCK_FILE):
+        atualizar_progresso_ld(
+            0,
+            "Atualização LD bloqueada.",
+            "blocked",
+            "Atualização LD já está em execução ou ficou travada com lock recente.",
+        )
         return {
             "ok": False,
             "status": "cancelado",
@@ -1399,6 +1504,7 @@ def executar():
 
     try:
         print("🚀 Atualização LD iniciada pelo GED")
+        atualizar_progresso_ld(1, "Atualização LD iniciada.", "running", "Execução iniciada pelo GED.")
         processar()
 
         return {

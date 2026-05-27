@@ -5,6 +5,7 @@
 
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'automacoes/css/ops_enterprise.css' %}?v=1600">
+<script src="{% static 'automacoes/js/ops_runtime.js' %}?v=1800" defer></script>
 
 <style>
   .ops-runtime-grid {
@@ -125,6 +126,82 @@
     font-weight: 950 !important;
   }
 
+
+  /* ==========================================================
+     RUNTIME SEVERITY VISUAL ENGINE
+     ========================================================== */
+
+  #ops-live-feed .ops-live-event.is-ok .ops-live-dot {
+    background: #22c55e !important;
+    box-shadow: 0 0 12px rgba(34, 197, 94, .55) !important;
+  }
+
+  #ops-live-feed .ops-live-event.is-run .ops-live-dot {
+    background: #38bdf8 !important;
+    box-shadow: 0 0 14px rgba(56, 189, 248, .60) !important;
+    animation: opsPulse 2s infinite;
+  }
+
+  #ops-live-feed .ops-live-event.is-warning .ops-live-dot {
+    background: #f59e0b !important;
+    box-shadow: 0 0 14px rgba(245, 158, 11, .60) !important;
+  }
+
+  #ops-live-feed .ops-live-event.is-error .ops-live-dot {
+    background: #ef4444 !important;
+    box-shadow: 0 0 16px rgba(239, 68, 68, .65) !important;
+  }
+
+  #ops-live-feed .ops-live-event.is-critical {
+    border-color: rgba(239, 68, 68, .45) !important;
+    background:
+      linear-gradient(
+        90deg,
+        rgba(127, 29, 29, .18),
+        rgba(15, 23, 42, .92)
+      ) !important;
+  }
+
+  #ops-live-feed .ops-live-event.is-critical .ops-live-dot {
+    background: #ff3b3b !important;
+    box-shadow: 0 0 18px rgba(255, 59, 59, .85) !important;
+    animation: opsPulse 1s infinite;
+  }
+
+  #ops-live-feed .ops-live-event.is-critical .ops-live-severity,
+  #ops-live-feed .ops-live-event.is-error .ops-live-severity {
+    color: #fca5a5 !important;
+  }
+
+  #ops-live-feed .ops-live-event.is-warning .ops-live-severity {
+    color: #fbbf24 !important;
+  }
+
+  #ops-live-feed .ops-live-event.is-run .ops-live-severity {
+    color: #7dd3fc !important;
+  }
+
+  #ops-live-feed .ops-live-event.is-ok .ops-live-severity {
+    color: #86efac !important;
+  }
+
+  @keyframes opsPulse {
+    0% {
+      transform: scale(1);
+      opacity: 1;
+    }
+
+    50% {
+      transform: scale(1.18);
+      opacity: .72;
+    }
+
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
 </style>
 
 {% endblock %}
@@ -216,6 +293,31 @@
        class="alert alert-info shadow-sm mb-4 d-none">
     ⏳ Automação em execução. Aguarde o processamento finalizar. Não feche esta janela.
   </div>
+
+  <section id="ld-progress-panel"
+           class="ops-panel ld-progress-panel d-none"
+           data-progress-endpoint="{% url 'automacoes:progresso_ld_api' %}">
+    <div class="ops-panel-head">
+      <div>
+        <div class="ops-eyebrow">
+          <i class="bi bi-arrow-repeat"></i>
+          LD RUNTIME UPDATE
+        </div>
+        <h2 id="ld-progress-title">Atualização LD</h2>
+        <p id="ld-progress-message">Aguardando execução da Atualização LD.</p>
+      </div>
+      <span id="ld-progress-badge" class="ops-status-pill">IDLE</span>
+    </div>
+
+    <div class="ld-progress-track">
+      <div id="ld-progress-fill" class="ld-progress-fill" style="width:0%"></div>
+    </div>
+
+    <div class="ld-progress-meta">
+      <strong id="ld-progress-percent">0%</strong>
+      <span id="ld-progress-step">Aguardando execução.</span>
+    </div>
+  </section>
 
   <section class="ops-kpi-grid ops-kpi-grid-6">
 
@@ -357,11 +459,23 @@
         </span>
       </div>
 
-      <div class="ops-live-feed" id="ops-live-feed">
+      <div class="ops-live-toolbar" id="ops-live-toolbar">
+        <button type="button" class="ops-live-filter is-active" data-filter="ALL">ALL <span id="ops-count-total">0</span></button>
+        <button type="button" class="ops-live-filter" data-filter="OK">OK <span id="ops-count-ok">0</span></button>
+        <button type="button" class="ops-live-filter" data-filter="RUN">RUN <span id="ops-count-run">0</span></button>
+        <button type="button" class="ops-live-filter" data-filter="WARNING">WARN <span id="ops-count-warning">0</span></button>
+        <button type="button" class="ops-live-filter" data-filter="ERROR">ERR <span id="ops-count-error">0</span></button>
+      </div>
+
+      <div class="ops-live-insight" id="ops-live-insight">
+        Runtime operacional sem falhas recentes.
+      </div>
+
+      <div class="ops-live-feed" id="ops-live-feed" data-endpoint="{% url 'automacoes:runtime_events_api' %}">
 
         {% for evento in live_events_initial %}
 
-        <div class="ops-live-event {% if evento.severidade == 'OK' %}is-ok{% elif evento.severidade == 'ERROR' %}is-error{% elif evento.severidade == 'RUN' %}is-run{% endif %}">
+        <div class="ops-live-event {% if evento.severidade == 'OK' %}is-ok{% elif evento.severidade == 'ERROR' %}is-error{% elif evento.severidade == 'RUN' %}is-run{% endif %} is-category-{{ evento.category|default:'event' }}">
           <span class="ops-live-dot"></span>
           <div>
             <div class="ops-live-title">
@@ -493,7 +607,8 @@
 
         <form method="post"
               action="{% url rotina.form_url %}"
-              class="ged-action-form">
+              class="ged-action-form"
+              data-automation-name="{{ rotina.nome }}">
           {% csrf_token %}
 
           <button type="submit"
@@ -654,125 +769,5 @@
     });
   });
 </script>
-
-<script>
-  (function() {
-    const feed = document.getElementById("ops-live-feed");
-    const statusBadge = document.getElementById("ops-live-status");
-
-    if (!feed) return;
-
-    function escapeHTML(value) {
-      return String(value || "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-    }
-
-    function normalizeSeverity(status) {
-      const value = String(status || "INFO").toUpperCase();
-
-      if (["SUCESSO", "SUCCESS", "OK"].includes(value)) return "OK";
-      if (["ERRO", "ERROR", "CRITICAL", "FALHA", "FAILED"].includes(value)) return "ERROR";
-      if (["INICIADO", "PROCESSANDO", "RUNNING", "RUN"].includes(value)) return "RUN";
-      if (["WARNING", "WARN", "ATENÇÃO", "ATENCAO"].includes(value)) return "WARNING";
-
-      return "INFO";
-    }
-
-    function renderEvent(evento) {
-      const severity = normalizeSeverity(
-        evento.severity || evento.severidade || evento.status || evento.level
-      );
-
-      const klass =
-        severity === "OK" ? "is-ok" :
-        severity === "ERROR" ? "is-error" :
-        severity === "RUN" ? "is-run" :
-        severity === "WARNING" ? "is-run" :
-        "";
-
-      const title = escapeHTML(
-        evento.title || evento.titulo || evento.nome || evento.event || "Evento operacional"
-      );
-
-      const message = escapeHTML(
-        evento.message || evento.mensagem || evento.description || evento.descricao || evento.status || "Runtime ativo"
-      );
-
-      const timestamp = escapeHTML(
-        evento.timestamp || evento.created_at || evento.criado_em || evento.iniciado_em || ""
-      );
-
-      return `
-        <div class="ops-live-event ${klass}">
-          <span class="ops-live-dot"></span>
-          <div class="ops-live-content">
-            <div class="ops-live-title">
-              <span class="ops-live-title-text">${title}</span>
-              <span class="ops-live-severity">${severity}</span>
-            </div>
-            <div class="ops-live-message">${message}</div>
-            <div class="ops-live-time">${timestamp}</div>
-          </div>
-        </div>
-      `;
-    }
-
-    async function refreshLiveEvents() {
-      try {
-        const response = await fetch("{% url 'automacoes:runtime_events_api' %}", {
-          headers: {"X-Requested-With": "XMLHttpRequest"},
-          cache: "no-store"
-        });
-
-        if (!response.ok) return false;
-
-        const payload = await response.json();
-        const events = payload.events || payload.eventos || payload.results || payload.data || [];
-
-        if (!Array.isArray(events) || !events.length) {
-          if (statusBadge) statusBadge.innerText = "Live";
-          return false;
-        }
-
-        const newHTML = events.slice(0, 8).map(renderEvent).join("");
-        const changed = newHTML !== feed.innerHTML;
-
-        if (changed) {
-          feed.innerHTML = newHTML;
-        }
-
-        if (statusBadge) {
-          statusBadge.innerText = "Live";
-        }
-
-        return changed;
-      } catch (error) {
-        if (statusBadge) statusBadge.innerText = "Offline";
-        return false;
-      }
-    }
-
-    let runtimeInterval = 15000;
-    let runtimeTimer = null;
-
-    function scheduleRuntimeRefresh(delay) {
-      clearTimeout(runtimeTimer);
-
-      runtimeTimer = setTimeout(async function() {
-        const changed = await refreshLiveEvents();
-        runtimeInterval = changed ? 5000 : 15000;
-        scheduleRuntimeRefresh(runtimeInterval);
-      }, delay || runtimeInterval);
-    }
-
-    refreshLiveEvents();
-    scheduleRuntimeRefresh(15000);
-  })();
-</script>
-
 
 {% endblock %}

@@ -7,6 +7,7 @@ import time
 import traceback
 import re
 import shutil
+import threading
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -14,6 +15,7 @@ from django.utils import timezone
 from django.core.paginator import Paginator
 from django.core.cache import cache
 from django.db.models import Avg, Count, Q, Sum
+from django.db import close_old_connections
 from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
@@ -419,6 +421,60 @@ def _humanize_event_title(value):
     return text.replace("_", " ").replace("-", " ").title()
 
 
+
+
+def _runtime_event_category(value):
+    text = str(value or "").strip().lower()
+
+    if any(token in text for token in ["km", "index", "rebuild", "índice", "indice"]):
+        return {
+            "category": "index",
+            "categoria": "Índice",
+            "icon": "bi-hdd-network",
+        }
+
+    if any(token in text for token in ["backup", "restore", "retenção", "retencao"]):
+        return {
+            "category": "backup",
+            "categoria": "Backup",
+            "icon": "bi-database-check",
+        }
+
+    if any(token in text for token in ["sync", "sincronização", "sincronizacao", "km ↔ ld", "km <-> ld"]):
+        return {
+            "category": "sync",
+            "categoria": "Sincronização",
+            "icon": "bi-arrow-repeat",
+        }
+
+    if any(token in text for token in ["import", "importação", "importacao", "ld"]):
+        return {
+            "category": "import",
+            "categoria": "Importação",
+            "icon": "bi-cloud-arrow-down",
+        }
+
+    if any(token in text for token in ["error", "erro", "falha", "failed", "critical", "crítico", "critico"]):
+        return {
+            "category": "incident",
+            "categoria": "Incidente",
+            "icon": "bi-exclamation-triangle",
+        }
+
+    if any(token in text for token in ["runtime", "health", "saúde", "saude"]):
+        return {
+            "category": "runtime",
+            "categoria": "Runtime",
+            "icon": "bi-cpu",
+        }
+
+    return {
+        "category": "event",
+        "categoria": "Evento",
+        "icon": "bi-activity",
+    }
+
+
 def _ops_live_events_initial(limit=8):
     eventos = []
 
@@ -434,15 +490,76 @@ def _ops_live_events_initial(limit=8):
         else:
             severidade = "INFO"
 
+        titulo = _humanize_event_title(item.nome)
+        categoria = _runtime_event_category(f"{item.nome} {item.mensagem} {item.status}")
+
         eventos.append({
             "severidade": severidade,
-            "titulo": _humanize_event_title(item.nome),
+            "severity": severidade,
+            "titulo": titulo,
+            "title": titulo,
             "mensagem": item.mensagem or item.status,
+            "message": item.mensagem or item.status,
             "timestamp": item.iniciado_em,
+            "category": categoria["category"],
+            "categoria": categoria["categoria"],
+            "icon": categoria["icon"],
         })
 
     return eventos
 
+
+
+
+def _runtime_events_summary(events):
+    summary = {
+        "total": 0,
+        "ok": 0,
+        "warning": 0,
+        "error": 0,
+        "critical": 0,
+        "run": 0,
+        "info": 0,
+    }
+
+    for event in events or []:
+        severity = str(
+            event.get("severity")
+            or event.get("severidade")
+            or event.get("level")
+            or event.get("status")
+            or "INFO"
+        ).upper()
+
+        summary["total"] += 1
+
+        if severity == "OK":
+            summary["ok"] += 1
+        elif severity == "WARNING":
+            summary["warning"] += 1
+        elif severity == "ERROR":
+            summary["error"] += 1
+        elif severity == "CRITICAL":
+            summary["critical"] += 1
+        elif severity == "RUN":
+            summary["run"] += 1
+        else:
+            summary["info"] += 1
+
+    if summary["critical"] or summary["error"]:
+        summary["health"] = "ATTENTION"
+        summary["insight"] = "Eventos críticos ou falhas recentes detectados."
+    elif summary["warning"]:
+        summary["health"] = "WARNING"
+        summary["insight"] = "Há alertas operacionais recentes para análise."
+    elif summary["run"]:
+        summary["health"] = "RUNNING"
+        summary["insight"] = "Rotinas operacionais em execução ou recentes."
+    else:
+        summary["health"] = "HEALTHY"
+        summary["insight"] = "Runtime operacional sem falhas recentes."
+
+    return summary
 
 
 @login_required
@@ -853,13 +970,127 @@ def logs_automacoes(request):
 
 
 @login_required
+def progresso_ld_api(request):
+    """API de progresso realtime da Atualização LD."""
+    try:
+        return JsonResponse(atualizar_ld.obter_progresso_ld())
+    except Exception as exc:
+        return JsonResponse({
+            "status": "error",
+            "percentual": 100,
+            "etapa": "Erro ao ler progresso LD.",
+            "mensagem": str(exc),
+            "erro": str(exc),
+        })
+
+
+def _executar_atualizar_ld_background(log_id, user_id=None):
+    """Executa a Atualização LD em thread local para liberar a tela e permitir polling."""
+    close_old_connections()
+
+    try:
+        log = ExecucaoAutomacao.objects.get(pk=log_id)
+    except Exception:
+        log = None
+
+    inicio = time.monotonic()
+
+    try:
+        resultado = atualizar_ld.executar()
+        ok = bool(resultado.get("ok")) if isinstance(resultado, dict) else False
+        mensagem = (
+            resultado.get("mensagem")
+            if isinstance(resultado, dict)
+            else "Atualização LD executada."
+        )
+
+        if log:
+            log.status = ExecucaoAutomacao.STATUS_SUCESSO if ok else ExecucaoAutomacao.STATUS_ERRO
+            log.sucesso = ok
+            log.mensagem = mensagem or ("Atualização LD executada com sucesso." if ok else "Falha ao executar Atualização LD.")
+            log.quantidade_processada = _extrair_quantidade_processada(resultado)
+            log.detalhes = _detalhes_execucao(resultado)
+
+    except Exception as exc:
+        try:
+            atualizar_ld.atualizar_progresso_ld(
+                100,
+                "Erro na Atualização LD.",
+                "error",
+                f"Erro ao executar Atualização LD: {exc}",
+                erro=str(exc),
+            )
+        except Exception:
+            pass
+
+        if log:
+            log.status = ExecucaoAutomacao.STATUS_ERRO
+            log.sucesso = False
+            log.mensagem = f"Erro ao executar Atualização LD: {exc}"
+            log.detalhes = {"erro": str(exc), "traceback": traceback.format_exc()}
+
+    finally:
+        if log:
+            log.finalizado_em = timezone.now()
+            log.duracao_segundos = round(time.monotonic() - inicio, 3)
+            log.save(
+                update_fields=[
+                    "status",
+                    "sucesso",
+                    "mensagem",
+                    "detalhes",
+                    "quantidade_processada",
+                    "duracao_segundos",
+                    "finalizado_em",
+                ]
+            )
+        cache.delete("automacoes:painel:context:v1")
+        close_old_connections()
+
+
+@login_required
 def executar_atualizar_ld(request):
-    return _executar_automacao(
-        request,
-        atualizar_ld.executar,
-        "Atualização LD",
+    if request.method != "POST":
+        messages.error(request, "Método inválido para executar Atualização LD.")
+        return redirect("automacoes:painel")
+
+    progresso_atual = {}
+    try:
+        progresso_atual = atualizar_ld.obter_progresso_ld()
+    except Exception:
+        progresso_atual = {}
+
+    if progresso_atual.get("status") == "running":
+        messages.warning(request, "Atualização LD já está em execução. Acompanhe o progresso na tela.")
+        return redirect("automacoes:painel")
+
+    log = ExecucaoAutomacao.objects.create(
+        nome="Atualização LD",
+        usuario=request.user if request.user.is_authenticated else None,
+        status=ExecucaoAutomacao.STATUS_INICIADO,
+        sucesso=False,
+        mensagem="Atualização LD iniciada em segundo plano.",
     )
 
+    try:
+        atualizar_ld.atualizar_progresso_ld(
+            1,
+            "Atualização LD iniciada.",
+            "running",
+            "Processamento iniciado em segundo plano. Acompanhe o progresso nesta tela.",
+        )
+    except Exception:
+        pass
+
+    thread = threading.Thread(
+        target=_executar_atualizar_ld_background,
+        args=(log.id, request.user.id if request.user.is_authenticated else None),
+        daemon=True,
+    )
+    thread.start()
+
+    messages.info(request, "Atualização LD iniciada. Acompanhe a evolução na barra de progresso.")
+    return redirect("automacoes:painel")
 
 @login_required
 def timeline_pcfs_view(request):
@@ -4279,9 +4510,13 @@ def runtime_events_api(request):
                 )
             )
 
+    summary = _runtime_events_summary(serialized_events)
+
     return JsonResponse({
         "ok": True,
         "events": serialized_events,
+        "summary": summary,
+        "insight": summary.get("insight"),
     })
 
 @login_required

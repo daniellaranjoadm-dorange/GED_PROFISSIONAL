@@ -1074,3 +1074,330 @@
   filter: none !important;
 }
 
+/* ==========================================================
+   LIVE EVENT CATEGORY ENGINE
+   Ícones e categorias para leitura operacional rápida.
+   ========================================================== */
+
+.ops-live-dot {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  border-radius: 999px !important;
+  margin-top: 2px !important;
+}
+
+.ops-live-dot i {
+  font-size: 10px !important;
+  line-height: 1 !important;
+  color: #020617 !important;
+}
+
+.ops-live-event.is-category-index .ops-live-dot {
+  background: #22c55e !important;
+  box-shadow: 0 0 14px rgba(34, 197, 94, .55) !important;
+}
+
+.ops-live-event.is-category-backup .ops-live-dot {
+  background: #a78bfa !important;
+  box-shadow: 0 0 14px rgba(167, 139, 250, .55) !important;
+}
+
+.ops-live-event.is-category-sync .ops-live-dot {
+  background: #38bdf8 !important;
+  box-shadow: 0 0 14px rgba(56, 189, 248, .55) !important;
+}
+
+.ops-live-event.is-category-import .ops-live-dot {
+  background: #67e8f9 !important;
+  box-shadow: 0 0 14px rgba(103, 232, 249, .45) !important;
+}
+
+.ops-live-event.is-category-incident .ops-live-dot {
+  background: #ef4444 !important;
+  box-shadow: 0 0 16px rgba(239, 68, 68, .65) !important;
+}
+
+.ops-live-event.is-category-runtime .ops-live-dot {
+  background: #60a5fa !important;
+  box-shadow: 0 0 14px rgba(96, 165, 250, .55) !important;
+}
+
+.ops-live-event.is-category-event .ops-live-dot {
+  background: #94a3b8 !important;
+  box-shadow: 0 0 12px rgba(148, 163, 184, .35) !important;
+}
+
+.ops-live-event:hover {
+  border-color: rgba(125, 211, 252, .38) !important;
+  background: rgba(15, 23, 42, .78) !important;
+}
+
+/* ==========================================================
+   LIVE EVENT STREAM — FILTERS, COUNTERS & DEDUP BADGES
+   ========================================================== */
+
+.ops-live-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+  margin: .45rem 0 .55rem;
+}
+
+.ops-live-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: .32rem;
+  border: 1px solid rgba(148, 163, 184, .18);
+  border-radius: 999px;
+  padding: .28rem .55rem;
+  background: rgba(2, 6, 23, .32);
+  color: #bfdbfe;
+  font-size: .63rem;
+  font-weight: 950;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color .15s ease, background .15s ease, transform .15s ease;
+}
+
+.ops-live-filter:hover {
+  border-color: rgba(56, 189, 248, .42);
+  background: rgba(15, 23, 42, .72);
+  color: #ffffff;
+}
+
+.ops-live-filter.is-active {
+  color: #06111f;
+  background: linear-gradient(135deg, #38bdf8, #60a5fa);
+  border-color: rgba(125, 211, 252, .55);
+}
+
+.ops-live-filter span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  padding: 0 .25rem;
+  background: rgba(255, 255, 255, .16);
+  color: inherit;
+  font-size: .58rem;
+}
+
+.ops-live-insight {
+  border: 1px solid rgba(56, 189, 248, .16);
+  border-radius: 12px;
+  padding: .45rem .55rem;
+  margin-bottom: .55rem;
+  color: #bae6fd;
+  background: rgba(14, 165, 233, .07);
+  font-size: .72rem;
+  line-height: 1.35;
+}
+
+.ops-live-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: .35rem;
+  padding: .08rem .35rem;
+  border-radius: 999px;
+  background: rgba(56, 189, 248, .16);
+  color: #7dd3fc;
+  border: 1px solid rgba(56, 189, 248, .24);
+  font-size: .68rem;
+  font-weight: 950;
+}
+
+.ops-live-feed::-webkit-scrollbar {
+  width: 8px;
+}
+
+.ops-live-feed::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, .45);
+  border-radius: 999px;
+}
+
+.ops-live-feed::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(56, 189, 248, .75), rgba(96, 165, 250, .40));
+  border-radius: 999px;
+}
+
+.ops-live-feed::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(125, 211, 252, .95), rgba(96, 165, 250, .62));
+}
+
+/* ==========================================================
+   LIVE EVENT TIMELINE GROUPING
+   ========================================================== */
+
+.ops-live-timeline-group {
+  display: grid;
+  gap: .5rem;
+}
+
+.ops-live-timeline-header {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border: 1px solid rgba(56, 189, 248, .18);
+  border-radius: 999px;
+  padding: .22rem .52rem;
+  background: rgba(2, 6, 23, .88);
+  color: #7dd3fc;
+  font-size: .62rem;
+  font-weight: 950;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  box-shadow: 0 8px 20px rgba(2, 8, 23, .22);
+}
+
+.ops-live-timeline-group + .ops-live-timeline-group {
+  margin-top: .45rem;
+  padding-top: .45rem;
+  border-top: 1px solid rgba(148, 163, 184, .12);
+}
+
+
+
+/* ==========================================================
+   EXECUTIVE RUNTIME STRIP
+   ========================================================== */
+
+.ops-executive-runtime-strip {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.ops-runtime-health-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+  padding: 16px;
+  min-height: 110px;
+  border: 1px solid rgba(148,163,184,.14);
+  background:
+    radial-gradient(circle at top left,
+      rgba(56,189,248,.12),
+      transparent 55%),
+    linear-gradient(
+      180deg,
+      rgba(15,23,42,.88),
+      rgba(2,6,23,.92)
+    );
+  box-shadow:
+    0 12px 30px rgba(2,8,23,.22);
+}
+
+.ops-runtime-health-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(56,189,248,.08),
+      transparent
+    );
+  pointer-events: none;
+}
+
+.ops-runtime-label {
+  display: block;
+  color: #93c5fd;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.ops-runtime-health-card strong {
+  display: block;
+  margin-top: 10px;
+  font-size: 34px;
+  line-height: 1;
+  font-weight: 950;
+  color: #ffffff;
+  letter-spacing: -.05em;
+}
+
+.ops-runtime-health-card small {
+  display: block;
+  margin-top: 10px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.ops-runtime-trend strong {
+  font-size: 24px;
+}
+
+@media (max-width: 1280px) {
+
+  .ops-executive-runtime-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+}
+
+@media (max-width: 760px) {
+
+  .ops-executive-runtime-strip {
+    grid-template-columns: 1fr;
+  }
+
+}
+
+
+/* ==========================================================
+   LD PROGRESS RUNTIME UI
+   ========================================================== */
+.ld-progress-panel {
+  margin-bottom: 18px;
+  border: 1px solid rgba(56, 189, 248, .22);
+}
+
+.ld-progress-track {
+  width: 100%;
+  height: 14px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, .72);
+  border: 1px solid rgba(148, 163, 184, .18);
+  margin-top: 14px;
+}
+
+.ld-progress-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(56, 189, 248, .95), rgba(34, 197, 94, .95));
+  box-shadow: 0 0 18px rgba(56, 189, 248, .35);
+  transition: width .35s ease;
+}
+
+.ld-progress-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  color: #dbeafe;
+  font-size: 13px;
+  margin-top: 10px;
+}
+
+.ld-progress-meta strong {
+  color: #ffffff;
+  font-size: 15px;
+}
+

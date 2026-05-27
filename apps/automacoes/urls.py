@@ -45,6 +45,7 @@ urlpatterns = [
     path("api/runtime/health/", views.runtime_health_api, name="runtime_health_api"),
     path("api/runtime/metrics/", views.runtime_metrics_api, name="runtime_metrics_api"),
     path("api/runtime/events/", views.runtime_events_api, name="runtime_events_api"),
+    path("api/ld/progresso/", views.progresso_ld_api, name="progresso_ld_api"),
     path(
         "api/runtime/retention/dry-run/",
         views.runtime_retention_dry_run_api,
