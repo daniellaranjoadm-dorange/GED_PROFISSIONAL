@@ -236,6 +236,147 @@
   }
 
 
+
+  /* ==========================================================
+     AUTOMATION EXECUTION OVERLAY — ENTERPRISE
+     ========================================================== */
+  .automation-exec-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background:
+      radial-gradient(circle at top, rgba(14, 165, 233, .18), transparent 42%),
+      rgba(2, 6, 23, .78);
+    backdrop-filter: blur(8px);
+  }
+
+  .automation-exec-overlay.is-visible { display: flex; }
+
+  .automation-exec-card {
+    width: min(620px, calc(100vw - 34px));
+    border: 1px solid rgba(56, 189, 248, .35);
+    border-radius: 22px;
+    padding: 28px;
+    background: linear-gradient(145deg, rgba(15, 23, 42, .98), rgba(8, 13, 28, .98));
+    box-shadow: 0 28px 90px rgba(0, 0, 0, .55);
+    color: #e5f3ff;
+  }
+
+  .automation-exec-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 800;
+    color: #38bdf8;
+    text-transform: uppercase;
+    letter-spacing: .14em;
+  }
+
+  .automation-exec-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 99px;
+    background: #22c55e;
+    box-shadow: 0 0 18px rgba(34, 197, 94, .9);
+  }
+
+  .automation-exec-title {
+    margin: 12px 0 6px;
+    font-size: 28px;
+    font-weight: 900;
+  }
+
+  .automation-exec-subtitle {
+    margin: 0;
+    color: #a9c7e9;
+    font-size: 14px;
+  }
+
+  .automation-exec-bar {
+    height: 18px;
+    margin-top: 24px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: rgba(30, 41, 59, .95);
+    border: 1px solid rgba(148, 163, 184, .20);
+  }
+
+  .automation-exec-fill {
+    width: 3%;
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #38bdf8, #22c55e);
+    transition: width .55s ease;
+  }
+
+  .automation-exec-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    margin-top: 14px;
+    font-size: 13px;
+    color: #cbd5e1;
+  }
+
+  .automation-exec-percent {
+    font-weight: 900;
+    color: #f8fafc;
+  }
+
+  .automation-exec-steps {
+    display: grid;
+    gap: 8px;
+    margin-top: 22px;
+  }
+
+  .automation-exec-step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 13px;
+    background: rgba(15, 23, 42, .7);
+    border: 1px solid rgba(148, 163, 184, .14);
+    color: #93a9c7;
+    font-size: 13px;
+  }
+
+  .automation-exec-step.is-active {
+    color: #e0f2fe;
+    border-color: rgba(56, 189, 248, .42);
+    background: rgba(14, 165, 233, .12);
+  }
+
+  .automation-exec-step.is-done {
+    color: #bbf7d0;
+    border-color: rgba(34, 197, 94, .28);
+  }
+
+  .automation-exec-spinner {
+    width: 15px;
+    height: 15px;
+    border: 2px solid rgba(148, 163, 184, .28);
+    border-top-color: #38bdf8;
+    border-radius: 999px;
+    animation: automationSpin .8s linear infinite;
+  }
+
+  .automation-exec-check {
+    width: 15px;
+    height: 15px;
+    border-radius: 99px;
+    background: #22c55e;
+    box-shadow: 0 0 12px rgba(34, 197, 94, .5);
+  }
+
+  @keyframes automationSpin {
+    to { transform: rotate(360deg); }
+  }
+
 </style>
 
 {% endblock %}
@@ -907,5 +1048,54 @@
 })();
 </script>
 
+
+
+
+<div id="automation-exec-overlay"
+     class="automation-exec-overlay"
+     aria-hidden="true">
+  <div class="automation-exec-card">
+    <div class="automation-exec-eyebrow">
+      <span class="automation-exec-dot"></span>
+      Execução operacional
+    </div>
+
+    <div id="automation-exec-title" class="automation-exec-title">
+      Executando automação
+    </div>
+
+    <p id="automation-exec-subtitle" class="automation-exec-subtitle">
+      Mantenha esta janela aberta. O GED está processando a rotina solicitada.
+    </p>
+
+    <div class="automation-exec-bar">
+      <div id="automation-exec-fill" class="automation-exec-fill"></div>
+    </div>
+
+    <div class="automation-exec-meta">
+      <span id="automation-exec-message">Preparando execução...</span>
+      <span id="automation-exec-percent" class="automation-exec-percent">3%</span>
+    </div>
+
+    <div class="automation-exec-steps">
+      <div class="automation-exec-step is-active" data-step="1">
+        <span class="automation-exec-spinner"></span>
+        <span>Inicializando runtime</span>
+      </div>
+      <div class="automation-exec-step" data-step="2">
+        <span class="automation-exec-spinner"></span>
+        <span>Processando dados operacionais</span>
+      </div>
+      <div class="automation-exec-step" data-step="3">
+        <span class="automation-exec-spinner"></span>
+        <span>Atualizando banco e vínculos</span>
+      </div>
+      <div class="automation-exec-step" data-step="4">
+        <span class="automation-exec-spinner"></span>
+        <span>Finalizando e atualizando dashboard</span>
+      </div>
+    </div>
+  </div>
+</div>
 
 {% endblock %}

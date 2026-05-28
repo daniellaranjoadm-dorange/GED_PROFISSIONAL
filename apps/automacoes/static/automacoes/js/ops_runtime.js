@@ -233,3 +233,109 @@
   setInterval(fetchProgress, 2000);
 })();
 
+
+// ==========================================================
+// AUTOMATION EXECUTION OVERLAY — ENTERPRISE PANEL
+// ==========================================================
+(function () {
+  const overlay = document.getElementById("automation-exec-overlay");
+  if (!overlay) return;
+
+  const title = document.getElementById("automation-exec-title");
+  const subtitle = document.getElementById("automation-exec-subtitle");
+  const fill = document.getElementById("automation-exec-fill");
+  const percent = document.getElementById("automation-exec-percent");
+  const message = document.getElementById("automation-exec-message");
+  const steps = Array.from(document.querySelectorAll(".automation-exec-step"));
+
+  let progressTimer = null;
+  let currentProgress = 3;
+
+  function setOverlayVisible(visible) {
+    overlay.classList.toggle("is-visible", visible);
+    overlay.setAttribute("aria-hidden", visible ? "false" : "true");
+  }
+
+  function setProgress(value, text) {
+    currentProgress = Math.max(3, Math.min(96, parseInt(value || 3, 10)));
+
+    if (fill) fill.style.width = currentProgress + "%";
+    if (percent) percent.textContent = currentProgress + "%";
+    if (message && text) message.textContent = text;
+
+    const activeStep =
+      currentProgress >= 82 ? 4 :
+      currentProgress >= 58 ? 3 :
+      currentProgress >= 28 ? 2 : 1;
+
+    steps.forEach((step, index) => {
+      const stepNumber = index + 1;
+      step.classList.toggle("is-active", stepNumber === activeStep);
+      step.classList.toggle("is-done", stepNumber < activeStep);
+
+      const marker = step.querySelector(".automation-exec-spinner, .automation-exec-check");
+      if (marker && stepNumber < activeStep) {
+        marker.className = "automation-exec-check";
+      } else if (marker && stepNumber >= activeStep) {
+        marker.className = "automation-exec-spinner";
+      }
+    });
+  }
+
+  function startProgress(automationName) {
+    clearInterval(progressTimer);
+    currentProgress = 3;
+    setProgress(3, "Preparando execução...");
+
+    progressTimer = setInterval(() => {
+      let increment = 3;
+      if (currentProgress > 35) increment = 2;
+      if (currentProgress > 65) increment = 1;
+      if (currentProgress > 86) increment = 0;
+
+      if (increment > 0) {
+        setProgress(
+          currentProgress + increment,
+          `${automationName} em execução. Processando dados operacionais...`
+        );
+      }
+    }, 900);
+  }
+
+  function showForForm(form) {
+    const automationName =
+      form.dataset.automationName ||
+      form.getAttribute("data-automation-name") ||
+      form.querySelector("[data-automation-name]")?.dataset.automationName ||
+      "Automação";
+
+    if (title) title.textContent = `Executando ${automationName}`;
+    if (subtitle) {
+      subtitle.textContent =
+        "Mantenha esta janela aberta. O GED está processando a rotina solicitada e atualizará o painel ao finalizar.";
+    }
+
+    setOverlayVisible(true);
+    startProgress(automationName);
+  }
+
+  document.querySelectorAll("form").forEach((form) => {
+    form.addEventListener("submit", function () {
+      const submitButton = form.querySelector("button[type='submit']");
+      const isAutomationForm =
+        form.classList.contains("ged-action-form") ||
+        form.closest(".ops-card") ||
+        form.closest(".ops-automation-card") ||
+        form.dataset.automationName ||
+        submitButton;
+
+      if (!isAutomationForm) return;
+      showForForm(form);
+    });
+  });
+
+  window.addEventListener("pageshow", function () {
+    clearInterval(progressTimer);
+    setOverlayVisible(false);
+  });
+})();
