@@ -35,8 +35,10 @@ urlpatterns = [
 
     # Automações principais
     path("executar-atualizar-ld/", views.executar_atualizar_ld, name="atualizar_ld"),
+    path("api/ld/progresso/", views.progresso_ld_api, name="progresso_ld_api"),
     path("timeline-pcfs/", views.timeline_pcfs_view, name="timeline_pcfs"),
     path("transmittal-km/", views.executar_transmittal_km, name="transmittal_km"),
+    path("km-equipment/", views.executar_km_equipment, name="km_equipment"),
     path("grd-ghenova/", views.executar_grd_ghenova, name="grd_ghenova"),
     path("indexar-km/", views.executar_indice_km, name="indexar_km"),
     path("logs/", views.logs_automacoes, name="logs_automacoes"),
@@ -45,7 +47,6 @@ urlpatterns = [
     path("api/runtime/health/", views.runtime_health_api, name="runtime_health_api"),
     path("api/runtime/metrics/", views.runtime_metrics_api, name="runtime_metrics_api"),
     path("api/runtime/events/", views.runtime_events_api, name="runtime_events_api"),
-    path("api/ld/progresso/", views.progresso_ld_api, name="progresso_ld_api"),
     path(
         "api/runtime/retention/dry-run/",
         views.runtime_retention_dry_run_api,

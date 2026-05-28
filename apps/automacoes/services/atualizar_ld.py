@@ -840,6 +840,43 @@ def aplicar_formatacao(ws):
         except Exception:
             pass
 
+
+    # ==========================================================
+    # COLORAÇÃO STATUS H
+    # ==========================================================
+    cores_status_h = {
+        "APROVADO": 0x50B000,
+        "APROVADO COM COMENTÁRIOS": 0x50D092,
+        "APROVADO COM COMENTARIOS": 0x50D092,
+
+        "NÃO APROVADO": 0xCCCCF4,
+        "NAO APROVADO": 0xCCCCF4,
+
+        "CANCELAR": 0x99E6FF,
+        "CANCELADO": 0x6666E0,
+
+        "PARA INFORMAÇÃO": 0x9CCBF9,
+
+        "PARA CONSTRUÇÃO": 0x00B000,
+
+	"EM ANÁLISE": 0x9DC3E6,
+    }
+
+    for r in range(2, last_row + 1):
+
+        try:
+
+            status_h = str(ws[f"H{r}"].value or "").strip().upper()
+
+            cor = cores_status_h.get(status_h)
+
+            if cor is not None:
+                ws[f"H{r}"].api.Interior.Color = cor
+
+        except Exception:
+            pass
+
+
     # remove formatações condicionais
     try:
         ws.api.Cells.FormatConditions.Delete()
@@ -1022,7 +1059,7 @@ def aplicar_cor_status_linha(ws, row, status):
         "PARA INFORMAÇÃO": 0x9CCBF9,            # Laranja fraco
 
         "PARA CONSTRUÇÃO": 0x00B000,            # Verde forte
-	"EM ANÁLISE": 0x00B000,            # Verde forte
+	"EM ANÁLISE": 0x9DC3E6,            # Verde forte
     }
 
     cor = cores.get(status)

@@ -7,7 +7,6 @@ import time
 import traceback
 import re
 import shutil
-import threading
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -15,7 +14,6 @@ from django.utils import timezone
 from django.core.paginator import Paginator
 from django.core.cache import cache
 from django.db.models import Avg, Count, Q, Sum
-from django.db import close_old_connections
 from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
@@ -28,6 +26,7 @@ from apps.automacoes.services import (
     grd_ghenova,
     timeline_pcfs,
     transmittal_km,
+    transmittal_km_equipment,
 )
 from apps.automacoes.services.ld_parser import extrair_tipo_documental
 from apps.automacoes.services.ld_path_resolver import gerar_hyperlink_ld, resolver_caminho_ld
@@ -716,6 +715,24 @@ def painel(request):
                 ],
             },
             {
+                "nome": "KM Equipment",
+                "subtitulo": "Equipamentos KM",
+                "icone": "bi-cpu",
+                "badge": "Teste",
+                "badge_class": "auto-badge-info",
+                "descricao": "Processa PDFs da pasta 4 KM Equipment e gera planilha consolidada de equipamentos KM.",
+                "form_url": "automacoes:km_equipment",
+                "botao": "Processar KM Equipment",
+                "botao_class": "btn-info",
+                "dashboard_url": "automacoes:transmittals_km",
+                "registros_url": "automacoes:transmittals_km",
+                "metricas": [
+                    {"label": "Fonte", "valor": "PDF"},
+                    {"label": "Pasta", "valor": "4 KM Equipment"},
+                    {"label": "Status", "valor": "Teste"},
+                ],
+            },
+            {
                 "nome": "Índice KM",
                 "subtitulo": "Arquivos e documentos KM",
                 "icone": "bi-hdd-network",
@@ -970,127 +987,32 @@ def logs_automacoes(request):
 
 
 @login_required
+def executar_atualizar_ld(request):
+    return _executar_automacao(
+        request,
+        atualizar_ld.executar,
+        "Atualização LD",
+    )
+
+
+
+@login_required
 def progresso_ld_api(request):
-    """API de progresso realtime da Atualização LD."""
+    """
+    API de progresso realtime da rotina Atualização LD.
+    Lida pelo painel via polling enquanto a atualização está em execução.
+    """
     try:
         return JsonResponse(atualizar_ld.obter_progresso_ld())
     except Exception as exc:
         return JsonResponse({
+            "percentual": 0,
+            "etapa": f"Progresso LD indisponível: {exc}",
             "status": "error",
-            "percentual": 100,
-            "etapa": "Erro ao ler progresso LD.",
             "mensagem": str(exc),
-            "erro": str(exc),
-        })
+            "atualizado_em": timezone.now().strftime("%d/%m/%Y %H:%M:%S"),
+        }, status=500)
 
-
-def _executar_atualizar_ld_background(log_id, user_id=None):
-    """Executa a Atualização LD em thread local para liberar a tela e permitir polling."""
-    close_old_connections()
-
-    try:
-        log = ExecucaoAutomacao.objects.get(pk=log_id)
-    except Exception:
-        log = None
-
-    inicio = time.monotonic()
-
-    try:
-        resultado = atualizar_ld.executar()
-        ok = bool(resultado.get("ok")) if isinstance(resultado, dict) else False
-        mensagem = (
-            resultado.get("mensagem")
-            if isinstance(resultado, dict)
-            else "Atualização LD executada."
-        )
-
-        if log:
-            log.status = ExecucaoAutomacao.STATUS_SUCESSO if ok else ExecucaoAutomacao.STATUS_ERRO
-            log.sucesso = ok
-            log.mensagem = mensagem or ("Atualização LD executada com sucesso." if ok else "Falha ao executar Atualização LD.")
-            log.quantidade_processada = _extrair_quantidade_processada(resultado)
-            log.detalhes = _detalhes_execucao(resultado)
-
-    except Exception as exc:
-        try:
-            atualizar_ld.atualizar_progresso_ld(
-                100,
-                "Erro na Atualização LD.",
-                "error",
-                f"Erro ao executar Atualização LD: {exc}",
-                erro=str(exc),
-            )
-        except Exception:
-            pass
-
-        if log:
-            log.status = ExecucaoAutomacao.STATUS_ERRO
-            log.sucesso = False
-            log.mensagem = f"Erro ao executar Atualização LD: {exc}"
-            log.detalhes = {"erro": str(exc), "traceback": traceback.format_exc()}
-
-    finally:
-        if log:
-            log.finalizado_em = timezone.now()
-            log.duracao_segundos = round(time.monotonic() - inicio, 3)
-            log.save(
-                update_fields=[
-                    "status",
-                    "sucesso",
-                    "mensagem",
-                    "detalhes",
-                    "quantidade_processada",
-                    "duracao_segundos",
-                    "finalizado_em",
-                ]
-            )
-        cache.delete("automacoes:painel:context:v1")
-        close_old_connections()
-
-
-@login_required
-def executar_atualizar_ld(request):
-    if request.method != "POST":
-        messages.error(request, "Método inválido para executar Atualização LD.")
-        return redirect("automacoes:painel")
-
-    progresso_atual = {}
-    try:
-        progresso_atual = atualizar_ld.obter_progresso_ld()
-    except Exception:
-        progresso_atual = {}
-
-    if progresso_atual.get("status") == "running":
-        messages.warning(request, "Atualização LD já está em execução. Acompanhe o progresso na tela.")
-        return redirect("automacoes:painel")
-
-    log = ExecucaoAutomacao.objects.create(
-        nome="Atualização LD",
-        usuario=request.user if request.user.is_authenticated else None,
-        status=ExecucaoAutomacao.STATUS_INICIADO,
-        sucesso=False,
-        mensagem="Atualização LD iniciada em segundo plano.",
-    )
-
-    try:
-        atualizar_ld.atualizar_progresso_ld(
-            1,
-            "Atualização LD iniciada.",
-            "running",
-            "Processamento iniciado em segundo plano. Acompanhe o progresso nesta tela.",
-        )
-    except Exception:
-        pass
-
-    thread = threading.Thread(
-        target=_executar_atualizar_ld_background,
-        args=(log.id, request.user.id if request.user.is_authenticated else None),
-        daemon=True,
-    )
-    thread.start()
-
-    messages.info(request, "Atualização LD iniciada. Acompanhe a evolução na barra de progresso.")
-    return redirect("automacoes:painel")
 
 @login_required
 def timeline_pcfs_view(request):
@@ -1109,6 +1031,15 @@ def executar_transmittal_km(request):
         "Transmittal KM",
     )
 
+
+
+@login_required
+def executar_km_equipment(request):
+    return _executar_automacao(
+        request,
+        transmittal_km_equipment.executar,
+        "KM Equipment",
+    )
 
 @login_required
 def executar_grd_ghenova(request):

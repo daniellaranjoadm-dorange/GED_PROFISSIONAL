@@ -202,6 +202,40 @@
     }
   }
 
+
+  .ld-progress-panel {
+    border: 1px solid rgba(56, 189, 248, .28);
+    background: linear-gradient(135deg, rgba(15, 23, 42, .88), rgba(30, 41, 59, .72));
+  }
+
+  .ld-progress-track {
+    width: 100%;
+    height: 12px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: rgba(148, 163, 184, .20);
+    margin-top: 12px;
+  }
+
+  .ld-progress-fill {
+    width: 0%;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, rgba(56, 189, 248, .95), rgba(34, 197, 94, .95));
+    transition: width .35s ease;
+  }
+
+  .ld-progress-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+    color: #bfdbfe;
+    font-size: 12px;
+  }
+
+
 </style>
 
 {% endblock %}
@@ -294,30 +328,28 @@
     ⏳ Automação em execução. Aguarde o processamento finalizar. Não feche esta janela.
   </div>
 
+
   <section id="ld-progress-panel"
-           class="ops-panel ld-progress-panel d-none"
-           data-progress-endpoint="{% url 'automacoes:progresso_ld_api' %}">
+           class="ops-panel ld-progress-panel mb-4 d-none"
+           data-endpoint="{% url 'automacoes:progresso_ld_api' %}">
     <div class="ops-panel-head">
       <div>
-        <div class="ops-eyebrow">
-          <i class="bi bi-arrow-repeat"></i>
-          LD RUNTIME UPDATE
-        </div>
-        <h2 id="ld-progress-title">Atualização LD</h2>
-        <p id="ld-progress-message">Aguardando execução da Atualização LD.</p>
+        <h2>Atualização LD em andamento</h2>
+        <p id="ld-progress-etapa">Preparando atualização...</p>
       </div>
-      <span id="ld-progress-badge" class="ops-status-pill">IDLE</span>
+      <span id="ld-progress-badge" class="ops-status-pill ops-status-warn">RUNNING</span>
     </div>
 
     <div class="ld-progress-track">
-      <div id="ld-progress-fill" class="ld-progress-fill" style="width:0%"></div>
+      <div id="ld-progress-fill" class="ld-progress-fill"></div>
     </div>
 
     <div class="ld-progress-meta">
       <strong id="ld-progress-percent">0%</strong>
-      <span id="ld-progress-step">Aguardando execução.</span>
+      <span id="ld-progress-time">Aguardando runtime...</span>
     </div>
   </section>
+
 
   <section class="ops-kpi-grid ops-kpi-grid-6">
 
@@ -607,8 +639,7 @@
 
         <form method="post"
               action="{% url rotina.form_url %}"
-              class="ged-action-form"
-              data-automation-name="{{ rotina.nome }}">
+              class="ged-action-form">
           {% csrf_token %}
 
           <button type="submit"
@@ -760,14 +791,121 @@
 </div>
 
 <script>
+(function () {
+  const loadingAlert = document.getElementById("loading-alert");
+  const progressPanel = document.getElementById("ld-progress-panel");
+  const progressFill = document.getElementById("ld-progress-fill");
+  const progressPercent = document.getElementById("ld-progress-percent");
+  const progressEtapa = document.getElementById("ld-progress-etapa");
+  const progressBadge = document.getElementById("ld-progress-badge");
+  const progressTime = document.getElementById("ld-progress-time");
+  const progressEndpoint = progressPanel ? progressPanel.dataset.endpoint : "";
+
+  let ldPolling = null;
+
+  function showProgressPanel() {
+    if (progressPanel) progressPanel.classList.remove("d-none");
+    if (loadingAlert) loadingAlert.classList.remove("d-none");
+  }
+
+  function updateProgress(data) {
+    if (!data || !progressPanel) return;
+
+    const percentual = Number(data.percentual || 0);
+    const status = String(data.status || "running").toUpperCase();
+
+    progressFill.style.width = Math.max(0, Math.min(percentual, 100)) + "%";
+    progressPercent.textContent = Math.max(0, Math.min(percentual, 100)) + "%";
+    progressEtapa.textContent = data.etapa || data.mensagem || "Atualizando LD...";
+    progressBadge.textContent = status;
+    progressTime.textContent = data.atualizado_em ? "Atualizado em " + data.atualizado_em : "Runtime ativo";
+
+    progressBadge.classList.remove("ops-status-ok", "ops-status-warn", "ops-status-error");
+    if (status === "DONE") {
+      progressBadge.classList.add("ops-status-ok");
+    } else if (status === "ERROR" || status === "BLOCKED") {
+      progressBadge.classList.add("ops-status-error");
+    } else {
+      progressBadge.classList.add("ops-status-warn");
+    }
+  }
+
+  async function pollProgress() {
+    if (!progressEndpoint) return;
+
+    try {
+      const response = await fetch(progressEndpoint, {
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+        cache: "no-store"
+      });
+      const data = await response.json();
+      updateProgress(data);
+
+      if (["done", "error", "blocked"].includes(String(data.status || "").toLowerCase())) {
+        clearInterval(ldPolling);
+        ldPolling = null;
+      }
+    } catch (error) {
+      console.error("Falha ao consultar progresso LD:", error);
+    }
+  }
+
+  function startPolling() {
+    showProgressPanel();
+    pollProgress();
+    if (ldPolling) clearInterval(ldPolling);
+    ldPolling = setInterval(pollProgress, 1500);
+  }
+
   document.querySelectorAll(".ged-run-btn").forEach(function(button) {
-    button.closest("form").addEventListener("submit", function() {
-      const alertBox = document.getElementById("loading-alert");
-      if (alertBox) alertBox.classList.remove("d-none");
+    const form = button.closest("form");
+    if (!form) return;
+
+    form.addEventListener("submit", async function(event) {
+      const action = form.getAttribute("action") || "";
+      const isAtualizarLD = action.indexOf("executar-atualizar-ld") !== -1;
+
       button.disabled = true;
       button.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Executando...';
+
+      if (!isAtualizarLD) {
+        if (loadingAlert) loadingAlert.classList.remove("d-none");
+        return;
+      }
+
+      event.preventDefault();
+      startPolling();
+
+      try {
+        const response = await fetch(action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: { "X-Requested-With": "XMLHttpRequest" },
+          credentials: "same-origin"
+        });
+
+        await pollProgress();
+
+        if (response.redirected) {
+          window.location.href = response.url;
+        } else {
+          window.location.reload();
+        }
+      } catch (error) {
+        console.error("Erro ao executar Atualização LD:", error);
+        updateProgress({
+          percentual: 100,
+          status: "error",
+          etapa: "Erro ao executar Atualização LD.",
+          atualizado_em: new Date().toLocaleString("pt-BR")
+        });
+        button.disabled = false;
+        button.innerHTML = '<i class="bi bi-play-fill"></i> Executar Atualização LD';
+      }
     });
   });
+})();
 </script>
+
 
 {% endblock %}
