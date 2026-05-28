@@ -26,7 +26,6 @@ from apps.automacoes.services import (
     grd_ghenova,
     timeline_pcfs,
     transmittal_km,
-    transmittal_km_equipment,
 )
 from apps.automacoes.services.ld_parser import extrair_tipo_documental
 from apps.automacoes.services.ld_path_resolver import gerar_hyperlink_ld, resolver_caminho_ld
@@ -715,24 +714,6 @@ def painel(request):
                 ],
             },
             {
-                "nome": "KM Equipment",
-                "subtitulo": "Equipamentos KM",
-                "icone": "bi-cpu",
-                "badge": "Teste",
-                "badge_class": "auto-badge-info",
-                "descricao": "Processa PDFs da pasta 4 KM Equipment e gera planilha consolidada de equipamentos KM.",
-                "form_url": "automacoes:km_equipment",
-                "botao": "Processar KM Equipment",
-                "botao_class": "btn-info",
-                "dashboard_url": "automacoes:transmittals_km",
-                "registros_url": "automacoes:transmittals_km",
-                "metricas": [
-                    {"label": "Fonte", "valor": "PDF"},
-                    {"label": "Pasta", "valor": "4 KM Equipment"},
-                    {"label": "Status", "valor": "Teste"},
-                ],
-            },
-            {
                 "nome": "Índice KM",
                 "subtitulo": "Arquivos e documentos KM",
                 "icone": "bi-hdd-network",
@@ -999,18 +980,28 @@ def executar_atualizar_ld(request):
 @login_required
 def progresso_ld_api(request):
     """
-    API de progresso realtime da rotina Atualização LD.
-    Lida pelo painel via polling enquanto a atualização está em execução.
+    API de progresso realtime da Atualização LD.
+    Usada pelo painel via polling.
     """
     try:
-        return JsonResponse(atualizar_ld.obter_progresso_ld())
+        if hasattr(atualizar_ld, "obter_progresso_ld"):
+            return JsonResponse(atualizar_ld.obter_progresso_ld())
+
+        return JsonResponse({
+            "status": "idle",
+            "percentual": 0,
+            "etapa": "Aguardando execução.",
+            "mensagem": "Rotina de progresso LD disponível, mas backend não expôs obter_progresso_ld().",
+            "erro": "",
+        })
+
     except Exception as exc:
         return JsonResponse({
-            "percentual": 0,
-            "etapa": f"Progresso LD indisponível: {exc}",
             "status": "error",
+            "percentual": 100,
+            "etapa": "Erro ao ler progresso LD.",
             "mensagem": str(exc),
-            "atualizado_em": timezone.now().strftime("%d/%m/%Y %H:%M:%S"),
+            "erro": str(exc),
         }, status=500)
 
 
@@ -1031,15 +1022,6 @@ def executar_transmittal_km(request):
         "Transmittal KM",
     )
 
-
-
-@login_required
-def executar_km_equipment(request):
-    return _executar_automacao(
-        request,
-        transmittal_km_equipment.executar,
-        "KM Equipment",
-    )
 
 @login_required
 def executar_grd_ghenova(request):
@@ -1943,6 +1925,76 @@ def listar_transmittals_km(request):
             "total_transmittals": total_transmittals,
             "total_com_pdf": total_com_pdf,
             "total_sem_pdf": total_sem_pdf,
+        },
+    )
+
+
+
+@login_required
+def lista_km_equipment(request):
+    """
+    Lista operacional dos documentos extraídos da automação KM Equipment.
+
+    Usa o modelo TransmittalKM filtrando registros cujo PDF veio da pasta
+    "4 KM Equipment", mantendo o módulo separado visualmente no GED.
+    """
+    busca = request.GET.get("q", "").strip()
+    emissao = request.GET.get("emissao", "").strip()
+    transmittal = request.GET.get("transmittal", "").strip()
+
+    registros = TransmittalKM.objects.filter(
+        arquivo_pdf__icontains="4 KM Equipment"
+    ).order_by(
+        "transmittal_numero",
+        "documento",
+    )
+
+    if busca:
+        registros = registros.filter(
+            Q(documento__icontains=busca)
+            | Q(titulo__icontains=busca)
+            | Q(transmittal_numero__icontains=busca)
+            | Q(emissao__icontains=busca)
+            | Q(proposito_emissao__icontains=busca)
+        )
+
+    if emissao:
+        registros = registros.filter(emissao__iexact=emissao)
+
+    if transmittal:
+        registros = registros.filter(transmittal_numero__iexact=transmittal)
+
+    total = registros.count()
+    total_transmittals = (
+        registros.exclude(transmittal_numero="")
+        .exclude(transmittal_numero__isnull=True)
+        .values("transmittal_numero")
+        .distinct()
+        .count()
+    )
+    total_com_pdf = registros.exclude(arquivo_pdf="").exclude(arquivo_pdf__isnull=True).count()
+    total_sem_pdf = max(total - total_com_pdf, 0)
+
+    paginator = Paginator(registros, 50)
+    page_obj = paginator.get_page(request.GET.get("page"))
+
+    query_params = request.GET.copy()
+    query_params.pop("page", None)
+
+    return render(
+        request,
+        "automacoes/lista_km_equipment.html",
+        {
+            "registros": page_obj,
+            "page_obj": page_obj,
+            "busca": busca,
+            "emissao": emissao,
+            "transmittal": transmittal,
+            "total": total,
+            "total_transmittals": total_transmittals,
+            "total_com_pdf": total_com_pdf,
+            "total_sem_pdf": total_sem_pdf,
+            "query_string": query_params.urlencode(),
         },
     )
 

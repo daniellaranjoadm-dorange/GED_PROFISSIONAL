@@ -31,6 +31,7 @@ urlpatterns = [
     # Legacy entity routes
     path("pcfs-timeline/", views.listar_pcfs_timeline, name="pcfs_timeline"),
     path("transmittals-km/", views.listar_transmittals_km, name="transmittals_km"),
+    path("lista-km-equipment/", views.lista_km_equipment, name="lista_km_equipment"),
     path("lista-ld/", views.listar_ld, name="lista_ld"),
 
     # Automações principais
@@ -38,7 +39,6 @@ urlpatterns = [
     path("api/ld/progresso/", views.progresso_ld_api, name="progresso_ld_api"),
     path("timeline-pcfs/", views.timeline_pcfs_view, name="timeline_pcfs"),
     path("transmittal-km/", views.executar_transmittal_km, name="transmittal_km"),
-    path("km-equipment/", views.executar_km_equipment, name="km_equipment"),
     path("grd-ghenova/", views.executar_grd_ghenova, name="grd_ghenova"),
     path("indexar-km/", views.executar_indice_km, name="indexar_km"),
     path("logs/", views.logs_automacoes, name="logs_automacoes"),

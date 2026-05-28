@@ -1,0 +1,194 @@
+{% extends "documentos/base.html" %}
+{% load static %}
+
+{% block title %}Lista KM Equipamentos{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'automacoes/css/ops_enterprise.css' %}?v=1600">
+<style>
+  .km-equipment-page {
+    width: min(1680px, calc(100vw - 36px));
+    max-width: none;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .km-equipment-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .km-equipment-table-wrap {
+    overflow: auto;
+    border-radius: 18px;
+    border: 1px solid rgba(148, 163, 184, .18);
+  }
+
+  .km-equipment-table {
+    width: 100%;
+    min-width: 1100px;
+    border-collapse: collapse;
+  }
+
+  .km-equipment-table th,
+  .km-equipment-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(148, 163, 184, .16);
+    vertical-align: top;
+    font-size: 12px;
+  }
+
+  .km-equipment-table th {
+    color: #93c5fd;
+    background: rgba(2, 6, 23, .36);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    font-weight: 950;
+  }
+
+  .km-equipment-table td {
+    color: #e5f3ff;
+  }
+
+  .km-equipment-table a {
+    color: #7dd3fc;
+    font-weight: 800;
+    text-decoration: none;
+  }
+
+  .km-equipment-table a:hover {
+    text-decoration: underline;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ops-page km-equipment-page">
+
+  <section class="ops-hero">
+    <div class="ops-hero-main">
+      <div class="ops-eyebrow">
+        <i class="bi bi-cpu"></i>
+        KM EQUIPMENT
+      </div>
+
+      <h1>Lista KM Equipamentos</h1>
+
+      <p>
+        Lista operacional dos documentos extraídos dos transmittals da pasta
+        <strong>4 KM Equipment</strong>.
+      </p>
+    </div>
+
+    <div class="ops-actions">
+      <a href="{% url 'automacoes:painel' %}" class="ops-btn">
+        <i class="bi bi-arrow-left"></i>
+        Voltar
+      </a>
+    </div>
+  </section>
+
+  <section class="ops-kpi-grid ops-kpi-grid-4">
+    <div class="ops-kpi"><span>Documentos</span><strong>{{ total }}</strong><small>resultado filtrado</small></div>
+    <div class="ops-kpi"><span>Transmittals</span><strong>{{ total_transmittals }}</strong><small>números únicos</small></div>
+    <div class="ops-kpi"><span>Com PDF</span><strong>{{ total_com_pdf }}</strong><small>link disponível</small></div>
+    <div class="ops-kpi"><span>Sem PDF</span><strong>{{ total_sem_pdf }}</strong><small>pendência operacional</small></div>
+  </section>
+
+  <section class="ops-panel mt-3">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-5">
+        <label class="ops-filter-label">Busca geral</label>
+        <input type="text" name="q" value="{{ busca }}" class="form-control" placeholder="Documento, título, transmittal, emissão...">
+      </div>
+
+      <div class="col-md-3">
+        <label class="ops-filter-label">Emissão / Revisão</label>
+        <input type="text" name="emissao" value="{{ emissao }}" class="form-control" placeholder="A, A1, B2...">
+      </div>
+
+      <div class="col-md-3">
+        <label class="ops-filter-label">Transmittal</label>
+        <input type="text" name="transmittal" value="{{ transmittal }}" class="form-control" placeholder="6836907-TR-00003">
+      </div>
+
+      <div class="col-md-1">
+        <button type="submit" class="ops-btn ops-btn-primary w-100">
+          Filtrar
+        </button>
+      </div>
+    </form>
+  </section>
+
+  <section class="ops-card mt-3">
+    <div class="ops-card-header">
+      <div>
+        <h2>Documentos KM Equipment</h2>
+        <p>Registros extraídos da automação de equipamentos KM.</p>
+      </div>
+      <span class="ops-badge ops-badge-info">{{ total }} itens</span>
+    </div>
+
+    <div class="km-equipment-table-wrap">
+      <table class="km-equipment-table">
+        <thead>
+          <tr>
+            <th>Documento</th>
+            <th>Título</th>
+            <th>Revisão</th>
+            <th>Reason</th>
+            <th>Data Envio</th>
+            <th>Transmittal</th>
+            <th>PDF</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in registros %}
+          <tr>
+            <td><strong>{{ item.documento|default:"—" }}</strong></td>
+            <td>{{ item.titulo|default:"—" }}</td>
+            <td>{{ item.emissao|default:"—" }}</td>
+            <td>{{ item.proposito_emissao|default:"—" }}</td>
+            <td>{{ item.data_envio|default:"—" }}</td>
+            <td>{{ item.transmittal_numero|default:"—" }}</td>
+            <td>
+              {% if item.arquivo_pdf %}
+                <a href="{% url 'automacoes:abrir_pdf_transmittal_km' item.pk %}" target="_blank">
+                  Abrir PDF
+                </a>
+              {% else %}
+                —
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="ops-empty">Nenhum documento KM Equipment encontrado.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if page_obj.has_other_pages %}
+    <div class="d-flex justify-content-between align-items-center mt-3">
+      <span class="ops-muted">
+        Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+      </span>
+
+      <div class="km-equipment-actions">
+        {% if page_obj.has_previous %}
+          <a class="ops-btn" href="?page={{ page_obj.previous_page_number }}{% if query_string %}&{{ query_string }}{% endif %}">Anterior</a>
+        {% endif %}
+
+        {% if page_obj.has_next %}
+          <a class="ops-btn" href="?page={{ page_obj.next_page_number }}{% if query_string %}&{{ query_string }}{% endif %}">Próxima</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </section>
+
+</div>
+{% endblock %}
