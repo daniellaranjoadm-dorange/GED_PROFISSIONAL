@@ -2,7 +2,7 @@
 Importador real da Lista de Documentos Kongsberg/KM.
 
 Entrada esperada:
-- Planilha XLSX com aba "LD_KM"
+- Planilha XLSX com abas "2 Basic Design" e "3 Detail Engineering" (fallback: "LD_KM")
 - Cabeçalho normalmente na linha 2
 - Coluna "Number" como chave mestre do DocumentoKM
 
@@ -34,6 +34,19 @@ VALORES_INVALIDOS = {
     "#N/A",
     "#NULL!",
     "#NUM!",
+}
+
+
+ABAS_KM_PRIORITARIAS = [
+    "2 Basic Design",
+    "3 Detail Engineering",
+]
+
+ABAS_KM_FALLBACK = {
+    "ld_km",
+    "ld km",
+    "document list",
+    "documentos km",
 }
 
 
@@ -173,16 +186,43 @@ def _model_has_field(model, nome: str) -> bool:
     return any(field.name == nome for field in model._meta.get_fields())
 
 
+def _detectar_abas(workbook):
+    """
+    Detecta todas as abas operacionais da LD KM.
+
+    Regra atual:
+    - importar prioritariamente as abas:
+      2 Basic Design
+      3 Detail Engineering
+    - fallback para LD_KM / nomes legados;
+    - último fallback: aba ativa.
+    """
+    selecionadas = []
+
+    sheetnames_lower = {nome.strip().lower(): nome for nome in workbook.sheetnames}
+
+    for nome_prioritario in ABAS_KM_PRIORITARIAS:
+        real = sheetnames_lower.get(nome_prioritario.lower())
+        if real and real not in selecionadas:
+            selecionadas.append(real)
+
+    if not selecionadas:
+        for nome in workbook.sheetnames:
+            if nome.strip().lower() in ABAS_KM_FALLBACK:
+                selecionadas.append(nome)
+
+    if not selecionadas and workbook.sheetnames:
+        selecionadas.append(workbook.active.title)
+
+    return [workbook[nome] for nome in selecionadas]
+
+
 def _detectar_aba(workbook):
-    if "LD_KM" in workbook.sheetnames:
-        return workbook["LD_KM"]
-
-    for nome in workbook.sheetnames:
-        if nome.strip().lower() in {"ld km", "ld_km", "document list", "documentos km"}:
-            return workbook[nome]
-
-    return workbook.active
-
+    """
+    Compatibilidade com versões antigas: retorna a primeira aba detectada.
+    """
+    abas = _detectar_abas(workbook)
+    return abas[0] if abas else workbook.active
 
 def _detectar_cabecalho(sheet) -> tuple[int, dict[str, int]]:
     """
@@ -247,6 +287,12 @@ def _montar_defaults(sheet, row_idx: int, colunas: dict[str, int], origem_planil
 
     if _model_has_field(DocumentoKM, "origem_planilha"):
         defaults["origem_planilha"] = origem_planilha
+
+    # Se a nova aba não trouxer coluna Phase, usa o nome da aba como fase operacional.
+    # Quando a coluna Phase existir, o valor original da planilha é preservado.
+    if _model_has_field(DocumentoKM, "phase") and not defaults.get("phase"):
+        aba_match = re.search(r"\|\s*(.+)$", str(origem_planilha or ""))
+        defaults["phase"] = _texto(aba_match.group(1) if aba_match else origem_planilha)
 
     if _model_has_field(DocumentoKM, "linha_origem"):
         defaults["linha_origem"] = row_idx
@@ -325,19 +371,9 @@ def importar_lista_kongsberg(
     _emitir_progresso(progress_callback, "LEITURA_XLSX", "Abrindo planilha XLSX.", 5)
 
     wb = load_workbook(arquivo, data_only=True, read_only=True)
-    sheet = _detectar_aba(wb)
-    header_row, colunas = _detectar_cabecalho(sheet)
+    sheets = _detectar_abas(wb)
 
-    _emitir_progresso(
-        progress_callback,
-        "CABECALHO",
-        f"Aba '{sheet.title}' detectada. Cabeçalho na linha {header_row}.",
-        10,
-        aba=sheet.title,
-        linha_cabecalho=header_row,
-    )
-
-    if "number" not in colunas:
+    if not sheets:
         try:
             wb.close()
         except Exception:
@@ -345,9 +381,8 @@ def importar_lista_kongsberg(
 
         return {
             "ok": False,
-            "mensagem": "Coluna obrigatória 'Number' não encontrada na LD Kongsberg.",
-            "aba": sheet.title,
-            "linha_cabecalho": header_row,
+            "mensagem": "Nenhuma aba operacional encontrada na LD Kongsberg.",
+            "abas": [],
             "processados": 0,
             "criados": 0,
             "atualizados": 0,
@@ -355,7 +390,51 @@ def importar_lista_kongsberg(
             "duracao_segundos": round(time.monotonic() - inicio, 3),
         }
 
-    total_linhas_estimado = max((sheet.max_row or 0) - header_row, 0)
+    abas_processadas = []
+    linhas_por_aba = {}
+    total_linhas_estimado = 0
+
+    for sheet in sheets:
+        header_row, colunas = _detectar_cabecalho(sheet)
+        abas_processadas.append(sheet.title)
+
+        _emitir_progresso(
+            progress_callback,
+            "CABECALHO",
+            f"Aba '{sheet.title}' detectada. Cabeçalho na linha {header_row}.",
+            10,
+            aba=sheet.title,
+            linha_cabecalho=header_row,
+        )
+
+        if "number" not in colunas:
+            try:
+                wb.close()
+            except Exception:
+                pass
+
+            return {
+                "ok": False,
+                "mensagem": f"Coluna obrigatória 'Number' não encontrada na aba '{sheet.title}'.",
+                "aba": sheet.title,
+                "abas": abas_processadas,
+                "linha_cabecalho": header_row,
+                "processados": 0,
+                "criados": 0,
+                "atualizados": 0,
+                "ignorados": 0,
+                "duracao_segundos": round(time.monotonic() - inicio, 3),
+            }
+
+        estimado = max((sheet.max_row or 0) - header_row, 0)
+        linhas_por_aba[sheet.title] = {
+            "sheet": sheet,
+            "header_row": header_row,
+            "colunas": colunas,
+            "estimado": estimado,
+        }
+        total_linhas_estimado += estimado
+
     processados = 0
     criados = 0
     atualizados = 0
@@ -365,62 +444,83 @@ def importar_lista_kongsberg(
     _emitir_progresso(
         progress_callback,
         "IMPORTACAO",
-        f"Importando registros da planilha ({total_linhas_estimado} linhas estimadas).",
+        (
+            f"Importando {len(sheets)} abas da LD Kongsberg "
+            f"({total_linhas_estimado} linhas estimadas)."
+        ),
         15,
+        abas=abas_processadas,
         total_linhas_estimado=total_linhas_estimado,
     )
 
     try:
         with transaction.atomic():
-            for row_idx in range(header_row + 1, sheet.max_row + 1):
-                numero_km = _valor_linha(sheet, row_idx, colunas, "number")
+            for sheet in sheets:
+                meta = linhas_por_aba[sheet.title]
+                header_row = meta["header_row"]
+                colunas = meta["colunas"]
 
-                if not numero_km:
-                    ignorados += 1
-                    continue
+                _emitir_progresso(
+                    progress_callback,
+                    "IMPORTACAO_ABA",
+                    f"Importando aba '{sheet.title}'.",
+                    15,
+                    aba=sheet.title,
+                )
 
-                defaults = _montar_defaults(sheet, row_idx, colunas, origem)
+                origem_linha = f"{origem} | {sheet.title}"
 
-                try:
-                    _, created = DocumentoKM.objects.update_or_create(
-                        numero_km=numero_km,
-                        defaults=defaults,
-                    )
-                    processados += 1
+                for row_idx in range(header_row + 1, sheet.max_row + 1):
+                    numero_km = _valor_linha(sheet, row_idx, colunas, "number")
 
-                    if created:
-                        criados += 1
-                    else:
-                        atualizados += 1
+                    if not numero_km:
+                        ignorados += 1
+                        continue
 
-                except Exception as exc:
-                    erros.append(
-                        {
-                            "linha": row_idx,
-                            "numero_km": numero_km,
-                            "erro": str(exc),
-                        }
-                    )
+                    defaults = _montar_defaults(sheet, row_idx, colunas, origem_linha)
 
-                if processados and processados % 100 == 0:
-                    percentual = 15
-                    if total_linhas_estimado:
-                        percentual = min(75, 15 + int((processados / total_linhas_estimado) * 60))
+                    try:
+                        _, created = DocumentoKM.objects.update_or_create(
+                            numero_km=numero_km,
+                            defaults=defaults,
+                        )
+                        processados += 1
 
-                    _emitir_progresso(
-                        progress_callback,
-                        "IMPORTACAO",
-                        (
-                            f"{processados} processados, {criados} criados, "
-                            f"{atualizados} atualizados, {ignorados} ignorados."
-                        ),
-                        percentual,
-                        processados=processados,
-                        criados=criados,
-                        atualizados=atualizados,
-                        ignorados=ignorados,
-                        erros=len(erros),
-                    )
+                        if created:
+                            criados += 1
+                        else:
+                            atualizados += 1
+
+                    except Exception as exc:
+                        erros.append(
+                            {
+                                "aba": sheet.title,
+                                "linha": row_idx,
+                                "numero_km": numero_km,
+                                "erro": str(exc),
+                            }
+                        )
+
+                    if processados and processados % 100 == 0:
+                        percentual = 15
+                        if total_linhas_estimado:
+                            percentual = min(75, 15 + int((processados / total_linhas_estimado) * 60))
+
+                        _emitir_progresso(
+                            progress_callback,
+                            "IMPORTACAO",
+                            (
+                                f"{processados} processados, {criados} criados, "
+                                f"{atualizados} atualizados, {ignorados} ignorados."
+                            ),
+                            percentual,
+                            abas=abas_processadas,
+                            processados=processados,
+                            criados=criados,
+                            atualizados=atualizados,
+                            ignorados=ignorados,
+                            erros=len(erros),
+                        )
     finally:
         try:
             wb.close()
@@ -430,11 +530,12 @@ def importar_lista_kongsberg(
     resultado = {
         "ok": not erros,
         "mensagem": (
-            f"LD Kongsberg importada: {processados} processados, "
+            f"LD Kongsberg importada ({len(abas_processadas)} abas): {processados} processados, "
             f"{criados} criados, {atualizados} atualizados, {ignorados} ignorados."
         ),
-        "aba": sheet.title,
-        "linha_cabecalho": header_row,
+        "aba": ", ".join(abas_processadas),
+        "abas": abas_processadas,
+        "linhas_por_aba": {aba: dados["estimado"] for aba, dados in linhas_por_aba.items()},
         "processados": processados,
         "criados": criados,
         "atualizados": atualizados,

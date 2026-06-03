@@ -38,6 +38,7 @@ PASTAS_PCF = {
 BACKUP_DIR = r"\\virm-rgr022\FILESERVER\Projetos\05_HANDYMAX\09. Doc Control\9 - PCFs Transpetro\_BACKUPS"
 
 SHEET_SRC_RECEBIDAS = "PCFs Recebidas TP"
+SHEET_SRC_RECEBIDAS_LATEST = "PCFs Recebidas TP - Últimas Rev"
 SHEET_SRC_RESPONDIDAS = "PCFs Respondidas CMN"
 SHEET_OUT_RECEBIDAS = "Evolução - Recebidas"
 SHEET_OUT_RESPONDIDAS = "Evolução - Respondidas"
@@ -58,6 +59,7 @@ HEADERS_PCF = [
     "Revisão da PCF",
     "Data Recebimento",
     "Open Comments",
+    "UNDER REVIEW",
     "Qtd Comentarios",
     "SRC_OPEN",
     "SRC_TOTAL",
@@ -180,30 +182,50 @@ def listar_arquivos_pcf(pasta, aba):
     total_arquivos = 0
     excel_encontrados = 0
 
-    pasta_respostas = os.path.normcase(os.path.abspath(PASTAS_PCF["PCFs Respondidas CMN"]))
+    pasta_respostas = os.path.normcase(
+        os.path.abspath(PASTAS_PCF["PCFs Respondidas CMN"])
+    )
 
     log_secao(f"Varredura da pasta - {aba}")
     log(f"Pasta: {pasta}")
 
     for root, dirs, files in os.walk(pasta):
-        dirs[:] = [d for d in dirs if not eh_pasta_ignorada(d)]
+        root_norm = os.path.normcase(os.path.abspath(root))
 
-        if aba == "PCFs Recebidas TP":
+        # PCFs Recebidas TP:
+        # varre a pasta raiz Transpetro, mas desconsidera Respostas PCFs MARENOVA.
+        if aba == SHEET_SRC_RECEBIDAS:
             dirs[:] = [
-                d
-                for d in dirs
-                if os.path.normcase(os.path.abspath(os.path.join(root, d))) != pasta_respostas
+                d for d in dirs
+                if not os.path.normcase(
+                    os.path.abspath(os.path.join(root, d))
+                ).startswith(pasta_respostas)
             ]
+
+            if root_norm.startswith(pasta_respostas):
+                continue
+
+        # PCFs Respondidas CMN:
+        # considera apenas arquivos dentro da pasta Respostas PCFs MARENOVA.
+        if aba == SHEET_SRC_RESPONDIDAS and not root_norm.startswith(pasta_respostas):
+            continue
+
+        dirs[:] = [d for d in dirs if not eh_pasta_ignorada(d)]
 
         for nome in files:
             total_arquivos += 1
             caminho = os.path.join(root, nome)
+            caminho_norm = os.path.normcase(os.path.abspath(caminho))
             nome_up = nome.upper()
             ext = os.path.splitext(nome)[1].lower()
 
             motivo_ignorado = ""
 
-            if nome.startswith("~$"):
+            if aba == SHEET_SRC_RECEBIDAS and caminho_norm.startswith(pasta_respostas):
+                motivo_ignorado = "pasta Respostas PCFs MARENOVA não entra em PCFs Recebidas TP"
+            elif aba == SHEET_SRC_RESPONDIDAS and not caminho_norm.startswith(pasta_respostas):
+                motivo_ignorado = "fora da pasta Respostas PCFs MARENOVA"
+            elif nome.startswith("~$"):
                 motivo_ignorado = "temporário do Excel"
             elif ext not in EXTENSOES_EXCEL:
                 continue
@@ -250,7 +272,6 @@ def listar_arquivos_pcf(pasta, aba):
 
     return encontrados
 
-
 def primeira_aba_util(wb_pcf):
     for ws in wb_pcf.worksheets:
         if getattr(ws, "sheet_state", "visible") == "visible":
@@ -281,6 +302,19 @@ def extrair_status_final(ws):
 
 
 def extrair_qtd_e_open_comments(ws):
+    """
+    Conta comentários reais da PCF por status na coluna Comment Status.
+
+    Retorna:
+    - open_count
+    - under_review_count
+    - total_comments
+
+    Importante:
+    - não usa a quantidade de itens numerados;
+    - conta somente linhas com Comment Status preenchido;
+    - aceita variações de UNDER REVIEW.
+    """
     comment_status_col = None
     header_row = None
 
@@ -294,24 +328,34 @@ def extrair_qtd_e_open_comments(ws):
             break
 
     open_count = 0
-    total_status = 0
+    under_review_count = 0
+    total_comments = 0
+
+    under_review_aliases = {
+        "UNDER REVIEW",
+        "UNDER_REVIEW",
+        "UNDER-REVIEW",
+        "UNDER  REVIEW",
+        "UNDER REVISION",
+        "UNDER_REVISION",
+        "UNDER-REVISION",
+    }
 
     if comment_status_col:
         for r in range(header_row + 1, ws.max_row + 1):
-            st = norm_text(ws.cell(r, comment_status_col).value)
-            if st:
-                total_status += 1
-                if st == "OPEN":
-                    open_count += 1
+            status = norm_text(ws.cell(r, comment_status_col).value)
 
-    total_items = 0
-    for r in range(21, ws.max_row + 1):
-        item = ws.cell(r, 1).value
-        if isinstance(item, (int, float)) and item > 0:
-            total_items += 1
+            if not status:
+                continue
 
-    return open_count, max(total_status, total_items)
+            total_comments += 1
 
+            if status == "OPEN":
+                open_count += 1
+            elif status in under_review_aliases:
+                under_review_count += 1
+
+    return open_count, under_review_count, total_comments
 
 def extrair_data_recebimento(ws):
     data = get_by_label(ws, "Date", max_row=20, max_col=20)
@@ -385,7 +429,7 @@ def extrair_dados_pcf(caminho):
         if not plan_no and pcf_no.upper().startswith("PCF-"):
             plan_no = pcf_no[4:]
 
-        open_comments, qtd_comentarios = extrair_qtd_e_open_comments(ws)
+        open_comments, under_review, qtd_comentarios = extrair_qtd_e_open_comments(ws)
         status_final = extrair_status_final(ws)
 
         row = {
@@ -397,6 +441,7 @@ def extrair_dados_pcf(caminho):
             "Revisão da PCF": extrair_revisao_pcf(ws, caminho),
             "Data Recebimento": extrair_data_recebimento(ws),
             "Open Comments": open_comments,
+            "UNDER REVIEW": under_review,
             "Qtd Comentarios": qtd_comentarios,
             "SRC_OPEN": "Comment Status = OPEN",
             "SRC_TOTAL": "Comment Status/Item count",
@@ -436,6 +481,7 @@ def aplicar_estilo_tabela(ws, headers):
         "Revisão da PCF": 16,
         "Data Recebimento": 18,
         "Open Comments": 16,
+        "UNDER REVIEW": 16,
         "Qtd Comentarios": 16,
         "SRC_OPEN": 26,
         "SRC_TOTAL": 26,
@@ -526,6 +572,66 @@ def salvar_pcf_no_banco(tipo, row):
     )
     return True
 
+
+def _rev_sort_key_pcf(valor):
+    rev = norm_rev(valor)
+
+    if not rev:
+        return (0, 0, "")
+
+    if rev.isdigit():
+        return (1, int(rev), rev)
+
+    if len(rev) == 1 and rev.isalpha():
+        return (2, ord(rev.upper()) - ord("A") + 1, rev)
+
+    m = re.search(r"([A-Z])$", rev.upper())
+    if m:
+        return (2, ord(m.group(1)) - ord("A") + 1, rev)
+
+    return (3, 0, rev)
+
+
+def filtrar_ultimas_revisoes_pcf(rows):
+    latest = {}
+
+    for row in rows:
+        documento = safe_str(row.get("Nº DOCUMENTO"))
+        if not documento:
+            continue
+
+        atual = latest.get(documento)
+
+        if atual is None:
+            latest[documento] = row
+            continue
+
+        if _rev_sort_key_pcf(row.get("Revisão da PCF")) >= _rev_sort_key_pcf(atual.get("Revisão da PCF")):
+            latest[documento] = row
+
+    return sorted(
+        latest.values(),
+        key=lambda x: (
+            safe_str(x.get("Nº DOCUMENTO")),
+            safe_str(x.get("Revisão da PCF")),
+            safe_str(x.get("PCF LINK")),
+        )
+    )
+
+
+def preencher_aba_ultimas_revisoes_recebidas(wb, rows, headers):
+    if SHEET_SRC_RECEBIDAS_LATEST in wb.sheetnames:
+        ws_latest = wb[SHEET_SRC_RECEBIDAS_LATEST]
+    else:
+        idx = wb.sheetnames.index(SHEET_SRC_RECEBIDAS) + 1 if SHEET_SRC_RECEBIDAS in wb.sheetnames else len(wb.sheetnames)
+        ws_latest = wb.create_sheet(SHEET_SRC_RECEBIDAS_LATEST, idx)
+
+    ensure_headers(ws_latest, headers)
+    rows_latest = filtrar_ultimas_revisoes_pcf(rows)
+    limpar_e_preencher_aba(ws_latest, rows_latest, headers)
+    return len(rows_latest)
+
+
 def atualizar_abas_pcf(wb):
     resumo = {}
 
@@ -572,6 +678,8 @@ def atualizar_abas_pcf(wb):
                         f"Doc: {row.get('Nº DOCUMENTO', '')} | "
                         f"Rev: {row.get('Revisão da PCF', '')} | "
                         f"Qtd comentarios: {row.get('Qtd Comentarios', '')} | "
+                        f"Open: {row.get('Open Comments', '')} | "
+                        f"Under Review: {row.get('UNDER REVIEW', '')} | "
                         f"Status final: {row.get('STATUS FINAL', '')}"
                     )
 
@@ -606,6 +714,11 @@ def atualizar_abas_pcf(wb):
         )
         links_aplicados = limpar_e_preencher_aba(ws, rows, headers)
 
+        latest_recebidas = 0
+        if aba == SHEET_SRC_RECEBIDAS:
+            latest_recebidas = preencher_aba_ultimas_revisoes_recebidas(wb, rows, headers)
+            log_ok(f"Aba '{SHEET_SRC_RECEBIDAS_LATEST}' preenchida com {latest_recebidas} últimas revisões.")
+
         log_ok(f"Aba '{aba}' preenchida com {len(rows)} linhas.")
         log_ok(f"Links aplicados em '{aba}': {links_aplicados}")
         log(f"Ignorados como nao-PCF/modelo invalido: {ignorados_modelo}")
@@ -615,6 +728,7 @@ def atualizar_abas_pcf(wb):
             "arquivos": len(arquivos),
             "linhas": len(rows),
             "links": links_aplicados,
+            "ultimas_revisoes": latest_recebidas if aba == SHEET_SRC_RECEBIDAS else 0,
             "erros": erros,
             "ignorados_modelo": ignorados_modelo,
         }
@@ -769,7 +883,10 @@ def create_como_usar_sheet(wb, resumo):
     lines += [
         "",
         "Regra principal:",
-        "• STATUS FINAL é preenchido com o último valor não vazio da coluna E da PCF, começando em E9.",
+        "• Open Comments conta Comment Status = OPEN.",
+        "• UNDER REVIEW conta Comment Status = UNDER REVIEW.",
+        "• Qtd Comentarios conta somente linhas com Comment Status preenchido.",
+        "• STATUS FINAL é preenchido com o último status válido da coluna E da PCF, começando em E9.",
         "",
         "Trava antibanco:",
         "• Se nenhuma linha válida for gerada, o script aborta e restaura o backup.",

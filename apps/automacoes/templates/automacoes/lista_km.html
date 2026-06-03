@@ -1,58 +1,7 @@
 {% extends "documentos/base.html" %}
 {% load static %}
 
-{% block title %}Lista LD Kongsberg
-<script>
-function iniciarPollingImportacao(){
-    const overlay = document.getElementById("km-progress-overlay");
-
-    if(overlay){
-        overlay.style.display = "flex";
-    }
-
-    const timer = setInterval(async () => {
-        try{
-            const r = await fetch("/automacoes/progresso-importacao-km/");
-            const data = await r.json();
-
-            const fill = document.getElementById("km-progress-fill");
-            const text = document.getElementById("km-progress-text");
-            const step = document.getElementById("km-progress-step");
-
-            if(fill){
-                fill.style.width = data.percentual + "%";
-            }
-
-            if(text){
-                text.innerText = data.percentual + "%";
-            }
-
-            if(step){
-                step.innerText = data.etapa;
-            }
-
-            if(data.percentual >= 100){
-                clearInterval(timer);
-            }
-        }catch(e){
-            console.error(e);
-        }
-    }, 1000);
-}
-
-document.addEventListener("DOMContentLoaded", function(){
-
-    const forms = document.querySelectorAll("form");
-
-    forms.forEach((form) => {
-        form.addEventListener("submit", function(){
-            iniciarPollingImportacao();
-        });
-    });
-});
-</script>
-
-{% endblock %}
+{% block title %}Lista LD Kongsberg{% endblock %}
 
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'automacoes/css/ops_enterprise.css' %}?v=1700">
@@ -335,7 +284,7 @@ document.addEventListener("DOMContentLoaded", function(){
     <div class="ops-detail-card">
       <span class="ops-filter-label">Registros filtrados</span>
       <strong>{{ total }}</strong>
-      <div class="ops-muted mt-2">base importada da LD_KM.</div>
+      <div class="ops-muted mt-2">base importada das abas Basic Design e Detail Engineering.</div>
     </div>
   </section>
 
@@ -343,7 +292,7 @@ document.addEventListener("DOMContentLoaded", function(){
     <div class="ops-kpi">
       <span>Total KM</span>
       <strong>{{ total_km|default:total }}</strong>
-      <small>documentos importados</small>
+      <small>documentos importados das abas KM</small>
     </div>
 
     <div class="ops-kpi">
