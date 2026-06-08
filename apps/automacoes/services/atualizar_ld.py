@@ -15,6 +15,7 @@ PLANILHA = r"\\virm-rgr022\FILESERVER\Projetos\05_HANDYMAX\09. Doc Control\3 - L
 
 ABA_LD = "LD"
 ABA_LD_MARENOVA = "LD MARENOVA"
+ABA_LD_BASICO = "LD BASICO"
 ABA_MEDICAO = "MEDIÇÃO"  # exatamente como está no Excel
 
 PASTA_DOCS = r"\\virm-rgr022\FILESERVER\Projetos\05_HANDYMAX\09. Doc Control\10 - Engenharia"
@@ -840,43 +841,6 @@ def aplicar_formatacao(ws):
         except Exception:
             pass
 
-
-    # ==========================================================
-    # COLORAÇÃO STATUS H
-    # ==========================================================
-    cores_status_h = {
-        "APROVADO": 0x50B000,
-        "APROVADO COM COMENTÁRIOS": 0x50D092,
-        "APROVADO COM COMENTARIOS": 0x50D092,
-
-        "NÃO APROVADO": 0xCCCCF4,
-        "NAO APROVADO": 0xCCCCF4,
-
-        "CANCELAR": 0x99E6FF,
-        "CANCELADO": 0x6666E0,
-
-        "PARA INFORMAÇÃO": 0x9CCBF9,
-
-        "PARA CONSTRUÇÃO": 0x00B000,
-
-	"EM ANÁLISE": 0x9DC3E6,
-    }
-
-    for r in range(2, last_row + 1):
-
-        try:
-
-            status_h = str(ws[f"H{r}"].value or "").strip().upper()
-
-            cor = cores_status_h.get(status_h)
-
-            if cor is not None:
-                ws[f"H{r}"].api.Interior.Color = cor
-
-        except Exception:
-            pass
-
-
     # remove formatações condicionais
     try:
         ws.api.Cells.FormatConditions.Delete()
@@ -1038,41 +1002,6 @@ def atualizar_medicao(wb, aba_origem):
 
     log(f"✅ {qtd_linhas} linhas copiadas para '{ABA_MEDICAO}' a partir de '{aba_origem}': A4:F{last_dest_row}.")
 
-
-def aplicar_cor_status_linha(ws, row, status):
-    """
-    Colore a linha A:Q conforme status operacional da coluna H.
-    """
-    status = str(status or "").strip().upper()
-
-    cores = {
-        "APROVADO": 0x50B000,                    # Verde médio
-        "APROVADO COM COMENTÁRIOS": 0x50D092,   # Verde claro
-        "APROVADO COM COMENTARIOS": 0x50D092,
-
-        "NÃO APROVADO": 0xCCCCF4,               # Vermelho fraco
-        "NAO APROVADO": 0xCCCCF4,
-
-        "CANCELAR": 0x99E6FF,                   # Amarelo claro
-        "CANCELADO": 0x6666E0,                  # Vermelho médio
-
-        "PARA INFORMAÇÃO": 0x9CCBF9,            # Laranja fraco
-
-        "PARA CONSTRUÇÃO": 0x00B000,            # Verde forte
-	"EM ANÁLISE": 0x9DC3E6,            # Verde forte
-    }
-
-    cor = cores.get(status)
-
-    if cor is None:
-        return
-
-    try:
-        ws.range(f"A{row}:Q{row}").api.Interior.Color = cor
-    except Exception:
-        pass
-
-
 # ==========================================================
 # PROCESSAR UMA ABA (LD / LD MARENOVA)
 # ==========================================================
@@ -1086,7 +1015,7 @@ def _preencher_data_por_modo(cell, modo: str, dt: datetime | None, obs: str):
     # DATA
     setar_data(cell, dt)
 
-def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_pcf_resp, idx_grd_resp, status_pcfs):
+def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_pcf_resp, idx_grd_resp, status_pcfs, inserir_revisoes=True):
     ws = wb.sheets[aba_nome]
     log(f"📄 Processando aba: {aba_nome}")
 
@@ -1095,7 +1024,10 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
 
     try:
         # 1) inserir revisões novas vindas da Engenharia
-        inserir_revisoes_novas(ws, idx_eng)
+        if inserir_revisoes:
+            inserir_revisoes_novas(ws, idx_eng)
+        else:
+            log(f"ℹ️ Inserção de revisões novas desativada para a aba {aba_nome}. Atualizando apenas linhas existentes.")
 
         # 2) recalcular última linha depois das inserções
         last = ws.range("B" + str(ws.cells.last_cell.row)).end("up").row
@@ -1105,9 +1037,13 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
             codigo = str(ws[f"B{r}"].value or "").strip()
             rev = normalizar_rev(ws[f"C{r}"].value)
 
-            # ✅ REGRA: se a coluna H estiver em status final, não substitui/atualiza nada na linha
+            # ✅ REGRA COLUNA H
+            # LD / LD MARENOVA:
+            #   status finais bloqueiam a linha inteira.
+            # LD BASICO:
+            #   alguns status manuais preservam H, mas as demais colunas continuam atualizando.
             status_h = str(ws[f"H{r}"].value or "").strip().upper()
-            # aplicar_cor_status_linha(ws, r, status_h)
+
             STATUS_H_BLOQUEADOS = {
                 "APROVADO",
                 "APROVADO COM COMENTÁRIOS",
@@ -1116,11 +1052,26 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
                 "NAO APROVADO",
                 "CANCELAR",
                 "CANCELADO",
-		"PARA INFORMAÇÃO",
-		"PARA CONSTRUÇÃO",
+                "PARA INFORMAÇÃO",
+                "PARA CONSTRUÇÃO",
             }
 
-            if status_h in STATUS_H_BLOQUEADOS:
+            STATUS_H_PRESERVAR_LD_BASICO = {
+                "REPROVADO",
+                "APROVADO",
+                "APROVADO COM COMENTÁRIOS",
+                "APROVADO COM COMENTARIOS",
+                "APROVADO SEM COMENTÁRIOS",
+                "APROVADO SEM COMENTARIOS",
+                "AGUARDANDO PCF",
+            }
+
+            preservar_h_ld_basico = (
+                aba_nome == ABA_LD_BASICO
+                and status_h in STATUS_H_PRESERVAR_LD_BASICO
+            )
+
+            if aba_nome != ABA_LD_BASICO and status_h in STATUS_H_BLOQUEADOS:
                 if LOG_DETALHADO:
                     log(f"   [SKIP] {aba_nome} L{r} ignorada (H = {status_h})")
                 continue
@@ -1136,7 +1087,32 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
                 limpar_hyperlink(ws[f"B{r}"])
                 ws[f"B{r}"].value = codigo
 
-            ws[f"H{r}"].value = "Recebido" if codigo in idx_eng_codigos else "Não Recebido"
+            if aba_nome == ABA_LD_BASICO:
+                # Regra especial LD BASICO:
+                # - NÃO RECEBIDO / RECEBIDO E NÃO EMITIDO só mudam para RECEBIDO se o documento for encontrado.
+                # - Se não encontrar, preserva o status atual.
+                # - Status manuais/finais são preservados sempre, mas I:Q continuam atualizando.
+                if status_h in {"NÃO RECEBIDO", "NAO RECEBIDO", "RECEBIDO E NÃO EMITIDO", "RECEBIDO E NAO EMITIDO"}:
+                    if codigo in idx_eng_codigos:
+                        ws[f"H{r}"].value = "Recebido"
+                        if LOG_DETALHADO:
+                            log(f"   [H] {aba_nome} L{r}: {status_h} -> RECEBIDO")
+                    else:
+                        if LOG_DETALHADO:
+                            log(f"   [H] {aba_nome} L{r} preservada (H = {status_h}); documento ainda não encontrado.")
+
+                elif preservar_h_ld_basico:
+                    if LOG_DETALHADO:
+                        log(f"   [H] {aba_nome} L{r} preservada (H = {status_h}); atualizando I:Q normalmente.")
+
+                else:
+                    # Para qualquer outro status vazio/operacional da LD BASICO, evita derrubar para Não Recebido.
+                    if codigo in idx_eng_codigos:
+                        ws[f"H{r}"].value = "Recebido"
+                    elif not status_h:
+                        ws[f"H{r}"].value = "Não Recebido"
+            else:
+                ws[f"H{r}"].value = "Recebido" if codigo in idx_eng_codigos else "Não Recebido"
 
             # GRD (J / K)
             info = idx_grd.get(codigo, {}).get(rev)
@@ -1467,10 +1443,17 @@ def processar():
             wb = app.books.open(PLANILHA)
 
             atualizar_progresso_ld(65, "Processando aba LD...", "running", "Atualizando status, GRDs, PCFs e respostas da aba LD.")
-            processar_aba(wb, ABA_LD, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_pcf_resp, idx_grd_resp, status_pcfs)
+            processar_aba(wb, ABA_LD, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_pcf_resp, idx_grd_resp, status_pcfs, inserir_revisoes=True)
 
             atualizar_progresso_ld(78, "Processando aba LD MARENOVA...", "running", "Atualizando status, GRDs, PCFs e respostas da aba LD MARENOVA.")
-            processar_aba(wb, ABA_LD_MARENOVA, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_pcf_resp, idx_grd_resp, status_pcfs)
+            processar_aba(wb, ABA_LD_MARENOVA, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_pcf_resp, idx_grd_resp, status_pcfs, inserir_revisoes=True)
+
+            try:
+                wb.sheets[ABA_LD_BASICO]
+                atualizar_progresso_ld(84, "Processando aba LD BASICO...", "running", "Atualizando LD BASICO sem inserir novas revisões.")
+                processar_aba(wb, ABA_LD_BASICO, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_pcf_resp, idx_grd_resp, status_pcfs, inserir_revisoes=False)
+            except Exception as exc:
+                log(f"ℹ️ Aba {ABA_LD_BASICO} não processada: {exc}")
 
             atualizar_progresso_ld(86, "Atualizando medição...", "running", "Copiando dados consolidados para a aba MEDIÇÃO.")
             atualizar_medicao(wb, ABA_LD)
@@ -1481,6 +1464,8 @@ def processar():
             log(f"✅ LD importada para o banco: {resumo_ld.get('total', 0)} registros.")
 
             atualizar_progresso_ld(97, "Salvando planilha LD...", "running", "Salvando alterações na planilha LD.")
+            backup_planilha()
+            log("🔒 Backup de segurança criado antes do salvamento da LD.")
             wb.save()
             atualizar_progresso_ld(100, "Atualização LD concluída.", "done", "Atualização LD finalizada com sucesso.")
             log("✅ LDP finalizado com sucesso!")
@@ -1587,6 +1572,7 @@ def executar():
                 "planilha": PLANILHA,
                 "aba_ld": ABA_LD,
                 "aba_ld_marenova": ABA_LD_MARENOVA,
+                "aba_ld_basico": ABA_LD_BASICO,
                 "logs": PASTA_LOGS,
             },
         }
