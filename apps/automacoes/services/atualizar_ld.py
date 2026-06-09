@@ -1455,8 +1455,7 @@ def processar():
             except Exception as exc:
                 log(f"ℹ️ Aba {ABA_LD_BASICO} não processada: {exc}")
 
-            atualizar_progresso_ld(86, "Atualizando medição...", "running", "Copiando dados consolidados para a aba MEDIÇÃO.")
-            atualizar_medicao(wb, ABA_LD)
+            atualizar_progresso_ld(86, "Medição desabilitada.", "running", "Etapa de atualização da aba MEDIÇÃO ignorada por regra operacional.")
 
             atualizar_progresso_ld(92, "Importando LD para o banco...", "running", "Atualizando registros DocumentoLD no banco Django.")
             log("💾 Importando LD para banco do GED...")
