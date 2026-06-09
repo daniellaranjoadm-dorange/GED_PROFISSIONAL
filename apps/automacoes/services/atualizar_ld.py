@@ -1037,6 +1037,17 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
             codigo = str(ws[f"B{r}"].value or "").strip()
             rev = normalizar_rev(ws[f"C{r}"].value)
 
+            # LD BASICO: sincroniza para a maior revisão existente na Engenharia,
+            # sem inserir novas linhas.
+            if aba_nome == ABA_LD_BASICO and codigo:
+                revs_eng = list(idx_eng.get(codigo, {}).keys())
+                if revs_eng:
+                    maior_rev = sorted(revs_eng, key=rev_key)[-1]
+                    if rev_key(maior_rev) > rev_key(rev):
+                        ws[f"C{r}"].value = maior_rev
+                        rev = maior_rev
+                        log(f"🔄 LD BASICO L{r} | {codigo}: revisão atualizada para {maior_rev}")
+
             # ✅ REGRA COLUNA H
             # LD / LD MARENOVA:
             #   status finais bloqueiam a linha inteira.
