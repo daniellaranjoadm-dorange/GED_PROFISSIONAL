@@ -1098,32 +1098,46 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
                 limpar_hyperlink(ws[f"B{r}"])
                 ws[f"B{r}"].value = codigo
 
+            documento_encontrado = codigo in idx_eng_codigos
+            pcf_recebida_para_rev = False
+            if documento_encontrado:
+                mapa_pcf_status_h = idx_pcf.get(codigo, {})
+                base_rev_status_h = (rev or "").strip().upper()
+
+                for rev_pcf_status_h in mapa_pcf_status_h.keys():
+                    ok_status_h, _sufixo_status_h = _split_by_base(rev_pcf_status_h, base_rev_status_h)
+                    if ok_status_h:
+                        pcf_recebida_para_rev = True
+                        break
+
+            status_auto_h = (
+                "Recebido"
+                if documento_encontrado and pcf_recebida_para_rev
+                else "Aguardando PCF"
+                if documento_encontrado and not pcf_recebida_para_rev
+                else "Não Recebido"
+            )
+
             if aba_nome == ABA_LD_BASICO:
                 # Regra especial LD BASICO:
-                # - NÃO RECEBIDO / RECEBIDO E NÃO EMITIDO só mudam para RECEBIDO se o documento for encontrado.
-                # - Se não encontrar, preserva o status atual.
-                # - Status manuais/finais são preservados sempre, mas I:Q continuam atualizando.
-                if status_h in {"NÃO RECEBIDO", "NAO RECEBIDO", "RECEBIDO E NÃO EMITIDO", "RECEBIDO E NAO EMITIDO"}:
-                    if codigo in idx_eng_codigos:
-                        ws[f"H{r}"].value = "Recebido"
-                        if LOG_DETALHADO:
-                            log(f"   [H] {aba_nome} L{r}: {status_h} -> RECEBIDO")
-                    else:
-                        if LOG_DETALHADO:
-                            log(f"   [H] {aba_nome} L{r} preservada (H = {status_h}); documento ainda não encontrado.")
+                # - NÃO RECEBIDO / RECEBIDO E NÃO EMITIDO podem evoluir automaticamente.
+                # - Se documento existe mas a PCF da revisão ainda não chegou, fica AGUARDANDO PCF.
+                # - Status manuais/finais são preservados, mas I:Q continuam atualizando.
+                if status_h in {"NÃO RECEBIDO", "NAO RECEBIDO", "RECEBIDO", "RECEBIDO E NÃO EMITIDO", "RECEBIDO E NAO EMITIDO", "AGUARDANDO PCF"}:
+                    ws[f"H{r}"].value = status_auto_h
+                    if LOG_DETALHADO:
+                        log(f"   [H] {aba_nome} L{r}: {status_h or '-'} -> {status_auto_h}")
 
                 elif preservar_h_ld_basico:
                     if LOG_DETALHADO:
                         log(f"   [H] {aba_nome} L{r} preservada (H = {status_h}); atualizando I:Q normalmente.")
 
                 else:
-                    # Para qualquer outro status vazio/operacional da LD BASICO, evita derrubar para Não Recebido.
-                    if codigo in idx_eng_codigos:
-                        ws[f"H{r}"].value = "Recebido"
-                    elif not status_h:
-                        ws[f"H{r}"].value = "Não Recebido"
+                    # Para qualquer outro status vazio/operacional da LD BASICO, evita derrubar status manual.
+                    if not status_h:
+                        ws[f"H{r}"].value = status_auto_h
             else:
-                ws[f"H{r}"].value = "Recebido" if codigo in idx_eng_codigos else "Não Recebido"
+                ws[f"H{r}"].value = status_auto_h
 
             # GRD (J / K)
             info = idx_grd.get(codigo, {}).get(rev)
