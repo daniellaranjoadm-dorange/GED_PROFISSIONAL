@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, date
 import xlwings as xw
 import re
 import threading
+from openpyxl import load_workbook
 
 from apps.automacoes.models import DocumentoLD
 
@@ -1002,6 +1003,155 @@ def atualizar_medicao(wb, aba_origem):
 
     log(f"✅ {qtd_linhas} linhas copiadas para '{ABA_MEDICAO}' a partir de '{aba_origem}': A4:F{last_dest_row}.")
 
+
+# ==========================================================
+# RESUMO PCF DIRETO NA ABA LD (MESMA DINÂMICA PCFs Recebidas TP)
+# ==========================================================
+def _pcf_norm_text(v):
+    if v is None:
+        return ""
+    s = str(v).strip().upper()
+    s = s.replace("\n", " ").replace("\r", " ")
+    s = re.sub(r"\s+", " ", s)
+    return s
+
+
+def _pcf_safe_str(v):
+    if v is None:
+        return ""
+    return str(v).strip()
+
+
+def _pcf_valor_invalido(v):
+    s = _pcf_norm_text(v)
+    return s in {
+        "#VALUE!",
+        "#REF!",
+        "#N/A",
+        "#DIV/0!",
+        "#NAME?",
+        "#NULL!",
+        "#NUM!",
+    }
+
+
+def extrair_qtd_open_under_review_ld(ws_pcf):
+    """
+    Mesma lógica operacional da aba PCFs Recebidas TP:
+    conta somente linhas com COMMENT STATUS preenchido.
+    """
+    comment_status_col = None
+    header_row = None
+
+    for r in range(1, min(ws_pcf.max_row or 1, 80) + 1):
+        for c in range(1, min(ws_pcf.max_column or 1, 40) + 1):
+            if _pcf_norm_text(ws_pcf.cell(r, c).value) == "COMMENT STATUS":
+                comment_status_col = c
+                header_row = r
+                break
+        if comment_status_col:
+            break
+
+    open_count = 0
+    qtd_comentarios = 0
+    under_review = 0
+
+    if not comment_status_col:
+        return open_count, qtd_comentarios, under_review
+
+    for r in range(header_row + 1, (ws_pcf.max_row or header_row) + 1):
+        status = _pcf_norm_text(ws_pcf.cell(r, comment_status_col).value)
+
+        if not status or _pcf_valor_invalido(status):
+            continue
+
+        qtd_comentarios += 1
+
+        if status == "OPEN":
+            open_count += 1
+        elif status in {"UNDER REVIEW", "UNDER_REVIEW", "UNDER-REVIEW"}:
+            under_review += 1
+
+    return open_count, qtd_comentarios, under_review
+
+
+def extrair_status_final_ld(ws_pcf):
+    """
+    Extrai STATUS FINAL com proteção contra valores inválidos como #VALUE!.
+    Padrão usado pela Timeline: coluna E a partir da linha 9.
+    """
+    status_final = ""
+
+    status_validos = {
+        "OPEN",
+        "CLOSED",
+        "RELEASED",
+        "NOT RELEASED",
+        "RELEASED WITH COMMENTS",
+        "CANCELLED",
+        "CANCELED",
+    }
+
+    for row in range(9, (ws_pcf.max_row or 9) + 1):
+        valor = _pcf_safe_str(ws_pcf.cell(row=row, column=5).value)
+        valor_norm = _pcf_norm_text(valor)
+
+        if not valor_norm:
+            continue
+
+        if _pcf_valor_invalido(valor_norm):
+            continue
+
+        if valor_norm not in status_validos:
+            continue
+
+        status_final = valor_norm
+
+    return status_final
+
+
+def ler_resumo_pcf_recebida_tp_para_ld(caminho_pcf):
+    """
+    Lê a PCF recebida e retorna os campos da dinâmica PCFs Recebidas TP.
+    Usado para preencher AV:AY na aba LD.
+    """
+    resultado = {
+        "open_comments": 0,
+        "qtd_comentarios": 0,
+        "under_review": 0,
+        "status_final": "",
+    }
+
+    if not caminho_pcf or not os.path.exists(caminho_pcf):
+        return resultado
+
+    try:
+        wb_pcf = load_workbook(caminho_pcf, data_only=True, read_only=True)
+        try:
+            ws_pcf = wb_pcf.active
+
+            open_count, qtd_comentarios, under_review = extrair_qtd_open_under_review_ld(ws_pcf)
+            status_final = extrair_status_final_ld(ws_pcf)
+
+            resultado.update({
+                "open_comments": open_count,
+                "qtd_comentarios": qtd_comentarios,
+                "under_review": under_review,
+                "status_final": status_final,
+            })
+        finally:
+            try:
+                wb_pcf.close()
+            except Exception:
+                pass
+
+    except Exception as exc:
+        if LOG_DETALHADO:
+            log(f"⚠️ Falha ao ler resumo PCF para LD: {caminho_pcf} | {exc}")
+
+    return resultado
+
+
 # ==========================================================
 # PROCESSAR UMA ABA (LD / LD MARENOVA)
 # ==========================================================
@@ -1083,6 +1233,52 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
             )
 
             if aba_nome != ABA_LD_BASICO and status_h in STATUS_H_BLOQUEADOS:
+                # Mesmo com status final/bloqueado na coluna H, a aba LD precisa receber
+                # os dados da dinâmica PCFs Recebidas TP nas colunas AV:AY.
+                if aba_nome == ABA_LD and codigo:
+                    mapa_skip_pcf = idx_pcf.get(codigo, {})
+                    rev_doc_skip = normalizar_rev(ws[f"C{r}"].value)
+                    best_skip = None
+                    best_key_skip = None
+
+                    if mapa_skip_pcf and rev_doc_skip:
+                        base_skip = (rev_doc_skip or "").strip().upper()
+                        for rev_pcf_skip, cand_skip in mapa_skip_pcf.items():
+                            ok_skip, sufixo_skip = _split_by_base(rev_pcf_skip, base_skip)
+                            if not ok_skip:
+                                continue
+
+                            k_skip = (_suffix_key(sufixo_skip), cand_skip.get("date") or datetime.min)
+                            if (
+                                best_key_skip is None
+                                or k_skip[0] > best_key_skip[0]
+                                or (k_skip[0] == best_key_skip[0] and k_skip[1] > best_key_skip[1])
+                            ):
+                                best_key_skip = k_skip
+                                best_skip = cand_skip
+
+                    if best_skip:
+                        resumo_skip = ler_resumo_pcf_recebida_tp_para_ld(best_skip.get("path"))
+                        status_skip_final = resumo_skip.get("status_final") or ws[f"N{r}"].value
+                        ws[f"AV{r}"].value = resumo_skip.get("open_comments", 0)
+                        ws[f"AW{r}"].value = resumo_skip.get("qtd_comentarios", 0)
+                        ws[f"AX{r}"].value = resumo_skip.get("under_review", 0)
+                        ws[f"AY{r}"].value = status_skip_final
+
+                        if LOG_DETALHADO:
+                            log(
+                                f"   [LD AV:AY SKIP] {aba_nome} L{r} | {codigo}_R{rev_doc_skip} => "
+                                f"OPEN={resumo_skip.get('open_comments', 0)} | "
+                                f"QTD={resumo_skip.get('qtd_comentarios', 0)} | "
+                                f"UNDER={resumo_skip.get('under_review', 0)} | "
+                                f"STATUS='{status_skip_final}'"
+                            )
+                    else:
+                        ws[f"AV{r}"].value = None
+                        ws[f"AW{r}"].value = None
+                        ws[f"AX{r}"].value = None
+                        ws[f"AY{r}"].value = None
+
                 if LOG_DETALHADO:
                     log(f"   [SKIP] {aba_nome} L{r} ignorada (H = {status_h})")
                 continue
