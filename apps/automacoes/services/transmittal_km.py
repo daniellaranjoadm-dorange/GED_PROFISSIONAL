@@ -58,9 +58,36 @@ pdfplumber = None
 
 
 def normalizar_data(texto: str) -> str:
+    """
+    Normaliza Data Envio para o padrão oficial da LD: dd/mm/aaaa.
+
+    Os Transmittals podem vir como:
+    - dd-mm-aaaa
+    - dd.mm.aaaa
+    - dd/mm/aaaa
+    - aaaa-mm-dd
+
+    A saída fica sempre como texto com barras, evitando que o Excel converta
+    automaticamente para formatos regionais diferentes.
+    """
     if not texto:
         return ""
-    return re.sub(r"\b(\d{2})\.(\d{2})\.(\d{4})\b", r"\1-\2-\3", texto.strip())
+
+    s = str(texto).strip()
+
+    # ISO: aaaa-mm-dd -> dd/mm/aaaa
+    m_iso = re.search(r"\b(\d{4})-(\d{2})-(\d{2})\b", s)
+    if m_iso:
+        ano, mes, dia = m_iso.groups()
+        return f"{dia}/{mes}/{ano}"
+
+    # Formatos TP/KM: dd-mm-aaaa, dd.mm.aaaa ou dd/mm/aaaa -> dd/mm/aaaa
+    m = re.search(r"\b(\d{2})[-./](\d{2})[-./](\d{4})\b", s)
+    if m:
+        dia, mes, ano = m.groups()
+        return f"{dia}/{mes}/{ano}"
+
+    return s
 
 
 def limpar_valor(valor: str) -> str:
@@ -668,6 +695,13 @@ def atualizar_lista_km_dentro_ld(registros_latest: List[Dict[str, str]]) -> Dict
                     dados.get("Transmittal N°", ""),
                 ])
 
+            # Força a coluna F como texto antes de gravar para preservar dd/mm/aaaa
+            # exatamente com barras, sem conversão automática do Excel.
+            try:
+                ws.range("F:F").api.NumberFormat = "@"
+            except Exception:
+                pass
+
             if linhas:
                 ws.range("A2").value = linhas
 
@@ -704,6 +738,14 @@ def atualizar_lista_km_dentro_ld(registros_latest: List[Dict[str, str]]) -> Dict
 
             try:
                 ws.range(f"F2:F{last_row}").api.NumberFormat = "@"
+                # Regrava as datas já normalizadas como texto para garantir
+                # dd/mm/aaaa mesmo quando a origem veio como dd-mm-aaaa.
+                if last_row >= 2:
+                    datas_formatadas = [
+                        [normalizar_data(dados.get("Data Envio", ""))]
+                        for dados in registros_latest
+                    ]
+                    ws.range(f"F2:F{last_row}").value = datas_formatadas
             except Exception:
                 pass
 
