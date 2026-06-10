@@ -1,4 +1,7 @@
 import re
+import os
+import shutil
+from datetime import datetime
 from apps.automacoes.models import TransmittalKM, ExecucaoAutomacao
 from apps.automacoes.services.document_link_engine import executar_vinculo_km_ld
 from pathlib import Path
@@ -6,6 +9,7 @@ from typing import Dict, List, Tuple
 from django.utils import timezone
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
+import xlwings as xw
 
 
 PASTA_PDFS = Path(
@@ -15,6 +19,14 @@ PASTA_PDFS = Path(
 ARQUIVO_EXCEL_NOVO = Path(
     r"\\virm-rgr022\FILESERVER\Projetos\05_HANDYMAX\09. Doc Control\15 - Documentos KM\0 Transmittal Letters\Transmittal Letters\Lista de Docs recebidos KM - NOVA.xlsx"
 )
+
+# LD MASTER: a lista KM passa a ser atualizada diretamente dentro da LD.
+PLANILHA_LD = Path(
+    r"\\virm-rgr022\FILESERVER\Projetos\05_HANDYMAX\09. Doc Control\3 - LD\I-LD-4880.00-9311-000-CZ1-001_RD.xlsm"
+)
+ABA_LD_LISTA_KM = "Lista de Docs recebidos KM"
+PASTA_LOGS_LD = PLANILHA_LD.parent / "Logs"
+PASTA_BACKUPS_LD = PASTA_LOGS_LD / "Backups"
 
 ABA_PLANILHA = "Planilha1"
 ABA_LOG = "LOG"
@@ -531,6 +543,211 @@ def salvar_no_banco(dados: dict):
     return True
 
 
+
+# ==========================================================
+# EXPORTAÇÃO DIRETA PARA LD MASTER
+# ==========================================================
+def normalizar_endereco_hyperlink(endereco: str) -> str:
+    """
+    Grava links de rede como UNC puro, evitando file:/// no Excel.
+    """
+    s = str(endereco or "").strip()
+    if not s:
+        return ""
+
+    s = s.replace("%20", " ")
+    lower = s.lower()
+
+    if lower.startswith("file:///"):
+        s = s[8:]
+    elif lower.startswith("file://"):
+        s = s[7:]
+    elif lower.startswith("file:/"):
+        s = s[6:]
+
+    while s.startswith("/") and not s.startswith("//"):
+        s = s[1:]
+
+    if s.startswith("//"):
+        s = "\\\\" + s.lstrip("/").replace("/", "\\")
+
+    return s
+
+
+def backup_ld_master() -> str:
+    """
+    Cria backup da LD antes de sobrescrever a aba Lista de Docs recebidos KM.
+    """
+    PASTA_BACKUPS_LD.mkdir(parents=True, exist_ok=True)
+
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    nome = PLANILHA_LD.stem
+    ext = PLANILHA_LD.suffix
+    destino = PASTA_BACKUPS_LD / f"{nome}_BK_KM_TRANSMITTAL_{ts}{ext}"
+
+    shutil.copy2(str(PLANILHA_LD), str(destino))
+    print(f"[INFO] Backup LD criado antes da atualização KM: {destino}")
+
+    return str(destino)
+
+
+def _limpar_hyperlink_xlwings(cell):
+    try:
+        cell.api.Hyperlinks.Delete()
+    except Exception:
+        pass
+
+
+def _setar_hyperlink_xlwings(cell, texto: str, endereco: str):
+    texto = str(texto or "").strip()
+    endereco = normalizar_endereco_hyperlink(endereco)
+
+    _limpar_hyperlink_xlwings(cell)
+    cell.value = texto
+
+    if not texto or not endereco:
+        return
+
+    try:
+        cell.api.Hyperlinks.Add(
+            Anchor=cell.api,
+            Address=endereco,
+            TextToDisplay=texto,
+        )
+    except Exception:
+        try:
+            cell.add_hyperlink(endereco, texto)
+        except Exception:
+            pass
+
+
+def atualizar_lista_km_dentro_ld(registros_latest: List[Dict[str, str]]) -> Dict[str, object]:
+    """
+    Atualiza diretamente a aba 'Lista de Docs recebidos KM' dentro da LD MASTER.
+
+    Regras:
+    - uma linha por documento KM;
+    - mantém somente o registro mais recente, já recebido em registros_latest;
+    - recria o conteúdo operacional A:G da aba;
+    - mantém hyperlinks no Documento e no Transmittal apontando para o PDF original.
+    """
+    if not PLANILHA_LD.exists():
+        raise FileNotFoundError(f"LD Master não encontrada: {PLANILHA_LD}")
+
+    backup_path = backup_ld_master()
+    wb = None
+
+    try:
+        with xw.App(visible=False, add_book=False) as app:
+            app.display_alerts = False
+            app.screen_updating = False
+
+            wb = app.books.open(str(PLANILHA_LD), update_links=False)
+
+            try:
+                ws = wb.sheets[ABA_LD_LISTA_KM]
+            except Exception:
+                ws = wb.sheets.add(ABA_LD_LISTA_KM, after=wb.sheets[-1])
+                print(f"[INFO] Aba criada na LD: {ABA_LD_LISTA_KM}")
+
+            # Limpa a aba inteira para evitar sobras de execuções antigas.
+            ws.clear()
+
+            # Cabeçalhos oficiais iguais ao Excel antigo.
+            ws.range("A1").value = [CABECALHOS]
+
+            linhas = []
+            for dados in registros_latest:
+                linhas.append([
+                    dados.get("Documento", ""),
+                    dados.get("Titulo", ""),
+                    dados.get("Pasta", ""),
+                    dados.get("Emissão", ""),
+                    dados.get("Proposito de Emissão", ""),
+                    normalizar_data(dados.get("Data Envio", "")),
+                    dados.get("Transmittal N°", ""),
+                ])
+
+            if linhas:
+                ws.range("A2").value = linhas
+
+            last_row = max(1, len(linhas) + 1)
+
+            # Hyperlinks nativos em A e G.
+            for idx, dados in enumerate(registros_latest, start=2):
+                arquivo_pdf = dados.get("Arquivo PDF", "")
+                _setar_hyperlink_xlwings(ws[f"A{idx}"], dados.get("Documento", ""), arquivo_pdf)
+                _setar_hyperlink_xlwings(ws[f"G{idx}"], dados.get("Transmittal N°", ""), arquivo_pdf)
+
+            # Formatação básica enterprise.
+            rng = ws.range(f"A1:G{last_row}")
+            try:
+                rng.api.Font.Name = "Arial"
+                rng.api.Font.Size = 11
+                rng.api.VerticalAlignment = -4108
+                rng.api.HorizontalAlignment = -4108
+            except Exception:
+                pass
+
+            try:
+                header = ws.range("A1:G1")
+                header.api.Font.Bold = True
+                header.api.Interior.Color = 0x1F4E78
+                header.api.Font.Color = 0xFFFFFF
+            except Exception:
+                pass
+
+            try:
+                ws.range(f"B2:B{last_row}").api.HorizontalAlignment = -4131
+            except Exception:
+                pass
+
+            try:
+                ws.range(f"F2:F{last_row}").api.NumberFormat = "@"
+            except Exception:
+                pass
+
+            try:
+                ws.range("A:G").api.Columns.AutoFit()
+            except Exception:
+                pass
+
+            try:
+                if ws.api.AutoFilterMode:
+                    ws.api.AutoFilterMode = False
+                ws.range(f"A1:G{last_row}").api.AutoFilter()
+            except Exception:
+                pass
+
+            wb.save()
+
+        print(f"[INFO] LD atualizada diretamente na aba '{ABA_LD_LISTA_KM}': {len(linhas)} linha(s).")
+
+        return {
+            "ok": True,
+            "linhas": len(linhas),
+            "aba": ABA_LD_LISTA_KM,
+            "planilha": str(PLANILHA_LD),
+            "backup": backup_path,
+        }
+
+    except Exception:
+        # Se falhar depois do backup, restaura para não deixar a LD em estado parcial.
+        try:
+            shutil.copy2(backup_path, str(PLANILHA_LD))
+            print("[INFO] Backup da LD restaurado após falha na atualização KM.")
+        except Exception as rb_err:
+            print(f"[ERRO] Falha ao restaurar backup da LD: {rb_err}")
+        raise
+
+    finally:
+        if wb is not None:
+            try:
+                wb.close()
+            except Exception:
+                pass
+
+
 def processar():
     if not PASTA_PDFS.exists():
         print(f"[ERRO] Pasta não encontrada: {PASTA_PDFS}")
@@ -620,11 +837,14 @@ def processar():
     ajustar_largura_log(ws_log)
     wb.save(ARQUIVO_EXCEL_NOVO)
 
+    resultado_ld = atualizar_lista_km_dentro_ld(registros_latest)
+
     print("\n=== RESUMO TRANSMITTAL KM ===")
     print(f"PDFs lidos: {total_pdfs_lidos}")
     print(f"Linhas gravadas: {total_registros}")
     print(f"Duplicados ignorados por documento: {total_duplicados}")
     print(f"Arquivo gerado: {ARQUIVO_EXCEL_NOVO}")
+    print(f"LD atualizada: {resultado_ld.get('planilha')} | Aba: {resultado_ld.get('aba')}")
 
     return {
         "ok": True,
@@ -632,12 +852,14 @@ def processar():
         "linhas_gravadas": total_registros,
         "duplicados_ignorados": total_duplicados,
         "arquivo": str(ARQUIVO_EXCEL_NOVO),
+        "ld_master": resultado_ld,
         "quantidade_processada": total_registros,
         "detalhes": {
             "pdfs_lidos": total_pdfs_lidos,
             "linhas_gravadas": total_registros,
             "duplicados_ignorados": total_duplicados,
             "arquivo": str(ARQUIVO_EXCEL_NOVO),
+            "ld_master": resultado_ld,
         },
     }
 
