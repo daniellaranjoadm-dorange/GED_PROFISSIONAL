@@ -4,7 +4,6 @@ from datetime import datetime, timedelta, date
 import xlwings as xw
 import re
 import threading
-from openpyxl import load_workbook
 
 from apps.automacoes.models import DocumentoLD
 
@@ -67,7 +66,7 @@ FREEZE_PANES = False
 
 # ✅ Formatação
 APLICAR_FORMATACAO = True
-ULTIMA_COLUNA = "Q"  # na sua LD vai até Q
+ULTIMA_COLUNA = "AY"  # LD/LD BASICO com PCF Intelligence até AY
 
 # Excel constants
 xlCenter = -4108
@@ -75,7 +74,7 @@ xlLeft = -4131
 
 # ✅ Formato de data desejado no Excel PT-BR (para não aparecer yyyy)
 DATE_NUMBERFORMAT_LOCAL = "dd/mm/aaaa"
-DATE_NUMBERFORMAT_FALLBACK = "dd/mm/yyyy"  # formato invariável do Excel, funciona mesmo em ambiente EN-US
+DATE_NUMBERFORMAT_FALLBACK = "dd/mm/yyyy"  # formato invariável do Excel
 
 # ==========================================================
 # LOG
@@ -214,23 +213,14 @@ def _coerce_to_date(v):
     return None
 
 def _aplicar_formato_data(cell):
-    """
-    Aplica formato de data PT-BR.
-    Primeiro usa NumberFormat, que é mais estável em Excel instalado em EN-US.
-    Depois tenta NumberFormatLocal para ambientes PT-BR.
-    """
+    """Aplica formato de data real no Excel sem deixar 'yyyy' literal."""
     try:
-        cell.api.NumberFormat = DATE_NUMBERFORMAT_FALLBACK  # dd/mm/yyyy
+        cell.api.NumberFormat = DATE_NUMBERFORMAT_FALLBACK
     except Exception:
         pass
 
     try:
-        cell.api.NumberFormatLocal = DATE_NUMBERFORMAT_LOCAL  # dd/mm/aaaa
-    except Exception:
-        pass
-
-    try:
-        cell.api.NumberFormat = DATE_NUMBERFORMAT_FALLBACK  # reforço final
+        cell.api.NumberFormatLocal = DATE_NUMBERFORMAT_LOCAL
     except Exception:
         pass
 
@@ -244,24 +234,19 @@ def setar_data(cell, v):
     _aplicar_formato_data(cell)
 
 def forcar_numberformat_coluna(ws, col_letter, start_row, end_row):
-    """Força formato dd/mm/aaaa em uma coluna de datas, mesmo se o Excel estiver em EN-US."""
+    """Força formato de data real no Excel sem exibir 'yyyy' literal."""
     if end_row < start_row:
         return
 
     rng = ws.range(f"{col_letter}{start_row}:{col_letter}{end_row}")
 
     try:
-        rng.api.NumberFormat = DATE_NUMBERFORMAT_FALLBACK  # dd/mm/yyyy
+        rng.api.NumberFormat = DATE_NUMBERFORMAT_FALLBACK
     except Exception:
         pass
 
     try:
-        rng.api.NumberFormatLocal = DATE_NUMBERFORMAT_LOCAL  # dd/mm/aaaa
-    except Exception:
-        pass
-
-    try:
-        rng.api.NumberFormat = DATE_NUMBERFORMAT_FALLBACK  # reforço final
+        rng.api.NumberFormatLocal = DATE_NUMBERFORMAT_LOCAL
     except Exception:
         pass
 
@@ -335,6 +320,38 @@ def extrair_grd_do_caminho(path):
 # ==========================================================
 # HELPERS (HYPERLINK)
 # ==========================================================
+def normalizar_endereco_hyperlink(endereco):
+    """
+    Garante que caminhos UNC sejam gravados no Excel como caminho de rede normal,
+    sem prefixo file:///.
+    """
+    s = str(endereco or "").strip()
+
+    if not s:
+        return ""
+
+    s = s.replace("%20", " ")
+    lower = s.lower()
+
+    if lower.startswith("file:///"):
+        s = s[8:]
+    elif lower.startswith("file://"):
+        s = s[7:]
+    elif lower.startswith("file:/"):
+        s = s[6:]
+
+    # Remove uma barra inicial indevida antes de caminho UNC.
+    while s.startswith("/") and not s.startswith("//"):
+        s = s[1:]
+
+    # Converte //servidor/pasta para \\servidor\pasta.
+    if s.startswith("//"):
+        s = "\\\\" + s.lstrip("/").replace("/", "\\")
+
+    # Preserva caminhos UNC já corretos.
+    return s
+
+
 def limpar_hyperlink(cell):
     try:
         cell.api.Hyperlinks.Delete()
@@ -342,9 +359,28 @@ def limpar_hyperlink(cell):
         pass
 
 def setar_hyperlink(cell, endereco, texto):
+    """
+    Cria hyperlink preservando caminho UNC de rede.
+
+    Evita links quebrados do tipo file:///\\servidor\pasta\arquivo.xlsx.
+    """
     limpar_hyperlink(cell)
+
+    endereco_limpo = normalizar_endereco_hyperlink(endereco)
     cell.value = texto
-    cell.add_hyperlink(endereco, texto)
+
+    if not endereco_limpo:
+        return
+
+    try:
+        cell.api.Hyperlinks.Add(
+            Anchor=cell.api,
+            Address=endereco_limpo,
+            TextToDisplay=str(texto or "")
+        )
+    except Exception:
+        cell.add_hyperlink(endereco_limpo, texto)
+
 
 # ==========================================================
 # HELPERS (AUTOFILTER)
@@ -631,15 +667,67 @@ def normalizar_chave_pcf(v):
     return str(v or "").strip()
 
 
+def _coluna_num_para_letra(n: int) -> str:
+    """Converte número de coluna Excel (1=A) para letra."""
+    letras = ""
+    while n:
+        n, resto = divmod(n - 1, 26)
+        letras = chr(65 + resto) + letras
+    return letras
+
+
+def _normalizar_header(v) -> str:
+    s = str(v or "").strip().upper()
+    s = (
+        s.replace("Á", "A").replace("À", "A").replace("Â", "A").replace("Ã", "A")
+         .replace("É", "E").replace("Ê", "E")
+         .replace("Í", "I")
+         .replace("Ó", "O").replace("Ô", "O").replace("Õ", "O")
+         .replace("Ú", "U")
+         .replace("Ç", "C")
+    )
+    s = re.sub(r"\s+", " ", s)
+    return s
+
+
+def _achar_coluna_por_headers(ws, aliases, fallback_col=None, header_row=1):
+    """
+    Procura uma coluna pelo cabeçalho.
+    Se não achar, retorna fallback_col.
+    """
+    aliases_norm = {_normalizar_header(a) for a in aliases}
+    try:
+        last_col = ws.range((header_row, ws.cells.last_cell.column)).end("left").column
+        for c in range(1, last_col + 1):
+            h = _normalizar_header(ws.range((header_row, c)).value)
+            if h in aliases_norm:
+                return _coluna_num_para_letra(c)
+    except Exception:
+        pass
+    return fallback_col
+
+
+def _valor_intel(valor):
+    """Normaliza campos numéricos/textuais da inteligência PCF sem destruir zeros."""
+    if valor is None:
+        return ""
+    return valor
+
+
 def carregar_status_pcfs_timeline(app):
     """
     Carrega da Timeline PCFs:
       Aba: PCFs Recebidas TP
       Chave exata: coluna B (PCF LINK)
-      Valor retornado: coluna L (STATUS FINAL)
 
-    Esse índice será usado para preencher LD!N.
-    A coluna M da LD permanece sendo a data de recebimento da PCF.
+    Retorna um dicionário por PCF com:
+      qtd_comentarios -> AV
+      open_comments   -> AW
+      under_review    -> AX
+      status_final    -> AY e N
+
+    Mantém a regra antiga:
+      LD/LD BASICO coluna L == Timeline coluna B.
     """
     idx = {}
 
@@ -652,14 +740,39 @@ def carregar_status_pcfs_timeline(app):
         wb_tl = app.books.open(TIMELINE_PCF, update_links=False, read_only=True)
         ws_tl = wb_tl.sheets["PCFs Recebidas TP"]
 
-        last = ws_tl.range("B" + str(ws_tl.cells.last_cell.row)).end("up").row
+        # Chave oficial continua fixa na coluna B.
+        col_chave = "B"
+
+        # Fallbacks compatíveis com a estrutura atual da Timeline:
+        # I/J/K/L = Qtd Comentários / Open Comments / Under Review / Status Final
+        col_qtd = _achar_coluna_por_headers(
+            ws_tl,
+            ["QTD COMENTARIOS", "QTD COMENTÁRIOS", "QTD COMENTARIO", "QTD COMENTÁRIO"],
+            fallback_col="I",
+        )
+        col_open = _achar_coluna_por_headers(
+            ws_tl,
+            ["OPEN COMMENTS", "OPEN COMMENT", "OPEN COMMER"],
+            fallback_col="J",
+        )
+        col_under = _achar_coluna_por_headers(
+            ws_tl,
+            ["UNDER REVIEW", "UNDER REVIE"],
+            fallback_col="K",
+        )
+        col_status = _achar_coluna_por_headers(
+            ws_tl,
+            ["STATUS FINAL", "STATUS FINAL PCF", "FINAL STATUS"],
+            fallback_col="L",
+        )
+
+        last = ws_tl.range(col_chave + str(ws_tl.cells.last_cell.row)).end("up").row
 
         duplicadas = 0
         vazias = 0
 
         for rr in range(2, last + 1):
-            chave = normalizar_chave_pcf(ws_tl[f"B{rr}"].value)
-            status = ws_tl[f"L{rr}"].value
+            chave = normalizar_chave_pcf(ws_tl[f"{col_chave}{rr}"].value)
 
             if not chave:
                 vazias += 1
@@ -668,9 +781,18 @@ def carregar_status_pcfs_timeline(app):
             if chave in idx:
                 duplicadas += 1
 
-            idx[chave] = status
+            idx[chave] = {
+                "qtd_comentarios": _valor_intel(ws_tl[f"{col_qtd}{rr}"].value),
+                "open_comments": _valor_intel(ws_tl[f"{col_open}{rr}"].value),
+                "under_review": _valor_intel(ws_tl[f"{col_under}{rr}"].value),
+                "status_final": _valor_intel(ws_tl[f"{col_status}{rr}"].value),
+            }
 
-        log(f"📘 Status Final PCFs carregados da Timeline: {len(idx)} chaves exatas.")
+        log(
+            "📘 PCF Intelligence carregada da Timeline: "
+            f"{len(idx)} chaves exatas | "
+            f"Qtd={col_qtd}, Open={col_open}, Under={col_under}, Status={col_status}."
+        )
         if duplicadas:
             log(f"⚠️ Timeline possui {duplicadas} chave(s) duplicada(s) na coluna B; valeu a última ocorrência.")
         if vazias:
@@ -679,7 +801,7 @@ def carregar_status_pcfs_timeline(app):
         return idx
 
     except Exception as e:
-        log(f"⚠️ Não foi possível carregar Status Final da Timeline PCFs: {e}")
+        log(f"⚠️ Não foi possível carregar PCF Intelligence da Timeline PCFs: {e}")
         return idx
 
     finally:
@@ -690,14 +812,138 @@ def carregar_status_pcfs_timeline(app):
                 pass
 
 
+def _pcf_intel_da_timeline(status_pcfs, pcf_nome_coluna_l):
+    """
+    Busca exata da inteligência da PCF usando o valor exibido em L.
+    Compatível com índice antigo, onde o valor era apenas texto de status.
+    """
+    chave = normalizar_chave_pcf(pcf_nome_coluna_l)
+    valor = status_pcfs.get(chave, "")
+
+    if isinstance(valor, dict):
+        return {
+            "qtd_comentarios": _valor_intel(valor.get("qtd_comentarios", "")),
+            "open_comments": _valor_intel(valor.get("open_comments", "")),
+            "under_review": _valor_intel(valor.get("under_review", "")),
+            "status_final": _valor_intel(valor.get("status_final", "")),
+        }
+
+    return {
+        "qtd_comentarios": "",
+        "open_comments": "",
+        "under_review": "",
+        "status_final": _valor_intel(valor),
+    }
+
+
+def _pcf_intel_tem_valor(intel: dict) -> bool:
+    return any(str(intel.get(k, "")).strip() for k in ("qtd_comentarios", "open_comments", "under_review", "status_final"))
+
+
+def criar_indice_pcf_intelligence_da_ld(ws):
+    """
+    Cria índice da inteligência PCF já existente na aba LD para ser usada
+    como fallback na LD BASICO.
+
+    Isso garante a mesma dinâmica da LD:
+      - se a LD já possui AV/AW/AX/AY preenchidos para uma revisão/PCF,
+        a LD BASICO herda exatamente esses valores na linha única do documento.
+    """
+    idx = {
+        "por_pcf": {},
+        "por_doc_rev": {},
+    }
+
+    try:
+        last = ws.range("B" + str(ws.cells.last_cell.row)).end("up").row
+    except Exception:
+        return idx
+
+    for r in range(2, last + 1):
+        codigo = str(ws[f"B{r}"].value or "").strip()
+        rev = normalizar_rev(ws[f"C{r}"].value)
+        pcf = normalizar_chave_pcf(ws[f"L{r}"].value)
+
+        intel = {
+            "qtd_comentarios": _valor_intel(ws[f"AV{r}"].value),
+            "open_comments": _valor_intel(ws[f"AW{r}"].value),
+            "under_review": _valor_intel(ws[f"AX{r}"].value),
+            "status_final": _valor_intel(ws[f"AY{r}"].value),
+        }
+
+        if not _pcf_intel_tem_valor(intel):
+            continue
+
+        if pcf:
+            idx["por_pcf"][pcf] = intel
+
+        if codigo and rev:
+            idx["por_doc_rev"][(codigo, rev)] = intel
+
+    log(
+        "📗 Índice PCF Intelligence da LD criado para LD BASICO: "
+        f"{len(idx['por_pcf'])} PCFs | {len(idx['por_doc_rev'])} documento/revisão."
+    )
+    return idx
+
+
+def _pcf_intel_da_ld(idx_pcf_intel_ld, codigo, rev, pcf_nome_coluna_l):
+    if not idx_pcf_intel_ld:
+        return {}
+
+    pcf = normalizar_chave_pcf(pcf_nome_coluna_l)
+
+    if pcf:
+        intel = idx_pcf_intel_ld.get("por_pcf", {}).get(pcf)
+        if intel:
+            return intel
+
+    return idx_pcf_intel_ld.get("por_doc_rev", {}).get((str(codigo or "").strip(), normalizar_rev(rev)), {}) or {}
+
+
+def aplicar_pcf_intelligence_linha(ws, r, codigo, rev_doc, pcf_coluna_l, status_pcfs, idx_pcf_intel_ld=None):
+    """
+    Atualiza AV:AY com a inteligência consolidada da PCF.
+
+    Mapeamento oficial:
+      AV = Qtd Comentários
+      AW = Open Comments
+      AX = UNDER REVIEW
+      AY = STATUS FINAL PCF
+
+    Prioridade:
+      1) Timeline PCFs por chave exata da coluna L;
+      2) fallback pela própria aba LD, útil principalmente para LD BASICO.
+    """
+    intel = _pcf_intel_da_timeline(status_pcfs, pcf_coluna_l)
+
+    if not _pcf_intel_tem_valor(intel):
+        intel_ld = _pcf_intel_da_ld(idx_pcf_intel_ld, codigo, rev_doc, pcf_coluna_l)
+        if intel_ld:
+            intel = intel_ld
+
+    ws[f"AV{r}"].value = intel.get("qtd_comentarios", "")
+    ws[f"AW{r}"].value = intel.get("open_comments", "")
+    ws[f"AX{r}"].value = intel.get("under_review", "")
+    ws[f"AY{r}"].value = intel.get("status_final", "")
+
+    return intel
+
+
+def limpar_pcf_intelligence_linha(ws, r):
+    ws[f"AV{r}"].value = None
+    ws[f"AW{r}"].value = None
+    ws[f"AX{r}"].value = None
+    ws[f"AY{r}"].value = None
+
+
 def status_final_da_pcf(status_pcfs, pcf_nome_coluna_l):
     """
     PROCV exato:
-      procura LD coluna L exatamente na Timeline coluna B
-      retorna Timeline coluna L
+      procura LD/LD BASICO coluna L exatamente na Timeline coluna B
+      retorna STATUS FINAL.
     """
-    chave = normalizar_chave_pcf(pcf_nome_coluna_l)
-    return status_pcfs.get(chave, "")
+    return _pcf_intel_da_timeline(status_pcfs, pcf_nome_coluna_l).get("status_final", "")
 
 
 # ==========================================================
@@ -869,7 +1115,7 @@ def aplicar_formatacao(ws):
     forcar_numberformat_coluna(ws, "P", 2, last_row)
 
     # ✅ Colunas pedidas: Arial 11 + centralizado + alinhado no meio
-    for col in ["B", "J", "O", "P", "Q"]:
+    for col in ["B", "J", "O", "P", "Q", "AV", "AW", "AX", "AY"]:
         try:
             rng = ws.range(f"{col}2:{col}{last_row}")
             rng.api.Font.Name = "Arial"
@@ -1003,155 +1249,6 @@ def atualizar_medicao(wb, aba_origem):
 
     log(f"✅ {qtd_linhas} linhas copiadas para '{ABA_MEDICAO}' a partir de '{aba_origem}': A4:F{last_dest_row}.")
 
-
-# ==========================================================
-# RESUMO PCF DIRETO NA ABA LD (MESMA DINÂMICA PCFs Recebidas TP)
-# ==========================================================
-def _pcf_norm_text(v):
-    if v is None:
-        return ""
-    s = str(v).strip().upper()
-    s = s.replace("\n", " ").replace("\r", " ")
-    s = re.sub(r"\s+", " ", s)
-    return s
-
-
-def _pcf_safe_str(v):
-    if v is None:
-        return ""
-    return str(v).strip()
-
-
-def _pcf_valor_invalido(v):
-    s = _pcf_norm_text(v)
-    return s in {
-        "#VALUE!",
-        "#REF!",
-        "#N/A",
-        "#DIV/0!",
-        "#NAME?",
-        "#NULL!",
-        "#NUM!",
-    }
-
-
-def extrair_qtd_open_under_review_ld(ws_pcf):
-    """
-    Mesma lógica operacional da aba PCFs Recebidas TP:
-    conta somente linhas com COMMENT STATUS preenchido.
-    """
-    comment_status_col = None
-    header_row = None
-
-    for r in range(1, min(ws_pcf.max_row or 1, 80) + 1):
-        for c in range(1, min(ws_pcf.max_column or 1, 40) + 1):
-            if _pcf_norm_text(ws_pcf.cell(r, c).value) == "COMMENT STATUS":
-                comment_status_col = c
-                header_row = r
-                break
-        if comment_status_col:
-            break
-
-    open_count = 0
-    qtd_comentarios = 0
-    under_review = 0
-
-    if not comment_status_col:
-        return open_count, qtd_comentarios, under_review
-
-    for r in range(header_row + 1, (ws_pcf.max_row or header_row) + 1):
-        status = _pcf_norm_text(ws_pcf.cell(r, comment_status_col).value)
-
-        if not status or _pcf_valor_invalido(status):
-            continue
-
-        qtd_comentarios += 1
-
-        if status == "OPEN":
-            open_count += 1
-        elif status in {"UNDER REVIEW", "UNDER_REVIEW", "UNDER-REVIEW"}:
-            under_review += 1
-
-    return open_count, qtd_comentarios, under_review
-
-
-def extrair_status_final_ld(ws_pcf):
-    """
-    Extrai STATUS FINAL com proteção contra valores inválidos como #VALUE!.
-    Padrão usado pela Timeline: coluna E a partir da linha 9.
-    """
-    status_final = ""
-
-    status_validos = {
-        "OPEN",
-        "CLOSED",
-        "RELEASED",
-        "NOT RELEASED",
-        "RELEASED WITH COMMENTS",
-        "CANCELLED",
-        "CANCELED",
-    }
-
-    for row in range(9, (ws_pcf.max_row or 9) + 1):
-        valor = _pcf_safe_str(ws_pcf.cell(row=row, column=5).value)
-        valor_norm = _pcf_norm_text(valor)
-
-        if not valor_norm:
-            continue
-
-        if _pcf_valor_invalido(valor_norm):
-            continue
-
-        if valor_norm not in status_validos:
-            continue
-
-        status_final = valor_norm
-
-    return status_final
-
-
-def ler_resumo_pcf_recebida_tp_para_ld(caminho_pcf):
-    """
-    Lê a PCF recebida e retorna os campos da dinâmica PCFs Recebidas TP.
-    Usado para preencher AV:AY na aba LD.
-    """
-    resultado = {
-        "open_comments": 0,
-        "qtd_comentarios": 0,
-        "under_review": 0,
-        "status_final": "",
-    }
-
-    if not caminho_pcf or not os.path.exists(caminho_pcf):
-        return resultado
-
-    try:
-        wb_pcf = load_workbook(caminho_pcf, data_only=True, read_only=True)
-        try:
-            ws_pcf = wb_pcf.active
-
-            open_count, qtd_comentarios, under_review = extrair_qtd_open_under_review_ld(ws_pcf)
-            status_final = extrair_status_final_ld(ws_pcf)
-
-            resultado.update({
-                "open_comments": open_count,
-                "qtd_comentarios": qtd_comentarios,
-                "under_review": under_review,
-                "status_final": status_final,
-            })
-        finally:
-            try:
-                wb_pcf.close()
-            except Exception:
-                pass
-
-    except Exception as exc:
-        if LOG_DETALHADO:
-            log(f"⚠️ Falha ao ler resumo PCF para LD: {caminho_pcf} | {exc}")
-
-    return resultado
-
-
 # ==========================================================
 # PROCESSAR UMA ABA (LD / LD MARENOVA)
 # ==========================================================
@@ -1165,7 +1262,7 @@ def _preencher_data_por_modo(cell, modo: str, dt: datetime | None, obs: str):
     # DATA
     setar_data(cell, dt)
 
-def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_pcf_resp, idx_grd_resp, status_pcfs, inserir_revisoes=True):
+def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_pcf_resp, idx_grd_resp, status_pcfs, inserir_revisoes=True, idx_pcf_intel_ld=None):
     ws = wb.sheets[aba_nome]
     log(f"📄 Processando aba: {aba_nome}")
 
@@ -1233,52 +1330,6 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
             )
 
             if aba_nome != ABA_LD_BASICO and status_h in STATUS_H_BLOQUEADOS:
-                # Mesmo com status final/bloqueado na coluna H, a aba LD precisa receber
-                # os dados da dinâmica PCFs Recebidas TP nas colunas AV:AY.
-                if aba_nome == ABA_LD and codigo:
-                    mapa_skip_pcf = idx_pcf.get(codigo, {})
-                    rev_doc_skip = normalizar_rev(ws[f"C{r}"].value)
-                    best_skip = None
-                    best_key_skip = None
-
-                    if mapa_skip_pcf and rev_doc_skip:
-                        base_skip = (rev_doc_skip or "").strip().upper()
-                        for rev_pcf_skip, cand_skip in mapa_skip_pcf.items():
-                            ok_skip, sufixo_skip = _split_by_base(rev_pcf_skip, base_skip)
-                            if not ok_skip:
-                                continue
-
-                            k_skip = (_suffix_key(sufixo_skip), cand_skip.get("date") or datetime.min)
-                            if (
-                                best_key_skip is None
-                                or k_skip[0] > best_key_skip[0]
-                                or (k_skip[0] == best_key_skip[0] and k_skip[1] > best_key_skip[1])
-                            ):
-                                best_key_skip = k_skip
-                                best_skip = cand_skip
-
-                    if best_skip:
-                        resumo_skip = ler_resumo_pcf_recebida_tp_para_ld(best_skip.get("path"))
-                        status_skip_final = resumo_skip.get("status_final") or ws[f"N{r}"].value
-                        ws[f"AV{r}"].value = resumo_skip.get("open_comments", 0)
-                        ws[f"AW{r}"].value = resumo_skip.get("qtd_comentarios", 0)
-                        ws[f"AX{r}"].value = resumo_skip.get("under_review", 0)
-                        ws[f"AY{r}"].value = status_skip_final
-
-                        if LOG_DETALHADO:
-                            log(
-                                f"   [LD AV:AY SKIP] {aba_nome} L{r} | {codigo}_R{rev_doc_skip} => "
-                                f"OPEN={resumo_skip.get('open_comments', 0)} | "
-                                f"QTD={resumo_skip.get('qtd_comentarios', 0)} | "
-                                f"UNDER={resumo_skip.get('under_review', 0)} | "
-                                f"STATUS='{status_skip_final}'"
-                            )
-                    else:
-                        ws[f"AV{r}"].value = None
-                        ws[f"AW{r}"].value = None
-                        ws[f"AX{r}"].value = None
-                        ws[f"AY{r}"].value = None
-
                 if LOG_DETALHADO:
                     log(f"   [SKIP] {aba_nome} L{r} ignorada (H = {status_h})")
                 continue
@@ -1306,11 +1357,19 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
                         pcf_recebida_para_rev = True
                         break
 
+            # Regra adicional:
+            # Se houver data de recebimento na coluna AP, mas o documento ainda
+            # não foi encontrado nas pastas, o status deve ficar "Recebido e não Emitido".
+            # Aplica para LD e LD BASICO.
+            tem_data_recebimento_ap = bool(_coerce_to_date(ws[f"AP{r}"].value) or str(ws[f"AP{r}"].value or "").strip())
+
             status_auto_h = (
                 "Recebido"
                 if documento_encontrado and pcf_recebida_para_rev
                 else "Aguardando PCF"
                 if documento_encontrado and not pcf_recebida_para_rev
+                else "Recebido e não Emitido"
+                if tem_data_recebimento_ap
                 else "Não Recebido"
             )
 
@@ -1392,20 +1451,45 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
                 status_final = status_final_da_pcf(status_pcfs, pcf_coluna_l)
                 ws[f"N{r}"].value = status_final
 
+                # AV:AY = PCF Intelligence.
+                # Para LD BASICO, usa a mesma lógica da LD:
+                # chave exata da PCF em L e fallback pelos valores já consolidados na aba LD.
+                intel_pcf = aplicar_pcf_intelligence_linha(
+                    ws=ws,
+                    r=r,
+                    codigo=codigo,
+                    rev_doc=rev_doc,
+                    pcf_coluna_l=pcf_coluna_l,
+                    status_pcfs=status_pcfs,
+                    idx_pcf_intel_ld=idx_pcf_intel_ld,
+                )
+
                 if LOG_DETALHADO:
                     if status_final:
-                        log(f"   [L/M/N] {aba_nome} L{r} | {codigo}_R{rev_doc} => PROCV_EXATO L='{pcf_coluna_l}' | M_DATA={_fmt_dt(info_pcf.get('date'))} | N_STATUS='{status_final}'")
+                        log(
+                            f"   [L/M/N + AV:AY] {aba_nome} L{r} | {codigo}_R{rev_doc} "
+                            f"=> PROCV_EXATO L='{pcf_coluna_l}' | M_DATA={_fmt_dt(info_pcf.get('date'))} "
+                            f"| N_STATUS='{status_final}' | AV_QTD='{intel_pcf.get('qtd_comentarios', '')}' "
+                            f"| AW_OPEN='{intel_pcf.get('open_comments', '')}' | AX_UNDER='{intel_pcf.get('under_review', '')}' "
+                            f"| AY_STATUS='{intel_pcf.get('status_final', '')}'"
+                        )
                     else:
-                        log(f"   [L/M/N] {aba_nome} L{r} | {codigo}_R{rev_doc} => PROCV_EXATO SEM STATUS para L='{pcf_coluna_l}' | M_DATA={_fmt_dt(info_pcf.get('date'))}")
+                        log(
+                            f"   [L/M/N + AV:AY] {aba_nome} L{r} | {codigo}_R{rev_doc} "
+                            f"=> PROCV_EXATO SEM STATUS para L='{pcf_coluna_l}' | M_DATA={_fmt_dt(info_pcf.get('date'))} "
+                            f"| AV_QTD='{intel_pcf.get('qtd_comentarios', '')}' "
+                            f"| AW_OPEN='{intel_pcf.get('open_comments', '')}' | AX_UNDER='{intel_pcf.get('under_review', '')}'"
+                        )
             else:
                 ws[f"L{r}"].value = None
                 if (COL_M_MODO or "").upper() != "MANTER":
                     ws[f"M{r}"].value = None
                 ws[f"N{r}"].value = None
+                limpar_pcf_intelligence_linha(ws, r)
                 limpar_hyperlink(ws[f"L{r}"])
 
                 if LOG_DETALHADO:
-                    log(f"   [L/M/N] {aba_nome} L{r} | {codigo}_R{rev_doc} => PCF NÃO encontrada")
+                    log(f"   [L/M/N + AV:AY] {aba_nome} L{r} | {codigo}_R{rev_doc} => PCF NÃO encontrada")
 
             # PCF resposta (O / P) - SOMENTE subpasta de respostas
             info_resp = None
@@ -1666,13 +1750,28 @@ def processar():
             atualizar_progresso_ld(65, "Processando aba LD...", "running", "Atualizando status, GRDs, PCFs e respostas da aba LD.")
             processar_aba(wb, ABA_LD, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_pcf_resp, idx_grd_resp, status_pcfs, inserir_revisoes=True)
 
+            # Índice auxiliar para a LD BASICO herdar AV:AY da aba LD quando necessário.
+            idx_pcf_intel_ld = criar_indice_pcf_intelligence_da_ld(wb.sheets[ABA_LD])
+
             atualizar_progresso_ld(78, "Processando aba LD MARENOVA...", "running", "Atualizando status, GRDs, PCFs e respostas da aba LD MARENOVA.")
             processar_aba(wb, ABA_LD_MARENOVA, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_pcf_resp, idx_grd_resp, status_pcfs, inserir_revisoes=True)
 
             try:
                 wb.sheets[ABA_LD_BASICO]
                 atualizar_progresso_ld(84, "Processando aba LD BASICO...", "running", "Atualizando LD BASICO sem inserir novas revisões.")
-                processar_aba(wb, ABA_LD_BASICO, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_pcf_resp, idx_grd_resp, status_pcfs, inserir_revisoes=False)
+                processar_aba(
+                    wb,
+                    ABA_LD_BASICO,
+                    idx_eng,
+                    idx_eng_codigos,
+                    idx_grd,
+                    idx_pcf,
+                    idx_pcf_resp,
+                    idx_grd_resp,
+                    status_pcfs,
+                    inserir_revisoes=False,
+                    idx_pcf_intel_ld=idx_pcf_intel_ld,
+                )
             except Exception as exc:
                 log(f"ℹ️ Aba {ABA_LD_BASICO} não processada: {exc}")
 
