@@ -2779,6 +2779,97 @@ def _ld_bool(valor):
     return _ld_texto(valor).lower() in {"1", "true", "on", "sim", "yes"}
 
 
+STATUS_RECEBIDOS_LD_BASICO = [
+    "Aguardando PCF",
+    "Aprovado com comentários",
+    "Aprovado com comentarios",
+    "Aprovado sem Comentários",
+    "Aprovado sem Comentarios",
+    "Reprovado",
+]
+
+
+def _ld_q_status_documento_iexact(status_list):
+    q = Q()
+    for status in status_list:
+        status = _ld_texto(status)
+        if status:
+            q |= Q(status_documento__iexact=status)
+    return q
+
+
+def _ld_q_recebido_operacional():
+    """
+    Regra executiva para a LD BASICO:
+    documentos recebidos são os que possuem GRD emitido ou status operacional
+    equivalente a documento já recebido/tratado pela disciplina.
+    """
+    return Q(status_grd__iexact="Emitido") | _ld_q_status_documento_iexact(STATUS_RECEBIDOS_LD_BASICO)
+
+
+def _ld_int(valor):
+    try:
+        if valor in (None, ""):
+            return 0
+        return int(float(str(valor).replace(",", ".").strip()))
+    except Exception:
+        return 0
+
+
+def _ld_sum_attr(registros, campo):
+    if not _ld_has_field(campo):
+        return 0
+    return sum(_ld_int(valor) for valor in registros.values_list(campo, flat=True))
+
+
+def _ld_resumo_pcf_por_status(registros, limite=12):
+    """
+    Resumo executivo para PPT: Status Documento x volume de PCF Intelligence.
+    Usa os campos importados da LD BASICO quando existirem no model DocumentoLD.
+    """
+    tem_qtd = _ld_has_field("qtd_comentarios")
+    tem_open = _ld_has_field("open_comments")
+    tem_under = _ld_has_field("under_review")
+
+    resumo = {}
+
+    campos = ["status_documento"]
+    if tem_qtd:
+        campos.append("qtd_comentarios")
+    if tem_open:
+        campos.append("open_comments")
+    if tem_under:
+        campos.append("under_review")
+
+    for item in registros.values(*campos):
+        status = _ld_texto(item.get("status_documento")) or "Sem status"
+        row = resumo.setdefault(status, {
+            "status": status,
+            "total": 0,
+            "qtd_comentarios": 0,
+            "open_comments": 0,
+            "under_review": 0,
+        })
+
+        row["total"] += 1
+        if tem_qtd:
+            row["qtd_comentarios"] += _ld_int(item.get("qtd_comentarios"))
+        if tem_open:
+            row["open_comments"] += _ld_int(item.get("open_comments"))
+        if tem_under:
+            row["under_review"] += _ld_int(item.get("under_review"))
+
+    return sorted(
+        resumo.values(),
+        key=lambda row: (
+            row["total"],
+            row["qtd_comentarios"],
+            row["open_comments"],
+            row["under_review"],
+        ),
+        reverse=True,
+    )[:limite]
+
 
 def _ld_valores_distintos(campo, extras=None):
     valores = []
@@ -3015,8 +3106,11 @@ def _ld_filtrar_queryset(request):
 
     filtro_rapido = _ld_texto(request.GET.get("filtro"))
 
+    filtro_recebidos_operacional = False
+
     if filtro_rapido == "recebidos":
-        status_docs = ["Recebido"]
+        filtro_recebidos_operacional = True
+        status_docs = []
     elif filtro_rapido == "aprovados":
         status_docs = ["Aprovado"]
     elif filtro_rapido == "grd_emitido":
@@ -3056,6 +3150,9 @@ def _ld_filtrar_queryset(request):
 
     if status_docs:
         registros = registros.filter(status_documento__in=status_docs)
+
+    if filtro_recebidos_operacional:
+        registros = registros.filter(_ld_q_recebido_operacional())
 
     if status_grds:
         registros = registros.filter(status_grd__in=status_grds)
@@ -3109,16 +3206,20 @@ def _ld_filtrar_queryset(request):
 
 def _ld_kpis(registros):
     total = registros.count()
+    total_recebidos = registros.filter(_ld_q_recebido_operacional()).distinct().count()
 
     return {
         "total": total,
         "total_exclusivos": registros.order_by().values("documento").distinct().count(),
-        "total_recebidos": registros.filter(status_documento__iexact="Recebido").count(),
+        "total_recebidos": total_recebidos,
         "total_aprovados": registros.filter(status_documento__iexact="Aprovado").count(),
         "total_emitidos": registros.filter(status_grd__iexact="Emitido").count(),
         "total_com_pcf": registros.exclude(pcf__isnull=True).exclude(pcf="").count(),
         "total_sem_pcf": registros.filter(Q(pcf__isnull=True) | Q(pcf="")).count(),
         "total_com_resposta": registros.exclude(pcf_resposta__isnull=True).exclude(pcf_resposta="").count(),
+        "total_qtd_comentarios": _ld_sum_attr(registros, "qtd_comentarios"),
+        "total_open_comments": _ld_sum_attr(registros, "open_comments"),
+        "total_under_review": _ld_sum_attr(registros, "under_review"),
     }
 
 
@@ -3323,12 +3424,12 @@ def listar_ld(request):
     kpis = _ld_kpis(registros)
 
     disciplinas = _ld_valores_distintos("disciplina")
-    origens = _ld_valores_distintos("origem_aba", extras=["LD", "LD Marenova"])
+    origens = _ld_valores_distintos("origem_aba", extras=["LD Basico"])
 
     # Mantém as duas origens operacionais sempre disponíveis, mesmo quando a
     # importação antiga gravou origem_aba em branco.
     origens_norm = []
-    for origem_item in ["LD", "LD Marenova", *origens]:
+    for origem_item in ["LD Basico", *origens]:
         if origem_item not in origens_norm:
             origens_norm.append(origem_item)
     origens = origens_norm
@@ -3567,8 +3668,8 @@ def _ld_exportar_dashboard_ppt(request):
 
     taxa_pcf = round((kpis["total_com_pcf"] / total) * 100, 1) if total else 0
     taxa_grd = round((kpis["total_emitidos"] / total) * 100, 1) if total else 0
-    taxa_aprovacao = round((kpis["total_aprovados"] / total) * 100, 1) if total else 0
-    saude = round((taxa_pcf + taxa_grd + taxa_aprovacao) / 3, 1) if total else 0
+    taxa_recebimento = round((kpis["total_recebidos"] / total) * 100, 1) if total else 0
+    saude = round((taxa_pcf + taxa_grd + taxa_recebimento) / 3, 1) if total else 0
 
     disciplina_chart = _ld_chart_items(registros, "disciplina", 7)
     status_doc_chart = _ld_chart_items(registros, "status_documento", 7)
@@ -3629,6 +3730,41 @@ def _ld_exportar_dashboard_ppt(request):
             fill.line.fill.background()
             add_text(slide, item["total"], x + w * .88, yy - .02, w * .12, .20, 10, True, white)
 
+    def add_table(slide, headers, rows, x, y, w, h):
+        table_shape = slide.shapes.add_table(
+            len(rows) + 1,
+            len(headers),
+            Inches(x),
+            Inches(y),
+            Inches(w),
+            Inches(h),
+        )
+        table = table_shape.table
+
+        for col_idx, header in enumerate(headers):
+            cell = table.cell(0, col_idx)
+            cell.text = str(header)
+            cell.fill.solid()
+            cell.fill.fore_color.rgb = RGBColor(15, 23, 42)
+            for paragraph in cell.text_frame.paragraphs:
+                for run in paragraph.runs:
+                    run.font.size = Pt(8)
+                    run.font.bold = True
+                    run.font.color.rgb = cyan
+
+        for row_idx, row in enumerate(rows, start=1):
+            for col_idx, value in enumerate(row):
+                cell = table.cell(row_idx, col_idx)
+                cell.text = str(value)
+                cell.fill.solid()
+                cell.fill.fore_color.rgb = RGBColor(8, 13, 28)
+                for paragraph in cell.text_frame.paragraphs:
+                    for run in paragraph.runs:
+                        run.font.size = Pt(8)
+                        run.font.color.rgb = white
+
+        return table_shape
+
     # Slide 1
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     slide.background.fill.solid()
@@ -3637,7 +3773,7 @@ def _ld_exportar_dashboard_ppt(request):
     add_text(slide, "Lista de Documentos • GRD • PCF • Revisões • Status documental", .45, .86, 8.8, .30, 12, False, cyan)
     add_card(slide, "Total linhas", total, "resultado atual", .45, 1.45)
     add_card(slide, "Únicos", kpis["total_exclusivos"], "documentos únicos", 2.75, 1.45)
-    add_card(slide, "Recebidos", kpis["total_recebidos"], f"{taxa_aprovacao}% aprov.", 5.05, 1.45, accent=green)
+    add_card(slide, "Recebidos", kpis["total_recebidos"], f"{taxa_recebimento}% da base", 5.05, 1.45, accent=green)
     add_card(slide, "GRD emitido", kpis["total_emitidos"], f"{taxa_grd}% cobertura", 7.35, 1.45, accent=orange)
     add_card(slide, "Com PCF", kpis["total_com_pcf"], f"{taxa_pcf}% cobertura", 9.65, 1.45, accent=cyan)
     add_card(slide, "Saúde", f"{saude}%", "score operacional", 11.95, 1.45, w=1.0)
@@ -3657,6 +3793,45 @@ def _ld_exportar_dashboard_ppt(request):
     add_card(slide, "Not Released", total_not_released, "status crítico PCF", 9.65, 1.15, accent=RGBColor(248, 113, 113))
     add_bars(slide, "Status GRD", status_grd_chart, .55, 2.65, 5.8, 3.9)
     add_bars(slide, "Pendências por disciplina", _ld_chart_items(registros.filter(Q(pcf__isnull=True) | Q(pcf="")), "disciplina", 7), 6.9, 2.65, 5.7, 3.9)
+
+    # Slide 3 - Resumo PCF Intelligence
+    resumo_pcf = _ld_resumo_pcf_por_status(registros, limite=12)
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    slide.background.fill.solid()
+    slide.background.fill.fore_color.rgb = bg
+    add_text(slide, "Resumo PCF Intelligence", .45, .35, 8.8, .45, 26, True, white)
+    add_text(slide, "Status documental • Quantidades • Comentários • Under Review", .45, .82, 9.8, .30, 12, False, cyan)
+
+    add_card(slide, "Qtd comentários", kpis.get("total_qtd_comentarios", 0), "soma AV", .45, 1.25, accent=cyan)
+    add_card(slide, "Open comments", kpis.get("total_open_comments", 0), "soma AW", 2.75, 1.25, accent=orange)
+    add_card(slide, "Under Review", kpis.get("total_under_review", 0), "soma AX", 5.05, 1.25, accent=RGBColor(248, 113, 113))
+    add_card(slide, "Not Released", total_not_released, "status PCF", 7.35, 1.25, accent=RGBColor(248, 113, 113))
+    add_card(slide, "Com PCF", kpis["total_com_pcf"], f"{taxa_pcf}% da base", 9.65, 1.25, accent=green)
+
+    rows = [
+        [
+            item["status"],
+            item["total"],
+            item["qtd_comentarios"],
+            item["open_comments"],
+            item["under_review"],
+        ]
+        for item in resumo_pcf
+    ]
+
+    if not rows:
+        rows = [["Sem dados", 0, 0, 0, 0]]
+
+    add_table(
+        slide,
+        ["Status Documento", "Docs", "Qtd Coment.", "Open", "Under Review"],
+        rows,
+        .55,
+        2.75,
+        12.2,
+        3.8,
+    )
+    add_text(slide, "GED_PROFISSIONAL • LD BASICO • PCF Intelligence", .45, 7.05, 7.0, .20, 8, False, muted)
 
     output = BytesIO()
     prs.save(output)
@@ -3728,9 +3903,9 @@ def dashboard_ld(request):
     recentes = registros.order_by("-id")[:12]
 
     disciplinas = _ld_valores_distintos("disciplina")
-    origens = _ld_valores_distintos("origem_aba", extras=["LD", "LD Marenova"])
+    origens = _ld_valores_distintos("origem_aba", extras=["LD Basico"])
     origens_norm = []
-    for origem_item in ["LD", "LD Marenova", *origens]:
+    for origem_item in ["LD Basico", *origens]:
         if origem_item not in origens_norm:
             origens_norm.append(origem_item)
     origens = origens_norm
