@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, date
 import xlwings as xw
 import re
 import threading
+from openpyxl import load_workbook
 
 from apps.automacoes.models import DocumentoLD
 
@@ -66,7 +67,7 @@ FREEZE_PANES = False
 
 # ✅ Formatação
 APLICAR_FORMATACAO = True
-ULTIMA_COLUNA = "AY"  # LD/LD BASICO com PCF Intelligence até AY
+ULTIMA_COLUNA = "Q"  # na sua LD vai até Q
 
 # Excel constants
 xlCenter = -4108
@@ -667,51 +668,235 @@ def normalizar_chave_pcf(v):
     return str(v or "").strip()
 
 
-def _coluna_num_para_letra(n: int) -> str:
-    """Converte número de coluna Excel (1=A) para letra."""
-    letras = ""
-    while n:
-        n, resto = divmod(n - 1, 26)
-        letras = chr(65 + resto) + letras
-    return letras
+
+def _pcf_intel_tem_valor(intel: dict) -> bool:
+    if not isinstance(intel, dict):
+        return False
+    return any(str(intel.get(k, "")).strip() for k in ("qtd_comentarios", "open_comments", "under_review", "status_final"))
 
 
-def _normalizar_header(v) -> str:
-    s = str(v or "").strip().upper()
-    s = (
-        s.replace("Á", "A").replace("À", "A").replace("Â", "A").replace("Ã", "A")
-         .replace("É", "E").replace("Ê", "E")
-         .replace("Í", "I")
-         .replace("Ó", "O").replace("Ô", "O").replace("Õ", "O")
-         .replace("Ú", "U")
-         .replace("Ç", "C")
-    )
-    s = re.sub(r"\s+", " ", s)
-    return s
-
-
-def _achar_coluna_por_headers(ws, aliases, fallback_col=None, header_row=1):
-    """
-    Procura uma coluna pelo cabeçalho.
-    Se não achar, retorna fallback_col.
-    """
-    aliases_norm = {_normalizar_header(a) for a in aliases}
-    try:
-        last_col = ws.range((header_row, ws.cells.last_cell.column)).end("left").column
-        for c in range(1, last_col + 1):
-            h = _normalizar_header(ws.range((header_row, c)).value)
-            if h in aliases_norm:
-                return _coluna_num_para_letra(c)
-    except Exception:
-        pass
-    return fallback_col
-
-
-def _valor_intel(valor):
-    """Normaliza campos numéricos/textuais da inteligência PCF sem destruir zeros."""
-    if valor is None:
+def _intel_num(valor):
+    """Converte valores de comentários para número quando possível, preservando vazio."""
+    if valor in (None, ""):
         return ""
-    return valor
+    if isinstance(valor, (int, float)):
+        try:
+            return int(valor)
+        except Exception:
+            return valor
+    s = str(valor).strip()
+    if not s:
+        return ""
+    s_num = s.replace(",", ".")
+    try:
+        n = float(s_num)
+        return int(n) if n.is_integer() else n
+    except Exception:
+        return s
+
+
+def _status_prioridade_pcf(status):
+    s = _normalizar_header(status)
+    prioridade = {
+        "OPEN": 50,
+        "NOT RELEASED": 40,
+        "RELEASED WITH COMMENTS": 35,
+        "UNDER REVIEW": 30,
+        "RELEASED": 20,
+        "CLOSED": 10,
+        "": 0,
+    }
+    return prioridade.get(s, 1)
+
+
+def _valor_num_score(valor):
+    v = _intel_num(valor)
+    if isinstance(v, (int, float)):
+        return float(v)
+    try:
+        return float(str(v).replace(",", "."))
+    except Exception:
+        return 0.0
+
+
+def _melhor_intel_pcf(atual, novo, linha_atual=0, linha_nova=0):
+    """
+    Escolhe a melhor linha quando a PCF possui mais de uma ocorrência de inteligência.
+    Critério:
+      1) maior prioridade de status operacional;
+      2) maior Open Comments;
+      3) maior Qtd Comentários;
+      4) maior Under Review;
+      5) última linha encontrada.
+    """
+    if not atual:
+        return novo, linha_nova
+
+    score_atual = (
+        _status_prioridade_pcf(atual.get("status_final", "")),
+        _valor_num_score(atual.get("open_comments", "")),
+        _valor_num_score(atual.get("qtd_comentarios", "")),
+        _valor_num_score(atual.get("under_review", "")),
+        linha_atual,
+    )
+    score_novo = (
+        _status_prioridade_pcf(novo.get("status_final", "")),
+        _valor_num_score(novo.get("open_comments", "")),
+        _valor_num_score(novo.get("qtd_comentarios", "")),
+        _valor_num_score(novo.get("under_review", "")),
+        linha_nova,
+    )
+
+    if score_novo >= score_atual:
+        return novo, linha_nova
+
+    return atual, linha_atual
+
+
+def _cell_value_openpyxl(ws, row, col):
+    try:
+        return ws.cell(row=row, column=col).value
+    except Exception:
+        return None
+
+
+def _achar_header_pcf_openpyxl(ws):
+    """
+    Localiza a linha/colunas da inteligência dentro da própria PCF.
+    Procura pelos cabeçalhos em qualquer aba, nas primeiras linhas.
+    """
+    aliases = {
+        "qtd_comentarios": {
+            "QTD COMENTARIOS", "QTD COMENTARIO", "QTDE COMENTARIOS",
+            "QTD COMMENTS", "COMMENTS QTY", "NB PENDING COMMENTS", "PENDING COMMENTS",
+        },
+        "open_comments": {
+            "OPEN COMMENTS", "OPEN COMMENT", "OPEN COMMER", "OPEN COMMENTS QTY",
+        },
+        "under_review": {
+            "UNDER REVIEW", "UNDER REVIE", "UNDER REVIEWS",
+        },
+        "status_final": {
+            "STATUS FINAL PCF", "STATUS FINAL", "FINAL STATUS", "PCF FINAL STATUS",
+        },
+    }
+
+    max_row_scan = min(ws.max_row or 1, 30)
+    max_col_scan = min(ws.max_column or 1, 120)
+
+    melhor = None
+    melhor_qtd = 0
+
+    for row in range(1, max_row_scan + 1):
+        encontrados = {}
+        for col in range(1, max_col_scan + 1):
+            h = _normalizar_header(_cell_value_openpyxl(ws, row, col))
+            if not h:
+                continue
+
+            for campo, nomes in aliases.items():
+                if h in nomes and campo not in encontrados:
+                    encontrados[campo] = col
+
+        qtd = len(encontrados)
+        if qtd > melhor_qtd:
+            melhor_qtd = qtd
+            melhor = (row, encontrados)
+
+        if qtd >= 3:
+            return row, encontrados
+
+    return melhor if melhor_qtd else (None, {})
+
+
+def ler_pcf_intelligence_arquivo(caminho_pcf, cache=None):
+    """
+    Lê a inteligência operacional diretamente da própria PCF encontrada na coluna L.
+
+    Retorna:
+      qtd_comentarios -> AV
+      open_comments   -> AW
+      under_review    -> AX
+      status_final    -> AY e N
+    """
+    caminho = normalizar_endereco_hyperlink(caminho_pcf)
+
+    if cache is not None and caminho in cache:
+        return cache[caminho]
+
+    vazio = {
+        "qtd_comentarios": "",
+        "open_comments": "",
+        "under_review": "",
+        "status_final": "",
+    }
+
+    if not caminho or not os.path.exists(caminho):
+        if cache is not None:
+            cache[caminho] = vazio
+        return vazio
+
+    try:
+        wb_pcf = load_workbook(caminho, read_only=True, data_only=True)
+    except Exception as exc:
+        log(f"⚠️ Não foi possível abrir PCF para ler comentários: {caminho} | {exc}")
+        if cache is not None:
+            cache[caminho] = vazio
+        return vazio
+
+    try:
+        melhor_intel = {}
+        melhor_linha = 0
+
+        for ws_pcf in wb_pcf.worksheets:
+            header_row, cols = _achar_header_pcf_openpyxl(ws_pcf)
+            if not header_row or not cols:
+                continue
+
+            # Se a PCF tiver apenas uma linha de resumo, pega essa linha.
+            # Se tiver múltiplas linhas, escolhe pela prioridade operacional.
+            max_row = ws_pcf.max_row or header_row
+            for rr in range(header_row + 1, max_row + 1):
+                intel = {
+                    "qtd_comentarios": _intel_num(_cell_value_openpyxl(ws_pcf, rr, cols.get("qtd_comentarios", 0))),
+                    "open_comments": _intel_num(_cell_value_openpyxl(ws_pcf, rr, cols.get("open_comments", 0))),
+                    "under_review": _intel_num(_cell_value_openpyxl(ws_pcf, rr, cols.get("under_review", 0))),
+                    "status_final": _valor_intel(_cell_value_openpyxl(ws_pcf, rr, cols.get("status_final", 0))),
+                }
+
+                if not _pcf_intel_tem_valor(intel):
+                    continue
+
+                melhor_intel, melhor_linha = _melhor_intel_pcf(
+                    melhor_intel,
+                    intel,
+                    melhor_linha,
+                    rr,
+                )
+
+        resultado = {
+            "qtd_comentarios": _valor_intel(melhor_intel.get("qtd_comentarios", "")),
+            "open_comments": _valor_intel(melhor_intel.get("open_comments", "")),
+            "under_review": _valor_intel(melhor_intel.get("under_review", "")),
+            "status_final": _valor_intel(melhor_intel.get("status_final", "")),
+        } if melhor_intel else vazio
+
+        if cache is not None:
+            cache[caminho] = resultado
+
+        return resultado
+
+    except Exception as exc:
+        log(f"⚠️ Falha lendo inteligência da PCF: {caminho} | {exc}")
+        if cache is not None:
+            cache[caminho] = vazio
+        return vazio
+
+    finally:
+        try:
+            wb_pcf.close()
+        except Exception:
+            pass
 
 
 def carregar_status_pcfs_timeline(app):
@@ -719,15 +904,10 @@ def carregar_status_pcfs_timeline(app):
     Carrega da Timeline PCFs:
       Aba: PCFs Recebidas TP
       Chave exata: coluna B (PCF LINK)
+      Valor retornado: coluna L (STATUS FINAL)
 
-    Retorna um dicionário por PCF com:
-      qtd_comentarios -> AV
-      open_comments   -> AW
-      under_review    -> AX
-      status_final    -> AY e N
-
-    Mantém a regra antiga:
-      LD/LD BASICO coluna L == Timeline coluna B.
+    Esse índice será usado para preencher LD!N.
+    A coluna M da LD permanece sendo a data de recebimento da PCF.
     """
     idx = {}
 
@@ -740,39 +920,14 @@ def carregar_status_pcfs_timeline(app):
         wb_tl = app.books.open(TIMELINE_PCF, update_links=False, read_only=True)
         ws_tl = wb_tl.sheets["PCFs Recebidas TP"]
 
-        # Chave oficial continua fixa na coluna B.
-        col_chave = "B"
-
-        # Fallbacks compatíveis com a estrutura atual da Timeline:
-        # I/J/K/L = Qtd Comentários / Open Comments / Under Review / Status Final
-        col_qtd = _achar_coluna_por_headers(
-            ws_tl,
-            ["QTD COMENTARIOS", "QTD COMENTÁRIOS", "QTD COMENTARIO", "QTD COMENTÁRIO"],
-            fallback_col="I",
-        )
-        col_open = _achar_coluna_por_headers(
-            ws_tl,
-            ["OPEN COMMENTS", "OPEN COMMENT", "OPEN COMMER"],
-            fallback_col="J",
-        )
-        col_under = _achar_coluna_por_headers(
-            ws_tl,
-            ["UNDER REVIEW", "UNDER REVIE"],
-            fallback_col="K",
-        )
-        col_status = _achar_coluna_por_headers(
-            ws_tl,
-            ["STATUS FINAL", "STATUS FINAL PCF", "FINAL STATUS"],
-            fallback_col="L",
-        )
-
-        last = ws_tl.range(col_chave + str(ws_tl.cells.last_cell.row)).end("up").row
+        last = ws_tl.range("B" + str(ws_tl.cells.last_cell.row)).end("up").row
 
         duplicadas = 0
         vazias = 0
 
         for rr in range(2, last + 1):
-            chave = normalizar_chave_pcf(ws_tl[f"{col_chave}{rr}"].value)
+            chave = normalizar_chave_pcf(ws_tl[f"B{rr}"].value)
+            status = ws_tl[f"L{rr}"].value
 
             if not chave:
                 vazias += 1
@@ -781,18 +936,9 @@ def carregar_status_pcfs_timeline(app):
             if chave in idx:
                 duplicadas += 1
 
-            idx[chave] = {
-                "qtd_comentarios": _valor_intel(ws_tl[f"{col_qtd}{rr}"].value),
-                "open_comments": _valor_intel(ws_tl[f"{col_open}{rr}"].value),
-                "under_review": _valor_intel(ws_tl[f"{col_under}{rr}"].value),
-                "status_final": _valor_intel(ws_tl[f"{col_status}{rr}"].value),
-            }
+            idx[chave] = status
 
-        log(
-            "📘 PCF Intelligence carregada da Timeline: "
-            f"{len(idx)} chaves exatas | "
-            f"Qtd={col_qtd}, Open={col_open}, Under={col_under}, Status={col_status}."
-        )
+        log(f"📘 Status Final PCFs carregados da Timeline: {len(idx)} chaves exatas.")
         if duplicadas:
             log(f"⚠️ Timeline possui {duplicadas} chave(s) duplicada(s) na coluna B; valeu a última ocorrência.")
         if vazias:
@@ -801,7 +947,7 @@ def carregar_status_pcfs_timeline(app):
         return idx
 
     except Exception as e:
-        log(f"⚠️ Não foi possível carregar PCF Intelligence da Timeline PCFs: {e}")
+        log(f"⚠️ Não foi possível carregar Status Final da Timeline PCFs: {e}")
         return idx
 
     finally:
@@ -812,138 +958,14 @@ def carregar_status_pcfs_timeline(app):
                 pass
 
 
-def _pcf_intel_da_timeline(status_pcfs, pcf_nome_coluna_l):
-    """
-    Busca exata da inteligência da PCF usando o valor exibido em L.
-    Compatível com índice antigo, onde o valor era apenas texto de status.
-    """
-    chave = normalizar_chave_pcf(pcf_nome_coluna_l)
-    valor = status_pcfs.get(chave, "")
-
-    if isinstance(valor, dict):
-        return {
-            "qtd_comentarios": _valor_intel(valor.get("qtd_comentarios", "")),
-            "open_comments": _valor_intel(valor.get("open_comments", "")),
-            "under_review": _valor_intel(valor.get("under_review", "")),
-            "status_final": _valor_intel(valor.get("status_final", "")),
-        }
-
-    return {
-        "qtd_comentarios": "",
-        "open_comments": "",
-        "under_review": "",
-        "status_final": _valor_intel(valor),
-    }
-
-
-def _pcf_intel_tem_valor(intel: dict) -> bool:
-    return any(str(intel.get(k, "")).strip() for k in ("qtd_comentarios", "open_comments", "under_review", "status_final"))
-
-
-def criar_indice_pcf_intelligence_da_ld(ws):
-    """
-    Cria índice da inteligência PCF já existente na aba LD para ser usada
-    como fallback na LD BASICO.
-
-    Isso garante a mesma dinâmica da LD:
-      - se a LD já possui AV/AW/AX/AY preenchidos para uma revisão/PCF,
-        a LD BASICO herda exatamente esses valores na linha única do documento.
-    """
-    idx = {
-        "por_pcf": {},
-        "por_doc_rev": {},
-    }
-
-    try:
-        last = ws.range("B" + str(ws.cells.last_cell.row)).end("up").row
-    except Exception:
-        return idx
-
-    for r in range(2, last + 1):
-        codigo = str(ws[f"B{r}"].value or "").strip()
-        rev = normalizar_rev(ws[f"C{r}"].value)
-        pcf = normalizar_chave_pcf(ws[f"L{r}"].value)
-
-        intel = {
-            "qtd_comentarios": _valor_intel(ws[f"AV{r}"].value),
-            "open_comments": _valor_intel(ws[f"AW{r}"].value),
-            "under_review": _valor_intel(ws[f"AX{r}"].value),
-            "status_final": _valor_intel(ws[f"AY{r}"].value),
-        }
-
-        if not _pcf_intel_tem_valor(intel):
-            continue
-
-        if pcf:
-            idx["por_pcf"][pcf] = intel
-
-        if codigo and rev:
-            idx["por_doc_rev"][(codigo, rev)] = intel
-
-    log(
-        "📗 Índice PCF Intelligence da LD criado para LD BASICO: "
-        f"{len(idx['por_pcf'])} PCFs | {len(idx['por_doc_rev'])} documento/revisão."
-    )
-    return idx
-
-
-def _pcf_intel_da_ld(idx_pcf_intel_ld, codigo, rev, pcf_nome_coluna_l):
-    if not idx_pcf_intel_ld:
-        return {}
-
-    pcf = normalizar_chave_pcf(pcf_nome_coluna_l)
-
-    if pcf:
-        intel = idx_pcf_intel_ld.get("por_pcf", {}).get(pcf)
-        if intel:
-            return intel
-
-    return idx_pcf_intel_ld.get("por_doc_rev", {}).get((str(codigo or "").strip(), normalizar_rev(rev)), {}) or {}
-
-
-def aplicar_pcf_intelligence_linha(ws, r, codigo, rev_doc, pcf_coluna_l, status_pcfs, idx_pcf_intel_ld=None):
-    """
-    Atualiza AV:AY com a inteligência consolidada da PCF.
-
-    Mapeamento oficial:
-      AV = Qtd Comentários
-      AW = Open Comments
-      AX = UNDER REVIEW
-      AY = STATUS FINAL PCF
-
-    Prioridade:
-      1) Timeline PCFs por chave exata da coluna L;
-      2) fallback pela própria aba LD, útil principalmente para LD BASICO.
-    """
-    intel = _pcf_intel_da_timeline(status_pcfs, pcf_coluna_l)
-
-    if not _pcf_intel_tem_valor(intel):
-        intel_ld = _pcf_intel_da_ld(idx_pcf_intel_ld, codigo, rev_doc, pcf_coluna_l)
-        if intel_ld:
-            intel = intel_ld
-
-    ws[f"AV{r}"].value = intel.get("qtd_comentarios", "")
-    ws[f"AW{r}"].value = intel.get("open_comments", "")
-    ws[f"AX{r}"].value = intel.get("under_review", "")
-    ws[f"AY{r}"].value = intel.get("status_final", "")
-
-    return intel
-
-
-def limpar_pcf_intelligence_linha(ws, r):
-    ws[f"AV{r}"].value = None
-    ws[f"AW{r}"].value = None
-    ws[f"AX{r}"].value = None
-    ws[f"AY{r}"].value = None
-
-
 def status_final_da_pcf(status_pcfs, pcf_nome_coluna_l):
     """
     PROCV exato:
-      procura LD/LD BASICO coluna L exatamente na Timeline coluna B
-      retorna STATUS FINAL.
+      procura LD coluna L exatamente na Timeline coluna B
+      retorna Timeline coluna L
     """
-    return _pcf_intel_da_timeline(status_pcfs, pcf_nome_coluna_l).get("status_final", "")
+    chave = normalizar_chave_pcf(pcf_nome_coluna_l)
+    return status_pcfs.get(chave, "")
 
 
 # ==========================================================
@@ -1115,7 +1137,7 @@ def aplicar_formatacao(ws):
     forcar_numberformat_coluna(ws, "P", 2, last_row)
 
     # ✅ Colunas pedidas: Arial 11 + centralizado + alinhado no meio
-    for col in ["B", "J", "O", "P", "Q", "AV", "AW", "AX", "AY"]:
+    for col in ["B", "J", "O", "P", "Q"]:
         try:
             rng = ws.range(f"{col}2:{col}{last_row}")
             rng.api.Font.Name = "Arial"
@@ -1262,8 +1284,10 @@ def _preencher_data_por_modo(cell, modo: str, dt: datetime | None, obs: str):
     # DATA
     setar_data(cell, dt)
 
-def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_pcf_resp, idx_grd_resp, status_pcfs, inserir_revisoes=True, idx_pcf_intel_ld=None):
+def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_pcf_resp, idx_grd_resp, status_pcfs, inserir_revisoes=True, pcf_intel_cache=None):
     ws = wb.sheets[aba_nome]
+    if pcf_intel_cache is None:
+        pcf_intel_cache = {}
     log(f"📄 Processando aba: {aba_nome}")
 
     _af_state = capturar_autofiltro(ws)
@@ -1443,53 +1467,50 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
                 if (COL_M_MODO or "").upper().strip() == "DATA":
                     _aplicar_formato_data(ws[f"M{r}"])
 
-                # N = STATUS FINAL vindo da Timeline PCFs:
-                # PROCV exato:
-                #   valor em LD!L  ==  Timeline PCFs / aba "PCFs Recebidas TP" / coluna B
-                #   retorno        ==  Timeline PCFs / aba "PCFs Recebidas TP" / coluna L
+                # Lê diretamente a própria PCF encontrada na coluna L.
+                # N = STATUS FINAL PCF
+                # AV:AY = Qtd Comentários / Open Comments / Under Review / Status Final
                 pcf_coluna_l = ws[f"L{r}"].value
-                status_final = status_final_da_pcf(status_pcfs, pcf_coluna_l)
+                intel_pcf = ler_pcf_intelligence_arquivo(info_pcf.get("path"), pcf_intel_cache)
+
+                status_final = _valor_intel(intel_pcf.get("status_final", ""))
+                if not str(status_final).strip():
+                    # Fallback antigo: Timeline PCFs apenas para manter compatibilidade.
+                    status_final = status_final_da_pcf(status_pcfs, pcf_coluna_l)
+
                 ws[f"N{r}"].value = status_final
 
-                # AV:AY = PCF Intelligence.
-                # Para LD BASICO, usa a mesma lógica da LD:
-                # chave exata da PCF em L e fallback pelos valores já consolidados na aba LD.
-                intel_pcf = aplicar_pcf_intelligence_linha(
-                    ws=ws,
-                    r=r,
-                    codigo=codigo,
-                    rev_doc=rev_doc,
-                    pcf_coluna_l=pcf_coluna_l,
-                    status_pcfs=status_pcfs,
-                    idx_pcf_intel_ld=idx_pcf_intel_ld,
-                )
+                ws[f"AV{r}"].value = intel_pcf.get("qtd_comentarios", "")
+                ws[f"AW{r}"].value = intel_pcf.get("open_comments", "")
+                ws[f"AX{r}"].value = intel_pcf.get("under_review", "")
+                ws[f"AY{r}"].value = status_final or intel_pcf.get("status_final", "")
 
                 if LOG_DETALHADO:
-                    if status_final:
+                    if status_final or _pcf_intel_tem_valor(intel_pcf):
                         log(
-                            f"   [L/M/N + AV:AY] {aba_nome} L{r} | {codigo}_R{rev_doc} "
-                            f"=> PROCV_EXATO L='{pcf_coluna_l}' | M_DATA={_fmt_dt(info_pcf.get('date'))} "
-                            f"| N_STATUS='{status_final}' | AV_QTD='{intel_pcf.get('qtd_comentarios', '')}' "
-                            f"| AW_OPEN='{intel_pcf.get('open_comments', '')}' | AX_UNDER='{intel_pcf.get('under_review', '')}' "
-                            f"| AY_STATUS='{intel_pcf.get('status_final', '')}'"
+                            f"   [L/M/N + AV:AY DIRETO PCF] {aba_nome} L{r} | {codigo}_R{rev_doc} "
+                            f"=> PCF='{pcf_coluna_l}' | M_DATA={_fmt_dt(info_pcf.get('date'))} "
+                            f"| N/AY_STATUS='{status_final}' | AV_QTD='{intel_pcf.get('qtd_comentarios', '')}' "
+                            f"| AW_OPEN='{intel_pcf.get('open_comments', '')}' | AX_UNDER='{intel_pcf.get('under_review', '')}'"
                         )
                     else:
                         log(
-                            f"   [L/M/N + AV:AY] {aba_nome} L{r} | {codigo}_R{rev_doc} "
-                            f"=> PROCV_EXATO SEM STATUS para L='{pcf_coluna_l}' | M_DATA={_fmt_dt(info_pcf.get('date'))} "
-                            f"| AV_QTD='{intel_pcf.get('qtd_comentarios', '')}' "
-                            f"| AW_OPEN='{intel_pcf.get('open_comments', '')}' | AX_UNDER='{intel_pcf.get('under_review', '')}'"
+                            f"   [L/M/N + AV:AY DIRETO PCF] {aba_nome} L{r} | {codigo}_R{rev_doc} "
+                            f"=> PCF encontrada, mas sem inteligência lida no arquivo: '{info_pcf.get('path')}'"
                         )
             else:
                 ws[f"L{r}"].value = None
                 if (COL_M_MODO or "").upper() != "MANTER":
                     ws[f"M{r}"].value = None
                 ws[f"N{r}"].value = None
-                limpar_pcf_intelligence_linha(ws, r)
+                ws[f"AV{r}"].value = None
+                ws[f"AW{r}"].value = None
+                ws[f"AX{r}"].value = None
+                ws[f"AY{r}"].value = None
                 limpar_hyperlink(ws[f"L{r}"])
 
                 if LOG_DETALHADO:
-                    log(f"   [L/M/N + AV:AY] {aba_nome} L{r} | {codigo}_R{rev_doc} => PCF NÃO encontrada")
+                    log(f"   [L/M/N] {aba_nome} L{r} | {codigo}_R{rev_doc} => PCF NÃO encontrada")
 
             # PCF resposta (O / P) - SOMENTE subpasta de respostas
             info_resp = None
@@ -1746,32 +1767,18 @@ def processar():
 
             atualizar_progresso_ld(58, "Abrindo planilha LD...", "running", "Abrindo planilha principal LD.")
             wb = app.books.open(PLANILHA)
+            pcf_intel_cache = {}
 
             atualizar_progresso_ld(65, "Processando aba LD...", "running", "Atualizando status, GRDs, PCFs e respostas da aba LD.")
-            processar_aba(wb, ABA_LD, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_pcf_resp, idx_grd_resp, status_pcfs, inserir_revisoes=True)
-
-            # Índice auxiliar para a LD BASICO herdar AV:AY da aba LD quando necessário.
-            idx_pcf_intel_ld = criar_indice_pcf_intelligence_da_ld(wb.sheets[ABA_LD])
+            processar_aba(wb, ABA_LD, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_pcf_resp, idx_grd_resp, status_pcfs, inserir_revisoes=True, pcf_intel_cache=pcf_intel_cache)
 
             atualizar_progresso_ld(78, "Processando aba LD MARENOVA...", "running", "Atualizando status, GRDs, PCFs e respostas da aba LD MARENOVA.")
-            processar_aba(wb, ABA_LD_MARENOVA, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_pcf_resp, idx_grd_resp, status_pcfs, inserir_revisoes=True)
+            processar_aba(wb, ABA_LD_MARENOVA, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_pcf_resp, idx_grd_resp, status_pcfs, inserir_revisoes=True, pcf_intel_cache=pcf_intel_cache)
 
             try:
                 wb.sheets[ABA_LD_BASICO]
                 atualizar_progresso_ld(84, "Processando aba LD BASICO...", "running", "Atualizando LD BASICO sem inserir novas revisões.")
-                processar_aba(
-                    wb,
-                    ABA_LD_BASICO,
-                    idx_eng,
-                    idx_eng_codigos,
-                    idx_grd,
-                    idx_pcf,
-                    idx_pcf_resp,
-                    idx_grd_resp,
-                    status_pcfs,
-                    inserir_revisoes=False,
-                    idx_pcf_intel_ld=idx_pcf_intel_ld,
-                )
+                processar_aba(wb, ABA_LD_BASICO, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_pcf_resp, idx_grd_resp, status_pcfs, inserir_revisoes=False, pcf_intel_cache=pcf_intel_cache)
             except Exception as exc:
                 log(f"ℹ️ Aba {ABA_LD_BASICO} não processada: {exc}")
 
