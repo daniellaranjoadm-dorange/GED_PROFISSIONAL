@@ -669,6 +669,75 @@ def normalizar_chave_pcf(v):
 
 
 
+def _valor_intel(valor):
+    """
+    Normaliza valores lidos da PCF para gravação na LD.
+
+    - None vira vazio;
+    - números inteiros não ficam como 1.0;
+    - textos têm espaços/quebras normalizados.
+    """
+    if valor is None:
+        return ""
+
+    if isinstance(valor, bool):
+        return int(valor)
+
+    if isinstance(valor, (int, float)):
+        try:
+            n = float(valor)
+            return int(n) if n.is_integer() else n
+        except Exception:
+            return valor
+
+    s = str(valor).strip()
+    if not s:
+        return ""
+
+    s = s.replace("\r", " ").replace("\n", " ")
+    s = re.sub(r"\s+", " ", s).strip()
+
+    s_num = s.replace(",", ".")
+    try:
+        n = float(s_num)
+        return int(n) if n.is_integer() else n
+    except Exception:
+        return s
+
+
+def _normalizar_header(valor):
+    """
+    Normaliza cabeçalhos das PCFs para localizar colunas mesmo quando o Excel
+    vier com quebras de linha, acentos, espaços extras ou texto truncado.
+    """
+    if valor is None:
+        return ""
+
+    s = str(valor).strip().upper()
+    if not s:
+        return ""
+
+    s = s.replace("\r", " ").replace("\n", " ")
+    s = re.sub(r"\s+", " ", s).strip()
+
+    mapa = str.maketrans({
+        "Á": "A", "À": "A", "Ã": "A", "Â": "A", "Ä": "A",
+        "É": "E", "È": "E", "Ê": "E", "Ë": "E",
+        "Í": "I", "Ì": "I", "Î": "I", "Ï": "I",
+        "Ó": "O", "Ò": "O", "Õ": "O", "Ô": "O", "Ö": "O",
+        "Ú": "U", "Ù": "U", "Û": "U", "Ü": "U",
+        "Ç": "C",
+    })
+    s = s.translate(mapa)
+
+    # Remove pontuação comum de cabeçalhos sem destruir números/letras.
+    s = re.sub(r"[:;,.()\[\]{}]+", " ", s)
+    s = re.sub(r"\s+", " ", s).strip()
+
+    return s
+
+
+
 def _pcf_intel_tem_valor(intel: dict) -> bool:
     if not isinstance(intel, dict):
         return False
@@ -768,16 +837,24 @@ def _achar_header_pcf_openpyxl(ws):
     aliases = {
         "qtd_comentarios": {
             "QTD COMENTARIOS", "QTD COMENTARIO", "QTDE COMENTARIOS",
-            "QTD COMMENTS", "COMMENTS QTY", "NB PENDING COMMENTS", "PENDING COMMENTS",
+            "QTD COMENTARI", "QTD COMENTAR", "QTD COMMENT", "QTD COMMENTS",
+            "COMMENTS QTY", "COMMENT QTY", "TOTAL COMMENTS", "TOTAL COMMENT",
+            "NB PENDING COMMENTS", "PENDING COMMENTS", "COMMENTS",
+            "QTY COMMENTS", "QT COMMENTS",
         },
         "open_comments": {
-            "OPEN COMMENTS", "OPEN COMMENT", "OPEN COMMER", "OPEN COMMENTS QTY",
+            "OPEN COMMENTS", "OPEN COMMENT", "OPEN COMMEN", "OPEN COMMER",
+            "OPEN COMMENTS QTY", "OPEN COMMENT QTY", "OPEN",
+            "OPENED COMMENTS", "COMMENTS OPEN",
         },
         "under_review": {
-            "UNDER REVIEW", "UNDER REVIE", "UNDER REVIEWS",
+            "UNDER REVIEW", "UNDER REVIE", "UNDER REVIEWS", "UNDER",
+            "UNDER REV", "IN REVIEW", "REVIEW",
         },
         "status_final": {
-            "STATUS FINAL PCF", "STATUS FINAL", "FINAL STATUS", "PCF FINAL STATUS",
+            "STATUS FINAL PCF", "STATUS FINAL", "STATUS FINAL P",
+            "FINAL STATUS", "PCF FINAL STATUS", "STATUS",
+            "STATUS PCF", "FINAL PCF STATUS",
         },
     }
 
@@ -795,7 +872,16 @@ def _achar_header_pcf_openpyxl(ws):
                 continue
 
             for campo, nomes in aliases.items():
-                if h in nomes and campo not in encontrados:
+                if campo in encontrados:
+                    continue
+
+                if h in nomes:
+                    encontrados[campo] = col
+                    continue
+
+                # Cabeçalhos vindos de tabela filtrada podem aparecer truncados,
+                # por exemplo "OPEN COMMEN" ou "UNDER REVIE".
+                if any((h.startswith(nome) or nome.startswith(h)) and len(h) >= 4 for nome in nomes):
                     encontrados[campo] = col
 
         qtd = len(encontrados)
