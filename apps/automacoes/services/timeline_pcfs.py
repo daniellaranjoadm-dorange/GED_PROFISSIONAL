@@ -66,6 +66,23 @@ HEADERS_PCF = [
     "STATUS FINAL",
 ]
 
+SHEET_RESUMO_COMENTARIOS_ABERTOS = "Resumo Comentários Abertos"
+
+HEADERS_COMENTARIOS_ABERTOS = [
+    "PCF LINK",
+    "Nº DOCUMENTO",
+    "TITULO",
+    "Revisão da PCF",
+    "Data Recebimento",
+    "STATUS FINAL",
+    "Item",
+    "Round",
+    "Comment Status",
+    "Owner's Comments",
+    "Builder's Replies",
+    "Caminho",
+]
+
 
 # =========================
 # LOG NO TERMINAL
@@ -357,6 +374,208 @@ def extrair_qtd_e_open_comments(ws):
 
     return open_count, under_review_count, total_comments
 
+
+
+def _colunas_comentarios_pcf(ws):
+    """
+    Localiza a tabela detalhada de comentários da PCF.
+
+    Padrão observado nas PCFs Transpetro:
+    - cabeçalho "Item", "Round", "Owner's Comments", "Builder's Replies", "Comment Status";
+    - "Comment Status" é a coluna oficial para contar OPEN e UNDER REVIEW.
+    """
+    header_row = None
+    status_col = None
+
+    max_row_scan = min(ws.max_row or 1, 120)
+    max_col_scan = min(ws.max_column or 1, 40)
+
+    for r in range(1, max_row_scan + 1):
+        for c in range(1, max_col_scan + 1):
+            if norm_text(ws.cell(r, c).value) == "COMMENT STATUS":
+                header_row = r
+                status_col = c
+                break
+        if status_col:
+            break
+
+    if not header_row or not status_col:
+        return None
+
+    item_col = None
+    round_col = None
+    owner_col = None
+    builder_col = None
+
+    for c in range(1, max_col_scan + 1):
+        h = norm_text(ws.cell(header_row, c).value)
+        if h == "ITEM":
+            item_col = c
+        elif h == "ROUND":
+            round_col = c
+        elif "OWNER" in h and "COMMENT" in h:
+            owner_col = c
+        elif "BUILDER" in h and ("REPL" in h or "REPLY" in h):
+            builder_col = c
+
+    return {
+        "header_row": header_row,
+        "item_col": item_col,
+        "round_col": round_col,
+        "owner_col": owner_col,
+        "builder_col": builder_col,
+        "status_col": status_col,
+    }
+
+
+def _join_cells_text(ws, row_idx, start_col, end_col):
+    """Concatena textos de um intervalo horizontal, ignorando vazios e duplicados."""
+    if not start_col or not end_col or end_col < start_col:
+        return ""
+
+    partes = []
+    vistos = set()
+
+    for c in range(start_col, end_col + 1):
+        valor = safe_str(ws.cell(row_idx, c).value)
+        if not valor:
+            continue
+
+        chave = norm_text(valor)
+        if chave in vistos:
+            continue
+
+        vistos.add(chave)
+        partes.append(valor)
+
+    return " ".join(partes).strip()
+
+
+def extrair_comentarios_abertos_pcf(caminho, meta=None):
+    """
+    Extrai linha a linha os comentários com Comment Status OPEN ou UNDER REVIEW.
+
+    Essa aba não é um resumo agregado: ela lista cada comentário aberto/revisão pendente
+    das PCFs recebidas consideradas na aba "PCFs Recebidas TP - Últimas Rev".
+    """
+    meta = meta or {}
+    comentarios = []
+
+    wb_pcf = load_workbook(caminho, data_only=True, read_only=False)
+    try:
+        ws = primeira_aba_util(wb_pcf)
+        cols = _colunas_comentarios_pcf(ws)
+
+        if not cols:
+            return comentarios
+
+        header_row = cols["header_row"]
+        item_col = cols["item_col"]
+        round_col = cols["round_col"]
+        owner_col = cols["owner_col"]
+        builder_col = cols["builder_col"]
+        status_col = cols["status_col"]
+
+        under_review_aliases = {
+            "UNDER REVIEW",
+            "UNDER_REVIEW",
+            "UNDER-REVIEW",
+            "UNDER  REVIEW",
+            "UNDER REVISION",
+            "UNDER_REVISION",
+            "UNDER-REVISION",
+        }
+
+        status_alvo = {"OPEN"} | under_review_aliases
+
+        # Define faixas de texto. Nas PCFs atuais, Owner's Comments fica antes de Builder's Replies
+        # e Builder's Replies fica antes de Comment Status.
+        owner_end = (builder_col - 1) if builder_col else (status_col - 1)
+        builder_end = status_col - 1
+
+        for r in range(header_row + 1, ws.max_row + 1):
+            status_norm = norm_text(ws.cell(r, status_col).value)
+
+            if status_norm not in status_alvo:
+                continue
+
+            status_saida = "UNDER REVIEW" if status_norm in under_review_aliases else status_norm
+
+            owner_text = _join_cells_text(ws, r, owner_col, owner_end)
+            builder_text = _join_cells_text(ws, r, builder_col, builder_end) if builder_col else ""
+
+            comentarios.append({
+                "PCF LINK": meta.get("PCF LINK", os.path.splitext(os.path.basename(caminho))[0]),
+                "Nº DOCUMENTO": meta.get("Nº DOCUMENTO", ""),
+                "TITULO": meta.get("TITULO", ""),
+                "Revisão da PCF": meta.get("Revisão da PCF", ""),
+                "Data Recebimento": meta.get("Data Recebimento", ""),
+                "STATUS FINAL": meta.get("STATUS FINAL", ""),
+                "Item": ws.cell(r, item_col).value if item_col else "",
+                "Round": ws.cell(r, round_col).value if round_col else "",
+                "Comment Status": status_saida,
+                "Owner's Comments": owner_text,
+                "Builder's Replies": builder_text,
+                "Caminho": caminho,
+            })
+
+        return comentarios
+
+    finally:
+        wb_pcf.close()
+
+
+def preencher_aba_resumo_comentarios_abertos(wb, rows_latest):
+    """
+    Cria/atualiza a aba "Resumo Comentários Abertos" com todos os comentários
+    OPEN e UNDER REVIEW das últimas revisões recebidas.
+    """
+    if SHEET_RESUMO_COMENTARIOS_ABERTOS in wb.sheetnames:
+        ws_resumo = wb[SHEET_RESUMO_COMENTARIOS_ABERTOS]
+    else:
+        idx = wb.sheetnames.index(SHEET_SRC_RECEBIDAS_LATEST) + 1 if SHEET_SRC_RECEBIDAS_LATEST in wb.sheetnames else len(wb.sheetnames)
+        ws_resumo = wb.create_sheet(SHEET_RESUMO_COMENTARIOS_ABERTOS, idx)
+
+    ensure_headers(ws_resumo, HEADERS_COMENTARIOS_ABERTOS)
+
+    comentarios = []
+    erros = 0
+
+    for row in rows_latest:
+        caminho = row.get("Caminho", "")
+        if not caminho or not os.path.exists(caminho):
+            continue
+
+        try:
+            comentarios.extend(extrair_comentarios_abertos_pcf(caminho, row))
+        except Exception as exc:
+            erros += 1
+            if MOSTRAR_CADA_ERRO:
+                log_erro(f"Erro ao extrair comentários abertos de {caminho}: {type(exc).__name__}: {exc}")
+
+    if comentarios:
+        comentarios.sort(
+            key=lambda item: (
+                safe_str(item.get("Nº DOCUMENTO")),
+                safe_str(item.get("Revisão da PCF")),
+                safe_str(item.get("Comment Status")),
+                _safe_int(item.get("Item")),
+            )
+        )
+        links = limpar_e_preencher_aba(ws_resumo, comentarios, HEADERS_COMENTARIOS_ABERTOS)
+    else:
+        # Preserva a aba com cabeçalho e sem dados antigos caso não haja comentários abertos.
+        if ws_resumo.max_row > 1:
+            ws_resumo.delete_rows(2, ws_resumo.max_row - 1)
+        aplicar_estilo_tabela(ws_resumo, HEADERS_COMENTARIOS_ABERTOS)
+        links = 0
+
+    log_ok(
+        f"Aba '{SHEET_RESUMO_COMENTARIOS_ABERTOS}' preenchida com "
+        f"{len(comentarios)} comentários OPEN/UNDER REVIEW. Links: {links}. Erros: {erros}."
+    )
+
+    return len(comentarios)
 def extrair_data_recebimento(ws):
     data = get_by_label(ws, "Date", max_row=20, max_col=20)
     if data:
@@ -629,6 +848,10 @@ def preencher_aba_ultimas_revisoes_recebidas(wb, rows, headers):
     ensure_headers(ws_latest, headers)
     rows_latest = filtrar_ultimas_revisoes_pcf(rows)
     limpar_e_preencher_aba(ws_latest, rows_latest, headers)
+
+    # Aba detalhada com todos os comentários OPEN e UNDER REVIEW das últimas PCFs recebidas.
+    preencher_aba_resumo_comentarios_abertos(wb, rows_latest)
+
     return len(rows_latest)
 
 
