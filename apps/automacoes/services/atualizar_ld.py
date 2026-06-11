@@ -67,7 +67,7 @@ FREEZE_PANES = False
 
 # ✅ Formatação
 APLICAR_FORMATACAO = True
-ULTIMA_COLUNA = "Q"  # na sua LD vai até Q
+ULTIMA_COLUNA = "AY"  # LD/LD BASICO com PCF Intelligence até AY
 
 # Excel constants
 xlCenter = -4108
@@ -745,20 +745,59 @@ def _pcf_get_by_label(ws, label, max_row=15, max_col=15):
     return ""
 
 
+def _pcf_valor_excel_erro(valor) -> bool:
+    """Identifica erros/fórmulas do Excel que não podem virar status operacional."""
+    s = _pcf_safe_str(valor).upper()
+    return s.startswith("#") or s in {"#VALOR!", "#VALUE!", "#N/D", "#N/A", "#REF!", "#DIV/0!", "#NAME?", "#NULL!"}
+
+
+def _pcf_linha_primeiro_comment_status(ws):
+    """Retorna a linha do primeiro cabeçalho 'Comment Status', quando existir."""
+    for r in range(1, min(ws.max_row or 1, 80) + 1):
+        for c in range(1, min(ws.max_column or 1, 40) + 1):
+            if _pcf_norm_text(ws.cell(r, c).value) == "COMMENT STATUS":
+                return r
+    return None
+
+
 def _pcf_extrair_status_final(ws):
     """
-    Lógica oficial copiada do timeline_pcfs.py.
+    Regra determinística da PCF History.
 
-    STATUS FINAL = último valor preenchido da coluna E a partir da linha 9.
+    STATUS FINAL = último status válido da coluna E a partir da linha 9,
+    limitado ao bloco PCF History, antes da tabela de comentários.
 
-    Isso evita pegar status antigo do histórico de PCF e respeita a última
-    linha preenchida da tabela PCF History.
+    Motivo:
+      algumas PCFs possuem fórmulas/erros (#VALUE!/#VALOR!) na coluna E
+      dentro da área de comentários. Esses valores não são status PCF.
     """
     status_final = ""
-    for row in range(9, (ws.max_row or 0) + 1):
-        v = ws.cell(row=row, column=5).value  # coluna E
-        if _pcf_safe_str(v):
-            status_final = _pcf_safe_str(v)
+    primeira_linha_comentarios = _pcf_linha_primeiro_comment_status(ws)
+    fim_history = (primeira_linha_comentarios - 1) if primeira_linha_comentarios else (ws.max_row or 0)
+
+    status_validos = {
+        "NOT RELEASED",
+        "RELEASED",
+        "RELEASED WITH COMMENTS",
+        "OPEN",
+        "CLOSED",
+        "UNDER REVIEW",
+        "APPROVED",
+        "APPROVED WITH COMMENTS",
+        "APPROVED WITHOUT COMMENTS",
+        "NOT APPROVED",
+    }
+
+    for row in range(9, fim_history + 1):
+        v = ws.cell(row=row, column=5).value  # coluna E = Status no PCF History
+        s = _pcf_norm_text(v)
+
+        if not s or _pcf_valor_excel_erro(s):
+            continue
+
+        if s in status_validos:
+            status_final = s
+
     return status_final
 
 
@@ -808,7 +847,7 @@ def _pcf_extrair_qtd_e_open_comments(ws):
         for r in range(header_row + 1, (ws.max_row or 0) + 1):
             status = _pcf_norm_text(ws.cell(r, comment_status_col).value)
 
-            if not status:
+            if not status or status == "COMMENT STATUS" or _pcf_valor_excel_erro(status):
                 continue
 
             total_comments += 1
@@ -1399,10 +1438,16 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
                 and status_h in STATUS_H_PRESERVAR_LD_BASICO
             )
 
-            if aba_nome != ABA_LD_BASICO and status_h in STATUS_H_BLOQUEADOS:
-                if LOG_DETALHADO:
-                    log(f"   [SKIP] {aba_nome} L{r} ignorada (H = {status_h})")
-                continue
+            preservar_h_por_status_final = (
+                aba_nome != ABA_LD_BASICO
+                and status_h in STATUS_H_BLOQUEADOS
+            )
+
+            if preservar_h_por_status_final and LOG_DETALHADO:
+                log(
+                    f"   [H] {aba_nome} L{r} preservada (H = {status_h}); "
+                    "atualizando GRD/PCF/PCF Intelligence normalmente."
+                )
 
             if not codigo:
                 continue
@@ -1462,7 +1507,10 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
                     if not status_h:
                         ws[f"H{r}"].value = status_auto_h
             else:
-                ws[f"H{r}"].value = status_auto_h
+                # Em linhas com status final/manual na LD, preserva H,
+                # mas permite atualizar J:Q e AV:AY para não bloquear PCF Intelligence.
+                if not preservar_h_por_status_final:
+                    ws[f"H{r}"].value = status_auto_h
 
             # GRD (J / K)
             info = idx_grd.get(codigo, {}).get(rev)
