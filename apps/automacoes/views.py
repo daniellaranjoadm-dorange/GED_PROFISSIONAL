@@ -17,7 +17,7 @@ from django.db.models import Avg, Count, Q, Sum
 from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font, PatternFill
 
 from apps.automacoes.models import TransmittalKM, PCFTimeline, DocumentoLD, DocumentoKM, ExecucaoAutomacao, KMFileIndex
@@ -2871,6 +2871,111 @@ def _ld_resumo_pcf_por_status(registros, limite=12):
     )[:limite]
 
 
+
+def _ld_resumo_din_ld():
+    """
+    Lê diretamente a aba 'Din LD' da planilha mestre para o 3º slide do PPT.
+
+    A intenção é reproduzir o mesmo resumo/pivô operacional usado na LD,
+    sem depender dos campos de PCF Intelligence estarem gravados no banco.
+    """
+    caminho = getattr(atualizar_ld, "PLANILHA", "")
+    if not caminho:
+        return {
+            "ok": False,
+            "erro": "PLANILHA não configurada.",
+            "totais": {"docs": 0, "qtd": 0, "open": 0, "under": 0},
+            "linhas": [],
+        }
+
+    def _num(valor):
+        if valor in (None, ""):
+            return 0
+        try:
+            return int(float(valor))
+        except Exception:
+            return 0
+
+    def _txt(valor):
+        return str(valor or "").strip()
+
+    wb = None
+    try:
+        wb = load_workbook(caminho, data_only=True, read_only=False, keep_vba=True)
+        if "Din LD" not in wb.sheetnames:
+            return {
+                "ok": False,
+                "erro": "Aba 'Din LD' não encontrada.",
+                "totais": {"docs": 0, "qtd": 0, "open": 0, "under": 0},
+                "linhas": [],
+            }
+
+        ws = wb["Din LD"]
+        cliente_atual = ""
+        linhas = []
+        totais = {"docs": 0, "qtd": 0, "open": 0, "under": 0}
+
+        for r in range(4, ws.max_row + 1):
+            rotulo = _txt(ws.cell(r, 1).value)
+            if not rotulo:
+                continue
+
+            docs_raw = ws.cell(r, 2).value
+            qtd_raw = ws.cell(r, 3).value
+            open_raw = ws.cell(r, 4).value
+            under_raw = ws.cell(r, 5).value
+
+            if rotulo.upper() == "TOTAL GERAL":
+                totais = {
+                    "docs": _num(docs_raw),
+                    "qtd": _num(qtd_raw),
+                    "open": _num(open_raw),
+                    "under": _num(under_raw),
+                }
+                continue
+
+            # Linha de grupo/cliente: Kongsberg, MacLaren, Ecovix...
+            if docs_raw in (None, "") and qtd_raw in (None, "") and open_raw in (None, "") and under_raw in (None, ""):
+                cliente_atual = rotulo
+                continue
+
+            linhas.append({
+                "cliente": cliente_atual or "-",
+                "status": rotulo,
+                "docs": _num(docs_raw),
+                "qtd": _num(qtd_raw),
+                "open": _num(open_raw),
+                "under": _num(under_raw),
+            })
+
+        if not totais["docs"]:
+            totais["docs"] = sum(item["docs"] for item in linhas)
+            totais["qtd"] = sum(item["qtd"] for item in linhas)
+            totais["open"] = sum(item["open"] for item in linhas)
+            totais["under"] = sum(item["under"] for item in linhas)
+
+        return {
+            "ok": True,
+            "erro": "",
+            "totais": totais,
+            "linhas": linhas,
+        }
+
+    except Exception as exc:
+        return {
+            "ok": False,
+            "erro": str(exc),
+            "totais": {"docs": 0, "qtd": 0, "open": 0, "under": 0},
+            "linhas": [],
+        }
+    finally:
+        if wb is not None:
+            try:
+                wb.close()
+            except Exception:
+                pass
+
+
 def _ld_valores_distintos(campo, extras=None):
     valores = []
     vistos = set()
@@ -3795,43 +3900,46 @@ def _ld_exportar_dashboard_ppt(request):
     add_bars(slide, "Pendências por disciplina", _ld_chart_items(registros.filter(Q(pcf__isnull=True) | Q(pcf="")), "disciplina", 7), 6.9, 2.65, 5.7, 3.9)
 
     # Slide 3 - Resumo PCF Intelligence
-    resumo_pcf = _ld_resumo_pcf_por_status(registros, limite=12)
+    resumo_din = _ld_resumo_din_ld()
+    totais_din = resumo_din.get("totais", {})
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     slide.background.fill.solid()
     slide.background.fill.fore_color.rgb = bg
     add_text(slide, "Resumo PCF Intelligence", .45, .35, 8.8, .45, 26, True, white)
-    add_text(slide, "Status documental • Quantidades • Comentários • Under Review", .45, .82, 9.8, .30, 12, False, cyan)
+    add_text(slide, "Resumo consolidado da aba Din LD • Status • Comentários • Under Review", .45, .82, 10.8, .30, 12, False, cyan)
 
-    add_card(slide, "Qtd comentários", kpis.get("total_qtd_comentarios", 0), "soma AV", .45, 1.25, accent=cyan)
-    add_card(slide, "Open comments", kpis.get("total_open_comments", 0), "soma AW", 2.75, 1.25, accent=orange)
-    add_card(slide, "Under Review", kpis.get("total_under_review", 0), "soma AX", 5.05, 1.25, accent=RGBColor(248, 113, 113))
-    add_card(slide, "Not Released", total_not_released, "status PCF", 7.35, 1.25, accent=RGBColor(248, 113, 113))
+    add_card(slide, "Total documentos", totais_din.get("docs", 0), "Din LD", .45, 1.25, accent=cyan)
+    add_card(slide, "Qtd comentários", totais_din.get("qtd", 0), "soma Din LD", 2.75, 1.25, accent=cyan)
+    add_card(slide, "Open comments", totais_din.get("open", 0), "soma Din LD", 5.05, 1.25, accent=orange)
+    add_card(slide, "Under Review", totais_din.get("under", 0), "soma Din LD", 7.35, 1.25, accent=RGBColor(248, 113, 113))
     add_card(slide, "Com PCF", kpis["total_com_pcf"], f"{taxa_pcf}% da base", 9.65, 1.25, accent=green)
 
     rows = [
         [
+            item["cliente"],
             item["status"],
-            item["total"],
-            item["qtd_comentarios"],
-            item["open_comments"],
-            item["under_review"],
+            item["docs"],
+            item["qtd"],
+            item["open"],
+            item["under"],
         ]
-        for item in resumo_pcf
+        for item in resumo_din.get("linhas", [])
     ]
 
     if not rows:
-        rows = [["Sem dados", 0, 0, 0, 0]]
+        erro = resumo_din.get("erro") or "Sem dados na aba Din LD"
+        rows = [["-", erro[:45], 0, 0, 0, 0]]
 
     add_table(
         slide,
-        ["Status Documento", "Docs", "Qtd Coment.", "Open", "Under Review"],
+        ["Cliente", "Status Documento", "Docs", "Qtd Coment.", "Open", "Under"],
         rows,
-        .55,
-        2.75,
-        12.2,
-        3.8,
+        .45,
+        2.55,
+        12.45,
+        4.25,
     )
-    add_text(slide, "GED_PROFISSIONAL • LD BASICO • PCF Intelligence", .45, 7.05, 7.0, .20, 8, False, muted)
+    add_text(slide, "GED_PROFISSIONAL • LD BASICO • Din LD • PCF Intelligence", .45, 7.05, 8.0, .20, 8, False, muted)
 
     output = BytesIO()
     prs.save(output)
