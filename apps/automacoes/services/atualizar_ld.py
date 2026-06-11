@@ -705,205 +705,184 @@ def _valor_intel(valor):
         return s
 
 
-def _normalizar_header(valor):
+
+
+def _pcf_safe_str(valor):
+    """Mesmo comportamento do timeline_pcfs.safe_str()."""
+    return "" if valor is None else str(valor).strip()
+
+
+def _pcf_norm_text(valor):
+    """Mesmo comportamento do timeline_pcfs.norm_text()."""
+    return re.sub(r"\s+", " ", _pcf_safe_str(valor).upper())
+
+
+def _pcf_primeira_aba_util(wb_pcf):
     """
-    Normaliza cabeçalhos das PCFs para localizar colunas mesmo quando o Excel
-    vier com quebras de linha, acentos, espaços extras ou texto truncado.
+    Mesma regra do timeline_pcfs.py:
+    usa a primeira aba visível da PCF; se nenhuma estiver visível,
+    usa a primeira aba do workbook.
     """
-    if valor is None:
-        return ""
+    for ws in wb_pcf.worksheets:
+        if getattr(ws, "sheet_state", "visible") == "visible":
+            return ws
+    return wb_pcf.worksheets[0]
 
-    s = str(valor).strip().upper()
-    if not s:
-        return ""
 
-    s = s.replace("\r", " ").replace("\n", " ")
-    s = re.sub(r"\s+", " ", s).strip()
+def _pcf_get_by_label(ws, label, max_row=15, max_col=15):
+    """
+    Mesma regra do timeline_pcfs.py:
+    localiza o label e busca o valor 2, 1, 3 ou 4 colunas à direita.
+    """
+    alvo = _pcf_norm_text(label)
+    for row in range(1, min(ws.max_row, max_row) + 1):
+        for col in range(1, min(ws.max_column, max_col) + 1):
+            if _pcf_norm_text(ws.cell(row=row, column=col).value) == alvo:
+                for offset in (2, 1, 3, 4):
+                    v = ws.cell(row=row, column=col + offset).value
+                    if _pcf_safe_str(v):
+                        return v
+    return ""
 
-    mapa = str.maketrans({
-        "Á": "A", "À": "A", "Ã": "A", "Â": "A", "Ä": "A",
-        "É": "E", "È": "E", "Ê": "E", "Ë": "E",
-        "Í": "I", "Ì": "I", "Î": "I", "Ï": "I",
-        "Ó": "O", "Ò": "O", "Õ": "O", "Ô": "O", "Ö": "O",
-        "Ú": "U", "Ù": "U", "Û": "U", "Ü": "U",
-        "Ç": "C",
-    })
-    s = s.translate(mapa)
 
-    # Remove pontuação comum de cabeçalhos sem destruir números/letras.
-    s = re.sub(r"[:;,.()\[\]{}]+", " ", s)
-    s = re.sub(r"\s+", " ", s).strip()
+def _pcf_extrair_status_final(ws):
+    """
+    Lógica oficial copiada do timeline_pcfs.py.
 
-    return s
+    STATUS FINAL = último valor preenchido da coluna E a partir da linha 9.
 
+    Isso evita pegar status antigo do histórico de PCF e respeita a última
+    linha preenchida da tabela PCF History.
+    """
+    status_final = ""
+    for row in range(9, (ws.max_row or 0) + 1):
+        v = ws.cell(row=row, column=5).value  # coluna E
+        if _pcf_safe_str(v):
+            status_final = _pcf_safe_str(v)
+    return status_final
+
+
+def _pcf_extrair_qtd_e_open_comments(ws):
+    """
+    Lógica oficial copiada do timeline_pcfs.py.
+
+    Conta comentários reais da PCF por status na coluna "Comment Status".
+
+    Retorna:
+      open_count
+      under_review_count
+      total_comments
+
+    Importante:
+      - não usa a quantidade exibida no PCF History;
+      - conta somente linhas com Comment Status preenchido;
+      - aceita variações de UNDER REVIEW.
+    """
+    comment_status_col = None
+    header_row = None
+
+    for r in range(1, min(ws.max_row or 1, 60) + 1):
+        for c in range(1, min(ws.max_column or 1, 30) + 1):
+            if _pcf_norm_text(ws.cell(r, c).value) == "COMMENT STATUS":
+                comment_status_col = c
+                header_row = r
+                break
+        if comment_status_col:
+            break
+
+    open_count = 0
+    under_review_count = 0
+    total_comments = 0
+
+    under_review_aliases = {
+        "UNDER REVIEW",
+        "UNDER_REVIEW",
+        "UNDER-REVIEW",
+        "UNDER  REVIEW",
+        "UNDER REVISION",
+        "UNDER_REVISION",
+        "UNDER-REVISION",
+    }
+
+    if comment_status_col:
+        for r in range(header_row + 1, (ws.max_row or 0) + 1):
+            status = _pcf_norm_text(ws.cell(r, comment_status_col).value)
+
+            if not status:
+                continue
+
+            total_comments += 1
+
+            if status == "OPEN":
+                open_count += 1
+            elif status in under_review_aliases:
+                under_review_count += 1
+
+    return open_count, under_review_count, total_comments
+
+
+def _pcf_extrair_revisao(ws, caminho):
+    rev = _pcf_get_by_label(ws, "PCF Rev.", max_row=20, max_col=20)
+    if _pcf_safe_str(rev):
+        return normalizar_rev(rev)
+
+    nome = os.path.splitext(os.path.basename(caminho))[0].upper()
+    m = re.search(r"_R([A-Z0-9]+)$", nome)
+    if m:
+        raw = m.group(1)
+        if raw == "0":
+            return "0"
+        return raw[-1]
+
+    return ""
+
+
+def _pcf_parece_valida(ws, caminho):
+    """
+    Mesma ideia do timeline_pcfs.py:
+    - nome contendo PCF já é candidato válido;
+    - caso contrário, valida por conteúdo básico.
+    """
+    nome = os.path.basename(caminho).upper()
+
+    if nome.startswith("LISTA "):
+        return False
+
+    if "PCF" in nome:
+        return True
+
+    tem_pcf_no = bool(_pcf_safe_str(_pcf_get_by_label(ws, "PCF No.", max_row=20, max_col=20)))
+    tem_plan_no = bool(_pcf_safe_str(_pcf_get_by_label(ws, "Plan No.", max_row=20, max_col=20)))
+    tem_status_em_e = bool(_pcf_extrair_status_final(ws))
+
+    return tem_pcf_no or tem_plan_no or tem_status_em_e
 
 
 def _pcf_intel_tem_valor(intel: dict) -> bool:
     if not isinstance(intel, dict):
         return False
-    return any(str(intel.get(k, "")).strip() for k in ("qtd_comentarios", "open_comments", "under_review", "status_final"))
-
-
-def _intel_num(valor):
-    """Converte valores de comentários para número quando possível, preservando vazio."""
-    if valor in (None, ""):
-        return ""
-    if isinstance(valor, (int, float)):
-        try:
-            return int(valor)
-        except Exception:
-            return valor
-    s = str(valor).strip()
-    if not s:
-        return ""
-    s_num = s.replace(",", ".")
-    try:
-        n = float(s_num)
-        return int(n) if n.is_integer() else n
-    except Exception:
-        return s
-
-
-def _status_prioridade_pcf(status):
-    s = _normalizar_header(status)
-    prioridade = {
-        "OPEN": 50,
-        "NOT RELEASED": 40,
-        "RELEASED WITH COMMENTS": 35,
-        "UNDER REVIEW": 30,
-        "RELEASED": 20,
-        "CLOSED": 10,
-        "": 0,
-    }
-    return prioridade.get(s, 1)
-
-
-def _valor_num_score(valor):
-    v = _intel_num(valor)
-    if isinstance(v, (int, float)):
-        return float(v)
-    try:
-        return float(str(v).replace(",", "."))
-    except Exception:
-        return 0.0
-
-
-def _melhor_intel_pcf(atual, novo, linha_atual=0, linha_nova=0):
-    """
-    Escolhe a melhor linha quando a PCF possui mais de uma ocorrência de inteligência.
-    Critério:
-      1) maior prioridade de status operacional;
-      2) maior Open Comments;
-      3) maior Qtd Comentários;
-      4) maior Under Review;
-      5) última linha encontrada.
-    """
-    if not atual:
-        return novo, linha_nova
-
-    score_atual = (
-        _status_prioridade_pcf(atual.get("status_final", "")),
-        _valor_num_score(atual.get("open_comments", "")),
-        _valor_num_score(atual.get("qtd_comentarios", "")),
-        _valor_num_score(atual.get("under_review", "")),
-        linha_atual,
+    return any(
+        str(intel.get(k, "")).strip()
+        for k in ("qtd_comentarios", "open_comments", "under_review", "status_final")
     )
-    score_novo = (
-        _status_prioridade_pcf(novo.get("status_final", "")),
-        _valor_num_score(novo.get("open_comments", "")),
-        _valor_num_score(novo.get("qtd_comentarios", "")),
-        _valor_num_score(novo.get("under_review", "")),
-        linha_nova,
-    )
-
-    if score_novo >= score_atual:
-        return novo, linha_nova
-
-    return atual, linha_atual
-
-
-def _cell_value_openpyxl(ws, row, col):
-    try:
-        return ws.cell(row=row, column=col).value
-    except Exception:
-        return None
-
-
-def _achar_header_pcf_openpyxl(ws):
-    """
-    Localiza a linha/colunas da inteligência dentro da própria PCF.
-    Procura pelos cabeçalhos em qualquer aba, nas primeiras linhas.
-    """
-    aliases = {
-        "qtd_comentarios": {
-            "QTD COMENTARIOS", "QTD COMENTARIO", "QTDE COMENTARIOS",
-            "QTD COMENTARI", "QTD COMENTAR", "QTD COMMENT", "QTD COMMENTS",
-            "COMMENTS QTY", "COMMENT QTY", "TOTAL COMMENTS", "TOTAL COMMENT",
-            "NB PENDING COMMENTS", "PENDING COMMENTS", "COMMENTS",
-            "QTY COMMENTS", "QT COMMENTS",
-        },
-        "open_comments": {
-            "OPEN COMMENTS", "OPEN COMMENT", "OPEN COMMEN", "OPEN COMMER",
-            "OPEN COMMENTS QTY", "OPEN COMMENT QTY", "OPEN",
-            "OPENED COMMENTS", "COMMENTS OPEN",
-        },
-        "under_review": {
-            "UNDER REVIEW", "UNDER REVIE", "UNDER REVIEWS", "UNDER",
-            "UNDER REV", "IN REVIEW", "REVIEW",
-        },
-        "status_final": {
-            "STATUS FINAL PCF", "STATUS FINAL", "STATUS FINAL P",
-            "FINAL STATUS", "PCF FINAL STATUS", "STATUS",
-            "STATUS PCF", "FINAL PCF STATUS",
-        },
-    }
-
-    max_row_scan = min(ws.max_row or 1, 30)
-    max_col_scan = min(ws.max_column or 1, 120)
-
-    melhor = None
-    melhor_qtd = 0
-
-    for row in range(1, max_row_scan + 1):
-        encontrados = {}
-        for col in range(1, max_col_scan + 1):
-            h = _normalizar_header(_cell_value_openpyxl(ws, row, col))
-            if not h:
-                continue
-
-            for campo, nomes in aliases.items():
-                if campo in encontrados:
-                    continue
-
-                if h in nomes:
-                    encontrados[campo] = col
-                    continue
-
-                # Cabeçalhos vindos de tabela filtrada podem aparecer truncados,
-                # por exemplo "OPEN COMMEN" ou "UNDER REVIE".
-                if any((h.startswith(nome) or nome.startswith(h)) and len(h) >= 4 for nome in nomes):
-                    encontrados[campo] = col
-
-        qtd = len(encontrados)
-        if qtd > melhor_qtd:
-            melhor_qtd = qtd
-            melhor = (row, encontrados)
-
-        if qtd >= 3:
-            return row, encontrados
-
-    return melhor if melhor_qtd else (None, {})
 
 
 def ler_pcf_intelligence_arquivo(caminho_pcf, cache=None):
     """
-    Lê a inteligência operacional diretamente da própria PCF encontrada na coluna L.
+    Lê a inteligência operacional diretamente da própria PCF encontrada na coluna L,
+    usando a mesma lógica do timeline_pcfs.py.
 
     Retorna:
       qtd_comentarios -> AV
       open_comments   -> AW
       under_review    -> AX
       status_final    -> AY e N
+
+    Regra oficial:
+      - status_final: último status preenchido da coluna E a partir da linha 9;
+      - qtd_comentarios: total de linhas com "Comment Status" preenchido;
+      - open_comments: quantidade de "Comment Status" = OPEN;
+      - under_review: quantidade de "Comment Status" = UNDER REVIEW.
     """
     caminho = normalizar_endereco_hyperlink(caminho_pcf)
 
@@ -923,49 +902,30 @@ def ler_pcf_intelligence_arquivo(caminho_pcf, cache=None):
         return vazio
 
     try:
-        wb_pcf = load_workbook(caminho, read_only=True, data_only=True)
+        wb_pcf = load_workbook(caminho, read_only=False, data_only=True)
     except Exception as exc:
-        log(f"⚠️ Não foi possível abrir PCF para ler comentários: {caminho} | {exc}")
+        log(f"⚠️ Não foi possível abrir PCF para ler inteligência: {caminho} | {exc}")
         if cache is not None:
             cache[caminho] = vazio
         return vazio
 
     try:
-        melhor_intel = {}
-        melhor_linha = 0
+        ws = _pcf_primeira_aba_util(wb_pcf)
 
-        for ws_pcf in wb_pcf.worksheets:
-            header_row, cols = _achar_header_pcf_openpyxl(ws_pcf)
-            if not header_row or not cols:
-                continue
+        if not _pcf_parece_valida(ws, caminho):
+            if cache is not None:
+                cache[caminho] = vazio
+            return vazio
 
-            # Se a PCF tiver apenas uma linha de resumo, pega essa linha.
-            # Se tiver múltiplas linhas, escolhe pela prioridade operacional.
-            max_row = ws_pcf.max_row or header_row
-            for rr in range(header_row + 1, max_row + 1):
-                intel = {
-                    "qtd_comentarios": _intel_num(_cell_value_openpyxl(ws_pcf, rr, cols.get("qtd_comentarios", 0))),
-                    "open_comments": _intel_num(_cell_value_openpyxl(ws_pcf, rr, cols.get("open_comments", 0))),
-                    "under_review": _intel_num(_cell_value_openpyxl(ws_pcf, rr, cols.get("under_review", 0))),
-                    "status_final": _valor_intel(_cell_value_openpyxl(ws_pcf, rr, cols.get("status_final", 0))),
-                }
-
-                if not _pcf_intel_tem_valor(intel):
-                    continue
-
-                melhor_intel, melhor_linha = _melhor_intel_pcf(
-                    melhor_intel,
-                    intel,
-                    melhor_linha,
-                    rr,
-                )
+        open_comments, under_review, qtd_comentarios = _pcf_extrair_qtd_e_open_comments(ws)
+        status_final = _pcf_extrair_status_final(ws)
 
         resultado = {
-            "qtd_comentarios": _valor_intel(melhor_intel.get("qtd_comentarios", "")),
-            "open_comments": _valor_intel(melhor_intel.get("open_comments", "")),
-            "under_review": _valor_intel(melhor_intel.get("under_review", "")),
-            "status_final": _valor_intel(melhor_intel.get("status_final", "")),
-        } if melhor_intel else vazio
+            "qtd_comentarios": _valor_intel(qtd_comentarios),
+            "open_comments": _valor_intel(open_comments),
+            "under_review": _valor_intel(under_review),
+            "status_final": _valor_intel(status_final),
+        }
 
         if cache is not None:
             cache[caminho] = resultado
