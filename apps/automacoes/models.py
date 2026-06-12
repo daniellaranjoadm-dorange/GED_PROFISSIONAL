@@ -352,6 +352,23 @@ class DocumentoLD(models.Model):
 
     status_final_pcf = models.CharField(max_length=255, blank=True)
 
+    # ========================================================
+    # CAMPOS OPERACIONAIS ADICIONAIS DA LD BASICO
+    # ========================================================
+    resp_for_issue = models.CharField(max_length=255, blank=True)
+    numero_interno = models.CharField(max_length=255, blank=True)
+    casco = models.CharField(max_length=100, blank=True)
+
+    qtd_comentarios = models.CharField(max_length=50, blank=True)
+    open_comments = models.CharField(max_length=50, blank=True)
+    under_review = models.CharField(max_length=50, blank=True)
+
+    posted_date = models.CharField(max_length=50, blank=True)
+    status = models.CharField(max_length=255, blank=True)
+    since = models.CharField(max_length=100, blank=True)
+    action = models.TextField(blank=True)
+    nb_pending_comments = models.CharField(max_length=50, blank=True)
+
     pcf_resposta = models.CharField(max_length=255, blank=True)
     data_resposta = models.CharField(max_length=50, blank=True)
 

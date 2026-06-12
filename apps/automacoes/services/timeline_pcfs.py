@@ -451,12 +451,53 @@ def _join_cells_text(ws, row_idx, start_col, end_col):
     return " ".join(partes).strip()
 
 
+
+def _valor_celula_mesclada(ws, row_idx, col_idx):
+    """
+    Retorna o valor da célula considerando ranges mesclados.
+
+    Em muitas PCFs o Item e o Comment Status ficam mesclados verticalmente.
+    O openpyxl só retorna valor na célula superior esquerda; para as linhas b), c), etc.,
+    precisamos recuperar o valor da célula mesclada original.
+    """
+    if not col_idx:
+        return ""
+
+    cell = ws.cell(row_idx, col_idx)
+    if cell.value not in (None, ""):
+        return cell.value
+
+    try:
+        for merged_range in ws.merged_cells.ranges:
+            if cell.coordinate in merged_range:
+                return ws.cell(merged_range.min_row, merged_range.min_col).value
+    except Exception:
+        pass
+
+    return cell.value
+
+
+def _comentario_tem_pendencia(comentario):
+    """Prioriza a última rodada com comentário do Owner e sem resposta do Builder."""
+    owner = safe_str(comentario.get("Owner's Comments", ""))
+    builder = safe_str(comentario.get("Builder's Replies", ""))
+    return bool(owner) and not bool(builder)
+
+
+def _comentario_tem_owner(comentario):
+    return bool(safe_str(comentario.get("Owner's Comments", "")))
+
+
 def extrair_comentarios_abertos_pcf(caminho, meta=None):
     """
-    Extrai linha a linha os comentários com Comment Status OPEN ou UNDER REVIEW.
+    Extrai comentários pendentes das PCFs com Comment Status OPEN ou UNDER REVIEW.
 
-    Essa aba não é um resumo agregado: ela lista cada comentário aberto/revisão pendente
-    das PCFs recebidas consideradas na aba "PCFs Recebidas TP - Últimas Rev".
+    Regra operacional:
+    - considerar somente itens cujo Comment Status esteja OPEN ou UNDER REVIEW;
+    - para cada Item, escolher a última rodada em que Owner's Comments esteja preenchido
+      e Builder's Replies esteja vazio;
+    - se não houver rodada pendente, usar a última rodada com Owner's Comments preenchido;
+    - isso evita trazer a rodada a) já respondida quando a pendência atual está na b), c), etc.
     """
     meta = meta or {}
     comentarios = []
@@ -488,13 +529,21 @@ def extrair_comentarios_abertos_pcf(caminho, meta=None):
 
         status_alvo = {"OPEN"} | under_review_aliases
 
-        # Define faixas de texto. Nas PCFs atuais, Owner's Comments fica antes de Builder's Replies
+        # Nas PCFs atuais, Owner's Comments fica antes de Builder's Replies
         # e Builder's Replies fica antes de Comment Status.
         owner_end = (builder_col - 1) if builder_col else (status_col - 1)
         builder_end = status_col - 1
 
+        candidatos_por_item = {}
+        item_atual = ""
+
         for r in range(header_row + 1, ws.max_row + 1):
-            status_norm = norm_text(ws.cell(r, status_col).value)
+            item_val = _valor_celula_mesclada(ws, r, item_col) if item_col else ""
+            if safe_str(item_val):
+                item_atual = safe_str(item_val)
+
+            status_raw = _valor_celula_mesclada(ws, r, status_col)
+            status_norm = norm_text(status_raw)
 
             if status_norm not in status_alvo:
                 continue
@@ -504,25 +553,45 @@ def extrair_comentarios_abertos_pcf(caminho, meta=None):
             owner_text = _join_cells_text(ws, r, owner_col, owner_end)
             builder_text = _join_cells_text(ws, r, builder_col, builder_end) if builder_col else ""
 
-            comentarios.append({
+            # Ignora linhas totalmente vazias dentro do bloco do item.
+            if not owner_text and not builder_text:
+                continue
+
+            item_saida = item_atual or safe_str(item_val) or str(r)
+            comentario = {
                 "PCF LINK": meta.get("PCF LINK", os.path.splitext(os.path.basename(caminho))[0]),
                 "Nº DOCUMENTO": meta.get("Nº DOCUMENTO", ""),
                 "TITULO": meta.get("TITULO", ""),
                 "Revisão da PCF": meta.get("Revisão da PCF", ""),
                 "Data Recebimento": meta.get("Data Recebimento", ""),
                 "STATUS FINAL": meta.get("STATUS FINAL", ""),
-                "Item": ws.cell(r, item_col).value if item_col else "",
-                "Round": ws.cell(r, round_col).value if round_col else "",
+                "Item": item_saida,
+                "Round": _valor_celula_mesclada(ws, r, round_col) if round_col else "",
                 "Comment Status": status_saida,
                 "Owner's Comments": owner_text,
                 "Builder's Replies": builder_text,
                 "Caminho": caminho,
-            })
+                "_row": r,
+            }
+
+            candidatos_por_item.setdefault(item_saida, []).append(comentario)
+
+        for item, candidatos in candidatos_por_item.items():
+            pendentes = [c for c in candidatos if _comentario_tem_pendencia(c)]
+            if pendentes:
+                escolhido = pendentes[-1]
+            else:
+                com_owner = [c for c in candidatos if _comentario_tem_owner(c)]
+                escolhido = com_owner[-1] if com_owner else candidatos[-1]
+
+            escolhido.pop("_row", None)
+            comentarios.append(escolhido)
 
         return comentarios
 
     finally:
         wb_pcf.close()
+
 
 
 def preencher_aba_resumo_comentarios_abertos(wb, rows_latest):

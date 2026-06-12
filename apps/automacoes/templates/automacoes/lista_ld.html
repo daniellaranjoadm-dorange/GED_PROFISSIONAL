@@ -373,6 +373,34 @@
         <div class="ops-detail-card"><span class="ops-filter-label">GRD Resposta</span><strong>{{ item.grd_resposta|default:"—" }}</strong>{% if item.data_grd_resposta %}<div class="ops-muted small mt-1">{{ item.data_grd_resposta }}</div>{% endif %}</div>
       </div>
 
+      <div class="ops-grid ops-grid-4 mt-3">
+        <div class="ops-detail-card"><span class="ops-filter-label">Resp for Issue</span><strong>{{ item.resp_for_issue|default:"—" }}</strong></div>
+        <div class="ops-detail-card"><span class="ops-filter-label">Nº Interno</span><strong>{{ item.numero_interno|default:"—" }}</strong></div>
+        <div class="ops-detail-card"><span class="ops-filter-label">Nº Documento KM</span><strong>{{ item.numero_documento_km|default:"—" }}</strong></div>
+        <div class="ops-detail-card"><span class="ops-filter-label">Transmittal Number</span><strong>{{ item.transmittal_km|default:"—" }}</strong>{% if item.data_recebimento_km %}<div class="ops-muted small mt-1">{{ item.data_recebimento_km }}</div>{% endif %}</div>
+      </div>
+
+      <div class="ops-grid ops-grid-4 mt-3">
+        <div class="ops-detail-card"><span class="ops-filter-label">CASCO</span><strong>{{ item.casco|default:"—" }}</strong></div>
+        <div class="ops-detail-card"><span class="ops-filter-label">Qtd Comentários</span><strong>{{ item.qtd_comentarios|default:"0" }}</strong></div>
+        <div class="ops-detail-card"><span class="ops-filter-label">Open Comments</span><strong>{{ item.open_comments|default:"0" }}</strong></div>
+        <div class="ops-detail-card"><span class="ops-filter-label">UNDER REVIEW</span><strong>{{ item.under_review|default:"0" }}</strong></div>
+      </div>
+
+      <div class="ops-grid ops-grid-4 mt-3">
+        <div class="ops-detail-card"><span class="ops-filter-label">Posted Date</span><strong>{{ item.posted_date|default:"—" }}</strong></div>
+        <div class="ops-detail-card"><span class="ops-filter-label">Status</span><strong>{{ item.status|default:"—" }}</strong></div>
+        <div class="ops-detail-card"><span class="ops-filter-label">Since</span><strong>{{ item.since|default:"—" }}</strong></div>
+        <div class="ops-detail-card"><span class="ops-filter-label">Nb. Pending Comments</span><strong>{{ item.nb_pending_comments|default:"0" }}</strong></div>
+      </div>
+
+      {% if item.action %}
+      <div class="ops-detail-card mt-3">
+        <span class="ops-filter-label">Action</span>
+        <div class="ops-muted">{{ item.action }}</div>
+      </div>
+      {% endif %}
+
       <div class="ld-card-actions mt-3">
         <a href="{% url 'automacoes:abrir_arquivo_ld' item.id 'documento' %}" class="ops-btn">Documento</a>
         <a href="{% url 'automacoes:abrir_arquivo_ld' item.id 'grd' %}" class="ops-btn">GRD</a>
