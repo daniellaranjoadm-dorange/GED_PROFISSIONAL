@@ -2779,202 +2779,6 @@ def _ld_bool(valor):
     return _ld_texto(valor).lower() in {"1", "true", "on", "sim", "yes"}
 
 
-STATUS_RECEBIDOS_LD_BASICO = [
-    "Aguardando PCF",
-    "Aprovado com comentários",
-    "Aprovado com comentarios",
-    "Aprovado sem Comentários",
-    "Aprovado sem Comentarios",
-    "Reprovado",
-]
-
-
-def _ld_q_status_documento_iexact(status_list):
-    q = Q()
-    for status in status_list:
-        status = _ld_texto(status)
-        if status:
-            q |= Q(status_documento__iexact=status)
-    return q
-
-
-def _ld_q_recebido_operacional():
-    """
-    Regra executiva para a LD BASICO:
-    documentos recebidos são os que possuem GRD emitido ou status operacional
-    equivalente a documento já recebido/tratado pela disciplina.
-    """
-    return Q(status_grd__iexact="Emitido") | _ld_q_status_documento_iexact(STATUS_RECEBIDOS_LD_BASICO)
-
-
-def _ld_int(valor):
-    try:
-        if valor in (None, ""):
-            return 0
-        return int(float(str(valor).replace(",", ".").strip()))
-    except Exception:
-        return 0
-
-
-def _ld_sum_attr(registros, campo):
-    if not _ld_has_field(campo):
-        return 0
-    return sum(_ld_int(valor) for valor in registros.values_list(campo, flat=True))
-
-
-def _ld_resumo_pcf_por_status(registros, limite=12):
-    """
-    Resumo executivo para PPT: Status Documento x volume de PCF Intelligence.
-    Usa os campos importados da LD BASICO quando existirem no model DocumentoLD.
-    """
-    tem_qtd = _ld_has_field("qtd_comentarios")
-    tem_open = _ld_has_field("open_comments")
-    tem_under = _ld_has_field("under_review")
-
-    resumo = {}
-
-    campos = ["status_documento"]
-    if tem_qtd:
-        campos.append("qtd_comentarios")
-    if tem_open:
-        campos.append("open_comments")
-    if tem_under:
-        campos.append("under_review")
-
-    for item in registros.values(*campos):
-        status = _ld_texto(item.get("status_documento")) or "Sem status"
-        row = resumo.setdefault(status, {
-            "status": status,
-            "total": 0,
-            "qtd_comentarios": 0,
-            "open_comments": 0,
-            "under_review": 0,
-        })
-
-        row["total"] += 1
-        if tem_qtd:
-            row["qtd_comentarios"] += _ld_int(item.get("qtd_comentarios"))
-        if tem_open:
-            row["open_comments"] += _ld_int(item.get("open_comments"))
-        if tem_under:
-            row["under_review"] += _ld_int(item.get("under_review"))
-
-    return sorted(
-        resumo.values(),
-        key=lambda row: (
-            row["total"],
-            row["qtd_comentarios"],
-            row["open_comments"],
-            row["under_review"],
-        ),
-        reverse=True,
-    )[:limite]
-
-
-
-def _ld_resumo_din_ld():
-    """
-    Lê diretamente a aba 'Din LD' da planilha mestre para o 3º slide do PPT.
-
-    A intenção é reproduzir o mesmo resumo/pivô operacional usado na LD,
-    sem depender dos campos de PCF Intelligence estarem gravados no banco.
-    """
-    caminho = getattr(atualizar_ld, "PLANILHA", "")
-    if not caminho:
-        return {
-            "ok": False,
-            "erro": "PLANILHA não configurada.",
-            "totais": {"docs": 0, "qtd": 0, "open": 0, "under": 0},
-            "linhas": [],
-        }
-
-    def _num(valor):
-        if valor in (None, ""):
-            return 0
-        try:
-            return int(float(valor))
-        except Exception:
-            return 0
-
-    def _txt(valor):
-        return str(valor or "").strip()
-
-    wb = None
-    try:
-        wb = load_workbook(caminho, data_only=True, read_only=False, keep_vba=True)
-        if "Din LD" not in wb.sheetnames:
-            return {
-                "ok": False,
-                "erro": "Aba 'Din LD' não encontrada.",
-                "totais": {"docs": 0, "qtd": 0, "open": 0, "under": 0},
-                "linhas": [],
-            }
-
-        ws = wb["Din LD"]
-        cliente_atual = ""
-        linhas = []
-        totais = {"docs": 0, "qtd": 0, "open": 0, "under": 0}
-
-        for r in range(4, ws.max_row + 1):
-            rotulo = _txt(ws.cell(r, 1).value)
-            if not rotulo:
-                continue
-
-            docs_raw = ws.cell(r, 2).value
-            qtd_raw = ws.cell(r, 3).value
-            open_raw = ws.cell(r, 4).value
-            under_raw = ws.cell(r, 5).value
-
-            if rotulo.upper() == "TOTAL GERAL":
-                totais = {
-                    "docs": _num(docs_raw),
-                    "qtd": _num(qtd_raw),
-                    "open": _num(open_raw),
-                    "under": _num(under_raw),
-                }
-                continue
-
-            # Linha de grupo/cliente: Kongsberg, MacLaren, Ecovix...
-            if docs_raw in (None, "") and qtd_raw in (None, "") and open_raw in (None, "") and under_raw in (None, ""):
-                cliente_atual = rotulo
-                continue
-
-            linhas.append({
-                "cliente": cliente_atual or "-",
-                "status": rotulo,
-                "docs": _num(docs_raw),
-                "qtd": _num(qtd_raw),
-                "open": _num(open_raw),
-                "under": _num(under_raw),
-            })
-
-        if not totais["docs"]:
-            totais["docs"] = sum(item["docs"] for item in linhas)
-            totais["qtd"] = sum(item["qtd"] for item in linhas)
-            totais["open"] = sum(item["open"] for item in linhas)
-            totais["under"] = sum(item["under"] for item in linhas)
-
-        return {
-            "ok": True,
-            "erro": "",
-            "totais": totais,
-            "linhas": linhas,
-        }
-
-    except Exception as exc:
-        return {
-            "ok": False,
-            "erro": str(exc),
-            "totais": {"docs": 0, "qtd": 0, "open": 0, "under": 0},
-            "linhas": [],
-        }
-    finally:
-        if wb is not None:
-            try:
-                wb.close()
-            except Exception:
-                pass
-
 
 def _ld_valores_distintos(campo, extras=None):
     valores = []
@@ -3211,11 +3015,8 @@ def _ld_filtrar_queryset(request):
 
     filtro_rapido = _ld_texto(request.GET.get("filtro"))
 
-    filtro_recebidos_operacional = False
-
     if filtro_rapido == "recebidos":
-        filtro_recebidos_operacional = True
-        status_docs = []
+        status_docs = ["Recebido"]
     elif filtro_rapido == "aprovados":
         status_docs = ["Aprovado"]
     elif filtro_rapido == "grd_emitido":
@@ -3255,9 +3056,6 @@ def _ld_filtrar_queryset(request):
 
     if status_docs:
         registros = registros.filter(status_documento__in=status_docs)
-
-    if filtro_recebidos_operacional:
-        registros = registros.filter(_ld_q_recebido_operacional())
 
     if status_grds:
         registros = registros.filter(status_grd__in=status_grds)
@@ -3311,20 +3109,28 @@ def _ld_filtrar_queryset(request):
 
 def _ld_kpis(registros):
     total = registros.count()
-    total_recebidos = registros.filter(_ld_q_recebido_operacional()).distinct().count()
+
+    total_emitidos = registros.filter(status_grd__iexact="Emitido").count()
+    total_aprovados = registros.filter(
+        Q(status_documento__iexact="Aprovado com comentários")
+        | Q(status_documento__iexact="Aprovado com comentarios")
+        | Q(status_documento__iexact="Aprovado sem Comentários")
+        | Q(status_documento__iexact="Aprovado sem Comentarios")
+    ).count()
+
+    # Na LD BASICO, "Recebidos" no dashboard executivo deve refletir a
+    # cobertura efetivamente emitida por GRD, preservando o padrão do PPT.
+    total_recebidos = total_emitidos
 
     return {
         "total": total,
         "total_exclusivos": registros.order_by().values("documento").distinct().count(),
         "total_recebidos": total_recebidos,
-        "total_aprovados": registros.filter(status_documento__iexact="Aprovado").count(),
-        "total_emitidos": registros.filter(status_grd__iexact="Emitido").count(),
+        "total_aprovados": total_aprovados,
+        "total_emitidos": total_emitidos,
         "total_com_pcf": registros.exclude(pcf__isnull=True).exclude(pcf="").count(),
         "total_sem_pcf": registros.filter(Q(pcf__isnull=True) | Q(pcf="")).count(),
         "total_com_resposta": registros.exclude(pcf_resposta__isnull=True).exclude(pcf_resposta="").count(),
-        "total_qtd_comentarios": _ld_sum_attr(registros, "qtd_comentarios"),
-        "total_open_comments": _ld_sum_attr(registros, "open_comments"),
-        "total_under_review": _ld_sum_attr(registros, "under_review"),
     }
 
 
@@ -3529,12 +3335,12 @@ def listar_ld(request):
     kpis = _ld_kpis(registros)
 
     disciplinas = _ld_valores_distintos("disciplina")
-    origens = _ld_valores_distintos("origem_aba", extras=["LD Basico"])
+    origens = _ld_valores_distintos("origem_aba", extras=["LD", "LD Marenova"])
 
     # Mantém as duas origens operacionais sempre disponíveis, mesmo quando a
     # importação antiga gravou origem_aba em branco.
     origens_norm = []
-    for origem_item in ["LD Basico", *origens]:
+    for origem_item in ["LD", "LD Marenova", *origens]:
         if origem_item not in origens_norm:
             origens_norm.append(origem_item)
     origens = origens_norm
@@ -3754,6 +3560,103 @@ def _ld_binary_chart(label_ok, total_ok, label_gap, total_gap):
     ]
 
 
+
+def _ld_din_ld_resumo_pcf():
+    """
+    Lê a aba Din LD da planilha mestre para montar o slide executivo de
+    PCF Intelligence no mesmo formato do arquivo validado pelo projeto.
+    """
+    resumo = {
+        "total_documentos": 0,
+        "qtd_comentarios": 0,
+        "open_comments": 0,
+        "under_review": 0,
+        "linhas": [],
+    }
+
+    caminho = getattr(atualizar_ld, "PLANILHA", "")
+    if not caminho:
+        return resumo
+
+    try:
+        wb = load_workbook(caminho, data_only=True, read_only=True)
+    except Exception:
+        return resumo
+
+    try:
+        if "Din LD" not in wb.sheetnames:
+            return resumo
+
+        ws = wb["Din LD"]
+        cliente_atual = ""
+
+        for row in ws.iter_rows(values_only=True):
+            valores = ["" if v is None else str(v).strip() for v in row[:5]]
+            rotulo = valores[0]
+            if not rotulo:
+                continue
+
+            rotulo_norm = rotulo.casefold()
+            if "rótulos de linha" in rotulo_norm or "rotulos de linha" in rotulo_norm:
+                continue
+
+            def _num(idx):
+                try:
+                    bruto = row[idx] if idx < len(row) else 0
+                    if bruto in (None, ""):
+                        return 0
+                    return int(float(bruto))
+                except Exception:
+                    return 0
+
+            docs = _num(1)
+            qtd = _num(2)
+            open_c = _num(3)
+            under = _num(4)
+
+            if "total geral" in rotulo_norm:
+                resumo["total_documentos"] = docs
+                resumo["qtd_comentarios"] = qtd
+                resumo["open_comments"] = open_c
+                resumo["under_review"] = under
+                continue
+
+            if docs == 0 and qtd == 0 and open_c == 0 and under == 0:
+                cliente_atual = rotulo
+                continue
+
+            if rotulo in {"Kongsberg", "MacLaren", "Ecovix"}:
+                cliente_atual = rotulo
+                continue
+
+            if cliente_atual:
+                resumo["linhas"].append({
+                    "cliente": cliente_atual,
+                    "status": rotulo,
+                    "docs": docs,
+                    "qtd_comentarios": qtd,
+                    "open_comments": open_c,
+                    "under_review": under,
+                })
+
+        if not resumo["total_documentos"]:
+            resumo["total_documentos"] = sum(item["docs"] for item in resumo["linhas"])
+        if not resumo["qtd_comentarios"]:
+            resumo["qtd_comentarios"] = sum(item["qtd_comentarios"] for item in resumo["linhas"])
+        if not resumo["open_comments"]:
+            resumo["open_comments"] = sum(item["open_comments"] for item in resumo["linhas"])
+        if not resumo["under_review"]:
+            resumo["under_review"] = sum(item["under_review"] for item in resumo["linhas"])
+
+    finally:
+        try:
+            wb.close()
+        except Exception:
+            pass
+
+    return resumo
+
+
 def _ld_exportar_dashboard_ppt(request):
     from io import BytesIO
 
@@ -3774,7 +3677,9 @@ def _ld_exportar_dashboard_ppt(request):
     taxa_pcf = round((kpis["total_com_pcf"] / total) * 100, 1) if total else 0
     taxa_grd = round((kpis["total_emitidos"] / total) * 100, 1) if total else 0
     taxa_recebimento = round((kpis["total_recebidos"] / total) * 100, 1) if total else 0
+    taxa_aprovacao = round((kpis["total_aprovados"] / total) * 100, 1) if total else 0
     saude = round((taxa_pcf + taxa_grd + taxa_recebimento) / 3, 1) if total else 0
+    resumo_din_ld = _ld_din_ld_resumo_pcf()
 
     disciplina_chart = _ld_chart_items(registros, "disciplina", 7)
     status_doc_chart = _ld_chart_items(registros, "status_documento", 7)
@@ -3835,42 +3740,6 @@ def _ld_exportar_dashboard_ppt(request):
             fill.line.fill.background()
             add_text(slide, item["total"], x + w * .88, yy - .02, w * .12, .20, 10, True, white)
 
-    def add_table(slide, headers, rows, x, y, w, h, row_fill_fn=None):
-        table_shape = slide.shapes.add_table(
-            len(rows) + 1,
-            len(headers),
-            Inches(x),
-            Inches(y),
-            Inches(w),
-            Inches(h),
-        )
-        table = table_shape.table
-
-        for col_idx, header in enumerate(headers):
-            cell = table.cell(0, col_idx)
-            cell.text = str(header)
-            cell.fill.solid()
-            cell.fill.fore_color.rgb = RGBColor(15, 23, 42)
-            for paragraph in cell.text_frame.paragraphs:
-                for run in paragraph.runs:
-                    run.font.size = Pt(8)
-                    run.font.bold = True
-                    run.font.color.rgb = cyan
-
-        for row_idx, row in enumerate(rows, start=1):
-            row_fill = row_fill_fn(row) if row_fill_fn else RGBColor(8, 13, 28)
-            for col_idx, value in enumerate(row):
-                cell = table.cell(row_idx, col_idx)
-                cell.text = str(value)
-                cell.fill.solid()
-                cell.fill.fore_color.rgb = row_fill
-                for paragraph in cell.text_frame.paragraphs:
-                    for run in paragraph.runs:
-                        run.font.size = Pt(8)
-                        run.font.color.rgb = white
-
-        return table_shape
-
     # Slide 1
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     slide.background.fill.solid()
@@ -3900,58 +3769,83 @@ def _ld_exportar_dashboard_ppt(request):
     add_bars(slide, "Status GRD", status_grd_chart, .55, 2.65, 5.8, 3.9)
     add_bars(slide, "Pendências por disciplina", _ld_chart_items(registros.filter(Q(pcf__isnull=True) | Q(pcf="")), "disciplina", 7), 6.9, 2.65, 5.7, 3.9)
 
-    # Slide 3 - Resumo PCF Intelligence
-    resumo_din = _ld_resumo_din_ld()
-    totais_din = resumo_din.get("totais", {})
+
+    # Slide 3
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     slide.background.fill.solid()
     slide.background.fill.fore_color.rgb = bg
-    add_text(slide, "Resumo PCF Intelligence", .45, .35, 8.8, .45, 26, True, white)
-    add_text(slide, "Resumo consolidado da aba Din LD • Status • Comentários • Under Review", .45, .82, 10.8, .30, 12, False, cyan)
 
-    add_card(slide, "Total documentos", totais_din.get("docs", 0), "Din LD", .45, 1.25, accent=cyan)
-    add_card(slide, "Qtd comentários", totais_din.get("qtd", 0), "soma Din LD", 2.75, 1.25, accent=cyan)
-    add_card(slide, "Open comments", totais_din.get("open", 0), "soma Din LD", 5.05, 1.25, accent=orange)
-    add_card(slide, "Under Review", totais_din.get("under", 0), "soma Din LD", 7.35, 1.25, accent=RGBColor(248, 113, 113))
-    add_card(slide, "Com PCF", kpis["total_com_pcf"], f"{taxa_pcf}% da base", 9.65, 1.25, accent=green)
+    add_text(slide, "Resumo PCF Intelligence", .45, .25, 8.8, .45, 26, True, white)
+    add_text(slide, "Resumo consolidado da aba Din LD • Status • Comentários • Under Review", .45, .74, 10.5, .25, 11, False, cyan)
 
-    rows = [
-        [
-            item["cliente"],
-            item["status"],
-            item["docs"],
-            item["qtd"],
-            item["open"],
-            item["under"],
+    add_card(slide, "Total documentos", resumo_din_ld["total_documentos"] or total, "Din LD", .35, 1.15, w=2.1)
+    add_card(slide, "Qtd Comentários", resumo_din_ld["qtd_comentarios"], "soma Din LD", 2.65, 1.15, w=2.1)
+    add_card(slide, "Open Comments", resumo_din_ld["open_comments"], "soma Din LD", 4.95, 1.15, w=2.1, accent=orange)
+    add_card(slide, "Under Review", resumo_din_ld["under_review"], "soma Din LD", 7.25, 1.15, w=2.1, accent=RGBColor(248, 113, 113))
+    add_card(slide, "Com PCF", kpis["total_com_pcf"], f"{taxa_pcf}% da base", 9.55, 1.15, w=2.1, accent=green)
+
+    headers = ["Cliente", "Status Documento", "Docs", "Qtd Coment.", "Open Comments", "Under Review"]
+    linhas_resumo = resumo_din_ld["linhas"][:13]
+    rows = max(len(linhas_resumo) + 1, 2)
+    table_shape = slide.shapes.add_table(rows, len(headers), Inches(.35), Inches(2.55), Inches(12.4), Inches(4.35))
+    table = table_shape.table
+
+    col_widths = [1.65, 2.55, 1.0, 1.65, 1.65, 1.65]
+    for idx, width in enumerate(col_widths):
+        table.columns[idx].width = Inches(width)
+
+    def _set_cell(cell, value, size=7, bold=False, color=white, fill=None):
+        cell.text = str(value)
+        try:
+            if fill is not None:
+                cell.fill.solid()
+                cell.fill.fore_color.rgb = fill
+            else:
+                cell.fill.solid()
+                cell.fill.fore_color.rgb = bg
+            cell.text_frame.margin_left = Inches(.06)
+            cell.text_frame.margin_right = Inches(.04)
+            cell.text_frame.margin_top = Inches(.03)
+            cell.text_frame.margin_bottom = Inches(.03)
+            for paragraph in cell.text_frame.paragraphs:
+                for run in paragraph.runs:
+                    run.font.size = Pt(size)
+                    run.font.bold = bold
+                    run.font.color.rgb = color
+        except Exception:
+            pass
+
+    header_fill = RGBColor(15, 23, 42)
+    for col_idx, header in enumerate(headers):
+        _set_cell(table.cell(0, col_idx), header, size=7, bold=True, color=cyan, fill=header_fill)
+
+    # Cores por cliente no resumo executivo.
+    # Mantém o tema escuro do PPT, mas diferencia visualmente cada bloco.
+    cliente_fills = {
+        "kongsberg": RGBColor(7, 34, 58),    # azul petróleo
+        "maclaren": RGBColor(43, 25, 61),    # roxo executivo
+        "ecovix": RGBColor(9, 50, 34),       # verde técnico
+    }
+
+    def _cliente_key(valor):
+        return re.sub(r"\s+", "", str(valor or "").strip().casefold())
+
+    for row_idx, item in enumerate(linhas_resumo, start=1):
+        cliente = item.get("cliente", "")
+        fill = cliente_fills.get(_cliente_key(cliente), RGBColor(8, 13, 28))
+        valores = [
+            cliente,
+            item.get("status", ""),
+            item.get("docs", 0),
+            item.get("qtd_comentarios", 0),
+            item.get("open_comments", 0),
+            item.get("under_review", 0),
         ]
-        for item in resumo_din.get("linhas", [])
-    ]
+        for col_idx, valor in enumerate(valores):
+            _set_cell(table.cell(row_idx, col_idx), valor, size=7, bold=False, color=white, fill=fill)
 
-    if not rows:
-        erro = resumo_din.get("erro") or "Sem dados na aba Din LD"
-        rows = [["-", erro[:45], 0, 0, 0, 0]]
+    add_text(slide, "GED_PROFISSIONAL • LD BASICO • Din LD • PCF Intelligence", .45, 7.05, 7.8, .20, 8, False, muted)
 
-    def _row_fill_resumo_pcf(row):
-        cliente = str(row[0] if row else "").strip().upper()
-        if "KONGSBERG" in cliente:
-            return RGBColor(8, 28, 50)
-        if "MACLAREN" in cliente:
-            return RGBColor(38, 25, 55)
-        if "ECOVIX" in cliente:
-            return RGBColor(14, 45, 34)
-        return RGBColor(8, 13, 28)
-
-    add_table(
-        slide,
-        ["Cliente", "Status Documento", "Docs", "Qtd Coment.", "Open Comments", "Under Review"],
-        rows,
-        .45,
-        2.55,
-        12.45,
-        4.25,
-        row_fill_fn=_row_fill_resumo_pcf,
-    )
-    add_text(slide, "GED_PROFISSIONAL • LD BASICO • Din LD • PCF Intelligence", .45, 7.05, 8.0, .20, 8, False, muted)
 
     output = BytesIO()
     prs.save(output)
@@ -4023,9 +3917,9 @@ def dashboard_ld(request):
     recentes = registros.order_by("-id")[:12]
 
     disciplinas = _ld_valores_distintos("disciplina")
-    origens = _ld_valores_distintos("origem_aba", extras=["LD Basico"])
+    origens = _ld_valores_distintos("origem_aba", extras=["LD", "LD Marenova"])
     origens_norm = []
-    for origem_item in ["LD Basico", *origens]:
+    for origem_item in ["LD", "LD Marenova", *origens]:
         if origem_item not in origens_norm:
             origens_norm.append(origem_item)
     origens = origens_norm
@@ -5456,6 +5350,84 @@ def _km_exportar_dashboard_ppt(request):
     add_bar_list(slide, "Status KM", status_km_chart, .65, 4.05, 5.8, 2.65, accent=green, label_limit=52)
     add_bar_list(slide, "Top TOC", toc_chart, 6.95, 4.05, 5.65, 2.65, accent=cyan, label_limit=54)
 
+
+    # Slide 3
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    slide.background.fill.solid()
+    slide.background.fill.fore_color.rgb = bg
+
+    add_text(slide, "Resumo PCF Intelligence", .45, .25, 8.8, .45, 26, True, white)
+    add_text(slide, "Resumo consolidado da aba Din LD • Status • Comentários • Under Review", .45, .74, 10.5, .25, 11, False, cyan)
+
+    add_card(slide, "Total documentos", resumo_din_ld["total_documentos"] or total, "Din LD", .35, 1.15, w=2.1)
+    add_card(slide, "Qtd Comentários", resumo_din_ld["qtd_comentarios"], "soma Din LD", 2.65, 1.15, w=2.1)
+    add_card(slide, "Open Comments", resumo_din_ld["open_comments"], "soma Din LD", 4.95, 1.15, w=2.1, accent=orange)
+    add_card(slide, "Under Review", resumo_din_ld["under_review"], "soma Din LD", 7.25, 1.15, w=2.1, accent=RGBColor(248, 113, 113))
+    add_card(slide, "Com PCF", kpis["total_com_pcf"], f"{taxa_pcf}% da base", 9.55, 1.15, w=2.1, accent=green)
+
+    headers = ["Cliente", "Status Documento", "Docs", "Qtd Coment.", "Open Comments", "Under Review"]
+    linhas_resumo = resumo_din_ld["linhas"][:13]
+    rows = max(len(linhas_resumo) + 1, 2)
+    table_shape = slide.shapes.add_table(rows, len(headers), Inches(.35), Inches(2.55), Inches(12.4), Inches(4.35))
+    table = table_shape.table
+
+    col_widths = [1.65, 2.55, 1.0, 1.65, 1.65, 1.65]
+    for idx, width in enumerate(col_widths):
+        table.columns[idx].width = Inches(width)
+
+    def _set_cell(cell, value, size=7, bold=False, color=white, fill=None):
+        cell.text = str(value)
+        try:
+            if fill is not None:
+                cell.fill.solid()
+                cell.fill.fore_color.rgb = fill
+            else:
+                cell.fill.solid()
+                cell.fill.fore_color.rgb = bg
+            cell.text_frame.margin_left = Inches(.06)
+            cell.text_frame.margin_right = Inches(.04)
+            cell.text_frame.margin_top = Inches(.03)
+            cell.text_frame.margin_bottom = Inches(.03)
+            for paragraph in cell.text_frame.paragraphs:
+                for run in paragraph.runs:
+                    run.font.size = Pt(size)
+                    run.font.bold = bold
+                    run.font.color.rgb = color
+        except Exception:
+            pass
+
+    header_fill = RGBColor(15, 23, 42)
+    for col_idx, header in enumerate(headers):
+        _set_cell(table.cell(0, col_idx), header, size=7, bold=True, color=cyan, fill=header_fill)
+
+    # Cores por cliente no resumo executivo.
+    # Mantém o tema escuro do PPT, mas diferencia visualmente cada bloco.
+    cliente_fills = {
+        "kongsberg": RGBColor(7, 34, 58),    # azul petróleo
+        "maclaren": RGBColor(43, 25, 61),    # roxo executivo
+        "ecovix": RGBColor(9, 50, 34),       # verde técnico
+    }
+
+    def _cliente_key(valor):
+        return re.sub(r"\s+", "", str(valor or "").strip().casefold())
+
+    for row_idx, item in enumerate(linhas_resumo, start=1):
+        cliente = item.get("cliente", "")
+        fill = cliente_fills.get(_cliente_key(cliente), RGBColor(8, 13, 28))
+        valores = [
+            cliente,
+            item.get("status", ""),
+            item.get("docs", 0),
+            item.get("qtd_comentarios", 0),
+            item.get("open_comments", 0),
+            item.get("under_review", 0),
+        ]
+        for col_idx, valor in enumerate(valores):
+            _set_cell(table.cell(row_idx, col_idx), valor, size=7, bold=False, color=white, fill=fill)
+
+    add_text(slide, "GED_PROFISSIONAL • LD BASICO • Din LD • PCF Intelligence", .45, 7.05, 7.8, .20, 8, False, muted)
+
+
     output = BytesIO()
     prs.save(output)
     output.seek(0)
@@ -6039,6 +6011,84 @@ def exportar_dashboard_pcfs_ppt(request):
         texto = "Nenhum registro encontrado para os filtros aplicados."
     add_text_block(slide, 0.8, 1.45, 11.7, 4.8, texto)
     add_footer(slide)
+
+
+    # Slide 3
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    slide.background.fill.solid()
+    slide.background.fill.fore_color.rgb = bg
+
+    add_text(slide, "Resumo PCF Intelligence", .45, .25, 8.8, .45, 26, True, white)
+    add_text(slide, "Resumo consolidado da aba Din LD • Status • Comentários • Under Review", .45, .74, 10.5, .25, 11, False, cyan)
+
+    add_card(slide, "Total documentos", resumo_din_ld["total_documentos"] or total, "Din LD", .35, 1.15, w=2.1)
+    add_card(slide, "Qtd Comentários", resumo_din_ld["qtd_comentarios"], "soma Din LD", 2.65, 1.15, w=2.1)
+    add_card(slide, "Open Comments", resumo_din_ld["open_comments"], "soma Din LD", 4.95, 1.15, w=2.1, accent=orange)
+    add_card(slide, "Under Review", resumo_din_ld["under_review"], "soma Din LD", 7.25, 1.15, w=2.1, accent=RGBColor(248, 113, 113))
+    add_card(slide, "Com PCF", kpis["total_com_pcf"], f"{taxa_pcf}% da base", 9.55, 1.15, w=2.1, accent=green)
+
+    headers = ["Cliente", "Status Documento", "Docs", "Qtd Coment.", "Open Comments", "Under Review"]
+    linhas_resumo = resumo_din_ld["linhas"][:13]
+    rows = max(len(linhas_resumo) + 1, 2)
+    table_shape = slide.shapes.add_table(rows, len(headers), Inches(.35), Inches(2.55), Inches(12.4), Inches(4.35))
+    table = table_shape.table
+
+    col_widths = [1.65, 2.55, 1.0, 1.65, 1.65, 1.65]
+    for idx, width in enumerate(col_widths):
+        table.columns[idx].width = Inches(width)
+
+    def _set_cell(cell, value, size=7, bold=False, color=white, fill=None):
+        cell.text = str(value)
+        try:
+            if fill is not None:
+                cell.fill.solid()
+                cell.fill.fore_color.rgb = fill
+            else:
+                cell.fill.solid()
+                cell.fill.fore_color.rgb = bg
+            cell.text_frame.margin_left = Inches(.06)
+            cell.text_frame.margin_right = Inches(.04)
+            cell.text_frame.margin_top = Inches(.03)
+            cell.text_frame.margin_bottom = Inches(.03)
+            for paragraph in cell.text_frame.paragraphs:
+                for run in paragraph.runs:
+                    run.font.size = Pt(size)
+                    run.font.bold = bold
+                    run.font.color.rgb = color
+        except Exception:
+            pass
+
+    header_fill = RGBColor(15, 23, 42)
+    for col_idx, header in enumerate(headers):
+        _set_cell(table.cell(0, col_idx), header, size=7, bold=True, color=cyan, fill=header_fill)
+
+    # Cores por cliente no resumo executivo.
+    # Mantém o tema escuro do PPT, mas diferencia visualmente cada bloco.
+    cliente_fills = {
+        "kongsberg": RGBColor(7, 34, 58),    # azul petróleo
+        "maclaren": RGBColor(43, 25, 61),    # roxo executivo
+        "ecovix": RGBColor(9, 50, 34),       # verde técnico
+    }
+
+    def _cliente_key(valor):
+        return re.sub(r"\s+", "", str(valor or "").strip().casefold())
+
+    for row_idx, item in enumerate(linhas_resumo, start=1):
+        cliente = item.get("cliente", "")
+        fill = cliente_fills.get(_cliente_key(cliente), RGBColor(8, 13, 28))
+        valores = [
+            cliente,
+            item.get("status", ""),
+            item.get("docs", 0),
+            item.get("qtd_comentarios", 0),
+            item.get("open_comments", 0),
+            item.get("under_review", 0),
+        ]
+        for col_idx, valor in enumerate(valores):
+            _set_cell(table.cell(row_idx, col_idx), valor, size=7, bold=False, color=white, fill=fill)
+
+    add_text(slide, "GED_PROFISSIONAL • LD BASICO • Din LD • PCF Intelligence", .45, 7.05, 7.8, .20, 8, False, muted)
+
 
     output = BytesIO()
     prs.save(output)
