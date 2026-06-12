@@ -3835,7 +3835,7 @@ def _ld_exportar_dashboard_ppt(request):
             fill.line.fill.background()
             add_text(slide, item["total"], x + w * .88, yy - .02, w * .12, .20, 10, True, white)
 
-    def add_table(slide, headers, rows, x, y, w, h):
+    def add_table(slide, headers, rows, x, y, w, h, row_fill_fn=None):
         table_shape = slide.shapes.add_table(
             len(rows) + 1,
             len(headers),
@@ -3858,11 +3858,12 @@ def _ld_exportar_dashboard_ppt(request):
                     run.font.color.rgb = cyan
 
         for row_idx, row in enumerate(rows, start=1):
+            row_fill = row_fill_fn(row) if row_fill_fn else RGBColor(8, 13, 28)
             for col_idx, value in enumerate(row):
                 cell = table.cell(row_idx, col_idx)
                 cell.text = str(value)
                 cell.fill.solid()
-                cell.fill.fore_color.rgb = RGBColor(8, 13, 28)
+                cell.fill.fore_color.rgb = row_fill
                 for paragraph in cell.text_frame.paragraphs:
                     for run in paragraph.runs:
                         run.font.size = Pt(8)
@@ -3930,14 +3931,25 @@ def _ld_exportar_dashboard_ppt(request):
         erro = resumo_din.get("erro") or "Sem dados na aba Din LD"
         rows = [["-", erro[:45], 0, 0, 0, 0]]
 
+    def _row_fill_resumo_pcf(row):
+        cliente = str(row[0] if row else "").strip().upper()
+        if "KONGSBERG" in cliente:
+            return RGBColor(8, 28, 50)
+        if "MACLAREN" in cliente:
+            return RGBColor(38, 25, 55)
+        if "ECOVIX" in cliente:
+            return RGBColor(14, 45, 34)
+        return RGBColor(8, 13, 28)
+
     add_table(
         slide,
-        ["Cliente", "Status Documento", "Docs", "Qtd Coment.", "Open", "Under"],
+        ["Cliente", "Status Documento", "Docs", "Qtd Coment.", "Open Comments", "Under Review"],
         rows,
         .45,
         2.55,
         12.45,
         4.25,
+        row_fill_fn=_row_fill_resumo_pcf,
     )
     add_text(slide, "GED_PROFISSIONAL • LD BASICO • Din LD • PCF Intelligence", .45, 7.05, 8.0, .20, 8, False, muted)
 
