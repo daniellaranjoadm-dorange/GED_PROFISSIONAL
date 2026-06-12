@@ -3423,6 +3423,9 @@ def exportar_ld_excel(request):
     ws = wb.active
     ws.title = "Lista LD Filtrada"
 
+    def _safe(item, campo, default=""):
+        return getattr(item, campo, default) or default
+
     headers = [
         "Origem",
         "Documento",
@@ -3439,6 +3442,25 @@ def exportar_ld_excel(request):
         "Resposta PCF",
         "Data Resposta",
         "GRD Resposta",
+
+        # Campos operacionais adicionais da LD BASICO
+        "Resp for Issue",
+        "Nº Interno",
+        "Nº Documento KM",
+        "Transmittal Number",
+        "Data Recebimento KM",
+        "CASCO",
+        "Qtd Comentários",
+        "Open Comments",
+        "UNDER REVIEW",
+        "Status Final",
+        "Posted Date",
+        "Status",
+        "Since",
+        "Action",
+        "Nb. Pending Comments",
+
+        # Caminhos / hyperlinks
         "Caminho Documento",
         "Caminho GRD",
         "Caminho PCF",
@@ -3457,26 +3479,43 @@ def exportar_ld_excel(request):
 
     for item in registros:
         row = [
-            getattr(item, "origem_aba", ""),
-            item.documento,
-            item.revisao,
-            item.disciplina,
-            item.titulo,
-            item.status_documento,
-            item.status_grd,
-            item.status_final_pcf,
-            item.grd,
-            item.data_grd,
-            item.pcf,
-            item.data_pcf,
-            item.pcf_resposta,
-            item.data_resposta,
-            item.grd_resposta,
-            item.caminho_documento,
-            item.caminho_grd,
-            item.caminho_pcf,
-            item.caminho_resposta,
-            item.caminho_grd_resposta,
+            _safe(item, "origem_aba"),
+            _safe(item, "documento"),
+            _safe(item, "revisao"),
+            _safe(item, "disciplina"),
+            _safe(item, "titulo"),
+            _safe(item, "status_documento"),
+            _safe(item, "status_grd"),
+            _safe(item, "status_final_pcf"),
+            _safe(item, "grd"),
+            _safe(item, "data_grd"),
+            _safe(item, "pcf"),
+            _safe(item, "data_pcf"),
+            _safe(item, "pcf_resposta"),
+            _safe(item, "data_resposta"),
+            _safe(item, "grd_resposta"),
+
+            _safe(item, "resp_for_issue"),
+            _safe(item, "numero_interno"),
+            _safe(item, "numero_documento_km"),
+            _safe(item, "transmittal_number"),
+            _safe(item, "data_recebimento_km"),
+            _safe(item, "casco"),
+            _safe(item, "qtd_comentarios"),
+            _safe(item, "open_comments"),
+            _safe(item, "under_review"),
+            _safe(item, "status_final_pcf"),
+            _safe(item, "posted_date"),
+            _safe(item, "status"),
+            _safe(item, "since"),
+            _safe(item, "action"),
+            _safe(item, "nb_pending_comments"),
+
+            _safe(item, "caminho_documento"),
+            _safe(item, "caminho_grd"),
+            _safe(item, "caminho_pcf"),
+            _safe(item, "caminho_resposta"),
+            _safe(item, "caminho_grd_resposta"),
         ]
 
         ws.append(row)
@@ -3484,11 +3523,11 @@ def exportar_ld_excel(request):
         current_row = ws.max_row
 
         caminho_cols = {
-            16: item.caminho_documento,
-            17: item.caminho_grd,
-            18: item.caminho_pcf,
-            19: item.caminho_resposta,
-            20: item.caminho_grd_resposta,
+            31: _safe(item, "caminho_documento"),
+            32: _safe(item, "caminho_grd"),
+            33: _safe(item, "caminho_pcf"),
+            34: _safe(item, "caminho_resposta"),
+            35: _safe(item, "caminho_grd_resposta"),
         }
 
         for col_idx, caminho in caminho_cols.items():
@@ -3498,30 +3537,51 @@ def exportar_ld_excel(request):
                 cell.style = "Hyperlink"
 
     widths = {
-        "A": 16,
-        "B": 34,
-        "C": 10,
-        "D": 28,
-        "E": 60,
-        "F": 20,
-        "G": 18,
-        "H": 20,
-        "I": 18,
-        "J": 14,
-        "K": 36,
-        "L": 14,
-        "M": 36,
-        "N": 14,
-        "O": 18,
-        "P": 80,
-        "Q": 80,
-        "R": 80,
-        "S": 80,
-        "T": 80,
+        "A": 16,   # Origem
+        "B": 34,   # Documento
+        "C": 10,   # Revisão
+        "D": 28,   # Disciplina
+        "E": 60,   # Título
+        "F": 24,   # Status Documento
+        "G": 18,   # Status GRD
+        "H": 22,   # Status PCF
+        "I": 18,   # GRD
+        "J": 14,   # Data GRD
+        "K": 36,   # PCF
+        "L": 14,   # Data PCF
+        "M": 36,   # Resposta PCF
+        "N": 14,   # Data Resposta
+        "O": 18,   # GRD Resposta
+        "P": 18,   # Resp for Issue
+        "Q": 26,   # Nº Interno
+        "R": 22,   # Nº Documento KM
+        "S": 20,   # Transmittal Number
+        "T": 20,   # Data Recebimento KM
+        "U": 14,   # CASCO
+        "V": 18,   # Qtd Comentários
+        "W": 18,   # Open Comments
+        "X": 18,   # UNDER REVIEW
+        "Y": 22,   # Status Final
+        "Z": 16,   # Posted Date
+        "AA": 18,  # Status
+        "AB": 14,  # Since
+        "AC": 22,  # Action
+        "AD": 22,  # Nb. Pending Comments
+        "AE": 80,  # Caminho Documento
+        "AF": 80,  # Caminho GRD
+        "AG": 80,  # Caminho PCF
+        "AH": 80,  # Caminho Resposta
+        "AI": 80,  # Caminho GRD Resposta
     }
 
     for col, width in widths.items():
         ws.column_dimensions[col].width = width
+
+    try:
+        ws.freeze_panes = "A2"
+        ws.auto_filter.ref = ws.dimensions
+    except Exception:
+        pass
 
     response = HttpResponse(
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -3530,7 +3590,6 @@ def exportar_ld_excel(request):
     wb.save(response)
 
     return response
-
 
 
 def _ld_chart_items(queryset, campo, limite=10):
