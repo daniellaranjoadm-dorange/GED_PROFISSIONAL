@@ -3844,7 +3844,48 @@ def _ld_exportar_dashboard_ppt(request):
     add_card(slide, "Com PCF", kpis["total_com_pcf"], f"{taxa_pcf}% da base", 9.55, 1.15, w=2.1, accent=green)
 
     headers = ["Cliente", "Status Documento", "Docs", "Qtd Coment.", "Open Comments", "Under Review"]
-    linhas_resumo = resumo_din_ld["linhas"][:13]
+    # Ordenação operacional do resumo PCF:
+    # mantém o agrupamento por cliente e coloca "Recebido e não Emitido" como
+    # primeiro status de cada bloco, sem alterar os cálculos já validados.
+    ordem_status_resumo = {
+        "recebido e nao emitido": 1,
+        "recebido e não emitido": 1,
+        "aguardando pcf": 2,
+        "reprovado": 3,
+        "aprovado com comentarios": 4,
+        "aprovado com comentários": 4,
+        "aprovado sem comentarios": 5,
+        "aprovado sem comentários": 5,
+        "nao recebido": 6,
+        "não recebido": 6,
+    }
+
+    def _normalizar_ordem_status(valor):
+        texto = str(valor or "").strip().lower()
+        texto = (
+            texto.replace("á", "a")
+            .replace("à", "a")
+            .replace("ã", "a")
+            .replace("â", "a")
+            .replace("é", "e")
+            .replace("ê", "e")
+            .replace("í", "i")
+            .replace("ó", "o")
+            .replace("ô", "o")
+            .replace("õ", "o")
+            .replace("ú", "u")
+            .replace("ç", "c")
+        )
+        return re.sub(r"\s+", " ", texto)
+
+    linhas_resumo = sorted(
+        resumo_din_ld["linhas"],
+        key=lambda item: (
+            str(item.get("cliente", "")).strip().casefold(),
+            ordem_status_resumo.get(_normalizar_ordem_status(item.get("status", "")), 999),
+            str(item.get("status", "")).strip().casefold(),
+        ),
+    )[:13]
     rows = max(len(linhas_resumo) + 1, 2)
     table_shape = slide.shapes.add_table(rows, len(headers), Inches(.35), Inches(2.55), Inches(12.4), Inches(4.35))
     table = table_shape.table
