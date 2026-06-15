@@ -1607,6 +1607,79 @@ def _hyperlink_celula(cell):
     return ""
 
 
+def _normalizar_header_importacao(valor):
+    """Normaliza cabeçalhos da LD para busca segura de colunas na importação."""
+    texto = str(valor or "").strip().upper()
+    if not texto:
+        return ""
+    texto = (
+        texto.replace("º", "")
+        .replace("°", "")
+        .replace("ª", "")
+        .replace("Á", "A")
+        .replace("À", "A")
+        .replace("Â", "A")
+        .replace("Ã", "A")
+        .replace("É", "E")
+        .replace("Ê", "E")
+        .replace("Í", "I")
+        .replace("Ó", "O")
+        .replace("Ô", "O")
+        .replace("Õ", "O")
+        .replace("Ú", "U")
+        .replace("Ç", "C")
+    )
+    return re.sub(r"[^A-Z0-9]+", "", texto)
+
+
+def _coluna_letra_para_numero(coluna):
+    """Converte letra de coluna Excel para índice numérico 1-based."""
+    total = 0
+    for ch in str(coluna or "").strip().upper():
+        if "A" <= ch <= "Z":
+            total = total * 26 + (ord(ch) - ord("A") + 1)
+    return total or 1
+
+
+def _resolver_coluna_transmittal_number(ws, fallback="AO"):
+    """
+    Localiza dinamicamente a coluna Transmittal Number na linha 1.
+
+    Mantém fallback oficial em AO, mas evita coluna vazia quando o cabeçalho
+    estiver deslocado na LD/LD BASICO.
+    """
+    fallback_num = _coluna_letra_para_numero(fallback)
+
+    aliases = {
+        "TRANSMITTALNUMBER",
+        "TRANSMITTALNUMERO",
+        "TRANSMITTALNUM",
+        "TRANSMITTALNO",
+        "TRANSMITTALN",
+    }
+
+    try:
+        # Até BD cobre todos os campos operacionais atuais; 100 deixa margem segura.
+        for col in range(1, 101):
+            header = _normalizar_header_importacao(ws.range((1, col)).value)
+            if not header:
+                continue
+
+            if header in aliases:
+                return col
+
+            if header.startswith("TRANSMITTAL") and any(
+                token in header for token in ("NUMBER", "NUMERO", "NUM", "NO", "N")
+            ):
+                return col
+
+    except Exception:
+        pass
+
+    return fallback_num
+
+
+
 def importar_aba_ld_banco(ws, origem_aba):
     """
     Importa uma aba da LD para o banco do GED usando used_range.
@@ -1635,6 +1708,8 @@ def importar_aba_ld_banco(ws, origem_aba):
         f"| used_range até linha {ultima_linha}"
     )
 
+    col_transmittal_number = _resolver_coluna_transmittal_number(ws, fallback="AO")
+
     for r in range(2, ultima_linha + 1):
         documento = _valor_celula(ws[f"B{r}"])
         revisao = _valor_celula(ws[f"C{r}"])
@@ -1662,12 +1737,35 @@ def importar_aba_ld_banco(ws, origem_aba):
                 "pcf": _valor_celula(ws[f"L{r}"]),
                 "data_pcf": _valor_celula(ws[f"M{r}"]),
 
-                "status_final_pcf": _valor_celula(ws[f"N{r}"]),
+                # Status final oficial da PCF:
+                # - AY é a coluna consolidada da PCF Intelligence;
+                # - N é mantida como fallback para compatibilidade operacional.
+                "status_final_pcf": _valor_celula(ws[f"AY{r}"]) or _valor_celula(ws[f"N{r}"]),
 
                 "pcf_resposta": _valor_celula(ws[f"O{r}"]),
                 "data_resposta": _valor_celula(ws[f"P{r}"]),
 
                 "grd_resposta": _valor_celula(ws[f"Q{r}"]),
+
+                # Campos operacionais adicionais da LD BASICO.
+                "resp_for_issue": _valor_celula(ws[f"X{r}"]),
+                "numero_interno": _valor_celula(ws[f"AC{r}"]),
+                "numero_documento_km": _valor_celula(ws[f"AN{r}"]),
+                "transmittal_km": _valor_celula(ws.range((r, col_transmittal_number))),
+                "data_recebimento_km": _valor_celula(ws[f"AP{r}"]),
+                "casco": _valor_celula(ws[f"AS{r}"]),
+
+                # PCF Intelligence consolidada.
+                "qtd_comentarios": _valor_celula(ws[f"AV{r}"]),
+                "open_comments": _valor_celula(ws[f"AW{r}"]),
+                "under_review": _valor_celula(ws[f"AX{r}"]),
+
+                # Campos operacionais de comentários pendentes.
+                "posted_date": _valor_celula(ws[f"AZ{r}"]),
+                "status": _valor_celula(ws[f"BA{r}"]),
+                "since": _valor_celula(ws[f"BB{r}"]),
+                "action": _valor_celula(ws[f"BC{r}"]),
+                "nb_pending_comments": _valor_celula(ws[f"BD{r}"]),
 
                 "caminho_documento": _hyperlink_celula(ws[f"B{r}"]),
                 "caminho_grd": _hyperlink_celula(ws[f"J{r}"]),
@@ -1690,14 +1788,14 @@ def importar_aba_ld_banco(ws, origem_aba):
 
 def importar_ld_banco(wb):
     """
-    Importa somente a aba LD BASICO para o banco do GED.
-    A planilha continua sendo salva na rede como backup/fonte de auditoria.
+    Importa todas as abas operacionais da LD para o banco do GED.
+    O filtro da interface define o recorte desejado pelo usuário.
     """
-    log("💾 Atualizando banco Django somente com LD BASICO...")
+    log("💾 Atualizando banco Django com LD + LD MARENOVA + LD BASICO...")
 
     DocumentoLD.objects.all().delete()
 
-    abas = [ABA_LD_BASICO]
+    abas = [ABA_LD, ABA_LD_MARENOVA, ABA_LD_BASICO]
     resumo = {}
     total_linhas = 0
     todos_documentos = set()
