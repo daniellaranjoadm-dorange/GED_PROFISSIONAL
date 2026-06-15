@@ -17,7 +17,7 @@ from django.db.models import Avg, Count, Q, Sum
 from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
-from openpyxl import Workbook, load_workbook
+from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 
 from apps.automacoes.models import TransmittalKM, PCFTimeline, DocumentoLD, DocumentoKM, ExecucaoAutomacao, KMFileIndex
@@ -2808,6 +2808,40 @@ def _ld_valores_distintos(campo, extras=None):
     return valores
 
 
+
+def _ld_valores_distintos_queryset(queryset, campo, extras=None):
+    """
+    Retorna valores distintos respeitando o queryset base recebido.
+    Usado na Lista LD para evitar misturar opções de status entre origens
+    quando o usuário filtra LD / LD Marenova / LD Basico.
+    """
+    valores = []
+    vistos = set()
+
+    if _ld_has_field(campo):
+        for valor in (
+            queryset.exclude(**{campo: ""})
+            .exclude(**{f"{campo}__isnull": True})
+            .values_list(campo, flat=True)
+            .distinct()
+            .order_by(campo)
+        ):
+            texto = _ld_texto(valor)
+            chave = texto.lower()
+            if texto and chave not in vistos:
+                vistos.add(chave)
+                valores.append(texto)
+
+    for valor in extras or []:
+        texto = _ld_texto(valor)
+        chave = texto.lower()
+        if texto and chave not in vistos:
+            vistos.add(chave)
+            valores.append(texto)
+
+    return valores
+
+
 def _ld_normalizar_origem(valor):
     texto = _ld_texto(valor).lower()
     texto = " ".join(texto.replace("_", " ").replace("-", " ").split())
@@ -3047,6 +3081,14 @@ def _ld_filtrar_queryset(request):
             | Q(pcf__icontains=busca)
             | Q(pcf_resposta__icontains=busca)
             | Q(grd_resposta__icontains=busca)
+            | Q(resp_for_issue__icontains=busca)
+            | Q(numero_interno__icontains=busca)
+            | Q(numero_documento_km__icontains=busca)
+            | Q(transmittal_km__icontains=busca)
+            | Q(casco__icontains=busca)
+            | Q(posted_date__icontains=busca)
+            | Q(status__icontains=busca)
+            | Q(action__icontains=busca)
         )
 
     registros = _ld_filtrar_por_tipos_documentais(registros, tipos_doc)
@@ -3110,24 +3152,12 @@ def _ld_filtrar_queryset(request):
 def _ld_kpis(registros):
     total = registros.count()
 
-    total_emitidos = registros.filter(status_grd__iexact="Emitido").count()
-    total_aprovados = registros.filter(
-        Q(status_documento__iexact="Aprovado com comentários")
-        | Q(status_documento__iexact="Aprovado com comentarios")
-        | Q(status_documento__iexact="Aprovado sem Comentários")
-        | Q(status_documento__iexact="Aprovado sem Comentarios")
-    ).count()
-
-    # Na LD BASICO, "Recebidos" no dashboard executivo deve refletir a
-    # cobertura efetivamente emitida por GRD, preservando o padrão do PPT.
-    total_recebidos = total_emitidos
-
     return {
         "total": total,
         "total_exclusivos": registros.order_by().values("documento").distinct().count(),
-        "total_recebidos": total_recebidos,
-        "total_aprovados": total_aprovados,
-        "total_emitidos": total_emitidos,
+        "total_recebidos": registros.filter(status_documento__iexact="Recebido").count(),
+        "total_aprovados": registros.filter(status_documento__iexact="Aprovado").count(),
+        "total_emitidos": registros.filter(status_grd__iexact="Emitido").count(),
         "total_com_pcf": registros.exclude(pcf__isnull=True).exclude(pcf="").count(),
         "total_sem_pcf": registros.filter(Q(pcf__isnull=True) | Q(pcf="")).count(),
         "total_com_resposta": registros.exclude(pcf_resposta__isnull=True).exclude(pcf_resposta="").count(),
@@ -3334,20 +3364,27 @@ def listar_ld(request):
 
     kpis = _ld_kpis(registros)
 
-    disciplinas = _ld_valores_distintos("disciplina")
-    origens = _ld_valores_distintos("origem_aba", extras=["LD", "LD Marenova"])
+    origens = _ld_valores_distintos("origem_aba", extras=["LD", "LD Marenova", "LD Basico"])
 
-    # Mantém as duas origens operacionais sempre disponíveis, mesmo quando a
+    # Mantém as origens operacionais sempre disponíveis, mesmo quando a
     # importação antiga gravou origem_aba em branco.
     origens_norm = []
-    for origem_item in ["LD", "LD Marenova", *origens]:
+    for origem_item in ["LD", "LD Marenova", "LD Basico", *origens]:
         if origem_item not in origens_norm:
             origens_norm.append(origem_item)
     origens = origens_norm
 
-    status_documentos = _ld_valores_distintos("status_documento")
-    status_grds = _ld_valores_distintos("status_grd")
-    status_pcfs = _ld_valores_distintos("status_final_pcf", extras=["RELEASED", "NOT RELEASED"])
+    # Opções contextuais: quando uma origem está selecionada, os combos de
+    # disciplina/status passam a refletir aquela origem, evitando mistura de
+    # status da LD/LD Marenova com LD Basico.
+    opcoes_base = _ld_filtro_origens(
+        DocumentoLD.objects.all(),
+        filtros.get("origens_selecionadas", []),
+    )
+    disciplinas = _ld_valores_distintos_queryset(opcoes_base, "disciplina")
+    status_documentos = _ld_valores_distintos_queryset(opcoes_base, "status_documento")
+    status_grds = _ld_valores_distintos_queryset(opcoes_base, "status_grd")
+    status_pcfs = _ld_valores_distintos_queryset(opcoes_base, "status_final_pcf", extras=["RELEASED", "NOT RELEASED"])
 
     chips_ld = _ld_montar_chips(
         request,
@@ -3423,9 +3460,6 @@ def exportar_ld_excel(request):
     ws = wb.active
     ws.title = "Lista LD Filtrada"
 
-    def _safe(item, campo, default=""):
-        return getattr(item, campo, default) or default
-
     headers = [
         "Origem",
         "Documento",
@@ -3442,8 +3476,6 @@ def exportar_ld_excel(request):
         "Resposta PCF",
         "Data Resposta",
         "GRD Resposta",
-
-        # Campos operacionais adicionais da LD BASICO
         "Resp for Issue",
         "Nº Interno",
         "Nº Documento KM",
@@ -3453,14 +3485,11 @@ def exportar_ld_excel(request):
         "Qtd Comentários",
         "Open Comments",
         "UNDER REVIEW",
-        "Status Final",
         "Posted Date",
         "Status",
         "Since",
         "Action",
         "Nb. Pending Comments",
-
-        # Caminhos / hyperlinks
         "Caminho Documento",
         "Caminho GRD",
         "Caminho PCF",
@@ -3479,43 +3508,40 @@ def exportar_ld_excel(request):
 
     for item in registros:
         row = [
-            _safe(item, "origem_aba"),
-            _safe(item, "documento"),
-            _safe(item, "revisao"),
-            _safe(item, "disciplina"),
-            _safe(item, "titulo"),
-            _safe(item, "status_documento"),
-            _safe(item, "status_grd"),
-            _safe(item, "status_final_pcf"),
-            _safe(item, "grd"),
-            _safe(item, "data_grd"),
-            _safe(item, "pcf"),
-            _safe(item, "data_pcf"),
-            _safe(item, "pcf_resposta"),
-            _safe(item, "data_resposta"),
-            _safe(item, "grd_resposta"),
-
-            _safe(item, "resp_for_issue"),
-            _safe(item, "numero_interno"),
-            _safe(item, "numero_documento_km"),
-            _safe(item, "transmittal_number"),
-            _safe(item, "data_recebimento_km"),
-            _safe(item, "casco"),
-            _safe(item, "qtd_comentarios"),
-            _safe(item, "open_comments"),
-            _safe(item, "under_review"),
-            _safe(item, "status_final_pcf"),
-            _safe(item, "posted_date"),
-            _safe(item, "status"),
-            _safe(item, "since"),
-            _safe(item, "action"),
-            _safe(item, "nb_pending_comments"),
-
-            _safe(item, "caminho_documento"),
-            _safe(item, "caminho_grd"),
-            _safe(item, "caminho_pcf"),
-            _safe(item, "caminho_resposta"),
-            _safe(item, "caminho_grd_resposta"),
+            getattr(item, "origem_aba", ""),
+            item.documento,
+            item.revisao,
+            item.disciplina,
+            item.titulo,
+            item.status_documento,
+            item.status_grd,
+            item.status_final_pcf,
+            item.grd,
+            item.data_grd,
+            item.pcf,
+            item.data_pcf,
+            item.pcf_resposta,
+            item.data_resposta,
+            item.grd_resposta,
+            getattr(item, "resp_for_issue", ""),
+            getattr(item, "numero_interno", ""),
+            getattr(item, "numero_documento_km", ""),
+            getattr(item, "transmittal_km", ""),
+            getattr(item, "data_recebimento_km", ""),
+            getattr(item, "casco", ""),
+            getattr(item, "qtd_comentarios", ""),
+            getattr(item, "open_comments", ""),
+            getattr(item, "under_review", ""),
+            getattr(item, "posted_date", ""),
+            getattr(item, "status", ""),
+            getattr(item, "since", ""),
+            getattr(item, "action", ""),
+            getattr(item, "nb_pending_comments", ""),
+            item.caminho_documento,
+            item.caminho_grd,
+            item.caminho_pcf,
+            item.caminho_resposta,
+            item.caminho_grd_resposta,
         ]
 
         ws.append(row)
@@ -3523,11 +3549,11 @@ def exportar_ld_excel(request):
         current_row = ws.max_row
 
         caminho_cols = {
-            31: _safe(item, "caminho_documento"),
-            32: _safe(item, "caminho_grd"),
-            33: _safe(item, "caminho_pcf"),
-            34: _safe(item, "caminho_resposta"),
-            35: _safe(item, "caminho_grd_resposta"),
+            30: item.caminho_documento,
+            31: item.caminho_grd,
+            32: item.caminho_pcf,
+            33: item.caminho_resposta,
+            34: item.caminho_grd_resposta,
         }
 
         for col_idx, caminho in caminho_cols.items():
@@ -3537,51 +3563,38 @@ def exportar_ld_excel(request):
                 cell.style = "Hyperlink"
 
     widths = {
-        "A": 16,   # Origem
-        "B": 34,   # Documento
-        "C": 10,   # Revisão
-        "D": 28,   # Disciplina
-        "E": 60,   # Título
-        "F": 24,   # Status Documento
-        "G": 18,   # Status GRD
-        "H": 22,   # Status PCF
-        "I": 18,   # GRD
-        "J": 14,   # Data GRD
-        "K": 36,   # PCF
-        "L": 14,   # Data PCF
-        "M": 36,   # Resposta PCF
-        "N": 14,   # Data Resposta
-        "O": 18,   # GRD Resposta
-        "P": 18,   # Resp for Issue
-        "Q": 26,   # Nº Interno
-        "R": 22,   # Nº Documento KM
-        "S": 20,   # Transmittal Number
-        "T": 20,   # Data Recebimento KM
-        "U": 14,   # CASCO
-        "V": 18,   # Qtd Comentários
-        "W": 18,   # Open Comments
-        "X": 18,   # UNDER REVIEW
-        "Y": 22,   # Status Final
-        "Z": 16,   # Posted Date
-        "AA": 18,  # Status
-        "AB": 14,  # Since
-        "AC": 22,  # Action
-        "AD": 22,  # Nb. Pending Comments
-        "AE": 80,  # Caminho Documento
-        "AF": 80,  # Caminho GRD
-        "AG": 80,  # Caminho PCF
-        "AH": 80,  # Caminho Resposta
-        "AI": 80,  # Caminho GRD Resposta
+        "A": 16,
+        "B": 34,
+        "C": 10,
+        "D": 28,
+        "E": 60,
+        "F": 20,
+        "G": 18,
+        "H": 20,
+        "I": 18,
+        "J": 14,
+        "K": 36,
+        "L": 14,
+        "M": 36,
+        "N": 14,
+        "O": 18,
+        "P": 80,
+        "Q": 80,
+        "R": 80,
+        "S": 80,
+        "T": 80,
     }
+
+    # Campos adicionais LD BASICO + caminhos.
+    extra_widths = {
+        "P": 22, "Q": 18, "R": 28, "S": 22, "T": 20, "U": 14,
+        "V": 16, "W": 16, "X": 16, "Y": 16, "Z": 18, "AA": 14,
+        "AB": 40, "AC": 20, "AD": 80, "AE": 80, "AF": 80, "AG": 80, "AH": 80,
+    }
+    widths.update(extra_widths)
 
     for col, width in widths.items():
         ws.column_dimensions[col].width = width
-
-    try:
-        ws.freeze_panes = "A2"
-        ws.auto_filter.ref = ws.dimensions
-    except Exception:
-        pass
 
     response = HttpResponse(
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -3590,6 +3603,7 @@ def exportar_ld_excel(request):
     wb.save(response)
 
     return response
+
 
 
 def _ld_chart_items(queryset, campo, limite=10):
@@ -3619,103 +3633,6 @@ def _ld_binary_chart(label_ok, total_ok, label_gap, total_gap):
     ]
 
 
-
-def _ld_din_ld_resumo_pcf():
-    """
-    Lê a aba Din LD da planilha mestre para montar o slide executivo de
-    PCF Intelligence no mesmo formato do arquivo validado pelo projeto.
-    """
-    resumo = {
-        "total_documentos": 0,
-        "qtd_comentarios": 0,
-        "open_comments": 0,
-        "under_review": 0,
-        "linhas": [],
-    }
-
-    caminho = getattr(atualizar_ld, "PLANILHA", "")
-    if not caminho:
-        return resumo
-
-    try:
-        wb = load_workbook(caminho, data_only=True, read_only=True)
-    except Exception:
-        return resumo
-
-    try:
-        if "Din LD" not in wb.sheetnames:
-            return resumo
-
-        ws = wb["Din LD"]
-        cliente_atual = ""
-
-        for row in ws.iter_rows(values_only=True):
-            valores = ["" if v is None else str(v).strip() for v in row[:5]]
-            rotulo = valores[0]
-            if not rotulo:
-                continue
-
-            rotulo_norm = rotulo.casefold()
-            if "rótulos de linha" in rotulo_norm or "rotulos de linha" in rotulo_norm:
-                continue
-
-            def _num(idx):
-                try:
-                    bruto = row[idx] if idx < len(row) else 0
-                    if bruto in (None, ""):
-                        return 0
-                    return int(float(bruto))
-                except Exception:
-                    return 0
-
-            docs = _num(1)
-            qtd = _num(2)
-            open_c = _num(3)
-            under = _num(4)
-
-            if "total geral" in rotulo_norm:
-                resumo["total_documentos"] = docs
-                resumo["qtd_comentarios"] = qtd
-                resumo["open_comments"] = open_c
-                resumo["under_review"] = under
-                continue
-
-            if docs == 0 and qtd == 0 and open_c == 0 and under == 0:
-                cliente_atual = rotulo
-                continue
-
-            if rotulo in {"Kongsberg", "MacLaren", "Ecovix"}:
-                cliente_atual = rotulo
-                continue
-
-            if cliente_atual:
-                resumo["linhas"].append({
-                    "cliente": cliente_atual,
-                    "status": rotulo,
-                    "docs": docs,
-                    "qtd_comentarios": qtd,
-                    "open_comments": open_c,
-                    "under_review": under,
-                })
-
-        if not resumo["total_documentos"]:
-            resumo["total_documentos"] = sum(item["docs"] for item in resumo["linhas"])
-        if not resumo["qtd_comentarios"]:
-            resumo["qtd_comentarios"] = sum(item["qtd_comentarios"] for item in resumo["linhas"])
-        if not resumo["open_comments"]:
-            resumo["open_comments"] = sum(item["open_comments"] for item in resumo["linhas"])
-        if not resumo["under_review"]:
-            resumo["under_review"] = sum(item["under_review"] for item in resumo["linhas"])
-
-    finally:
-        try:
-            wb.close()
-        except Exception:
-            pass
-
-    return resumo
-
-
 def _ld_exportar_dashboard_ppt(request):
     from io import BytesIO
 
@@ -3735,10 +3652,8 @@ def _ld_exportar_dashboard_ppt(request):
 
     taxa_pcf = round((kpis["total_com_pcf"] / total) * 100, 1) if total else 0
     taxa_grd = round((kpis["total_emitidos"] / total) * 100, 1) if total else 0
-    taxa_recebimento = round((kpis["total_recebidos"] / total) * 100, 1) if total else 0
     taxa_aprovacao = round((kpis["total_aprovados"] / total) * 100, 1) if total else 0
-    saude = round((taxa_pcf + taxa_grd + taxa_recebimento) / 3, 1) if total else 0
-    resumo_din_ld = _ld_din_ld_resumo_pcf()
+    saude = round((taxa_pcf + taxa_grd + taxa_aprovacao) / 3, 1) if total else 0
 
     disciplina_chart = _ld_chart_items(registros, "disciplina", 7)
     status_doc_chart = _ld_chart_items(registros, "status_documento", 7)
@@ -3807,7 +3722,7 @@ def _ld_exportar_dashboard_ppt(request):
     add_text(slide, "Lista de Documentos • GRD • PCF • Revisões • Status documental", .45, .86, 8.8, .30, 12, False, cyan)
     add_card(slide, "Total linhas", total, "resultado atual", .45, 1.45)
     add_card(slide, "Únicos", kpis["total_exclusivos"], "documentos únicos", 2.75, 1.45)
-    add_card(slide, "Recebidos", kpis["total_recebidos"], f"{taxa_recebimento}% da base", 5.05, 1.45, accent=green)
+    add_card(slide, "Recebidos", kpis["total_recebidos"], f"{taxa_aprovacao}% aprov.", 5.05, 1.45, accent=green)
     add_card(slide, "GRD emitido", kpis["total_emitidos"], f"{taxa_grd}% cobertura", 7.35, 1.45, accent=orange)
     add_card(slide, "Com PCF", kpis["total_com_pcf"], f"{taxa_pcf}% cobertura", 9.65, 1.45, accent=cyan)
     add_card(slide, "Saúde", f"{saude}%", "score operacional", 11.95, 1.45, w=1.0)
@@ -3827,125 +3742,6 @@ def _ld_exportar_dashboard_ppt(request):
     add_card(slide, "Not Released", total_not_released, "status crítico PCF", 9.65, 1.15, accent=RGBColor(248, 113, 113))
     add_bars(slide, "Status GRD", status_grd_chart, .55, 2.65, 5.8, 3.9)
     add_bars(slide, "Pendências por disciplina", _ld_chart_items(registros.filter(Q(pcf__isnull=True) | Q(pcf="")), "disciplina", 7), 6.9, 2.65, 5.7, 3.9)
-
-
-    # Slide 3
-    slide = prs.slides.add_slide(prs.slide_layouts[6])
-    slide.background.fill.solid()
-    slide.background.fill.fore_color.rgb = bg
-
-    add_text(slide, "Resumo PCF Intelligence", .45, .25, 8.8, .45, 26, True, white)
-    add_text(slide, "Resumo consolidado da aba Din LD • Status • Comentários • Under Review", .45, .74, 10.5, .25, 11, False, cyan)
-
-    add_card(slide, "Total documentos", resumo_din_ld["total_documentos"] or total, "Din LD", .35, 1.15, w=2.1)
-    add_card(slide, "Qtd Comentários", resumo_din_ld["qtd_comentarios"], "soma Din LD", 2.65, 1.15, w=2.1)
-    add_card(slide, "Open Comments", resumo_din_ld["open_comments"], "soma Din LD", 4.95, 1.15, w=2.1, accent=orange)
-    add_card(slide, "Under Review", resumo_din_ld["under_review"], "soma Din LD", 7.25, 1.15, w=2.1, accent=RGBColor(248, 113, 113))
-    add_card(slide, "Com PCF", kpis["total_com_pcf"], f"{taxa_pcf}% da base", 9.55, 1.15, w=2.1, accent=green)
-
-    headers = ["Cliente", "Status Documento", "Docs", "Qtd Coment.", "Open Comments", "Under Review"]
-    # Ordenação operacional do resumo PCF:
-    # mantém o agrupamento por cliente e coloca "Recebido e não Emitido" como
-    # primeiro status de cada bloco, sem alterar os cálculos já validados.
-    ordem_status_resumo = {
-        "recebido e nao emitido": 1,
-        "recebido e não emitido": 1,
-        "aguardando pcf": 2,
-        "reprovado": 3,
-        "aprovado com comentarios": 4,
-        "aprovado com comentários": 4,
-        "aprovado sem comentarios": 5,
-        "aprovado sem comentários": 5,
-        "nao recebido": 6,
-        "não recebido": 6,
-    }
-
-    def _normalizar_ordem_status(valor):
-        texto = str(valor or "").strip().lower()
-        texto = (
-            texto.replace("á", "a")
-            .replace("à", "a")
-            .replace("ã", "a")
-            .replace("â", "a")
-            .replace("é", "e")
-            .replace("ê", "e")
-            .replace("í", "i")
-            .replace("ó", "o")
-            .replace("ô", "o")
-            .replace("õ", "o")
-            .replace("ú", "u")
-            .replace("ç", "c")
-        )
-        return re.sub(r"\s+", " ", texto)
-
-    linhas_resumo = sorted(
-        resumo_din_ld["linhas"],
-        key=lambda item: (
-            str(item.get("cliente", "")).strip().casefold(),
-            ordem_status_resumo.get(_normalizar_ordem_status(item.get("status", "")), 999),
-            str(item.get("status", "")).strip().casefold(),
-        ),
-    )[:13]
-    rows = max(len(linhas_resumo) + 1, 2)
-    table_shape = slide.shapes.add_table(rows, len(headers), Inches(.35), Inches(2.55), Inches(12.4), Inches(4.35))
-    table = table_shape.table
-
-    col_widths = [1.65, 2.55, 1.0, 1.65, 1.65, 1.65]
-    for idx, width in enumerate(col_widths):
-        table.columns[idx].width = Inches(width)
-
-    def _set_cell(cell, value, size=7, bold=False, color=white, fill=None):
-        cell.text = str(value)
-        try:
-            if fill is not None:
-                cell.fill.solid()
-                cell.fill.fore_color.rgb = fill
-            else:
-                cell.fill.solid()
-                cell.fill.fore_color.rgb = bg
-            cell.text_frame.margin_left = Inches(.06)
-            cell.text_frame.margin_right = Inches(.04)
-            cell.text_frame.margin_top = Inches(.03)
-            cell.text_frame.margin_bottom = Inches(.03)
-            for paragraph in cell.text_frame.paragraphs:
-                for run in paragraph.runs:
-                    run.font.size = Pt(size)
-                    run.font.bold = bold
-                    run.font.color.rgb = color
-        except Exception:
-            pass
-
-    header_fill = RGBColor(15, 23, 42)
-    for col_idx, header in enumerate(headers):
-        _set_cell(table.cell(0, col_idx), header, size=7, bold=True, color=cyan, fill=header_fill)
-
-    # Cores por cliente no resumo executivo.
-    # Mantém o tema escuro do PPT, mas diferencia visualmente cada bloco.
-    cliente_fills = {
-        "kongsberg": RGBColor(7, 34, 58),    # azul petróleo
-        "maclaren": RGBColor(43, 25, 61),    # roxo executivo
-        "ecovix": RGBColor(9, 50, 34),       # verde técnico
-    }
-
-    def _cliente_key(valor):
-        return re.sub(r"\s+", "", str(valor or "").strip().casefold())
-
-    for row_idx, item in enumerate(linhas_resumo, start=1):
-        cliente = item.get("cliente", "")
-        fill = cliente_fills.get(_cliente_key(cliente), RGBColor(8, 13, 28))
-        valores = [
-            cliente,
-            item.get("status", ""),
-            item.get("docs", 0),
-            item.get("qtd_comentarios", 0),
-            item.get("open_comments", 0),
-            item.get("under_review", 0),
-        ]
-        for col_idx, valor in enumerate(valores):
-            _set_cell(table.cell(row_idx, col_idx), valor, size=7, bold=False, color=white, fill=fill)
-
-    add_text(slide, "GED_PROFISSIONAL • LD BASICO • Din LD • PCF Intelligence", .45, 7.05, 7.8, .20, 8, False, muted)
-
 
     output = BytesIO()
     prs.save(output)
@@ -5450,84 +5246,6 @@ def _km_exportar_dashboard_ppt(request):
     add_bar_list(slide, "Status KM", status_km_chart, .65, 4.05, 5.8, 2.65, accent=green, label_limit=52)
     add_bar_list(slide, "Top TOC", toc_chart, 6.95, 4.05, 5.65, 2.65, accent=cyan, label_limit=54)
 
-
-    # Slide 3
-    slide = prs.slides.add_slide(prs.slide_layouts[6])
-    slide.background.fill.solid()
-    slide.background.fill.fore_color.rgb = bg
-
-    add_text(slide, "Resumo PCF Intelligence", .45, .25, 8.8, .45, 26, True, white)
-    add_text(slide, "Resumo consolidado da aba Din LD • Status • Comentários • Under Review", .45, .74, 10.5, .25, 11, False, cyan)
-
-    add_card(slide, "Total documentos", resumo_din_ld["total_documentos"] or total, "Din LD", .35, 1.15, w=2.1)
-    add_card(slide, "Qtd Comentários", resumo_din_ld["qtd_comentarios"], "soma Din LD", 2.65, 1.15, w=2.1)
-    add_card(slide, "Open Comments", resumo_din_ld["open_comments"], "soma Din LD", 4.95, 1.15, w=2.1, accent=orange)
-    add_card(slide, "Under Review", resumo_din_ld["under_review"], "soma Din LD", 7.25, 1.15, w=2.1, accent=RGBColor(248, 113, 113))
-    add_card(slide, "Com PCF", kpis["total_com_pcf"], f"{taxa_pcf}% da base", 9.55, 1.15, w=2.1, accent=green)
-
-    headers = ["Cliente", "Status Documento", "Docs", "Qtd Coment.", "Open Comments", "Under Review"]
-    linhas_resumo = resumo_din_ld["linhas"][:13]
-    rows = max(len(linhas_resumo) + 1, 2)
-    table_shape = slide.shapes.add_table(rows, len(headers), Inches(.35), Inches(2.55), Inches(12.4), Inches(4.35))
-    table = table_shape.table
-
-    col_widths = [1.65, 2.55, 1.0, 1.65, 1.65, 1.65]
-    for idx, width in enumerate(col_widths):
-        table.columns[idx].width = Inches(width)
-
-    def _set_cell(cell, value, size=7, bold=False, color=white, fill=None):
-        cell.text = str(value)
-        try:
-            if fill is not None:
-                cell.fill.solid()
-                cell.fill.fore_color.rgb = fill
-            else:
-                cell.fill.solid()
-                cell.fill.fore_color.rgb = bg
-            cell.text_frame.margin_left = Inches(.06)
-            cell.text_frame.margin_right = Inches(.04)
-            cell.text_frame.margin_top = Inches(.03)
-            cell.text_frame.margin_bottom = Inches(.03)
-            for paragraph in cell.text_frame.paragraphs:
-                for run in paragraph.runs:
-                    run.font.size = Pt(size)
-                    run.font.bold = bold
-                    run.font.color.rgb = color
-        except Exception:
-            pass
-
-    header_fill = RGBColor(15, 23, 42)
-    for col_idx, header in enumerate(headers):
-        _set_cell(table.cell(0, col_idx), header, size=7, bold=True, color=cyan, fill=header_fill)
-
-    # Cores por cliente no resumo executivo.
-    # Mantém o tema escuro do PPT, mas diferencia visualmente cada bloco.
-    cliente_fills = {
-        "kongsberg": RGBColor(7, 34, 58),    # azul petróleo
-        "maclaren": RGBColor(43, 25, 61),    # roxo executivo
-        "ecovix": RGBColor(9, 50, 34),       # verde técnico
-    }
-
-    def _cliente_key(valor):
-        return re.sub(r"\s+", "", str(valor or "").strip().casefold())
-
-    for row_idx, item in enumerate(linhas_resumo, start=1):
-        cliente = item.get("cliente", "")
-        fill = cliente_fills.get(_cliente_key(cliente), RGBColor(8, 13, 28))
-        valores = [
-            cliente,
-            item.get("status", ""),
-            item.get("docs", 0),
-            item.get("qtd_comentarios", 0),
-            item.get("open_comments", 0),
-            item.get("under_review", 0),
-        ]
-        for col_idx, valor in enumerate(valores):
-            _set_cell(table.cell(row_idx, col_idx), valor, size=7, bold=False, color=white, fill=fill)
-
-    add_text(slide, "GED_PROFISSIONAL • LD BASICO • Din LD • PCF Intelligence", .45, 7.05, 7.8, .20, 8, False, muted)
-
-
     output = BytesIO()
     prs.save(output)
     output.seek(0)
@@ -6111,84 +5829,6 @@ def exportar_dashboard_pcfs_ppt(request):
         texto = "Nenhum registro encontrado para os filtros aplicados."
     add_text_block(slide, 0.8, 1.45, 11.7, 4.8, texto)
     add_footer(slide)
-
-
-    # Slide 3
-    slide = prs.slides.add_slide(prs.slide_layouts[6])
-    slide.background.fill.solid()
-    slide.background.fill.fore_color.rgb = bg
-
-    add_text(slide, "Resumo PCF Intelligence", .45, .25, 8.8, .45, 26, True, white)
-    add_text(slide, "Resumo consolidado da aba Din LD • Status • Comentários • Under Review", .45, .74, 10.5, .25, 11, False, cyan)
-
-    add_card(slide, "Total documentos", resumo_din_ld["total_documentos"] or total, "Din LD", .35, 1.15, w=2.1)
-    add_card(slide, "Qtd Comentários", resumo_din_ld["qtd_comentarios"], "soma Din LD", 2.65, 1.15, w=2.1)
-    add_card(slide, "Open Comments", resumo_din_ld["open_comments"], "soma Din LD", 4.95, 1.15, w=2.1, accent=orange)
-    add_card(slide, "Under Review", resumo_din_ld["under_review"], "soma Din LD", 7.25, 1.15, w=2.1, accent=RGBColor(248, 113, 113))
-    add_card(slide, "Com PCF", kpis["total_com_pcf"], f"{taxa_pcf}% da base", 9.55, 1.15, w=2.1, accent=green)
-
-    headers = ["Cliente", "Status Documento", "Docs", "Qtd Coment.", "Open Comments", "Under Review"]
-    linhas_resumo = resumo_din_ld["linhas"][:13]
-    rows = max(len(linhas_resumo) + 1, 2)
-    table_shape = slide.shapes.add_table(rows, len(headers), Inches(.35), Inches(2.55), Inches(12.4), Inches(4.35))
-    table = table_shape.table
-
-    col_widths = [1.65, 2.55, 1.0, 1.65, 1.65, 1.65]
-    for idx, width in enumerate(col_widths):
-        table.columns[idx].width = Inches(width)
-
-    def _set_cell(cell, value, size=7, bold=False, color=white, fill=None):
-        cell.text = str(value)
-        try:
-            if fill is not None:
-                cell.fill.solid()
-                cell.fill.fore_color.rgb = fill
-            else:
-                cell.fill.solid()
-                cell.fill.fore_color.rgb = bg
-            cell.text_frame.margin_left = Inches(.06)
-            cell.text_frame.margin_right = Inches(.04)
-            cell.text_frame.margin_top = Inches(.03)
-            cell.text_frame.margin_bottom = Inches(.03)
-            for paragraph in cell.text_frame.paragraphs:
-                for run in paragraph.runs:
-                    run.font.size = Pt(size)
-                    run.font.bold = bold
-                    run.font.color.rgb = color
-        except Exception:
-            pass
-
-    header_fill = RGBColor(15, 23, 42)
-    for col_idx, header in enumerate(headers):
-        _set_cell(table.cell(0, col_idx), header, size=7, bold=True, color=cyan, fill=header_fill)
-
-    # Cores por cliente no resumo executivo.
-    # Mantém o tema escuro do PPT, mas diferencia visualmente cada bloco.
-    cliente_fills = {
-        "kongsberg": RGBColor(7, 34, 58),    # azul petróleo
-        "maclaren": RGBColor(43, 25, 61),    # roxo executivo
-        "ecovix": RGBColor(9, 50, 34),       # verde técnico
-    }
-
-    def _cliente_key(valor):
-        return re.sub(r"\s+", "", str(valor or "").strip().casefold())
-
-    for row_idx, item in enumerate(linhas_resumo, start=1):
-        cliente = item.get("cliente", "")
-        fill = cliente_fills.get(_cliente_key(cliente), RGBColor(8, 13, 28))
-        valores = [
-            cliente,
-            item.get("status", ""),
-            item.get("docs", 0),
-            item.get("qtd_comentarios", 0),
-            item.get("open_comments", 0),
-            item.get("under_review", 0),
-        ]
-        for col_idx, valor in enumerate(valores):
-            _set_cell(table.cell(row_idx, col_idx), valor, size=7, bold=False, color=white, fill=fill)
-
-    add_text(slide, "GED_PROFISSIONAL • LD BASICO • Din LD • PCF Intelligence", .45, 7.05, 7.8, .20, 8, False, muted)
-
 
     output = BytesIO()
     prs.save(output)
