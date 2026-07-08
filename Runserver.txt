@@ -94,3 +94,11 @@ LD_BASE_PATH = r"C:\CAMINHO\RAIZ"
 # - PCF
 # - Resposta
 # - GRD Resposta
+
+
+
+Se travar Excel usar comandos abaixo 
+
+Get-Process Excel -ErrorAction SilentlyContinue
+Stop-Process -Name Excel -Force
+Remove-Item "\\virm-rgr022\FILESERVER\Projetos\05_HANDYMAX\09. Doc Control\3 - LD\Logs\atualizar_ld.lock" -ErrorAction SilentlyContinue

@@ -1551,8 +1551,7 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
 
                 status_final = _valor_intel(intel_pcf.get("status_final", ""))
                 if not str(status_final).strip():
-                    # Fallback antigo mantido apenas por compatibilidade.
-                    # Nesta rotina status_pcfs fica vazio porque a Timeline PCFs não é mais aberta.
+                    # Fallback antigo: Timeline PCFs apenas para manter compatibilidade.
                     status_final = status_final_da_pcf(status_pcfs, pcf_coluna_l)
 
                 ws[f"N{r}"].value = status_final
@@ -1842,11 +1841,12 @@ def indexar_general_list_km(wb):
         return idx
 
     try:
-        # IMPORTANTE:
-        # A coluna F é a chave oficial (Customer Document Num / Nº Transpetro).
-        # Usar C/D/O/P para calcular a última linha pode capturar formatações/fórmulas
-        # muito abaixo e fazer o Excel ler um intervalo enorme, travando a rotina.
-        last = ws.range("F" + str(ws.cells.last_cell.row)).end("up").row
+        last_c = ws.range("C" + str(ws.cells.last_cell.row)).end("up").row
+        last_d = ws.range("D" + str(ws.cells.last_cell.row)).end("up").row
+        last_f = ws.range("F" + str(ws.cells.last_cell.row)).end("up").row
+        last_o = ws.range("O" + str(ws.cells.last_cell.row)).end("up").row
+        last_p = ws.range("P" + str(ws.cells.last_cell.row)).end("up").row
+        last = max(last_c, last_d, last_f, last_o, last_p)
     except Exception as exc:
         log(f"⚠️ Não foi possível localizar última linha da aba '{ABA_GENERAL_LIST_KM}': {exc}")
         return idx
@@ -2282,14 +2282,10 @@ def processar():
             app.display_alerts = False
             app.screen_updating = False
 
-            # A rotina atual NÃO abre mais a Timeline PCFs.
-            # O Status Final/Intelligence é lido diretamente dos arquivos PCF encontrados
-            # e escrito na LD / LD BASICO. Mantemos status_pcfs vazio apenas para
-            # compatibilidade com o fallback antigo dentro de processar_aba().
-            status_pcfs = {}
-            log("ℹ️ Timeline PCFs desativada nesta rotina; status final será lido diretamente das PCFs.")
+            atualizar_progresso_ld(52, "Carregando Timeline PCFs...", "running", "Abrindo Timeline PCFs para status final.")
+            status_pcfs = carregar_status_pcfs_timeline(app)
 
-            atualizar_progresso_ld(52, "Abrindo planilha LD...", "running", "Abrindo planilha principal LD.")
+            atualizar_progresso_ld(58, "Abrindo planilha LD...", "running", "Abrindo planilha principal LD.")
             wb = app.books.open(PLANILHA)
             pcf_intel_cache = {}
 

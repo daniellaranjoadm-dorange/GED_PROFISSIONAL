@@ -1425,32 +1425,19 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
                         break
 
             # Regra adicional:
-            # Se houver data de recebimento KM, mas o documento ainda não foi
-            # encontrado nas pastas, o status deve ficar "Recebido e não Emitido".
-            #
-            # Layout atual da LD BASICO:
-            #   AP = Transmittal Number
-            #   AQ = Data recebimento KM
-            #
-            # Mantemos fallback em AP apenas para compatibilidade com arquivos antigos,
-            # mas a coluna oficial de data KM agora é AQ.
-            valor_data_recebimento_km = ws[f"AQ{r}"].value
-            if valor_data_recebimento_km in (None, ""):
-                valor_data_recebimento_km = ws[f"AP{r}"].value
-
-            tem_data_recebimento_km = bool(
-                _coerce_to_date(valor_data_recebimento_km)
-                or str(valor_data_recebimento_km or "").strip()
-            )
+            # Se houver data de recebimento na coluna AP, mas o documento ainda
+            # não foi encontrado nas pastas, o status deve ficar "Recebido e não Emitido".
+            # Aplica para LD e LD BASICO.
+            tem_data_recebimento_ap = bool(_coerce_to_date(ws[f"AP{r}"].value) or str(ws[f"AP{r}"].value or "").strip())
 
             # Regra específica LD BASICO:
             # documentos marcados como NOT APPLICABLE na coluna B, quando possuem
-            # data de recebimento KM, devem permanecer como recebidos,
+            # data de recebimento KM na coluna AP, devem permanecer como recebidos,
             # mas sem exigir emissão de GRD.
             not_applicable_com_recebimento = (
                 aba_nome == ABA_LD_BASICO
                 and "NOT APPLICABLE" in str(codigo or "").upper()
-                and tem_data_recebimento_km
+                and tem_data_recebimento_ap
             )
 
             status_auto_h = (
@@ -1459,14 +1446,14 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
                 else "Aguardando PCF"
                 if documento_encontrado and not pcf_recebida_para_rev
                 else "Recebido e não Emitido"
-                if tem_data_recebimento_km
+                if tem_data_recebimento_ap
                 else "Não Recebido"
             )
 
             if not_applicable_com_recebimento:
                 ws[f"H{r}"].value = "Recebido e não Emitido"
                 if LOG_DETALHADO:
-                    log(f"   [H/I] {aba_nome} L{r}: NOT APPLICABLE com data KM preenchida -> H='Recebido e não Emitido'")
+                    log(f"   [H/I] {aba_nome} L{r}: NOT APPLICABLE com AP preenchida -> H='Recebido e não Emitido'")
 
             elif aba_nome == ABA_LD_BASICO:
                 # Regra especial LD BASICO:
@@ -1513,7 +1500,7 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
             if not_applicable_com_recebimento:
                 ws[f"I{r}"].value = "NOT APPLICABLE"
                 if LOG_DETALHADO:
-                    log(f"   [I] {aba_nome} L{r}: NOT APPLICABLE com data KM preenchida -> I='NOT APPLICABLE'")
+                    log(f"   [I] {aba_nome} L{r}: NOT APPLICABLE com AP preenchida -> I='NOT APPLICABLE'")
 
             # PCF normal (L / M) - SEM subpasta de respostas
             info_pcf = None
@@ -1551,8 +1538,7 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
 
                 status_final = _valor_intel(intel_pcf.get("status_final", ""))
                 if not str(status_final).strip():
-                    # Fallback antigo mantido apenas por compatibilidade.
-                    # Nesta rotina status_pcfs fica vazio porque a Timeline PCFs não é mais aberta.
+                    # Fallback antigo: Timeline PCFs apenas para manter compatibilidade.
                     status_final = status_final_da_pcf(status_pcfs, pcf_coluna_l)
 
                 ws[f"N{r}"].value = status_final
@@ -1783,12 +1769,6 @@ def _texto_excel_seguro(valor):
     if valor is None:
         return ""
 
-    if isinstance(valor, datetime):
-        return valor.strftime("%d/%m/%Y")
-
-    if isinstance(valor, date):
-        return valor.strftime("%d/%m/%Y")
-
     if isinstance(valor, float):
         return str(int(valor)) if valor.is_integer() else str(valor).strip()
 
@@ -1812,41 +1792,27 @@ def _normalizar_chave_documento(valor):
     return texto.strip()
 
 
-def _adicionar_unico(lista, valor):
-    """Adiciona um valor textual em uma lista preservando ordem e evitando duplicidade."""
-    texto = _texto_excel_seguro(valor)
-    if texto and texto not in lista:
-        lista.append(texto)
-
-
 def indexar_general_list_km(wb):
     """
-    Cria índice da aba GENERAL LIST KM usando o Nº Transpetro como chave.
+    Cria índice da aba GENERAL LIST KM:
+      chave = coluna F (Customer Document Num / Nº Transpetro)
+      valor = lista única da coluna C (Number / Nº Documento KM)
 
-    Regras oficiais:
-      chave = GENERAL LIST KM coluna F (Customer Document Num / Nº Transpetro)
-      AN    = GENERAL LIST KM coluna C (Number / Nº Documento KM)
-      AO    = GENERAL LIST KM coluna D (Title / KM Title)
-      AP    = GENERAL LIST KM coluna O (Transmittal Number)
-      AQ    = GENERAL LIST KM coluna P (Data recebimento KM)
-
-    Quando houver mais de um KM para o mesmo Nº Transpetro, os valores são
-    preservados em ordem e unidos por " / " no preenchimento da LD BASICO.
+    Exemplo:
+      I-DE-4880.00-2048-500-CZ1-001 -> ["102-110", "304-050"]
     """
     idx = {}
 
     try:
         ws = wb.sheets[ABA_GENERAL_LIST_KM]
     except Exception as exc:
-        log(f"⚠️ Aba '{ABA_GENERAL_LIST_KM}' não encontrada. Colunas AN:AQ da LD BASICO não serão atualizadas: {exc}")
+        log(f"⚠️ Aba '{ABA_GENERAL_LIST_KM}' não encontrada. Coluna AN da LD BASICO não será atualizada: {exc}")
         return idx
 
     try:
-        # IMPORTANTE:
-        # A coluna F é a chave oficial (Customer Document Num / Nº Transpetro).
-        # Usar C/D/O/P para calcular a última linha pode capturar formatações/fórmulas
-        # muito abaixo e fazer o Excel ler um intervalo enorme, travando a rotina.
-        last = ws.range("F" + str(ws.cells.last_cell.row)).end("up").row
+        last_f = ws.range("F" + str(ws.cells.last_cell.row)).end("up").row
+        last_c = ws.range("C" + str(ws.cells.last_cell.row)).end("up").row
+        last = max(last_f, last_c)
     except Exception as exc:
         log(f"⚠️ Não foi possível localizar última linha da aba '{ABA_GENERAL_LIST_KM}': {exc}")
         return idx
@@ -1856,67 +1822,38 @@ def indexar_general_list_km(wb):
         return idx
 
     valores_km = _flatten(ws.range(f"C2:C{last}").value)
-    valores_title = _flatten(ws.range(f"D2:D{last}").value)
     valores_tp = _flatten(ws.range(f"F2:F{last}").value)
-    valores_transmittal = _flatten(ws.range(f"O2:O{last}").value)
-    valores_data_km = _flatten(ws.range(f"P2:P{last}").value)
 
-    total_linhas = min(
-        len(valores_km),
-        len(valores_title),
-        len(valores_tp),
-        len(valores_transmittal),
-        len(valores_data_km),
-    )
-    duplicados_km_ignorados = 0
+    total_linhas = min(len(valores_km), len(valores_tp))
+    duplicados_ignorados = 0
 
-    for numero_km, title_km, numero_tp, transmittal, data_km in zip(
-        valores_km[:total_linhas],
-        valores_title[:total_linhas],
-        valores_tp[:total_linhas],
-        valores_transmittal[:total_linhas],
-        valores_data_km[:total_linhas],
-    ):
+    for numero_km, numero_tp in zip(valores_km[:total_linhas], valores_tp[:total_linhas]):
         chave_tp = _normalizar_chave_documento(numero_tp)
         km = _texto_excel_seguro(numero_km)
 
-        if not chave_tp:
+        if not chave_tp or not km:
             continue
 
-        item = idx.setdefault(chave_tp, {
-            "numbers": [],
-            "titles": [],
-            "transmittals": [],
-            "datas": [],
-        })
-
-        if km:
-            if km not in item["numbers"]:
-                item["numbers"].append(km)
-            else:
-                duplicados_km_ignorados += 1
-
-        _adicionar_unico(item["titles"], title_km)
-        _adicionar_unico(item["transmittals"], transmittal)
-        _adicionar_unico(item["datas"], data_km)
+        lista = idx.setdefault(chave_tp, [])
+        if km not in lista:
+            lista.append(km)
+        else:
+            duplicados_ignorados += 1
 
     log(
-        f"🔎 GENERAL LIST KM indexada: {len(idx)} Nº Transpetro com vínculos KM "
-        f"({duplicados_km_ignorados} KM duplicado(s) ignorado(s))."
+        f"🔎 GENERAL LIST KM indexada: {len(idx)} Nº Transpetro com vínculo KM "
+        f"({duplicados_ignorados} duplicado(s) ignorado(s))."
     )
     return idx
 
 
 def preencher_numero_km_ld_basico(wb, idx_general_km=None):
     """
-    Preenche LD BASICO com dados da GENERAL LIST KM.
+    Preenche LD BASICO!AN com todos os Numbers KM encontrados na GENERAL LIST KM.
 
-    Regras:
+    Regra:
       LD BASICO coluna B  == GENERAL LIST KM coluna F
       LD BASICO coluna AN = GENERAL LIST KM coluna C, unidos por " / "
-      LD BASICO coluna AO = GENERAL LIST KM coluna D, unidos por " / "
-      LD BASICO coluna AP = GENERAL LIST KM coluna O, unidos por " / "
-      LD BASICO coluna AQ = GENERAL LIST KM coluna P, unidos por " / "
 
     Não altera nenhuma outra coluna da LD BASICO.
     """
@@ -1924,13 +1861,13 @@ def preencher_numero_km_ld_basico(wb, idx_general_km=None):
         idx_general_km = indexar_general_list_km(wb)
 
     if not idx_general_km:
-        log("ℹ️ LD BASICO AN:AQ não atualizadas: índice GENERAL LIST KM vazio.")
+        log("ℹ️ LD BASICO AN não atualizada: índice GENERAL LIST KM vazio.")
         return 0
 
     try:
         ws = wb.sheets[ABA_LD_BASICO]
     except Exception as exc:
-        log(f"⚠️ Aba '{ABA_LD_BASICO}' não encontrada. Colunas AN:AQ não serão atualizadas: {exc}")
+        log(f"⚠️ Aba '{ABA_LD_BASICO}' não encontrada. Coluna AN não será atualizada: {exc}")
         return 0
 
     try:
@@ -1949,21 +1886,16 @@ def preencher_numero_km_ld_basico(wb, idx_general_km=None):
 
     for numero_tp in documentos_tp:
         chave_tp = _normalizar_chave_documento(numero_tp)
-        dados = idx_general_km.get(chave_tp, {})
+        numeros_km = idx_general_km.get(chave_tp, [])
+        valor_an = " / ".join(numeros_km) if numeros_km else ""
+        saida.append([valor_an])
 
-        valor_an = " / ".join(dados.get("numbers", [])) if dados else ""
-        valor_ao = " / ".join(dados.get("titles", [])) if dados else ""
-        valor_ap = " / ".join(dados.get("transmittals", [])) if dados else ""
-        valor_aq = " / ".join(dados.get("datas", [])) if dados else ""
-
-        saida.append([valor_an, valor_ao, valor_ap, valor_aq])
-
-        if valor_an or valor_ao or valor_ap or valor_aq:
+        if valor_an:
             preenchidas += 1
         elif chave_tp:
             sem_vinculo += 1
 
-    destino = ws.range(f"AN2:AQ{last}")
+    destino = ws.range(f"AN2:AN{last}")
     try:
         destino.api.NumberFormat = "@"
     except Exception:
@@ -1976,12 +1908,11 @@ def preencher_numero_km_ld_basico(wb, idx_general_km=None):
         destino.api.Font.Size = 11
         destino.api.HorizontalAlignment = xlCenter
         destino.api.VerticalAlignment = xlCenter
-        destino.api.WrapText = True
     except Exception:
         pass
 
     log(
-        f"✅ LD BASICO colunas AN:AQ atualizadas: {preenchidas} linha(s) preenchida(s), "
+        f"✅ LD BASICO coluna AN atualizada: {preenchidas} linha(s) preenchida(s), "
         f"{sem_vinculo} sem vínculo na GENERAL LIST KM."
     )
     return preenchidas
@@ -2282,14 +2213,10 @@ def processar():
             app.display_alerts = False
             app.screen_updating = False
 
-            # A rotina atual NÃO abre mais a Timeline PCFs.
-            # O Status Final/Intelligence é lido diretamente dos arquivos PCF encontrados
-            # e escrito na LD / LD BASICO. Mantemos status_pcfs vazio apenas para
-            # compatibilidade com o fallback antigo dentro de processar_aba().
-            status_pcfs = {}
-            log("ℹ️ Timeline PCFs desativada nesta rotina; status final será lido diretamente das PCFs.")
+            atualizar_progresso_ld(52, "Carregando Timeline PCFs...", "running", "Abrindo Timeline PCFs para status final.")
+            status_pcfs = carregar_status_pcfs_timeline(app)
 
-            atualizar_progresso_ld(52, "Abrindo planilha LD...", "running", "Abrindo planilha principal LD.")
+            atualizar_progresso_ld(58, "Abrindo planilha LD...", "running", "Abrindo planilha principal LD.")
             wb = app.books.open(PLANILHA)
             pcf_intel_cache = {}
 
@@ -2305,7 +2232,7 @@ def processar():
                 processar_aba(wb, ABA_LD_BASICO, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_pcf_resp, idx_grd_resp, status_pcfs, inserir_revisoes=False, pcf_intel_cache=pcf_intel_cache)
                 sincronizar_pcf_intelligence_ld_basico(wb)
 
-                atualizar_progresso_ld(85, "Atualizando vínculos KM...", "running", "Preenchendo LD BASICO colunas AN:AQ a partir da GENERAL LIST KM.")
+                atualizar_progresso_ld(85, "Atualizando vínculos KM...", "running", "Preenchendo LD BASICO coluna AN a partir da GENERAL LIST KM.")
                 idx_general_km = indexar_general_list_km(wb)
                 preencher_numero_km_ld_basico(wb, idx_general_km)
             except Exception as exc:

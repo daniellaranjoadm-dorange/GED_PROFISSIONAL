@@ -1425,32 +1425,19 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
                         break
 
             # Regra adicional:
-            # Se houver data de recebimento KM, mas o documento ainda não foi
-            # encontrado nas pastas, o status deve ficar "Recebido e não Emitido".
-            #
-            # Layout atual da LD BASICO:
-            #   AP = Transmittal Number
-            #   AQ = Data recebimento KM
-            #
-            # Mantemos fallback em AP apenas para compatibilidade com arquivos antigos,
-            # mas a coluna oficial de data KM agora é AQ.
-            valor_data_recebimento_km = ws[f"AQ{r}"].value
-            if valor_data_recebimento_km in (None, ""):
-                valor_data_recebimento_km = ws[f"AP{r}"].value
-
-            tem_data_recebimento_km = bool(
-                _coerce_to_date(valor_data_recebimento_km)
-                or str(valor_data_recebimento_km or "").strip()
-            )
+            # Se houver data de recebimento na coluna AP, mas o documento ainda
+            # não foi encontrado nas pastas, o status deve ficar "Recebido e não Emitido".
+            # Aplica para LD e LD BASICO.
+            tem_data_recebimento_ap = bool(_coerce_to_date(ws[f"AP{r}"].value) or str(ws[f"AP{r}"].value or "").strip())
 
             # Regra específica LD BASICO:
             # documentos marcados como NOT APPLICABLE na coluna B, quando possuem
-            # data de recebimento KM, devem permanecer como recebidos,
+            # data de recebimento KM na coluna AP, devem permanecer como recebidos,
             # mas sem exigir emissão de GRD.
             not_applicable_com_recebimento = (
                 aba_nome == ABA_LD_BASICO
                 and "NOT APPLICABLE" in str(codigo or "").upper()
-                and tem_data_recebimento_km
+                and tem_data_recebimento_ap
             )
 
             status_auto_h = (
@@ -1459,14 +1446,14 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
                 else "Aguardando PCF"
                 if documento_encontrado and not pcf_recebida_para_rev
                 else "Recebido e não Emitido"
-                if tem_data_recebimento_km
+                if tem_data_recebimento_ap
                 else "Não Recebido"
             )
 
             if not_applicable_com_recebimento:
                 ws[f"H{r}"].value = "Recebido e não Emitido"
                 if LOG_DETALHADO:
-                    log(f"   [H/I] {aba_nome} L{r}: NOT APPLICABLE com data KM preenchida -> H='Recebido e não Emitido'")
+                    log(f"   [H/I] {aba_nome} L{r}: NOT APPLICABLE com AP preenchida -> H='Recebido e não Emitido'")
 
             elif aba_nome == ABA_LD_BASICO:
                 # Regra especial LD BASICO:
@@ -1513,7 +1500,7 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
             if not_applicable_com_recebimento:
                 ws[f"I{r}"].value = "NOT APPLICABLE"
                 if LOG_DETALHADO:
-                    log(f"   [I] {aba_nome} L{r}: NOT APPLICABLE com data KM preenchida -> I='NOT APPLICABLE'")
+                    log(f"   [I] {aba_nome} L{r}: NOT APPLICABLE com AP preenchida -> I='NOT APPLICABLE'")
 
             # PCF normal (L / M) - SEM subpasta de respostas
             info_pcf = None
@@ -1551,8 +1538,7 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
 
                 status_final = _valor_intel(intel_pcf.get("status_final", ""))
                 if not str(status_final).strip():
-                    # Fallback antigo mantido apenas por compatibilidade.
-                    # Nesta rotina status_pcfs fica vazio porque a Timeline PCFs não é mais aberta.
+                    # Fallback antigo: Timeline PCFs apenas para manter compatibilidade.
                     status_final = status_final_da_pcf(status_pcfs, pcf_coluna_l)
 
                 ws[f"N{r}"].value = status_final
@@ -1842,11 +1828,12 @@ def indexar_general_list_km(wb):
         return idx
 
     try:
-        # IMPORTANTE:
-        # A coluna F é a chave oficial (Customer Document Num / Nº Transpetro).
-        # Usar C/D/O/P para calcular a última linha pode capturar formatações/fórmulas
-        # muito abaixo e fazer o Excel ler um intervalo enorme, travando a rotina.
-        last = ws.range("F" + str(ws.cells.last_cell.row)).end("up").row
+        last_c = ws.range("C" + str(ws.cells.last_cell.row)).end("up").row
+        last_d = ws.range("D" + str(ws.cells.last_cell.row)).end("up").row
+        last_f = ws.range("F" + str(ws.cells.last_cell.row)).end("up").row
+        last_o = ws.range("O" + str(ws.cells.last_cell.row)).end("up").row
+        last_p = ws.range("P" + str(ws.cells.last_cell.row)).end("up").row
+        last = max(last_c, last_d, last_f, last_o, last_p)
     except Exception as exc:
         log(f"⚠️ Não foi possível localizar última linha da aba '{ABA_GENERAL_LIST_KM}': {exc}")
         return idx
@@ -2282,14 +2269,10 @@ def processar():
             app.display_alerts = False
             app.screen_updating = False
 
-            # A rotina atual NÃO abre mais a Timeline PCFs.
-            # O Status Final/Intelligence é lido diretamente dos arquivos PCF encontrados
-            # e escrito na LD / LD BASICO. Mantemos status_pcfs vazio apenas para
-            # compatibilidade com o fallback antigo dentro de processar_aba().
-            status_pcfs = {}
-            log("ℹ️ Timeline PCFs desativada nesta rotina; status final será lido diretamente das PCFs.")
+            atualizar_progresso_ld(52, "Carregando Timeline PCFs...", "running", "Abrindo Timeline PCFs para status final.")
+            status_pcfs = carregar_status_pcfs_timeline(app)
 
-            atualizar_progresso_ld(52, "Abrindo planilha LD...", "running", "Abrindo planilha principal LD.")
+            atualizar_progresso_ld(58, "Abrindo planilha LD...", "running", "Abrindo planilha principal LD.")
             wb = app.books.open(PLANILHA)
             pcf_intel_cache = {}
 
@@ -2305,7 +2288,7 @@ def processar():
                 processar_aba(wb, ABA_LD_BASICO, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_pcf_resp, idx_grd_resp, status_pcfs, inserir_revisoes=False, pcf_intel_cache=pcf_intel_cache)
                 sincronizar_pcf_intelligence_ld_basico(wb)
 
-                atualizar_progresso_ld(85, "Atualizando vínculos KM...", "running", "Preenchendo LD BASICO colunas AN:AQ a partir da GENERAL LIST KM.")
+                atualizar_progresso_ld(85, "Atualizando vínculos KM...", "running", "Preenchendo LD BASICO coluna AN a partir da GENERAL LIST KM.")
                 idx_general_km = indexar_general_list_km(wb)
                 preencher_numero_km_ld_basico(wb, idx_general_km)
             except Exception as exc:
