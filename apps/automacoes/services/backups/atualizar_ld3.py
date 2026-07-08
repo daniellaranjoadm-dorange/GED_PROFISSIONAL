@@ -1,0 +1,2445 @@
+import os
+import shutil
+from datetime import datetime, timedelta, date
+import xlwings as xw
+import re
+import threading
+from openpyxl import load_workbook
+
+from apps.automacoes.models import DocumentoLD
+
+
+# ==========================================================
+# CONFIGURAÇÕES
+# ==========================================================
+PLANILHA = r"\\virm-rgr022\FILESERVER\Projetos\05_HANDYMAX\09. Doc Control\3 - LD\I-LD-4880.00-9311-000-CZ1-001_RD.xlsm"
+
+ABA_LD = "LD"
+ABA_LD_MARENOVA = "LD MARENOVA"
+ABA_LD_BASICO = "LD BASICO"
+ABA_GENERAL_LIST_KM = "GENERAL LIST KM"
+ABA_MEDICAO = "MEDIÇÃO"  # exatamente como está no Excel
+
+PASTA_DOCS = r"\\virm-rgr022\FILESERVER\Projetos\05_HANDYMAX\09. Doc Control\10 - Engenharia"
+PASTA_GRD = r"\\virm-rgr022\FILESERVER\Projetos\05_HANDYMAX\09. Doc Control\1 - DOCS EMISSÃO ENGEDOC\Emitidos"
+PASTA_PCF = r"\\virm-rgr022\FILESERVER\Projetos\05_HANDYMAX\09. Doc Control\9 - PCFs Transpetro"
+PASTA_PCF_RESPOSTA = r"\\virm-rgr022\FILESERVER\Projetos\05_HANDYMAX\09. Doc Control\9 - PCFs Transpetro\Respostas PCFs MARENOVA"
+
+TIMELINE_PCF = r"\\virm-rgr022\FILESERVER\Projetos\05_HANDYMAX\09. Doc Control\9 - PCFs Transpetro\Timeline PCFs Transpetro.xlsx"
+
+PASTA_LOGS = r"\\virm-rgr022\FILESERVER\Projetos\05_HANDYMAX\09. Doc Control\3 - LD\Logs"
+PASTA_BACKUPS = os.path.join(PASTA_LOGS, "Backups")
+os.makedirs(PASTA_BACKUPS, exist_ok=True)
+os.makedirs(PASTA_LOGS, exist_ok=True)
+
+EXTENSOES = {".doc", ".docx", ".pdf", ".dwg", ".xls", ".xlsx", ".xlsm"}
+
+# ==========================================================
+# AJUSTES IMPORTANTES (toggle)
+# ==========================================================
+# ✅ LOG detalhado (mostra qual arquivo/pasta foi usado em J/K/L/M/O/P/Q)
+LOG_DETALHADO = True
+
+# ✅ Como preencher a coluna K (data):
+# "DOC" = data do arquivo encontrado dentro do GRD (mais fiel)
+# "GRD" = data da pasta GRD (pode mudar se mexerem na pasta depois)
+DATA_K_ORIGEM = "DOC"
+
+# ✅ Origem de data para PCF (colunas M e P)
+# "MTIME" = data de modificação do arquivo (padrão)
+# "CTIME" = data de criação do arquivo (no Windows costuma ser a criação)
+DATA_PCF_ORIGEM = "MTIME"
+DATA_PCF_RESP_ORIGEM = "MTIME"
+
+# ✅ Preenchimento das colunas de DATA (sem “apagar código”)
+# "DATA"   -> escreve a data
+# "OBS"    -> escreve uma observação (texto) e NÃO grava data
+# "MANTER" -> não mexe no valor atual da célula
+COL_K_MODO = "DATA"
+COL_M_MODO = "DATA"
+COL_P_MODO = "DATA"
+
+OBS_COL_K = "VERIFICAR DATA GRD"
+OBS_COL_M = "VERIFICAR DATA PCF"
+OBS_COL_P = "VERIFICAR DATA RESPOSTA"
+
+# ✅ Congelar painéis (você disse que está salvando com painéis congelados)
+FREEZE_PANES = False
+
+# ✅ Formatação
+APLICAR_FORMATACAO = True
+ULTIMA_COLUNA = "Q"  # na sua LD vai até Q
+
+# Excel constants
+xlCenter = -4108
+xlLeft = -4131
+
+# ✅ Formato de data desejado no Excel PT-BR (para não aparecer yyyy)
+DATE_NUMBERFORMAT_LOCAL = "dd/mm/aaaa"
+DATE_NUMBERFORMAT_FALLBACK = "dd/mm/yyyy"  # formato invariável do Excel
+
+# ==========================================================
+# LOG
+# ==========================================================
+LOG_FILE = None  # será definido no processar()
+
+# ==========================================================
+# PROGRESSO RUNTIME LD (para UI / polling)
+# ==========================================================
+_PROGRESSO_LOCK = threading.Lock()
+PROGRESSO_LD = {
+    "status": "idle",
+    "percentual": 0,
+    "etapa": "Aguardando execução.",
+    "mensagem": "Aguardando execução da Atualização LD.",
+    "iniciado_em": "",
+    "finalizado_em": "",
+    "erro": "",
+}
+
+
+def atualizar_progresso_ld(percentual=None, etapa=None, status=None, mensagem=None, erro=None):
+    """Atualiza o estado de progresso da Atualização LD para leitura pela interface."""
+    with _PROGRESSO_LOCK:
+        if percentual is not None:
+            try:
+                PROGRESSO_LD["percentual"] = max(0, min(100, int(percentual)))
+            except Exception:
+                pass
+
+        if etapa is not None:
+            PROGRESSO_LD["etapa"] = str(etapa)
+
+        if status is not None:
+            PROGRESSO_LD["status"] = str(status)
+
+        if mensagem is not None:
+            PROGRESSO_LD["mensagem"] = str(mensagem)
+
+        if erro is not None:
+            PROGRESSO_LD["erro"] = str(erro)
+
+        if status == "running" and not PROGRESSO_LD.get("iniciado_em"):
+            PROGRESSO_LD["iniciado_em"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            PROGRESSO_LD["finalizado_em"] = ""
+            PROGRESSO_LD["erro"] = ""
+
+        if status in {"done", "error", "blocked", "cancelado"}:
+            PROGRESSO_LD["finalizado_em"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+
+    return obter_progresso_ld()
+
+
+def obter_progresso_ld():
+    """Retorna uma cópia segura do progresso atual."""
+    with _PROGRESSO_LOCK:
+        return dict(PROGRESSO_LD)
+
+
+def resetar_progresso_ld():
+    """Reseta o progresso antes de uma nova execução."""
+    with _PROGRESSO_LOCK:
+        PROGRESSO_LD.update({
+            "status": "idle",
+            "percentual": 0,
+            "etapa": "Aguardando execução.",
+            "mensagem": "Aguardando execução da Atualização LD.",
+            "iniciado_em": "",
+            "finalizado_em": "",
+            "erro": "",
+        })
+    return obter_progresso_ld()
+
+
+def log(msg: str):
+    print(msg)
+    if LOG_FILE:
+        try:
+            with open(LOG_FILE, "a", encoding="utf-8") as f:
+                f.write(msg + "\n")
+        except Exception:
+            pass
+
+def _fmt_dt(dt):
+    if not dt:
+        return "-"
+    try:
+        return dt.strftime("%d/%m/%Y %H:%M:%S")
+    except Exception:
+        return str(dt)
+
+# ==========================================================
+# BACKUP
+# ==========================================================
+def backup_planilha():
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    nome, ext = os.path.splitext(os.path.basename(PLANILHA))
+    destino = os.path.join(PASTA_BACKUPS, f"{nome}_BK_{ts}{ext}")
+    shutil.copy2(PLANILHA, destino)
+    log(f"🔒 Backup criado: {destino}")
+    return destino
+
+# ==========================================================
+# DATA HELPERS (garante data real + dd/mm/aaaa)
+# ==========================================================
+def _coerce_to_date(v):
+    """Converte o que vier (datetime/date/str/serial) para date, quando possível."""
+    if v in (None, ""):
+        return None
+
+    if isinstance(v, datetime):
+        return v.date()
+
+    if isinstance(v, date):
+        return v
+
+    # Excel pode retornar serial float em alguns casos
+    if isinstance(v, (int, float)):
+        try:
+            base = datetime(1899, 12, 30)  # base compatível com Excel
+            return (base + timedelta(days=float(v))).date()
+        except Exception:
+            return None
+
+    if isinstance(v, str):
+        s = v.strip()
+        if not s:
+            return None
+        for fmt in ("%d/%m/%Y", "%d/%m/%y", "%Y-%m-%d"):
+            try:
+                return datetime.strptime(s, fmt).date()
+            except Exception:
+                pass
+        return None
+
+    return None
+
+def _aplicar_formato_data(cell):
+    """Aplica formato de data real no Excel sem deixar 'yyyy' literal."""
+    try:
+        cell.api.NumberFormat = DATE_NUMBERFORMAT_FALLBACK
+    except Exception:
+        pass
+
+    try:
+        cell.api.NumberFormatLocal = DATE_NUMBERFORMAT_LOCAL
+    except Exception:
+        pass
+
+def setar_data(cell, v):
+    """Escreve data como data REAL no Excel e força formato dd/mm/aaaa (PT-BR)."""
+    d = _coerce_to_date(v)
+    if d is None:
+        cell.value = None
+        return
+    cell.value = d
+    _aplicar_formato_data(cell)
+
+def forcar_numberformat_coluna(ws, col_letter, start_row, end_row):
+    """Força formato de data real no Excel sem exibir 'yyyy' literal."""
+    if end_row < start_row:
+        return
+
+    rng = ws.range(f"{col_letter}{start_row}:{col_letter}{end_row}")
+
+    try:
+        rng.api.NumberFormat = DATE_NUMBERFORMAT_FALLBACK
+    except Exception:
+        pass
+
+    try:
+        rng.api.NumberFormatLocal = DATE_NUMBERFORMAT_LOCAL
+    except Exception:
+        pass
+
+def _file_datetime(path: str, origem: str) -> datetime | None:
+    """Retorna datetime do arquivo conforme origem (MTIME/CTIME)."""
+    try:
+        if origem.upper() == "CTIME":
+            return datetime.fromtimestamp(os.path.getctime(path))
+        return datetime.fromtimestamp(os.path.getmtime(path))
+    except Exception:
+        return None
+
+# ==========================================================
+# NORMALIZAR REV
+# ==========================================================
+def normalizar_rev(v):
+    if v is None:
+        return ""
+    if isinstance(v, (int, float)):
+        return str(int(v))
+
+    s = str(v).strip().upper()
+    if s.startswith("R"):
+        s = s[1:].strip()
+
+    if s.isdigit():
+        return str(int(s))
+
+    return s
+
+def rev_key(rev: str):
+    s = (rev or "").strip().upper()
+    if s.isdigit():
+        return (0, int(s))
+    if s.isalpha():
+        n = 0
+        for ch in s:
+            n = n * 26 + (ord(ch) - ord('A') + 1)
+        return (1, n)
+    return (2, s)
+
+def _suffix_key(s: str) -> int:
+    s = (s or "").strip().upper()
+    if s == "":
+        return -1
+    if s.isalpha():
+        n = 0
+        for ch in s:
+            n = n * 26 + (ord(ch) - ord('A') + 1)
+        return n
+    return -1
+
+def _split_by_base(rev_pcf: str, base: str) -> tuple[bool, str]:
+    rev_pcf = (rev_pcf or "").strip().upper()
+    base = (base or "").strip().upper()
+    if not base or not rev_pcf:
+        return (False, "")
+    if rev_pcf == base:
+        return (True, "")
+    if rev_pcf.startswith(base):
+        return (True, rev_pcf[len(base):])
+    return (False, "")
+
+# ==========================================================
+# EXTRAIR GRD DO CAMINHO
+# ==========================================================
+def extrair_grd_do_caminho(path):
+    m = re.search(r"(GRD-\d+)", path, re.I)
+    return m.group(1).upper() if m else ""
+
+# ==========================================================
+# HELPERS (HYPERLINK)
+# ==========================================================
+def normalizar_endereco_hyperlink(endereco):
+    """
+    Garante que caminhos UNC sejam gravados no Excel como caminho de rede normal,
+    sem prefixo file:///.
+    """
+    s = str(endereco or "").strip()
+
+    if not s:
+        return ""
+
+    s = s.replace("%20", " ")
+    lower = s.lower()
+
+    if lower.startswith("file:///"):
+        s = s[8:]
+    elif lower.startswith("file://"):
+        s = s[7:]
+    elif lower.startswith("file:/"):
+        s = s[6:]
+
+    # Remove uma barra inicial indevida antes de caminho UNC.
+    while s.startswith("/") and not s.startswith("//"):
+        s = s[1:]
+
+    # Converte //servidor/pasta para \\servidor\pasta.
+    if s.startswith("//"):
+        s = "\\\\" + s.lstrip("/").replace("/", "\\")
+
+    # Preserva caminhos UNC já corretos.
+    return s
+
+
+def limpar_hyperlink(cell):
+    try:
+        cell.api.Hyperlinks.Delete()
+    except Exception:
+        pass
+
+def setar_hyperlink(cell, endereco, texto):
+    """
+    Cria hyperlink preservando caminho UNC de rede.
+
+    Evita links quebrados do tipo file:///\\servidor\pasta\arquivo.xlsx.
+    """
+    limpar_hyperlink(cell)
+
+    endereco_limpo = normalizar_endereco_hyperlink(endereco)
+    cell.value = texto
+
+    if not endereco_limpo:
+        return
+
+    try:
+        cell.api.Hyperlinks.Add(
+            Anchor=cell.api,
+            Address=endereco_limpo,
+            TextToDisplay=str(texto or "")
+        )
+    except Exception:
+        cell.add_hyperlink(endereco_limpo, texto)
+
+
+# ==========================================================
+# HELPERS (AUTOFILTER)
+# ==========================================================
+def capturar_autofiltro(ws):
+    """Captura o AutoFilter atual (range + critérios simples) para restaurar no final."""
+    try:
+        af = ws.api.AutoFilter
+        if af is None:
+            return None
+        rng = af.Range
+        if rng is None:
+            return None
+        state = {"has_autofilter": True, "range": rng.Address, "criteria": []}
+
+        try:
+            filters = af.Filters
+            for i in range(1, filters.Count + 1):
+                f = filters.Item(i)
+                try:
+                    on = bool(f.On)
+                except Exception:
+                    on = False
+                if not on:
+                    continue
+
+                c1 = None
+                c2 = None
+                op = None
+                try:
+                    c1 = f.Criteria1
+                except Exception:
+                    pass
+                try:
+                    op = f.Operator
+                except Exception:
+                    pass
+                try:
+                    c2 = f.Criteria2
+                except Exception:
+                    pass
+
+                state["criteria"].append((i, c1, op, c2))
+        except Exception:
+            pass
+
+        return state
+    except Exception:
+        return None
+
+def remover_autofiltro(ws):
+    try:
+        if ws.api.AutoFilterMode:
+            ws.api.AutoFilterMode = False
+    except Exception:
+        pass
+
+def restaurar_autofiltro(ws, state):
+    if not state or not state.get("has_autofilter") or not state.get("range"):
+        return
+    try:
+        rng = ws.api.Range(state["range"])
+        try:
+            rng.AutoFilter()
+        except Exception:
+            pass
+
+        for field, c1, op, c2 in state.get("criteria", []):
+            try:
+                if c2 not in (None, ""):
+                    rng.AutoFilter(Field=field, Criteria1=c1, Operator=op, Criteria2=c2)
+                elif op not in (None, 0, ""):
+                    rng.AutoFilter(Field=field, Criteria1=c1, Operator=op)
+                else:
+                    rng.AutoFilter(Field=field, Criteria1=c1)
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+def garantir_autofiltro(ws):
+    """
+    Garante que a aba fique com setinhas de filtro no cabeçalho (linha 1).
+    Útil quando não havia estado capturado/restaurável ou quando a restauração falha.
+    """
+    try:
+        if ws.api.AutoFilterMode:
+            return
+    except Exception:
+        pass
+
+    try:
+        ws.range(f"A1:{ULTIMA_COLUNA}1").api.AutoFilter()
+    except Exception:
+        try:
+            ws.api.Range("A1").CurrentRegion.AutoFilter()
+        except Exception:
+            pass
+
+# ==========================================================
+# INDEXADORES
+# ==========================================================
+def indexar_engenharia_info():
+    """
+    Retorna:
+      idx[codigo][rev] = { "path": pasta_onde_achou, "file": arquivo, "date": mtime_arquivo }
+    Se encontrar duplicado (mesmo codigo+rev em lugares diferentes), mantém o mais recente.
+    """
+    idx = {}
+    for root, _, files in os.walk(PASTA_DOCS):
+        for f in files:
+            nome, ext = os.path.splitext(f)
+            if ext.lower() not in EXTENSOES:
+                continue
+            if "_R" not in nome:
+                continue
+
+            codigo, resto = nome.split("_R", 1)
+            mrev = re.match(r"([0-9A-Z]+)", str(resto).strip().upper())
+            if not mrev:
+                continue
+
+            rev = normalizar_rev(mrev.group(1))
+            if not rev:
+                continue
+
+            full = os.path.join(root, f)
+            dt = _file_datetime(full, "MTIME")
+
+            codigo = codigo.strip()
+            existente = idx.get(codigo, {}).get(rev)
+            if (existente is None) or (dt and dt > existente["date"]):
+                idx.setdefault(codigo, {})[rev] = {
+                    "path": root,
+                    "file": full,
+                    "date": dt
+                }
+    return idx
+
+def indexar_grds():
+    """
+    ✅ J: link para a pasta raiz do GRD (GRD-XXXX)
+    ✅ K: data conforme DATA_K_ORIGEM:
+        - "DOC" => mtime do arquivo encontrado dentro do GRD (recomendado)
+        - "GRD" => mtime da pasta raiz do GRD
+    """
+    idx = {}
+    for root, _, files in os.walk(PASTA_GRD):
+        grd = extrair_grd_do_caminho(root)
+        if not grd:
+            continue
+
+        # tentar apontar para a pasta raiz do GRD
+        grd_dir = os.path.join(PASTA_GRD, grd)
+        if not os.path.isdir(grd_dir):
+            grd_dir = root  # fallback
+
+        dt_grd = None
+        try:
+            dt_grd = datetime.fromtimestamp(os.path.getmtime(grd_dir))
+        except Exception:
+            dt_grd = None
+
+        for f in files:
+            nome = os.path.splitext(f)[0]
+            if "_R" not in nome:
+                continue
+
+            codigo, resto = nome.split("_R", 1)
+            mrev = re.match(r"([0-9A-Z]+)", resto.strip().upper())
+            if not mrev:
+                continue
+
+            rev = normalizar_rev(mrev.group(1))
+            full = os.path.join(root, f)
+
+            dt_doc = _file_datetime(full, "MTIME")
+            if DATA_K_ORIGEM.upper() == "GRD" and dt_grd:
+                dt_k = dt_grd
+            else:
+                dt_k = dt_doc or dt_grd
+
+            codigo = codigo.strip()
+            existente = idx.get(codigo, {}).get(rev)
+
+            # se houver duplicado, fica com o mais recente (dt_k)
+            if existente is None:
+                escolher = True
+            else:
+                ex_dt = existente.get("date")
+                escolher = (dt_k and ex_dt and dt_k > ex_dt) or (ex_dt is None and dt_k is not None)
+
+            if escolher:
+                idx.setdefault(codigo, {})[rev] = {
+                    "grd": grd,
+                    "path": grd_dir,
+                    "date": dt_k,
+                    "doc_file": full,   # para LOG detalhado
+                    "doc_dt": dt_doc,
+                    "grd_dt": dt_grd
+                }
+    return idx
+
+def indexar_pcfs(pasta, excluir_subpastas=None, data_origem="MTIME"):
+    """
+    ✅ Indexa PCFs (L/M ou O/P).
+    - excluir_subpastas: lista de subpastas que NÃO devem entrar no index.
+    - se existir duplicado (mesmo código+rev), fica com o mais recente (mtime/ctime).
+    """
+    idx = {}
+    excluir_subpastas = excluir_subpastas or []
+    excluir_norm = [os.path.normpath(p).lower() for p in excluir_subpastas]
+
+    for root, _, files in os.walk(pasta):
+        root_norm = os.path.normpath(root).lower()
+        if any(root_norm.startswith(p) for p in excluir_norm):
+            continue
+
+        for f in files:
+            nome, ext = os.path.splitext(f)
+            if ext.lower() not in (".xlsx", ".xlsm"):
+                continue
+            if not nome.upper().startswith("PCF-"):
+                continue
+            if "_R" not in nome:
+                continue
+
+            base = nome[4:]
+            codigo, resto = base.split("_R", 1)
+            mrev = re.match(r"([0-9A-Z]+)", resto.strip().upper())
+            if not mrev:
+                continue
+
+            rev = normalizar_rev(mrev.group(1))
+            caminho = os.path.join(root, f)
+            dt = _file_datetime(caminho, data_origem)
+
+            codigo = codigo.strip()
+            existente = idx.get(codigo, {}).get(rev)
+            info = {
+                "pcf": nome,
+                "path": caminho,
+                "date": dt,
+                "rev": rev
+            }
+
+            if (existente is None) or (dt and dt > existente["date"]):
+                idx.setdefault(codigo, {})[rev] = info
+    return idx
+
+def indexar_grd_resposta_pcf():
+    """
+    Mapeia PCF-*.xls[xm] -> GRD-XXXX (para preencher coluna Q)
+    """
+    idx = {}
+    for root, _, files in os.walk(PASTA_GRD):
+        grd = extrair_grd_do_caminho(root)
+        if not grd:
+            continue
+
+        for f in files:
+            nome, ext = os.path.splitext(f)
+            if ext.lower() not in (".xlsx", ".xlsm"):
+                continue
+            if nome.upper().startswith("PCF-"):
+                idx[nome.upper()] = grd
+    return idx
+
+
+# ==========================================================
+# STATUS FINAL PCF (Timeline PCFs)
+# ==========================================================
+def normalizar_chave_pcf(v):
+    """
+    Mantém a chave exatamente como aparece na célula, apenas removendo espaços
+    no começo/fim.
+
+    Regra solicitada:
+      LD coluna L  ==  Timeline PCFs / aba "PCFs Recebidas TP" / coluna B
+
+    Não remove extensão, não remove revisão, não converte para maiúsculo
+    e não faz busca parcial.
+    """
+    return str(v or "").strip()
+
+
+
+def _normalizar_header(valor):
+    """Normaliza cabeçalhos/status de PCFs para comparação segura."""
+    if valor is None:
+        return ""
+
+    texto = str(valor).strip().upper()
+    if not texto:
+        return ""
+
+    texto = texto.replace("\n", " ").replace("\r", " ")
+    texto = (
+        texto.replace("Á", "A")
+        .replace("À", "A")
+        .replace("Â", "A")
+        .replace("Ã", "A")
+        .replace("É", "E")
+        .replace("Ê", "E")
+        .replace("Í", "I")
+        .replace("Ó", "O")
+        .replace("Ô", "O")
+        .replace("Õ", "O")
+        .replace("Ú", "U")
+        .replace("Ç", "C")
+    )
+    texto = re.sub(r"\s+", " ", texto).strip()
+    return texto
+
+
+def _valor_intel(valor):
+    """Preserva valores de inteligência da PCF em formato seguro para Excel."""
+    if valor is None:
+        return ""
+
+    if isinstance(valor, float):
+        return int(valor) if valor.is_integer() else valor
+
+    if isinstance(valor, int):
+        return valor
+
+    return str(valor).strip()
+
+
+def _pcf_intel_tem_valor(intel: dict) -> bool:
+    if not isinstance(intel, dict):
+        return False
+    return any(str(intel.get(k, "")).strip() for k in ("qtd_comentarios", "open_comments", "under_review", "status_final"))
+
+
+def _intel_num(valor):
+    """Converte valores de comentários para número quando possível, preservando vazio."""
+    if valor in (None, ""):
+        return ""
+    if isinstance(valor, (int, float)):
+        try:
+            return int(valor)
+        except Exception:
+            return valor
+    s = str(valor).strip()
+    if not s:
+        return ""
+    s_num = s.replace(",", ".")
+    try:
+        n = float(s_num)
+        return int(n) if n.is_integer() else n
+    except Exception:
+        return s
+
+
+def _status_prioridade_pcf(status):
+    s = _normalizar_header(status)
+    prioridade = {
+        "OPEN": 50,
+        "NOT RELEASED": 40,
+        "RELEASED WITH COMMENTS": 35,
+        "UNDER REVIEW": 30,
+        "RELEASED": 20,
+        "CLOSED": 10,
+        "": 0,
+    }
+    return prioridade.get(s, 1)
+
+
+def _valor_num_score(valor):
+    v = _intel_num(valor)
+    if isinstance(v, (int, float)):
+        return float(v)
+    try:
+        return float(str(v).replace(",", "."))
+    except Exception:
+        return 0.0
+
+
+def _melhor_intel_pcf(atual, novo, linha_atual=0, linha_nova=0):
+    """
+    Escolhe a melhor linha quando a PCF possui mais de uma ocorrência de inteligência.
+    Critério:
+      1) maior prioridade de status operacional;
+      2) maior Open Comments;
+      3) maior Qtd Comentários;
+      4) maior Under Review;
+      5) última linha encontrada.
+    """
+    if not atual:
+        return novo, linha_nova
+
+    score_atual = (
+        _status_prioridade_pcf(atual.get("status_final", "")),
+        _valor_num_score(atual.get("open_comments", "")),
+        _valor_num_score(atual.get("qtd_comentarios", "")),
+        _valor_num_score(atual.get("under_review", "")),
+        linha_atual,
+    )
+    score_novo = (
+        _status_prioridade_pcf(novo.get("status_final", "")),
+        _valor_num_score(novo.get("open_comments", "")),
+        _valor_num_score(novo.get("qtd_comentarios", "")),
+        _valor_num_score(novo.get("under_review", "")),
+        linha_nova,
+    )
+
+    if score_novo >= score_atual:
+        return novo, linha_nova
+
+    return atual, linha_atual
+
+
+def _cell_value_openpyxl(ws, row, col):
+    try:
+        return ws.cell(row=row, column=col).value
+    except Exception:
+        return None
+
+
+def _achar_header_pcf_openpyxl(ws):
+    """
+    Localiza a linha/colunas da inteligência dentro da própria PCF.
+    Procura pelos cabeçalhos em qualquer aba, nas primeiras linhas.
+    """
+    aliases = {
+        "qtd_comentarios": {
+            "QTD COMENTARIOS", "QTD COMENTARIO", "QTDE COMENTARIOS",
+            "QTD COMMENTS", "COMMENTS QTY", "NB PENDING COMMENTS", "PENDING COMMENTS",
+        },
+        "open_comments": {
+            "OPEN COMMENTS", "OPEN COMMENT", "OPEN COMMER", "OPEN COMMENTS QTY",
+        },
+        "under_review": {
+            "UNDER REVIEW", "UNDER REVIE", "UNDER REVIEWS",
+        },
+        "status_final": {
+            "STATUS FINAL PCF", "STATUS FINAL", "FINAL STATUS", "PCF FINAL STATUS",
+        },
+    }
+
+    max_row_scan = min(ws.max_row or 1, 30)
+    max_col_scan = min(ws.max_column or 1, 120)
+
+    melhor = None
+    melhor_qtd = 0
+
+    for row in range(1, max_row_scan + 1):
+        encontrados = {}
+        for col in range(1, max_col_scan + 1):
+            h = _normalizar_header(_cell_value_openpyxl(ws, row, col))
+            if not h:
+                continue
+
+            for campo, nomes in aliases.items():
+                if h in nomes and campo not in encontrados:
+                    encontrados[campo] = col
+
+        qtd = len(encontrados)
+        if qtd > melhor_qtd:
+            melhor_qtd = qtd
+            melhor = (row, encontrados)
+
+        if qtd >= 3:
+            return row, encontrados
+
+    return melhor if melhor_qtd else (None, {})
+
+
+def ler_pcf_intelligence_arquivo(caminho_pcf, cache=None):
+    """
+    Lê a inteligência operacional diretamente da própria PCF encontrada na coluna L.
+
+    Retorna:
+      qtd_comentarios -> AV
+      open_comments   -> AW
+      under_review    -> AX
+      status_final    -> AY e N
+    """
+    caminho = normalizar_endereco_hyperlink(caminho_pcf)
+
+    if cache is not None and caminho in cache:
+        return cache[caminho]
+
+    vazio = {
+        "qtd_comentarios": "",
+        "open_comments": "",
+        "under_review": "",
+        "status_final": "",
+    }
+
+    if not caminho or not os.path.exists(caminho):
+        if cache is not None:
+            cache[caminho] = vazio
+        return vazio
+
+    try:
+        wb_pcf = load_workbook(caminho, read_only=True, data_only=True)
+    except Exception as exc:
+        log(f"⚠️ Não foi possível abrir PCF para ler comentários: {caminho} | {exc}")
+        if cache is not None:
+            cache[caminho] = vazio
+        return vazio
+
+    try:
+        melhor_intel = {}
+        melhor_linha = 0
+
+        for ws_pcf in wb_pcf.worksheets:
+            header_row, cols = _achar_header_pcf_openpyxl(ws_pcf)
+            if not header_row or not cols:
+                continue
+
+            # Se a PCF tiver apenas uma linha de resumo, pega essa linha.
+            # Se tiver múltiplas linhas, escolhe pela prioridade operacional.
+            max_row = ws_pcf.max_row or header_row
+            for rr in range(header_row + 1, max_row + 1):
+                intel = {
+                    "qtd_comentarios": _intel_num(_cell_value_openpyxl(ws_pcf, rr, cols.get("qtd_comentarios", 0))),
+                    "open_comments": _intel_num(_cell_value_openpyxl(ws_pcf, rr, cols.get("open_comments", 0))),
+                    "under_review": _intel_num(_cell_value_openpyxl(ws_pcf, rr, cols.get("under_review", 0))),
+                    "status_final": _valor_intel(_cell_value_openpyxl(ws_pcf, rr, cols.get("status_final", 0))),
+                }
+
+                if not _pcf_intel_tem_valor(intel):
+                    continue
+
+                melhor_intel, melhor_linha = _melhor_intel_pcf(
+                    melhor_intel,
+                    intel,
+                    melhor_linha,
+                    rr,
+                )
+
+        resultado = {
+            "qtd_comentarios": _valor_intel(melhor_intel.get("qtd_comentarios", "")),
+            "open_comments": _valor_intel(melhor_intel.get("open_comments", "")),
+            "under_review": _valor_intel(melhor_intel.get("under_review", "")),
+            "status_final": _valor_intel(melhor_intel.get("status_final", "")),
+        } if melhor_intel else vazio
+
+        if cache is not None:
+            cache[caminho] = resultado
+
+        return resultado
+
+    except Exception as exc:
+        log(f"⚠️ Falha lendo inteligência da PCF: {caminho} | {exc}")
+        if cache is not None:
+            cache[caminho] = vazio
+        return vazio
+
+    finally:
+        try:
+            wb_pcf.close()
+        except Exception:
+            pass
+
+
+def carregar_status_pcfs_timeline(app):
+    """
+    Carrega da Timeline PCFs:
+      Aba: PCFs Recebidas TP
+      Chave exata: coluna B (PCF LINK)
+      Valor retornado: coluna L (STATUS FINAL)
+
+    Esse índice será usado para preencher LD!N.
+    A coluna M da LD permanece sendo a data de recebimento da PCF.
+    """
+    idx = {}
+
+    if not os.path.exists(TIMELINE_PCF):
+        log(f"⚠️ Timeline PCFs não encontrada: {TIMELINE_PCF}")
+        return idx
+
+    wb_tl = None
+    try:
+        wb_tl = app.books.open(TIMELINE_PCF, update_links=False, read_only=True)
+        ws_tl = wb_tl.sheets["PCFs Recebidas TP"]
+
+        last = ws_tl.range("B" + str(ws_tl.cells.last_cell.row)).end("up").row
+
+        duplicadas = 0
+        vazias = 0
+
+        for rr in range(2, last + 1):
+            chave = normalizar_chave_pcf(ws_tl[f"B{rr}"].value)
+            status = ws_tl[f"L{rr}"].value
+
+            if not chave:
+                vazias += 1
+                continue
+
+            if chave in idx:
+                duplicadas += 1
+
+            idx[chave] = status
+
+        log(f"📘 Status Final PCFs carregados da Timeline: {len(idx)} chaves exatas.")
+        if duplicadas:
+            log(f"⚠️ Timeline possui {duplicadas} chave(s) duplicada(s) na coluna B; valeu a última ocorrência.")
+        if vazias:
+            log(f"ℹ️ Timeline possui {vazias} linha(s) sem PCF LINK na coluna B.")
+
+        return idx
+
+    except Exception as e:
+        log(f"⚠️ Não foi possível carregar Status Final da Timeline PCFs: {e}")
+        return idx
+
+    finally:
+        if wb_tl is not None:
+            try:
+                wb_tl.close()
+            except Exception:
+                pass
+
+
+def status_final_da_pcf(status_pcfs, pcf_nome_coluna_l):
+    """
+    PROCV exato:
+      procura LD coluna L exatamente na Timeline coluna B
+      retorna Timeline coluna L
+    """
+    chave = normalizar_chave_pcf(pcf_nome_coluna_l)
+    return status_pcfs.get(chave, "")
+
+
+# ==========================================================
+# INSERIR REVISÕES NOVAS (ENGENHARIA) + LOG
+# ==========================================================
+def inserir_revisoes_novas(ws, idx_eng):
+    last = ws.range("B" + str(ws.cells.last_cell.row)).end("up").row
+
+    rev_rows = {}
+    all_rows = {}
+
+    for r in range(2, last + 1):
+        codigo = str(ws[f"B{r}"].value or "").strip()
+        if not codigo:
+            continue
+        rev = normalizar_rev(ws[f"C{r}"].value)
+        rev_rows.setdefault(codigo, {})[rev] = r
+        all_rows.setdefault(codigo, []).append(r)
+
+    codigos_ordenados = sorted(all_rows.keys(), key=lambda c: max(all_rows[c]), reverse=True)
+
+    total_inseridas = 0
+    inseridas_map = {}
+
+    for codigo in codigos_ordenados:
+        eng_revs = set(idx_eng.get(codigo, {}).keys())
+        if not eng_revs:
+            continue
+
+        sheet_revs = set(rev_rows.get(codigo, {}).keys())
+        faltantes = sorted(list(eng_revs - sheet_revs), key=rev_key)
+        if not faltantes:
+            continue
+
+        base_map = rev_rows[codigo]
+        if "0" in base_map:
+            base_row = base_map["0"]
+        else:
+            menor_rev = sorted(sheet_revs, key=rev_key)[0]
+            base_row = base_map[menor_rev]
+
+        insert_at = max(all_rows[codigo]) + 1
+
+        for new_rev in faltantes:
+            ws.api.Rows(base_row).Copy()
+            ws.api.Rows(insert_at).Insert()
+
+            ws[f"C{insert_at}"].value = new_rev
+
+            ws.range(f"H{insert_at}:Q{insert_at}").value = None
+            for col in ["B", "J", "L", "O", "Q"]:
+                limpar_hyperlink(ws[f"{col}{insert_at}"])
+
+            total_inseridas += 1
+            inseridas_map.setdefault(codigo, []).append(new_rev)
+
+            rev_rows[codigo][new_rev] = insert_at
+            all_rows[codigo].append(insert_at)
+            insert_at += 1
+
+    try:
+        ws.book.app.api.CutCopyMode = False
+    except Exception:
+        pass
+
+    if total_inseridas:
+        log(f"➕ Revisões novas inseridas na planilha ({ws.name}): {total_inseridas}")
+        for codigo, revs in sorted(inseridas_map.items()):
+            log(f"   - {codigo}: inseriu revisões {', '.join(revs)}")
+    else:
+        log(f"ℹ️ Nenhuma revisão nova para inserir (Engenharia x Planilha) na aba {ws.name}.")
+
+    return inseridas_map, total_inseridas
+
+# ==========================================================
+# FORMATAÇÃO
+# ==========================================================
+def _set_cell_text(cell, texto: str):
+    """Escreve texto na célula (sem formato de data)."""
+    cell.value = texto
+    try:
+        cell.api.NumberFormat = "@"
+    except Exception:
+        pass
+
+def aplicar_formatacao(ws):
+    # última linha usando coluna B (mais estável)
+    last_row = ws.range("B" + str(ws.cells.last_cell.row)).end("up").row
+    if last_row < 2:
+        return
+
+    # última coluna fixa (Q) para garantir aplicar tudo
+    try:
+        last_col = ws.range(f"{ULTIMA_COLUNA}1").column
+    except Exception:
+        last_col = ws.range("A1").end("right").column
+
+    rng_all = ws.range((1, 1), (last_row, last_col))
+
+    # padrão geral
+    rng_all.api.Font.Name = "Arial"
+    rng_all.api.Font.Size = 11
+    rng_all.api.VerticalAlignment = xlCenter
+    rng_all.api.HorizontalAlignment = xlCenter
+
+    # alinhamento específico de texto
+    ws.range("D:D").api.HorizontalAlignment = xlLeft
+    ws.range("E:E").api.HorizontalAlignment = xlLeft
+    ws.range("F:F").api.HorizontalAlignment = xlLeft
+
+    # bordas
+    for i in range(7, 13):
+        rng_all.api.Borders(i).LineStyle = 1
+        rng_all.api.Borders(i).Weight = 2
+
+    # cabeçalho
+    header = ws.range((1, 1), (1, last_col))
+    header.api.Font.Bold = True
+
+    # freeze panes (ou desfazer)
+    try:
+        ws.api.Activate()
+        win = ws.book.app.api.ActiveWindow
+        if FREEZE_PANES:
+            win.SplitRow = 1
+            win.SplitColumn = 0
+            win.FreezePanes = True
+        else:
+            win.FreezePanes = False
+            win.SplitRow = 0
+            win.SplitColumn = 0
+    except Exception:
+        pass
+
+    # zebra
+    for r in range(2, last_row + 1):
+        try:
+            if r % 2 == 0:
+                ws.range((r, 1), (r, last_col)).api.Interior.Color = 0xF2F2F2
+            else:
+                ws.range((r, 1), (r, last_col)).api.Interior.Pattern = -4142
+        except Exception:
+            pass
+
+    # remove formatações condicionais
+    try:
+        ws.api.Cells.FormatConditions.Delete()
+    except Exception:
+        pass
+
+    # condicional (H, I, N)
+    try:
+        col_I = ws.range(f"I2:I{last_row}")
+        col_I.api.FormatConditions.Add(Type=1, Operator=3, Formula1='="Emitido"').Interior.Color = 0xC6EFCE
+        col_I.api.FormatConditions.Add(Type=1, Operator=3, Formula1='="Não Emitido"').Interior.Color = 0xFCE4D6
+
+        col_H = ws.range(f"H2:H{last_row}")
+        col_H.api.FormatConditions.Add(Type=1, Operator=3, Formula1='="Recebido"').Interior.Color = 0xC6EFCE
+        col_H.api.FormatConditions.Add(Type=1, Operator=3, Formula1='="Não Recebido"').Interior.Color = 0xFCE4D6
+
+        # N agora é STATUS FINAL da Timeline PCFs.
+        # Não aplicar regra antiga "Recebida/Não Recebida", para não conflitar com valores como NOT RELEASED.
+    except Exception:
+        pass
+
+    # ✅ Forçar formato de DATA (K, M, P) -> dd/mm/aaaa (PT-BR)
+    forcar_numberformat_coluna(ws, "K", 2, last_row)
+    forcar_numberformat_coluna(ws, "M", 2, last_row)
+    forcar_numberformat_coluna(ws, "P", 2, last_row)
+
+    # ✅ Colunas pedidas: Arial 11 + centralizado + alinhado no meio
+    for col in ["B", "J", "O", "P", "Q"]:
+        try:
+            rng = ws.range(f"{col}2:{col}{last_row}")
+            rng.api.Font.Name = "Arial"
+            rng.api.Font.Size = 11
+            rng.api.HorizontalAlignment = xlCenter
+            rng.api.VerticalAlignment = xlCenter
+        except Exception:
+            pass
+
+# ==========================================================
+# MEDIÇÃO (copiar aba -> MEDIÇÃO)
+# ==========================================================
+def extrair_disciplina(codigo: str) -> str:
+    if not codigo:
+        return ""
+    s = str(codigo).upper()
+    m = re.search(r"I-([A-Z0-9]{2})", s)
+    return m.group(1) if m else ""
+
+def _flatten(col):
+    if isinstance(col, list) and col and isinstance(col[0], list):
+        return [linha[0] for linha in col]
+    elif isinstance(col, list):
+        return col
+    else:
+        return [col]
+
+def atualizar_medicao(wb, aba_origem):
+    ws_origem = wb.sheets[aba_origem]
+    try:
+        ws_destino = wb.sheets[ABA_MEDICAO]
+    except Exception:
+        ws_destino = wb.sheets.add(ABA_MEDICAO)
+        log(f"🆕 Aba '{ABA_MEDICAO}' não existia e foi criada.")
+
+    last_row_origem = ws_origem.range("B" + str(ws_origem.cells.last_cell.row)).end("up").row
+    if last_row_origem < 2:
+        log(f"⚠️ Aba '{aba_origem}' sem linhas para copiar para MEDIÇÃO.")
+        return
+
+    faixa_codigos = ws_origem.range(f"B2:B{last_row_origem}")
+    faixa_revs    = ws_origem.range(f"C2:C{last_row_origem}")
+    faixa_titulos = ws_origem.range(f"D2:D{last_row_origem}")
+    faixa_disc_f  = ws_origem.range(f"F2:F{last_row_origem}")
+    faixa_status  = ws_origem.range(f"I2:I{last_row_origem}")
+    faixa_data    = ws_origem.range(f"Z2:Z{last_row_origem}")
+
+    codigos_flat = _flatten(faixa_codigos.value)
+    revs_flat    = _flatten(faixa_revs.value)
+    titulos_flat = _flatten(faixa_titulos.value)
+    disc_f_flat  = _flatten(faixa_disc_f.value)
+    status_flat  = _flatten(faixa_status.value)
+    datas_flat   = _flatten(faixa_data.value)
+
+    n = min(len(codigos_flat), len(revs_flat), len(titulos_flat), len(disc_f_flat), len(status_flat), len(datas_flat))
+    codigos_flat = codigos_flat[:n]
+    revs_flat    = revs_flat[:n]
+    titulos_flat = titulos_flat[:n]
+    disc_f_flat  = disc_f_flat[:n]
+    status_flat  = status_flat[:n]
+    datas_flat   = datas_flat[:n]
+
+    best_por_codigo = {}
+    unicos_codigos = []
+    disciplinas_A  = []
+    titulos_unicos = []
+    disciplinas_F  = []
+    status_unicos  = []
+    datas_unicas   = []
+
+    for cod, rev, tit, disc, stat, dt in zip(codigos_flat, revs_flat, titulos_flat, disc_f_flat, status_flat, datas_flat):
+        if cod in (None, ""):
+            continue
+        cod_str = str(cod).strip()
+        if not cod_str:
+            continue
+
+        rev_ord = rev_key(normalizar_rev(rev))
+        dt_coer = _coerce_to_date(dt)
+        dt_ord = dt_coer or date.min
+
+        atual = best_por_codigo.get(cod_str)
+        if atual is None or (rev_ord > atual["rev_ord"]) or (rev_ord == atual["rev_ord"] and dt_ord > atual["dt_ord"]):
+            best_por_codigo[cod_str] = {
+                "rev_ord": rev_ord,
+                "dt_ord": dt_ord,
+                "titulo": tit,
+                "disc": disc,
+                "status": stat,
+                "data": dt_coer,
+            }
+
+    for cod_str, info in best_por_codigo.items():
+        unicos_codigos.append(cod_str)
+        disciplinas_A.append(extrair_disciplina(cod_str))
+        titulos_unicos.append(info["titulo"])
+        disciplinas_F.append(info["disc"])
+        status_unicos.append(info["status"])
+        datas_unicas.append(info["data"])
+
+    first_dest_row = 4
+    max_last_row = 577
+    max_qtd = max_last_row - first_dest_row + 1
+
+    qtd_total = len(unicos_codigos)
+    if qtd_total == 0:
+        log("⚠️ Nenhum código encontrado para copiar para MEDIÇÃO.")
+        return
+
+    qtd_linhas = min(qtd_total, max_qtd)
+    unicos_codigos = unicos_codigos[:qtd_linhas]
+    disciplinas_A  = disciplinas_A[:qtd_linhas]
+    titulos_unicos = titulos_unicos[:qtd_linhas]
+    disciplinas_F  = disciplinas_F[:qtd_linhas]
+    status_unicos  = status_unicos[:qtd_linhas]
+    datas_unicas   = datas_unicas[:qtd_linhas]
+
+    last_dest_row = first_dest_row + qtd_linhas - 1
+
+    ws_destino.range("A4:F577").clear_contents()
+
+    ws_destino.range(f"A{first_dest_row}:A{last_dest_row}").value = [[d] for d in disciplinas_A]
+    ws_destino.range(f"B{first_dest_row}:B{last_dest_row}").value = [[c] for c in unicos_codigos]
+    ws_destino.range(f"C{first_dest_row}:C{last_dest_row}").value = [[t] for t in titulos_unicos]
+    ws_destino.range(f"D{first_dest_row}:D{last_dest_row}").value = [[df] for df in disciplinas_F]
+    ws_destino.range(f"E{first_dest_row}:E{last_dest_row}").value = [[s] for s in status_unicos]
+    ws_destino.range(f"F{first_dest_row}:F{last_dest_row}").value = [[dt] for dt in datas_unicas]
+
+    # ✅ força formato de data na MEDIÇÃO (coluna F) -> dd/mm/aaaa
+    forcar_numberformat_coluna(ws_destino, "F", first_dest_row, last_dest_row)
+
+    log(f"✅ {qtd_linhas} linhas copiadas para '{ABA_MEDICAO}' a partir de '{aba_origem}': A4:F{last_dest_row}.")
+
+# ==========================================================
+# PROCESSAR UMA ABA (LD / LD MARENOVA)
+# ==========================================================
+def _preencher_data_por_modo(cell, modo: str, dt: datetime | None, obs: str):
+    m = (modo or "DATA").upper().strip()
+    if m == "MANTER":
+        return
+    if m == "OBS":
+        _set_cell_text(cell, obs)
+        return
+    # DATA
+    setar_data(cell, dt)
+
+def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_pcf_resp, idx_grd_resp, status_pcfs, inserir_revisoes=True, pcf_intel_cache=None):
+    ws = wb.sheets[aba_nome]
+    if pcf_intel_cache is None:
+        pcf_intel_cache = {}
+    log(f"📄 Processando aba: {aba_nome}")
+
+    _af_state = capturar_autofiltro(ws)
+    remover_autofiltro(ws)
+
+    try:
+        # 1) inserir revisões novas vindas da Engenharia
+        if inserir_revisoes:
+            inserir_revisoes_novas(ws, idx_eng)
+        else:
+            log(f"ℹ️ Inserção de revisões novas desativada para a aba {aba_nome}. Atualizando apenas linhas existentes.")
+
+        # 2) recalcular última linha depois das inserções
+        last = ws.range("B" + str(ws.cells.last_cell.row)).end("up").row
+
+        # 3) preencher status/links
+        for r in range(last, 1, -1):
+            codigo = str(ws[f"B{r}"].value or "").strip()
+            rev = normalizar_rev(ws[f"C{r}"].value)
+
+            # LD BASICO: sincroniza para a maior revisão existente na Engenharia,
+            # sem inserir novas linhas.
+            if aba_nome == ABA_LD_BASICO and codigo:
+                revs_eng = list(idx_eng.get(codigo, {}).keys())
+                if revs_eng:
+                    maior_rev = sorted(revs_eng, key=rev_key)[-1]
+                    if rev_key(maior_rev) > rev_key(rev):
+                        ws[f"C{r}"].value = maior_rev
+                        rev = maior_rev
+                        log(f"🔄 LD BASICO L{r} | {codigo}: revisão atualizada para {maior_rev}")
+
+            # ✅ REGRA COLUNA H
+            # LD / LD MARENOVA:
+            #   status finais bloqueiam a linha inteira.
+            # LD BASICO:
+            #   alguns status manuais preservam H, mas as demais colunas continuam atualizando.
+            status_h = str(ws[f"H{r}"].value or "").strip().upper()
+
+            STATUS_H_BLOQUEADOS = {
+                "APROVADO",
+                "APROVADO COM COMENTÁRIOS",
+                "APROVADO COM COMENTARIOS",
+                "NÃO APROVADO",
+                "NAO APROVADO",
+                "CANCELAR",
+                "CANCELADO",
+                "PARA INFORMAÇÃO",
+                "PARA CONSTRUÇÃO",
+            }
+
+            STATUS_H_PRESERVAR_LD_BASICO = {
+                "REPROVADO",
+                "APROVADO",
+                "APROVADO COM COMENTÁRIOS",
+                "APROVADO COM COMENTARIOS",
+                "APROVADO SEM COMENTÁRIOS",
+                "APROVADO SEM COMENTARIOS",
+                "AGUARDANDO PCF",
+            }
+
+            preservar_h_ld_basico = (
+                aba_nome == ABA_LD_BASICO
+                and status_h in STATUS_H_PRESERVAR_LD_BASICO
+            )
+
+            if aba_nome != ABA_LD_BASICO and status_h in STATUS_H_BLOQUEADOS:
+                if LOG_DETALHADO:
+                    log(f"   [SKIP] {aba_nome} L{r} ignorada (H = {status_h})")
+                continue
+
+            if not codigo:
+                continue
+
+            # Engenharia hyperlink em B
+            info_eng = idx_eng.get(codigo, {}).get(rev)
+            if info_eng:
+                setar_hyperlink(ws[f"B{r}"], info_eng["path"], codigo)
+            else:
+                limpar_hyperlink(ws[f"B{r}"])
+                ws[f"B{r}"].value = codigo
+
+            documento_encontrado = codigo in idx_eng_codigos
+            pcf_recebida_para_rev = False
+            if documento_encontrado:
+                mapa_pcf_status_h = idx_pcf.get(codigo, {})
+                base_rev_status_h = (rev or "").strip().upper()
+
+                for rev_pcf_status_h in mapa_pcf_status_h.keys():
+                    ok_status_h, _sufixo_status_h = _split_by_base(rev_pcf_status_h, base_rev_status_h)
+                    if ok_status_h:
+                        pcf_recebida_para_rev = True
+                        break
+
+            # Regra adicional:
+            # Se houver data de recebimento KM, mas o documento ainda não foi
+            # encontrado nas pastas, o status deve ficar "Recebido e não Emitido".
+            #
+            # Layout atual da LD BASICO:
+            #   AP = Transmittal Number
+            #   AQ = Data recebimento KM
+            #
+            # Mantemos fallback em AP apenas para compatibilidade com arquivos antigos,
+            # mas a coluna oficial de data KM agora é AQ.
+            valor_data_recebimento_km = ws[f"AQ{r}"].value
+            if valor_data_recebimento_km in (None, ""):
+                valor_data_recebimento_km = ws[f"AP{r}"].value
+
+            tem_data_recebimento_km = bool(
+                _coerce_to_date(valor_data_recebimento_km)
+                or str(valor_data_recebimento_km or "").strip()
+            )
+
+            # Regra específica LD BASICO:
+            # documentos marcados como NOT APPLICABLE na coluna B, quando possuem
+            # data de recebimento KM, devem permanecer como recebidos,
+            # mas sem exigir emissão de GRD.
+            not_applicable_com_recebimento = (
+                aba_nome == ABA_LD_BASICO
+                and "NOT APPLICABLE" in str(codigo or "").upper()
+                and tem_data_recebimento_km
+            )
+
+            status_auto_h = (
+                "Recebido"
+                if documento_encontrado and pcf_recebida_para_rev
+                else "Aguardando PCF"
+                if documento_encontrado and not pcf_recebida_para_rev
+                else "Recebido e não Emitido"
+                if tem_data_recebimento_km
+                else "Não Recebido"
+            )
+
+            if not_applicable_com_recebimento:
+                ws[f"H{r}"].value = "Recebido e não Emitido"
+                if LOG_DETALHADO:
+                    log(f"   [H/I] {aba_nome} L{r}: NOT APPLICABLE com data KM preenchida -> H='Recebido e não Emitido'")
+
+            elif aba_nome == ABA_LD_BASICO:
+                # Regra especial LD BASICO:
+                # - NÃO RECEBIDO / RECEBIDO E NÃO EMITIDO podem evoluir automaticamente.
+                # - Se documento existe mas a PCF da revisão ainda não chegou, fica AGUARDANDO PCF.
+                # - Status manuais/finais são preservados, mas I:Q continuam atualizando.
+                if status_h in {"NÃO RECEBIDO", "NAO RECEBIDO", "RECEBIDO", "RECEBIDO E NÃO EMITIDO", "RECEBIDO E NAO EMITIDO", "AGUARDANDO PCF"}:
+                    ws[f"H{r}"].value = status_auto_h
+                    if LOG_DETALHADO:
+                        log(f"   [H] {aba_nome} L{r}: {status_h or '-'} -> {status_auto_h}")
+
+                elif preservar_h_ld_basico:
+                    if LOG_DETALHADO:
+                        log(f"   [H] {aba_nome} L{r} preservada (H = {status_h}); atualizando I:Q normalmente.")
+
+                else:
+                    # Para qualquer outro status vazio/operacional da LD BASICO, evita derrubar status manual.
+                    if not status_h:
+                        ws[f"H{r}"].value = status_auto_h
+            else:
+                ws[f"H{r}"].value = status_auto_h
+
+            # GRD (J / K)
+            info = idx_grd.get(codigo, {}).get(rev)
+            if info:
+                ws[f"I{r}"].value = "Emitido"
+                setar_hyperlink(ws[f"J{r}"], info["path"], info["grd"])
+                _preencher_data_por_modo(ws[f"K{r}"], COL_K_MODO, info.get("date"), OBS_COL_K)
+                if (COL_K_MODO or "").upper().strip() == "DATA":
+                    _aplicar_formato_data(ws[f"K{r}"])
+
+                if LOG_DETALHADO:
+                    log(f"   [J/K] {aba_nome} L{r} | {codigo}_R{rev} => GRD={info['grd']} | link={info['path']} | K={_fmt_dt(info.get('date'))} | doc={info.get('doc_file','-')} | doc_dt={_fmt_dt(info.get('doc_dt'))} | grd_dt={_fmt_dt(info.get('grd_dt'))}")
+            else:
+                ws[f"I{r}"].value = "Não Emitido"
+                ws[f"J{r}"].value = None
+                if (COL_K_MODO or "").upper() != "MANTER":
+                    ws[f"K{r}"].value = None
+                limpar_hyperlink(ws[f"J{r}"])
+
+                if LOG_DETALHADO:
+                    log(f"   [J/K] {aba_nome} L{r} | {codigo}_R{rev} => GRD NÃO encontrado")
+
+            if not_applicable_com_recebimento:
+                ws[f"I{r}"].value = "NOT APPLICABLE"
+                if LOG_DETALHADO:
+                    log(f"   [I] {aba_nome} L{r}: NOT APPLICABLE com data KM preenchida -> I='NOT APPLICABLE'")
+
+            # PCF normal (L / M) - SEM subpasta de respostas
+            info_pcf = None
+            mapa = idx_pcf.get(codigo, {})
+            rev_doc = normalizar_rev(ws[f"C{r}"].value)
+            best = None
+            best_key = None
+
+            if mapa and rev_doc:
+                base = (rev_doc or "").strip().upper()
+                for rev_pcf, cand in mapa.items():
+                    ok, sufixo = _split_by_base(rev_pcf, base)
+                    if not ok:
+                        continue
+
+                    k = (_suffix_key(sufixo), cand.get("date") or datetime.min)
+                    if (best_key is None) or (k[0] > best_key[0]) or (k[0] == best_key[0] and k[1] > best_key[1]):
+                        best_key = k
+                        best = cand
+
+            info_pcf = best
+            if info_pcf:
+                setar_hyperlink(ws[f"L{r}"], info_pcf["path"], info_pcf["pcf"])
+
+                # M = Data de recebimento da PCF. NÃO usar M para status.
+                _preencher_data_por_modo(ws[f"M{r}"], COL_M_MODO, info_pcf.get("date"), OBS_COL_M)
+                if (COL_M_MODO or "").upper().strip() == "DATA":
+                    _aplicar_formato_data(ws[f"M{r}"])
+
+                # Lê diretamente a própria PCF encontrada na coluna L.
+                # N = STATUS FINAL PCF
+                # AV:AY = Qtd Comentários / Open Comments / Under Review / Status Final
+                pcf_coluna_l = ws[f"L{r}"].value
+                intel_pcf = ler_pcf_intelligence_arquivo(info_pcf.get("path"), pcf_intel_cache)
+
+                status_final = _valor_intel(intel_pcf.get("status_final", ""))
+                if not str(status_final).strip():
+                    # Fallback antigo: Timeline PCFs apenas para manter compatibilidade.
+                    status_final = status_final_da_pcf(status_pcfs, pcf_coluna_l)
+
+                ws[f"N{r}"].value = status_final
+
+                ws[f"AV{r}"].value = intel_pcf.get("qtd_comentarios", "")
+                ws[f"AW{r}"].value = intel_pcf.get("open_comments", "")
+                ws[f"AX{r}"].value = intel_pcf.get("under_review", "")
+                ws[f"AY{r}"].value = status_final or intel_pcf.get("status_final", "")
+
+                if LOG_DETALHADO:
+                    if status_final or _pcf_intel_tem_valor(intel_pcf):
+                        log(
+                            f"   [L/M/N + AV:AY DIRETO PCF] {aba_nome} L{r} | {codigo}_R{rev_doc} "
+                            f"=> PCF='{pcf_coluna_l}' | M_DATA={_fmt_dt(info_pcf.get('date'))} "
+                            f"| N/AY_STATUS='{status_final}' | AV_QTD='{intel_pcf.get('qtd_comentarios', '')}' "
+                            f"| AW_OPEN='{intel_pcf.get('open_comments', '')}' | AX_UNDER='{intel_pcf.get('under_review', '')}'"
+                        )
+                    else:
+                        log(
+                            f"   [L/M/N + AV:AY DIRETO PCF] {aba_nome} L{r} | {codigo}_R{rev_doc} "
+                            f"=> PCF encontrada, mas sem inteligência lida no arquivo: '{info_pcf.get('path')}'"
+                        )
+            else:
+                ws[f"L{r}"].value = None
+                if (COL_M_MODO or "").upper() != "MANTER":
+                    ws[f"M{r}"].value = None
+                ws[f"N{r}"].value = None
+                ws[f"AV{r}"].value = None
+                ws[f"AW{r}"].value = None
+                ws[f"AX{r}"].value = None
+                ws[f"AY{r}"].value = None
+                limpar_hyperlink(ws[f"L{r}"])
+
+                if LOG_DETALHADO:
+                    log(f"   [L/M/N] {aba_nome} L{r} | {codigo}_R{rev_doc} => PCF NÃO encontrada")
+
+            # PCF resposta (O / P) - SOMENTE subpasta de respostas
+            info_resp = None
+            mapa_resp = idx_pcf_resp.get(codigo, {})
+            rev_doc = normalizar_rev(ws[f"C{r}"].value)
+            best = None
+            best_key = None
+
+            if mapa_resp and rev_doc:
+                base = (rev_doc or "").strip().upper()
+                for rev_pcf, cand in mapa_resp.items():
+                    ok, sufixo = _split_by_base(rev_pcf, base)
+                    if not ok:
+                        continue
+
+                    dtcand = cand.get("date")
+                    if dtcand is None:
+                        dtcand = datetime(1900, 1, 1)
+
+                    k = (_suffix_key(sufixo), dtcand)
+                    if (best_key is None) or (k[0] > best_key[0]) or (k[0] == best_key[0] and k[1] > best_key[1]):
+                        best_key = k
+                        best = cand
+
+            info_resp = best
+            if info_resp:
+                setar_hyperlink(ws[f"O{r}"], info_resp["path"], info_resp["pcf"])
+                _preencher_data_por_modo(ws[f"P{r}"], COL_P_MODO, info_resp.get("date"), OBS_COL_P)
+                if (COL_P_MODO or "").upper().strip() == "DATA":
+                    _aplicar_formato_data(ws[f"P{r}"])
+
+                # Q = GRD correspondente ao arquivo PCF encontrado
+                grd_resp = idx_grd_resp.get(info_resp["pcf"].upper(), "")
+                if grd_resp:
+                    setar_hyperlink(ws[f"Q{r}"], os.path.join(PASTA_GRD, grd_resp), grd_resp)
+                else:
+                    ws[f"Q{r}"].value = None
+                    limpar_hyperlink(ws[f"Q{r}"])
+
+                if LOG_DETALHADO:
+                    log(f"   [O/P/Q] {aba_nome} L{r} | {codigo}_R{rev_doc} => PCF_RESP base='{rev_doc}' escolheu rev_pcf='{info_resp.get('rev','-')}' | file={info_resp['pcf']} | P={_fmt_dt(info_resp.get('date'))} | Q_GRD={grd_resp or '-'}")
+            else:
+                ws[f"O{r}"].value = None
+                if (COL_P_MODO or "").upper() != "MANTER":
+                    ws[f"P{r}"].value = None
+                ws[f"Q{r}"].value = None
+                limpar_hyperlink(ws[f"O{r}"])
+                limpar_hyperlink(ws[f"Q{r}"])
+
+                if LOG_DETALHADO:
+                    log(f"   [O/P/Q] {aba_nome} L{r} | {codigo}_R{rev} => PCF_RESPOSTA NÃO encontrada")
+
+        # 4) formatar
+        if APLICAR_FORMATACAO:
+            aplicar_formatacao(ws)
+    finally:
+        restaurar_autofiltro(ws, _af_state)
+        garantir_autofiltro(ws)
+
+def _sync_obter_hyperlink(cell):
+    """Obtém hyperlink de uma célula xlwings sem interromper a atualização."""
+    try:
+        hls = cell.api.Hyperlinks
+        if hls.Count >= 1:
+            h = hls.Item(1)
+            endereco = str(h.Address or "").strip()
+            sub = str(h.SubAddress or "").strip()
+            if endereco and sub:
+                return f"{endereco}#{sub}"
+            return endereco or sub
+    except Exception:
+        pass
+    return ""
+
+
+def sincronizar_pcf_intelligence_ld_basico(wb):
+    """
+    Sincroniza a PCF Intelligence da aba LD para a aba LD BASICO.
+
+    A aba LD já possui a leitura direta das PCFs consolidada. A LD BASICO é uma
+    visão de última revisão e pode não reencontrar algumas PCFs pelo mesmo índice
+    de código/revisão. Por isso, após processar ambas as abas, copiamos apenas:
+      L/M/N e AV/AW/AX/AY
+    usando como chave Documento + Revisão, sem alterar status, GRD, KM,
+    Transmittal ou demais campos operacionais.
+    """
+    try:
+        ws_ld = wb.sheets[ABA_LD]
+        ws_basico = wb.sheets[ABA_LD_BASICO]
+    except Exception as exc:
+        log(f"ℹ️ Sincronização PCF LD BASICO ignorada: {exc}")
+        return 0
+
+    try:
+        last_ld = ws_ld.range("B" + str(ws_ld.cells.last_cell.row)).end("up").row
+        last_basico = ws_basico.range("B" + str(ws_basico.cells.last_cell.row)).end("up").row
+    except Exception as exc:
+        log(f"⚠️ Não foi possível localizar linhas para sincronizar PCF LD BASICO: {exc}")
+        return 0
+
+    if last_ld < 2 or last_basico < 2:
+        return 0
+
+    idx_exato = {}
+    idx_por_doc = {}
+
+    for r in range(2, last_ld + 1):
+        documento = str(ws_ld[f"B{r}"].value or "").strip()
+        revisao = normalizar_rev(ws_ld[f"C{r}"].value)
+
+        if not documento:
+            continue
+
+        dados = {
+            "pcf": ws_ld[f"L{r}"].value,
+            "data_pcf": ws_ld[f"M{r}"].value,
+            "status_final": ws_ld[f"N{r}"].value,
+            "qtd": ws_ld[f"AV{r}"].value,
+            "open": ws_ld[f"AW{r}"].value,
+            "under": ws_ld[f"AX{r}"].value,
+            "status_ay": ws_ld[f"AY{r}"].value,
+            "pcf_link": _sync_obter_hyperlink(ws_ld[f"L{r}"]),
+            "rev": revisao,
+        }
+
+        tem_pcf_intel = any(
+            str(dados.get(campo) or "").strip()
+            for campo in ("pcf", "status_final", "qtd", "open", "under", "status_ay")
+        )
+
+        if not tem_pcf_intel:
+            continue
+
+        chave = (documento, revisao)
+        idx_exato[chave] = dados
+
+        atual = idx_por_doc.get(documento)
+        if atual is None or rev_key(revisao) >= rev_key(atual.get("rev", "")):
+            idx_por_doc[documento] = dados
+
+    sincronizadas = 0
+
+    for r in range(2, last_basico + 1):
+        documento = str(ws_basico[f"B{r}"].value or "").strip()
+        revisao = normalizar_rev(ws_basico[f"C{r}"].value)
+
+        if not documento:
+            continue
+
+        dados = idx_exato.get((documento, revisao)) or idx_por_doc.get(documento)
+        if not dados:
+            continue
+
+        # Não sobrescreve linhas sem PCF/inteligência na origem.
+        if not any(str(dados.get(campo) or "").strip() for campo in ("pcf", "status_final", "qtd", "open", "under", "status_ay")):
+            continue
+
+        if dados.get("pcf"):
+            link = normalizar_endereco_hyperlink(dados.get("pcf_link", ""))
+            if link:
+                setar_hyperlink(ws_basico[f"L{r}"], link, dados.get("pcf"))
+            else:
+                ws_basico[f"L{r}"].value = dados.get("pcf")
+
+        ws_basico[f"M{r}"].value = dados.get("data_pcf")
+        if dados.get("data_pcf"):
+            try:
+                _aplicar_formato_data(ws_basico[f"M{r}"])
+            except Exception:
+                pass
+
+        ws_basico[f"N{r}"].value = dados.get("status_final")
+        ws_basico[f"AV{r}"].value = dados.get("qtd")
+        ws_basico[f"AW{r}"].value = dados.get("open")
+        ws_basico[f"AX{r}"].value = dados.get("under")
+        ws_basico[f"AY{r}"].value = dados.get("status_ay") or dados.get("status_final")
+
+        sincronizadas += 1
+
+    if sincronizadas:
+        log(f"🔁 LD BASICO: PCF Intelligence sincronizada da aba LD em {sincronizadas} linha(s).")
+    else:
+        log("ℹ️ LD BASICO: nenhuma PCF Intelligence encontrada para sincronizar da aba LD.")
+
+    return sincronizadas
+
+
+# ==========================================================
+# LD BASICO x GENERAL LIST KM (preencher AN)
+# ==========================================================
+def _texto_excel_seguro(valor):
+    """Converte valores do Excel para texto limpo, sem perder códigos numéricos."""
+    if valor is None:
+        return ""
+
+    if isinstance(valor, datetime):
+        return valor.strftime("%d/%m/%Y")
+
+    if isinstance(valor, date):
+        return valor.strftime("%d/%m/%Y")
+
+    if isinstance(valor, float):
+        return str(int(valor)) if valor.is_integer() else str(valor).strip()
+
+    if isinstance(valor, int):
+        return str(valor)
+
+    return str(valor).replace("\xa0", " ").strip()
+
+
+def _normalizar_chave_documento(valor):
+    """
+    Normaliza Nº Transpetro para comparação segura entre abas.
+
+    Mantém o código original para exibição, mas remove espaços invisíveis,
+    quebras de linha e diferenças de maiúsculas/minúsculas.
+    """
+    texto = _texto_excel_seguro(valor).upper()
+    texto = texto.replace("\n", "").replace("\r", "").replace("\t", "")
+    texto = texto.replace("\xa0", " ")
+    texto = re.sub(r"\s+", "", texto)
+    return texto.strip()
+
+
+def _adicionar_unico(lista, valor):
+    """Adiciona um valor textual em uma lista preservando ordem e evitando duplicidade."""
+    texto = _texto_excel_seguro(valor)
+    if texto and texto not in lista:
+        lista.append(texto)
+
+
+def indexar_general_list_km(wb):
+    """
+    Cria índice da aba GENERAL LIST KM usando o Nº Transpetro como chave.
+
+    Regras oficiais:
+      chave = GENERAL LIST KM coluna F (Customer Document Num / Nº Transpetro)
+      AN    = GENERAL LIST KM coluna C (Number / Nº Documento KM)
+      AO    = GENERAL LIST KM coluna D (Title / KM Title)
+      AP    = GENERAL LIST KM coluna O (Transmittal Number)
+      AQ    = GENERAL LIST KM coluna P (Data recebimento KM)
+
+    Quando houver mais de um KM para o mesmo Nº Transpetro, os valores são
+    preservados em ordem e unidos por " / " no preenchimento da LD BASICO.
+    """
+    idx = {}
+
+    try:
+        ws = wb.sheets[ABA_GENERAL_LIST_KM]
+    except Exception as exc:
+        log(f"⚠️ Aba '{ABA_GENERAL_LIST_KM}' não encontrada. Colunas AN:AQ da LD BASICO não serão atualizadas: {exc}")
+        return idx
+
+    try:
+        last_c = ws.range("C" + str(ws.cells.last_cell.row)).end("up").row
+        last_d = ws.range("D" + str(ws.cells.last_cell.row)).end("up").row
+        last_f = ws.range("F" + str(ws.cells.last_cell.row)).end("up").row
+        last_o = ws.range("O" + str(ws.cells.last_cell.row)).end("up").row
+        last_p = ws.range("P" + str(ws.cells.last_cell.row)).end("up").row
+        last = max(last_c, last_d, last_f, last_o, last_p)
+    except Exception as exc:
+        log(f"⚠️ Não foi possível localizar última linha da aba '{ABA_GENERAL_LIST_KM}': {exc}")
+        return idx
+
+    if last < 2:
+        log(f"ℹ️ Aba '{ABA_GENERAL_LIST_KM}' sem dados para indexar.")
+        return idx
+
+    valores_km = _flatten(ws.range(f"C2:C{last}").value)
+    valores_title = _flatten(ws.range(f"D2:D{last}").value)
+    valores_tp = _flatten(ws.range(f"F2:F{last}").value)
+    valores_transmittal = _flatten(ws.range(f"O2:O{last}").value)
+    valores_data_km = _flatten(ws.range(f"P2:P{last}").value)
+
+    total_linhas = min(
+        len(valores_km),
+        len(valores_title),
+        len(valores_tp),
+        len(valores_transmittal),
+        len(valores_data_km),
+    )
+    duplicados_km_ignorados = 0
+
+    for numero_km, title_km, numero_tp, transmittal, data_km in zip(
+        valores_km[:total_linhas],
+        valores_title[:total_linhas],
+        valores_tp[:total_linhas],
+        valores_transmittal[:total_linhas],
+        valores_data_km[:total_linhas],
+    ):
+        chave_tp = _normalizar_chave_documento(numero_tp)
+        km = _texto_excel_seguro(numero_km)
+
+        if not chave_tp:
+            continue
+
+        item = idx.setdefault(chave_tp, {
+            "numbers": [],
+            "titles": [],
+            "transmittals": [],
+            "datas": [],
+        })
+
+        if km:
+            if km not in item["numbers"]:
+                item["numbers"].append(km)
+            else:
+                duplicados_km_ignorados += 1
+
+        _adicionar_unico(item["titles"], title_km)
+        _adicionar_unico(item["transmittals"], transmittal)
+        _adicionar_unico(item["datas"], data_km)
+
+    log(
+        f"🔎 GENERAL LIST KM indexada: {len(idx)} Nº Transpetro com vínculos KM "
+        f"({duplicados_km_ignorados} KM duplicado(s) ignorado(s))."
+    )
+    return idx
+
+
+def preencher_numero_km_ld_basico(wb, idx_general_km=None):
+    """
+    Preenche LD BASICO com dados da GENERAL LIST KM.
+
+    Regras:
+      LD BASICO coluna B  == GENERAL LIST KM coluna F
+      LD BASICO coluna AN = GENERAL LIST KM coluna C, unidos por " / "
+      LD BASICO coluna AO = GENERAL LIST KM coluna D, unidos por " / "
+      LD BASICO coluna AP = GENERAL LIST KM coluna O, unidos por " / "
+      LD BASICO coluna AQ = GENERAL LIST KM coluna P, unidos por " / "
+
+    Não altera nenhuma outra coluna da LD BASICO.
+    """
+    if idx_general_km is None:
+        idx_general_km = indexar_general_list_km(wb)
+
+    if not idx_general_km:
+        log("ℹ️ LD BASICO AN:AQ não atualizadas: índice GENERAL LIST KM vazio.")
+        return 0
+
+    try:
+        ws = wb.sheets[ABA_LD_BASICO]
+    except Exception as exc:
+        log(f"⚠️ Aba '{ABA_LD_BASICO}' não encontrada. Colunas AN:AQ não serão atualizadas: {exc}")
+        return 0
+
+    try:
+        last = ws.range("B" + str(ws.cells.last_cell.row)).end("up").row
+    except Exception as exc:
+        log(f"⚠️ Não foi possível localizar última linha da aba '{ABA_LD_BASICO}': {exc}")
+        return 0
+
+    if last < 2:
+        return 0
+
+    documentos_tp = _flatten(ws.range(f"B2:B{last}").value)
+    saida = []
+    preenchidas = 0
+    sem_vinculo = 0
+
+    for numero_tp in documentos_tp:
+        chave_tp = _normalizar_chave_documento(numero_tp)
+        dados = idx_general_km.get(chave_tp, {})
+
+        valor_an = " / ".join(dados.get("numbers", [])) if dados else ""
+        valor_ao = " / ".join(dados.get("titles", [])) if dados else ""
+        valor_ap = " / ".join(dados.get("transmittals", [])) if dados else ""
+        valor_aq = " / ".join(dados.get("datas", [])) if dados else ""
+
+        saida.append([valor_an, valor_ao, valor_ap, valor_aq])
+
+        if valor_an or valor_ao or valor_ap or valor_aq:
+            preenchidas += 1
+        elif chave_tp:
+            sem_vinculo += 1
+
+    destino = ws.range(f"AN2:AQ{last}")
+    try:
+        destino.api.NumberFormat = "@"
+    except Exception:
+        pass
+
+    destino.value = saida
+
+    try:
+        destino.api.Font.Name = "Arial"
+        destino.api.Font.Size = 11
+        destino.api.HorizontalAlignment = xlCenter
+        destino.api.VerticalAlignment = xlCenter
+        destino.api.WrapText = True
+    except Exception:
+        pass
+
+    log(
+        f"✅ LD BASICO colunas AN:AQ atualizadas: {preenchidas} linha(s) preenchida(s), "
+        f"{sem_vinculo} sem vínculo na GENERAL LIST KM."
+    )
+    return preenchidas
+
+
+# ==========================================================
+# PROCESSAMENTO
+# ==========================================================
+
+
+# ==========================================================
+# IMPORTAÇÃO DA LD PARA O BANCO DO GED
+# ==========================================================
+def _valor_celula(cell):
+    v = cell.value
+    if v is None:
+        return ""
+    try:
+        if isinstance(v, datetime):
+            return v.strftime("%d/%m/%Y")
+        if isinstance(v, date):
+            return v.strftime("%d/%m/%Y")
+    except Exception:
+        pass
+    return str(v).strip()
+
+
+def _hyperlink_celula(cell):
+    try:
+        hls = cell.api.Hyperlinks
+        if hls.Count >= 1:
+            h = hls.Item(1)
+            endereco = str(h.Address or "").strip()
+            sub = str(h.SubAddress or "").strip()
+            if endereco and sub:
+                return f"{endereco}#{sub}"
+            return endereco or sub
+    except Exception:
+        pass
+    return ""
+
+
+def _normalizar_header_importacao(valor):
+    """Normaliza cabeçalhos da LD para busca segura de colunas na importação."""
+    texto = str(valor or "").strip().upper()
+    if not texto:
+        return ""
+    texto = (
+        texto.replace("º", "")
+        .replace("°", "")
+        .replace("ª", "")
+        .replace("Á", "A")
+        .replace("À", "A")
+        .replace("Â", "A")
+        .replace("Ã", "A")
+        .replace("É", "E")
+        .replace("Ê", "E")
+        .replace("Í", "I")
+        .replace("Ó", "O")
+        .replace("Ô", "O")
+        .replace("Õ", "O")
+        .replace("Ú", "U")
+        .replace("Ç", "C")
+    )
+    return re.sub(r"[^A-Z0-9]+", "", texto)
+
+
+def _coluna_letra_para_numero(coluna):
+    """Converte letra de coluna Excel para índice numérico 1-based."""
+    total = 0
+    for ch in str(coluna or "").strip().upper():
+        if "A" <= ch <= "Z":
+            total = total * 26 + (ord(ch) - ord("A") + 1)
+    return total or 1
+
+
+def _resolver_coluna_transmittal_number(ws, fallback="AO"):
+    """
+    Localiza dinamicamente a coluna Transmittal Number na linha 1.
+
+    Mantém fallback oficial em AO, mas evita coluna vazia quando o cabeçalho
+    estiver deslocado na LD/LD BASICO.
+    """
+    fallback_num = _coluna_letra_para_numero(fallback)
+
+    aliases = {
+        "TRANSMITTALNUMBER",
+        "TRANSMITTALNUMERO",
+        "TRANSMITTALNUM",
+        "TRANSMITTALNO",
+        "TRANSMITTALN",
+    }
+
+    try:
+        # Até BD cobre todos os campos operacionais atuais; 100 deixa margem segura.
+        for col in range(1, 101):
+            header = _normalizar_header_importacao(ws.range((1, col)).value)
+            if not header:
+                continue
+
+            if header in aliases:
+                return col
+
+            if header.startswith("TRANSMITTAL") and any(
+                token in header for token in ("NUMBER", "NUMERO", "NUM", "NO", "N")
+            ):
+                return col
+
+    except Exception:
+        pass
+
+    return fallback_num
+
+
+
+def importar_aba_ld_banco(ws, origem_aba):
+    """
+    Importa uma aba da LD para o banco do GED usando used_range.
+    Preserva revisões, captura hyperlinks e grava a origem correta da aba.
+
+    Correção crítica:
+    - a origem_aba faz parte da identidade do registro;
+    - sem origem_aba no update_or_create, registros da LD Marenova eram sobrescritos
+      ou salvos como LD, fazendo o filtro Origem zerar.
+    """
+    ultima_linha = ws.used_range.last_cell.row
+
+    origem_texto = str(origem_aba or "").strip()
+    if "BASICO" in origem_texto.upper():
+        origem_normalizada = "LD Basico"
+    elif "MARENOVA" in origem_texto.upper():
+        origem_normalizada = "LD Marenova"
+    else:
+        origem_normalizada = "LD"
+
+    total_linhas = 0
+    documentos_exclusivos = set()
+
+    log(
+        f"📄 Importando aba {origem_aba} como origem '{origem_normalizada}' "
+        f"| used_range até linha {ultima_linha}"
+    )
+
+    col_transmittal_number = _resolver_coluna_transmittal_number(ws, fallback="AO")
+
+    for r in range(2, ultima_linha + 1):
+        documento = _valor_celula(ws[f"B{r}"])
+        revisao = _valor_celula(ws[f"C{r}"])
+
+        if not documento:
+            continue
+
+        total_linhas += 1
+        documentos_exclusivos.add(documento)
+
+        DocumentoLD.objects.update_or_create(
+            origem_aba=origem_normalizada,
+            documento=documento,
+            revisao=revisao,
+            defaults={
+                "titulo": _valor_celula(ws[f"D{r}"]),
+                "disciplina": _valor_celula(ws[f"F{r}"]),
+
+                "status_documento": _valor_celula(ws[f"H{r}"]),
+                "status_grd": _valor_celula(ws[f"I{r}"]),
+
+                "grd": _valor_celula(ws[f"J{r}"]),
+                "data_grd": _valor_celula(ws[f"K{r}"]),
+
+                "pcf": _valor_celula(ws[f"L{r}"]),
+                "data_pcf": _valor_celula(ws[f"M{r}"]),
+
+                # Status final oficial da PCF:
+                # - AY é a coluna consolidada da PCF Intelligence;
+                # - N é mantida como fallback para compatibilidade operacional.
+                "status_final_pcf": _valor_celula(ws[f"AY{r}"]) or _valor_celula(ws[f"N{r}"]),
+
+                "pcf_resposta": _valor_celula(ws[f"O{r}"]),
+                "data_resposta": _valor_celula(ws[f"P{r}"]),
+
+                "grd_resposta": _valor_celula(ws[f"Q{r}"]),
+
+                # Campos operacionais adicionais da LD BASICO.
+                "resp_for_issue": _valor_celula(ws[f"X{r}"]),
+                "numero_interno": _valor_celula(ws[f"AC{r}"]),
+                "numero_documento_km": _valor_celula(ws[f"AN{r}"]),
+                "transmittal_km": _valor_celula(ws.range((r, col_transmittal_number))),
+                "data_recebimento_km": _valor_celula(ws[f"AP{r}"]),
+                "casco": _valor_celula(ws[f"AS{r}"]),
+
+                # PCF Intelligence consolidada.
+                "qtd_comentarios": _valor_celula(ws[f"AV{r}"]),
+                "open_comments": _valor_celula(ws[f"AW{r}"]),
+                "under_review": _valor_celula(ws[f"AX{r}"]),
+
+                # Campos operacionais de comentários pendentes.
+                "posted_date": _valor_celula(ws[f"AZ{r}"]),
+                "status": _valor_celula(ws[f"BA{r}"]),
+                "since": _valor_celula(ws[f"BB{r}"]),
+                "action": _valor_celula(ws[f"BC{r}"]),
+                "nb_pending_comments": _valor_celula(ws[f"BD{r}"]),
+
+                "caminho_documento": _hyperlink_celula(ws[f"B{r}"]),
+                "caminho_grd": _hyperlink_celula(ws[f"J{r}"]),
+                "caminho_pcf": _hyperlink_celula(ws[f"L{r}"]),
+                "caminho_resposta": _hyperlink_celula(ws[f"O{r}"]),
+                "caminho_grd_resposta": _hyperlink_celula(ws[f"Q{r}"]),
+            },
+        )
+
+    log(f"✅ {origem_normalizada}: {total_linhas} linhas importadas.")
+    log(f"✅ {origem_normalizada}: {len(documentos_exclusivos)} documentos exclusivos.")
+
+    return {
+        "aba": origem_normalizada,
+        "linhas": total_linhas,
+        "exclusivos": len(documentos_exclusivos),
+        "documentos": documentos_exclusivos,
+    }
+
+
+def importar_ld_banco(wb):
+    """
+    Importa todas as abas operacionais da LD para o banco do GED.
+    O filtro da interface define o recorte desejado pelo usuário.
+    """
+    log("💾 Atualizando banco Django com LD + LD MARENOVA + LD BASICO...")
+
+    DocumentoLD.objects.all().delete()
+
+    abas = [ABA_LD, ABA_LD_MARENOVA, ABA_LD_BASICO]
+    resumo = {}
+    total_linhas = 0
+    todos_documentos = set()
+
+    for nome_aba in abas:
+        try:
+            resultado = importar_aba_ld_banco(wb.sheets[nome_aba], nome_aba)
+            resumo[nome_aba] = resultado
+
+            total_linhas += resultado["linhas"]
+            todos_documentos.update(resultado["documentos"])
+
+        except Exception as exc:
+            log(f"⚠️ Falha ao importar aba {nome_aba}: {exc}")
+            resumo[nome_aba] = {
+                "aba": nome_aba,
+                "linhas": 0,
+                "exclusivos": 0,
+                "documentos": set(),
+                "erro": str(exc),
+            }
+
+    log("✅ Banco Django atualizado.")
+    log(f"📊 Total linhas importadas: {total_linhas}")
+    log(f"📊 Total documentos exclusivos geral: {len(todos_documentos)}")
+
+    return {
+        "abas": resumo,
+        "total": total_linhas,
+        "exclusivos_geral": len(todos_documentos),
+    }
+
+def processar():
+    global LOG_FILE
+    atualizar_progresso_ld(2, "Preparando atualização LD...", "running", "Inicializando rotina da Atualização LD.")
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    LOG_FILE = os.path.join(PASTA_LOGS, f"LDP_{ts}.log")
+    log(f"🧾 Log: {LOG_FILE}")
+
+    backup_path = backup_planilha()
+    atualizar_progresso_ld(8, "Backup criado.", "running", "Backup da planilha LD criado com segurança.")
+
+    log("🔎 Indexando Engenharia (código + revisão + pasta)...")
+    idx_eng = indexar_engenharia_info()
+    idx_eng_codigos = set(idx_eng.keys())
+    log(f"   - Códigos na Engenharia: {len(idx_eng_codigos)}")
+    atualizar_progresso_ld(18, "Engenharia indexada.", "running", f"{len(idx_eng_codigos)} códigos encontrados na Engenharia.")
+
+    log("🔎 Indexando GRDs/PCFs...")
+    idx_grd = indexar_grds()
+    atualizar_progresso_ld(28, "GRDs indexadas.", "running", "Índice de GRDs concluído.")
+
+    # ✅ PCF normal (L/M): EXCLUI a subpasta de respostas
+    idx_pcf = indexar_pcfs(PASTA_PCF, excluir_subpastas=[PASTA_PCF_RESPOSTA], data_origem=DATA_PCF_ORIGEM)
+    atualizar_progresso_ld(38, "PCFs indexadas.", "running", "Índice de PCFs recebidas concluído.")
+
+    # ✅ PCF resposta (O/P): SOMENTE a pasta de respostas
+    idx_pcf_resp = indexar_pcfs(PASTA_PCF_RESPOSTA, data_origem=DATA_PCF_RESP_ORIGEM)
+    atualizar_progresso_ld(46, "Respostas PCF indexadas.", "running", "Índice de respostas PCF concluído.")
+
+    # ✅ Mapa PCF -> GRD para preencher Q
+    idx_grd_resp = indexar_grd_resposta_pcf()
+
+    wb = None
+    try:
+        with xw.App(visible=False, add_book=False) as app:
+            app.display_alerts = False
+            app.screen_updating = False
+
+            atualizar_progresso_ld(52, "Carregando Timeline PCFs...", "running", "Abrindo Timeline PCFs para status final.")
+            status_pcfs = carregar_status_pcfs_timeline(app)
+
+            atualizar_progresso_ld(58, "Abrindo planilha LD...", "running", "Abrindo planilha principal LD.")
+            wb = app.books.open(PLANILHA)
+            pcf_intel_cache = {}
+
+            atualizar_progresso_ld(65, "Processando aba LD...", "running", "Atualizando status, GRDs, PCFs e respostas da aba LD.")
+            processar_aba(wb, ABA_LD, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_pcf_resp, idx_grd_resp, status_pcfs, inserir_revisoes=True, pcf_intel_cache=pcf_intel_cache)
+
+            atualizar_progresso_ld(78, "Processando aba LD MARENOVA...", "running", "Atualizando status, GRDs, PCFs e respostas da aba LD MARENOVA.")
+            processar_aba(wb, ABA_LD_MARENOVA, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_pcf_resp, idx_grd_resp, status_pcfs, inserir_revisoes=True, pcf_intel_cache=pcf_intel_cache)
+
+            try:
+                wb.sheets[ABA_LD_BASICO]
+                atualizar_progresso_ld(84, "Processando aba LD BASICO...", "running", "Atualizando LD BASICO sem inserir novas revisões.")
+                processar_aba(wb, ABA_LD_BASICO, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_pcf_resp, idx_grd_resp, status_pcfs, inserir_revisoes=False, pcf_intel_cache=pcf_intel_cache)
+                sincronizar_pcf_intelligence_ld_basico(wb)
+
+                atualizar_progresso_ld(85, "Atualizando vínculos KM...", "running", "Preenchendo LD BASICO colunas AN:AQ a partir da GENERAL LIST KM.")
+                idx_general_km = indexar_general_list_km(wb)
+                preencher_numero_km_ld_basico(wb, idx_general_km)
+            except Exception as exc:
+                log(f"ℹ️ Aba {ABA_LD_BASICO} não processada: {exc}")
+
+            atualizar_progresso_ld(86, "Medição desabilitada.", "running", "Etapa de atualização da aba MEDIÇÃO ignorada por regra operacional.")
+
+            atualizar_progresso_ld(92, "Importando LD para o banco...", "running", "Atualizando registros DocumentoLD no banco Django.")
+            log("💾 Importando LD para banco do GED...")
+            resumo_ld = importar_ld_banco(wb)
+            log(f"✅ LD importada para o banco: {resumo_ld.get('total', 0)} registros.")
+
+            atualizar_progresso_ld(97, "Salvando planilha LD...", "running", "Salvando alterações na planilha LD.")
+            backup_planilha()
+            log("🔒 Backup de segurança criado antes do salvamento da LD.")
+            wb.save()
+            atualizar_progresso_ld(100, "Atualização LD concluída.", "done", "Atualização LD finalizada com sucesso.")
+            log("✅ LDP finalizado com sucesso!")
+    except Exception as e:
+        atualizar_progresso_ld(100, "Erro na Atualização LD.", "error", f"Erro durante processamento: {e}", erro=str(e))
+        log(f"❌ Erro durante processamento: {e}")
+        log(f"🧯 Tentando restaurar backup: {backup_path}")
+        try:
+            shutil.copy2(backup_path, PLANILHA)
+            log("✅ Backup restaurado com sucesso.")
+        except Exception as rb_err:
+            log(f"❌ Falha ao restaurar backup: {rb_err}")
+        raise
+    finally:
+        if wb is not None:
+            try:
+                wb.close()
+            except Exception:
+                pass
+
+# ==========================================================
+# EXECUÇÃO SEGURA VIA GED
+# ==========================================================
+LOCK_FILE = os.path.join(PASTA_LOGS, "atualizar_ld.lock")
+
+
+def _lock_ativo_recente(lock_file: str, horas_limite: int = 6) -> bool:
+    """
+    Evita duas execuções simultâneas da atualização da LD.
+    Se existir um lock antigo, considera travado e libera automaticamente.
+    """
+    if not os.path.exists(lock_file):
+        return False
+
+    try:
+        criado_em = datetime.fromtimestamp(os.path.getmtime(lock_file))
+        idade = datetime.now() - criado_em
+
+        if idade.total_seconds() > horas_limite * 3600:
+            try:
+                os.remove(lock_file)
+                return False
+            except Exception:
+                return True
+
+        return True
+    except Exception:
+        return True
+
+
+def _criar_lock(lock_file: str):
+    os.makedirs(os.path.dirname(lock_file), exist_ok=True)
+    with open(lock_file, "w", encoding="utf-8") as f:
+        f.write(f"Iniciado em: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\n")
+
+
+def _remover_lock(lock_file: str):
+    try:
+        if os.path.exists(lock_file):
+            os.remove(lock_file)
+    except Exception:
+        pass
+
+
+def executar():
+    """
+    Entry point usado pelo GED/Django.
+
+    Não executa nada no import.
+    Mantém a lógica original em processar().
+    Protege contra execução simultânea.
+    Retorna dicionário padrão para a view exibir messages.
+    """
+    resetar_progresso_ld()
+
+    if _lock_ativo_recente(LOCK_FILE):
+        atualizar_progresso_ld(
+            0,
+            "Atualização LD bloqueada.",
+            "blocked",
+            "Atualização LD já está em execução ou ficou travada com lock recente.",
+        )
+        return {
+            "ok": False,
+            "status": "cancelado",
+            "mensagem": (
+                "Atualização LD já está em execução ou ficou travada com lock recente. "
+                "Aguarde finalizar antes de executar novamente."
+            ),
+            "detalhes": {"lock_file": LOCK_FILE},
+        }
+
+    _criar_lock(LOCK_FILE)
+
+    try:
+        print("🚀 Atualização LD iniciada pelo GED")
+        atualizar_progresso_ld(1, "Atualização LD iniciada.", "running", "Execução iniciada pelo GED.")
+        processar()
+
+        return {
+            "ok": True,
+            "mensagem": "Atualização LD executada com sucesso.",
+            "detalhes": {
+                "planilha": PLANILHA,
+                "aba_ld": ABA_LD,
+                "aba_ld_marenova": ABA_LD_MARENOVA,
+                "aba_ld_basico": ABA_LD_BASICO,
+                "logs": PASTA_LOGS,
+            },
+        }
+
+    except Exception as e:
+        print(f"❌ Erro na Atualização LD: {e}")
+        return {
+            "ok": False,
+            "mensagem": f"Erro na Atualização LD: {e}",
+            "detalhes": {"erro": str(e), "tipo": e.__class__.__name__},
+        }
+
+    finally:
+        _remover_lock(LOCK_FILE)
+
+
+if __name__ == "__main__":
+    resultado = executar()
+    print(resultado.get("mensagem", resultado))
