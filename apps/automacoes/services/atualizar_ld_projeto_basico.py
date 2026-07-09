@@ -12,7 +12,7 @@ from apps.automacoes.models import DocumentoLD
 # ==========================================================
 # CONFIGURAÇÕES
 # ==========================================================
-PLANILHA = r"\\virm-rgr022\FILESERVER\Projetos\05_HANDYMAX\09. Doc Control\3 - LD\I-LD-4880.00-9311-000-CZ1-001_RD_Em atualização.xlsm"
+PLANILHA = r"\\virm-rgr022\FILESERVER\Projetos\05_HANDYMAX\09. Doc Control\3 - LD\I-LD-4880.00-9311-000-CZ1-001_RD.xlsm"
 PLANILHA_MARENOVA_EXECUTIVO = r"\\virm-rgr022\FILESERVER\Projetos\05_HANDYMAX\09. Doc Control\3 - LD\I-LD-4880.00-9311-000-CZ1-002_R0.xlsx"
 
 ABA_LD = "LD"
