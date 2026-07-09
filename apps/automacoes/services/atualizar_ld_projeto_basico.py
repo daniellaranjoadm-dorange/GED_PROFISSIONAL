@@ -1975,27 +1975,26 @@ def indexar_general_list_km(wb):
 
     Regras oficiais:
       chave = GENERAL LIST KM coluna F (Customer Document Num / Nº Transpetro)
-      AN    = GENERAL LIST KM coluna C (Number / Nº Documento KM)
-      AO    = GENERAL LIST KM coluna D (Title / KM Title)
-      AP    = GENERAL LIST KM coluna O (Transmittal Number)
-      AQ    = GENERAL LIST KM coluna P (Data recebimento KM)
+      H     = GENERAL LIST KM coluna C (Number / Nº Documento KM)
+      I     = GENERAL LIST KM coluna D (Title / KM Title)
+      J     = GENERAL LIST KM coluna O (Transmittal Number)
+      K     = GENERAL LIST KM coluna P (Data recebimento KM)
 
-    Quando houver mais de um KM para o mesmo Nº Transpetro, os valores são
-    preservados em ordem e unidos por " / " no preenchimento da LD BASICO.
+    Nova regra LD PROJETO BASICO:
+      quando houver mais de um KM para o mesmo Nº Transpetro, NÃO agrupa com " / ".
+      A rotina mantém um registro por ocorrência para que a LD PROJETO BASICO possa
+      repetir a linha inteira e preencher H:K individualmente.
     """
     idx = {}
 
     try:
         ws = wb.sheets[ABA_GENERAL_LIST_KM]
     except Exception as exc:
-        log(f"⚠️ Aba '{ABA_GENERAL_LIST_KM}' não encontrada. Colunas AN:AQ da LD BASICO não serão atualizadas: {exc}")
+        log(f"⚠️ Aba '{ABA_GENERAL_LIST_KM}' não encontrada. Colunas H:K da LD PROJETO BASICO não serão atualizadas: {exc}")
         return idx
 
     try:
-        # IMPORTANTE:
         # A coluna F é a chave oficial (Customer Document Num / Nº Transpetro).
-        # Usar C/D/O/P para calcular a última linha pode capturar formatações/fórmulas
-        # muito abaixo e fazer o Excel ler um intervalo enorme, travando a rotina.
         last = ws.range("F" + str(ws.cells.last_cell.row)).end("up").row
     except Exception as exc:
         log(f"⚠️ Não foi possível localizar última linha da aba '{ABA_GENERAL_LIST_KM}': {exc}")
@@ -2018,7 +2017,8 @@ def indexar_general_list_km(wb):
         len(valores_transmittal),
         len(valores_data_km),
     )
-    duplicados_km_ignorados = 0
+
+    duplicados_identicos_ignorados = 0
 
     for numero_km, title_km, numero_tp, transmittal, data_km in zip(
         valores_km[:total_linhas],
@@ -2028,45 +2028,108 @@ def indexar_general_list_km(wb):
         valores_data_km[:total_linhas],
     ):
         chave_tp = _normalizar_chave_documento(numero_tp)
-        km = _texto_excel_seguro(numero_km)
-
         if not chave_tp:
             continue
 
+        registro = {
+            "numero": _texto_excel_seguro(numero_km),
+            "titulo": _texto_excel_seguro(title_km),
+            "transmittal": _texto_excel_seguro(transmittal),
+            "data": _texto_excel_seguro(data_km),
+        }
+
+        # Ignora linhas totalmente vazias da GENERAL LIST.
+        if not any(str(registro.get(campo) or "").strip() for campo in ("numero", "titulo", "transmittal", "data")):
+            continue
+
         item = idx.setdefault(chave_tp, {
+            "records": [],
+            # Mantém listas antigas apenas para compatibilidade/debug.
             "numbers": [],
             "titles": [],
             "transmittals": [],
             "datas": [],
         })
 
-        if km:
-            if km not in item["numbers"]:
-                item["numbers"].append(km)
-            else:
-                duplicados_km_ignorados += 1
+        assinatura = (
+            registro["numero"],
+            registro["titulo"],
+            registro["transmittal"],
+            registro["data"],
+        )
 
-        _adicionar_unico(item["titles"], title_km)
-        _adicionar_unico(item["transmittals"], transmittal)
-        _adicionar_unico(item["datas"], data_km)
+        assinaturas_existentes = {
+            (
+                r.get("numero", ""),
+                r.get("titulo", ""),
+                r.get("transmittal", ""),
+                r.get("data", ""),
+            )
+            for r in item["records"]
+        }
 
+        if assinatura in assinaturas_existentes:
+            duplicados_identicos_ignorados += 1
+            continue
+
+        item["records"].append(registro)
+        _adicionar_unico(item["numbers"], registro["numero"])
+        _adicionar_unico(item["titles"], registro["titulo"])
+        _adicionar_unico(item["transmittals"], registro["transmittal"])
+        _adicionar_unico(item["datas"], registro["data"])
+
+    total_vinculos = sum(len(item.get("records", [])) for item in idx.values())
     log(
-        f"🔎 GENERAL LIST KM indexada: {len(idx)} Nº Transpetro com vínculos KM "
-        f"({duplicados_km_ignorados} KM duplicado(s) ignorado(s))."
+        f"🔎 GENERAL LIST KM indexada: {len(idx)} Nº Transpetro com {total_vinculos} vínculo(s) KM "
+        f"({duplicados_identicos_ignorados} vínculo(s) idêntico(s) ignorado(s))."
     )
     return idx
+
+
+def _linhas_contiguas_por_chave_ld_basico(ws, doc_col, last):
+    """Agrupa linhas contíguas da LD PROJETO BASICO pela chave da coluna C."""
+    blocos = []
+    r = 2
+
+    while r <= last:
+        chave = _normalizar_chave_documento(ws[f"{doc_col}{r}"].value)
+        inicio = r
+
+        while r + 1 <= last and _normalizar_chave_documento(ws[f"{doc_col}{r + 1}"].value) == chave:
+            r += 1
+
+        fim = r
+        if chave:
+            blocos.append((inicio, fim, chave))
+
+        r += 1
+
+    return blocos
+
+
+def _copiar_linha_excel(ws, linha_origem, linha_destino):
+    """Insere uma linha nova e copia integralmente valores/formatação da linha origem."""
+    ws.api.Rows(linha_origem).Copy()
+    ws.api.Rows(linha_destino).Insert()
+    try:
+        ws.book.app.api.CutCopyMode = False
+    except Exception:
+        pass
 
 
 def preencher_numero_km_ld_basico(wb, idx_general_km=None):
     """
     Preenche a LD PROJETO BASICO com dados da GENERAL LIST KM.
 
-    Regras do novo layout:
+    Regras:
       LD PROJETO BASICO coluna C == GENERAL LIST KM coluna F
       H = GENERAL LIST KM coluna C (Number / Nº Documento KM)
       I = GENERAL LIST KM coluna D (Title / KM Title)
       J = GENERAL LIST KM coluna O (Transmittal Number)
       K = GENERAL LIST KM coluna P (Data Recebimento KM)
+
+    Quando houver mais de um vínculo KM para o mesmo Nº Transpetro, a rotina
+    repete a linha inteira na LD PROJETO BASICO e preenche H:K um vínculo por linha.
     """
     if idx_general_km is None:
         idx_general_km = indexar_general_list_km(wb)
@@ -2093,36 +2156,56 @@ def preencher_numero_km_ld_basico(wb, idx_general_km=None):
     if last < 2:
         return 0
 
-    documentos_tp = _flatten(ws.range(f"{doc_col}2:{doc_col}{last}").value)
-    saida = []
+    blocos = _linhas_contiguas_por_chave_ld_basico(ws, doc_col, last)
+
     preenchidas = 0
+    linhas_inseridas = 0
     sem_vinculo = 0
 
-    for numero_tp in documentos_tp:
-        chave_tp = _normalizar_chave_documento(numero_tp)
+    # Processa de baixo para cima para não deslocar blocos ainda pendentes.
+    for inicio, fim, chave_tp in reversed(blocos):
         dados = idx_general_km.get(chave_tp, {})
+        registros = list(dados.get("records", [])) if dados else []
 
-        valor_numero = " / ".join(dados.get("numbers", [])) if dados else ""
-        valor_titulo = " / ".join(dados.get("titles", [])) if dados else ""
-        valor_transmittal = " / ".join(dados.get("transmittals", [])) if dados else ""
-        valor_data = " / ".join(dados.get("datas", [])) if dados else ""
-
-        saida.append([valor_numero, valor_titulo, valor_transmittal, valor_data])
-
-        if valor_numero or valor_titulo or valor_transmittal or valor_data:
-            preenchidas += 1
-        elif chave_tp:
+        if not registros:
             sem_vinculo += 1
+            for rr in range(inicio, fim + 1):
+                ws.range(f"H{rr}:K{rr}").value = [["", "", "", ""]]
+            continue
 
-    destino = ws.range(f"H2:K{last}")
+        qtd_atual = fim - inicio + 1
+        qtd_necessaria = len(registros)
+
+        if qtd_necessaria > qtd_atual:
+            faltantes = qtd_necessaria - qtd_atual
+            insert_at = fim + 1
+            for _ in range(faltantes):
+                _copiar_linha_excel(ws, inicio, insert_at)
+                linhas_inseridas += 1
+                insert_at += 1
+
+        # Não apagamos linhas extras caso existam mais linhas do que vínculos, para evitar
+        # remover manualmente revisões/linhas que possam ter sido criadas pelo usuário.
+        linhas_para_preencher = max(qtd_atual, qtd_necessaria)
+
+        for offset in range(linhas_para_preencher):
+            rr = inicio + offset
+            if offset < len(registros):
+                registro = registros[offset]
+                ws.range(f"H{rr}:K{rr}").value = [[
+                    registro.get("numero", ""),
+                    registro.get("titulo", ""),
+                    registro.get("transmittal", ""),
+                    registro.get("data", ""),
+                ]]
+                preenchidas += 1
+            elif rr <= fim:
+                ws.range(f"H{rr}:K{rr}").value = [["", "", "", ""]]
+
     try:
+        destino_last = ws.range(f"{doc_col}" + str(ws.cells.last_cell.row)).end("up").row
+        destino = ws.range(f"H2:K{destino_last}")
         destino.api.NumberFormat = "@"
-    except Exception:
-        pass
-
-    destino.value = saida
-
-    try:
         destino.api.Font.Name = "Arial"
         destino.api.Font.Size = 11
         destino.api.HorizontalAlignment = xlCenter
@@ -2132,8 +2215,9 @@ def preencher_numero_km_ld_basico(wb, idx_general_km=None):
         pass
 
     log(
-        f"✅ {ABA_LD_BASICO} colunas H:K atualizadas: {preenchidas} linha(s) preenchida(s), "
-        f"{sem_vinculo} sem vínculo na GENERAL LIST KM."
+        f"✅ {ABA_LD_BASICO} colunas H:K atualizadas sem agrupamento: "
+        f"{preenchidas} vínculo(s) preenchido(s), {linhas_inseridas} linha(s) inserida(s), "
+        f"{sem_vinculo} chave(s) sem vínculo na GENERAL LIST KM."
     )
     return preenchidas
 
