@@ -107,8 +107,37 @@ def normalizar_documento_chave(valor: str) -> str:
     A planilha de transmittal não possui revisão formal por linha.
     Portanto, o documento único é a coluna Documento normalizada.
     """
-    valor = limpar_valor(str(valor or "")).upper()
+    if isinstance(valor, float) and valor.is_integer():
+        valor = str(int(valor))
+    elif isinstance(valor, int):
+        valor = str(valor)
+    else:
+        valor = str(valor or "")
+    valor = limpar_valor(valor).upper()
     return re.sub(r"\s+", "", valor)
+
+
+def chave_documento_transmittal(dados: dict) -> tuple[str, str]:
+    """Identidade usada para reconciliar banco, PDF e linhas efetivamente gravadas na LD."""
+    return (
+        normalizar_documento_chave(dados.get("Documento", "")),
+        limpar_valor(str(dados.get("Transmittal N°", ""))).upper(),
+    )
+
+
+def dados_transmittal_model(obj: TransmittalKM) -> Dict[str, str]:
+    return {
+        "Documento": obj.documento or "",
+        "Titulo": obj.titulo or "",
+        "Pasta": obj.pasta or "",
+        "Emissão": obj.emissao or "",
+        "Proposito de Emissão": obj.proposito_emissao or "",
+        "Data Envio": obj.data_envio or "",
+        "Transmittal N°": obj.transmittal_numero or "",
+        "Arquivo PDF": obj.arquivo_pdf or "",
+        "Status Parse": obj.status_parse or "",
+        "Observação Parse": obj.observacao_parse or "",
+    }
 
 
 def _data_envio_sort_key(valor: str):
@@ -124,7 +153,7 @@ def _data_envio_sort_key(valor: str):
     if not texto:
         return (0, 0, 0)
 
-    m = re.search(r"\b(\d{2})[-.](\d{2})[-.](\d{4})\b", texto)
+    m = re.search(r"\b(\d{2})[-./](\d{2})[-./](\d{4})\b", texto)
     if m:
         dia, mes, ano = m.groups()
         return (int(ano), int(mes), int(dia))
@@ -137,9 +166,21 @@ def _data_envio_sort_key(valor: str):
     return (0, 0, 0)
 
 
-def _transmittal_sort_key(valor: str) -> int:
-    m = re.search(r"(\d+)", str(valor or ""))
-    return int(m.group(1)) if m else 0
+def _transmittal_sort_key(valor: str) -> tuple:
+    """Compara toda a sequência numérica, inclusive o número após TR."""
+    texto = limpar_valor(str(valor or "")).upper()
+    numeros = tuple(int(parte) for parte in re.findall(r"\d+", texto))
+    return numeros or (0,)
+
+
+def _caminho_normalizado(caminho) -> str:
+    return os.path.normcase(os.path.normpath(str(caminho or "").strip()))
+
+
+def _registro_pertence_aos_pdfs_atuais(dados: dict, caminhos_pdfs: set[str]) -> bool:
+    """Aceita somente registros cujo PDF existe no inventário atual da pasta oficial."""
+    caminho = _caminho_normalizado(dados.get("Arquivo PDF", ""))
+    return bool(caminho and caminho in caminhos_pdfs)
 
 
 def _registro_mais_recente(novo: dict, atual: dict) -> bool:
@@ -315,6 +356,23 @@ def separar_emissao_e_proposito(comment_texto: str) -> Tuple[str, str]:
 
 def encontrar_documentos_no_bloco(bloco: str) -> List[Dict[str, str]]:
     resultados = []
+
+    # Alguns relatórios quebram título/pasta em duas ou mais linhas. Captura o
+    # bloco inteiro até "Comment:" antes do fallback linha a linha.
+    padrao_multilinha = re.compile(
+        r"(?m)^([0-9]{3,4}(?:-[0-9]{2,4}){1,4})(?:-ETS)?[- ]+"
+        r"(.+?)\s+\(([^)]+)\)\s*(?=\nComment:)",
+        re.IGNORECASE | re.DOTALL,
+    )
+    for m in padrao_multilinha.finditer(bloco):
+        resultados.append(
+            {
+                "Documento": limpar_valor(m.group(1)),
+                "Titulo": limpar_valor(m.group(2)),
+                "Pasta": limpar_valor(m.group(3)),
+            }
+        )
+
     linhas = [limpar_valor(l) for l in bloco.splitlines() if limpar_valor(l)]
 
     for linha in linhas:
@@ -539,7 +597,7 @@ def ajustar_largura_log(ws_log):
 
 
 
-def salvar_no_banco(dados: dict):
+def salvar_no_banco(dados: dict, arquivos_pdf_oficiais=None):
     documento = dados.get("Documento", "").strip()
     transmittal = dados.get("Transmittal N°", "").strip()
 
@@ -549,9 +607,12 @@ def salvar_no_banco(dados: dict):
     # Regra oficial: manter somente o registro mais recente por documento.
     # A deduplicação é feita antes de salvar; esta limpeza remove históricos antigos
     # do banco quando o mesmo documento já existia em outro Transmittal.
-    TransmittalKM.objects.filter(documento__iexact=documento).exclude(
+    antigos = TransmittalKM.objects.filter(documento__iexact=documento).exclude(
         transmittal_numero=transmittal
-    ).delete()
+    )
+    if arquivos_pdf_oficiais is not None:
+        antigos = antigos.filter(arquivo_pdf__in=list(arquivos_pdf_oficiais))
+    antigos.delete()
 
     TransmittalKM.objects.update_or_create(
         documento=documento,
@@ -618,6 +679,56 @@ def backup_ld_master() -> str:
     return str(destino)
 
 
+def obter_linhas_existentes_ld() -> list:
+    """Retorna uma chave Documento + Transmittal por linha efetivamente gravada."""
+    if not PLANILHA_LD.exists():
+        return []
+
+    with xw.App(visible=False, add_book=False) as app:
+        app.display_alerts = False
+        app.screen_updating = False
+        wb = app.books.open(str(PLANILHA_LD), update_links=False, read_only=True)
+        try:
+            try:
+                ws = wb.sheets[ABA_LD_LISTA_KM]
+            except Exception:
+                return []
+
+            ultima_linha = max(
+                int(ws.range(f"A{ws.cells.last_cell.row}").end("up").row),
+                int(ws.range(f"G{ws.cells.last_cell.row}").end("up").row),
+            )
+            if ultima_linha < 2:
+                return []
+
+            valores = ws.range(f"A2:G{ultima_linha}").value
+            if not isinstance(valores, list):
+                valores = [valores]
+            elif valores and not isinstance(valores[0], list):
+                valores = [valores]
+
+            return [
+                chave_documento_transmittal({
+                    "Documento": linha[0] if isinstance(linha, list) else "",
+                    "Transmittal N°": linha[6] if isinstance(linha, list) and len(linha) > 6 else "",
+                })
+                for linha in valores
+                if isinstance(linha, list) and len(linha) > 6 and linha[0] and linha[6]
+            ]
+        finally:
+            wb.close()
+
+
+def obter_registros_existentes_ld() -> set:
+    """Retorna as chaves Documento + Transmittal realmente gravadas na LD."""
+    return set(obter_linhas_existentes_ld())
+
+
+def obter_transmittals_existentes_ld() -> set:
+    """Compatibilidade: retorna os transmittals confirmados na LD."""
+    return {transmittal for _, transmittal in obter_registros_existentes_ld() if transmittal}
+
+
 def _limpar_hyperlink_xlwings(cell):
     try:
         cell.api.Hyperlinks.Delete()
@@ -649,27 +760,36 @@ def _setar_hyperlink_xlwings(cell, texto: str, endereco: str):
 
 
 def atualizar_lista_km_dentro_ld(registros_latest: List[Dict[str, str]]) -> Dict[str, object]:
-    """
-    Atualiza diretamente a aba 'Lista de Docs recebidos KM' dentro da LD MASTER.
-
-    Regras:
-    - uma linha por documento KM;
-    - mantém somente o registro mais recente, já recebido em registros_latest;
-    - recria o conteúdo operacional A:G da aba;
-    - mantém hyperlinks no Documento e no Transmittal apontando para o PDF original.
-    """
+    """Reconstrói A:G com uma linha mais recente por documento da pasta oficial."""
     if not PLANILHA_LD.exists():
         raise FileNotFoundError(f"LD Master não encontrada: {PLANILHA_LD}")
 
+    if not registros_latest:
+        raise RuntimeError(
+            "A consolidação KM não retornou registros da pasta oficial. "
+            "A aba existente foi preservada integralmente."
+        )
+
     backup_path = backup_ld_master()
     wb = None
+    arquivo_alterado = False
+    esperadas = {chave_documento_transmittal(dados) for dados in registros_latest}
 
     try:
         with xw.App(visible=False, add_book=False) as app:
             app.display_alerts = False
             app.screen_updating = False
 
-            wb = app.books.open(str(PLANILHA_LD), update_links=False)
+            wb = app.books.open(
+                str(PLANILHA_LD),
+                update_links=False,
+                ignore_read_only_recommended=True,
+            )
+            if bool(wb.api.ReadOnly):
+                raise RuntimeError(
+                    "A LD está aberta em outra instância/usuário e foi carregada como somente leitura. "
+                    "Feche a planilha antes de executar o Transmittal KM."
+                )
 
             try:
                 ws = wb.sheets[ABA_LD_LISTA_KM]
@@ -677,10 +797,6 @@ def atualizar_lista_km_dentro_ld(registros_latest: List[Dict[str, str]]) -> Dict
                 ws = wb.sheets.add(ABA_LD_LISTA_KM, after=wb.sheets[-1])
                 print(f"[INFO] Aba criada na LD: {ABA_LD_LISTA_KM}")
 
-            # Limpa a aba inteira para evitar sobras de execuções antigas.
-            ws.clear()
-
-            # Cabeçalhos oficiais iguais ao Excel antigo.
             ws.range("A1").value = [CABECALHOS]
 
             linhas = []
@@ -702,19 +818,31 @@ def atualizar_lista_km_dentro_ld(registros_latest: List[Dict[str, str]]) -> Dict
             except Exception:
                 pass
 
-            if linhas:
-                ws.range("A2").value = linhas
+            ultima_por_coluna = [
+                int(ws.range(f"{col}{ws.cells.last_cell.row}").end("up").row)
+                for col in "ABCDEFG"
+            ]
+            ultima_linha_antiga = max(ultima_por_coluna + [1])
+            primeira_linha_nova = 2
 
-            last_row = max(1, len(linhas) + 1)
+            # Limpa somente o conteúdo operacional A:G. Outras colunas, abas,
+            # fórmulas e formatações do arquivo permanecem intocadas.
+            if ultima_linha_antiga >= 2:
+                ws.range(f"A2:G{ultima_linha_antiga}").clear_contents()
+
+            if linhas:
+                ws.range(f"A{primeira_linha_nova}").value = linhas
+
+            last_row = max(1, primeira_linha_nova + len(linhas) - 1)
 
             # Hyperlinks nativos em A e G.
-            for idx, dados in enumerate(registros_latest, start=2):
+            for idx, dados in enumerate(registros_latest, start=primeira_linha_nova):
                 arquivo_pdf = dados.get("Arquivo PDF", "")
                 _setar_hyperlink_xlwings(ws[f"A{idx}"], dados.get("Documento", ""), arquivo_pdf)
                 _setar_hyperlink_xlwings(ws[f"G{idx}"], dados.get("Transmittal N°", ""), arquivo_pdf)
 
             # Formatação básica enterprise.
-            rng = ws.range(f"A1:G{last_row}")
+            rng = ws.range(f"A{primeira_linha_nova}:G{last_row}") if linhas else ws.range("A1:G1")
             try:
                 rng.api.Font.Name = "Arial"
                 rng.api.Font.Size = 11
@@ -732,38 +860,54 @@ def atualizar_lista_km_dentro_ld(registros_latest: List[Dict[str, str]]) -> Dict
                 pass
 
             try:
-                ws.range(f"B2:B{last_row}").api.HorizontalAlignment = -4131
+                if linhas:
+                    ws.range(f"B{primeira_linha_nova}:B{last_row}").api.HorizontalAlignment = -4131
             except Exception:
                 pass
 
             try:
-                ws.range(f"F2:F{last_row}").api.NumberFormat = "@"
+                if linhas:
+                    ws.range(f"F{primeira_linha_nova}:F{last_row}").api.NumberFormat = "@"
                 # Regrava as datas já normalizadas como texto para garantir
                 # dd/mm/aaaa mesmo quando a origem veio como dd-mm-aaaa.
-                if last_row >= 2:
+                if linhas:
                     datas_formatadas = [
                         [normalizar_data(dados.get("Data Envio", ""))]
                         for dados in registros_latest
                     ]
-                    ws.range(f"F2:F{last_row}").value = datas_formatadas
+                    ws.range(f"F{primeira_linha_nova}:F{last_row}").value = datas_formatadas
             except Exception:
                 pass
 
             try:
-                ws.range("A:G").api.Columns.AutoFit()
-            except Exception:
-                pass
-
-            try:
-                if ws.api.AutoFilterMode:
-                    ws.api.AutoFilterMode = False
-                ws.range(f"A1:G{last_row}").api.AutoFilter()
+                tabelas = ws.api.ListObjects
+                if tabelas.Count > 0:
+                    tabelas.Item(1).Resize(ws.range(f"A1:G{last_row}").api)
+                elif not ws.api.AutoFilterMode:
+                    ws.range(f"A1:G{last_row}").api.AutoFilter()
             except Exception:
                 pass
 
             wb.save()
+            arquivo_alterado = True
 
-        print(f"[INFO] LD atualizada diretamente na aba '{ABA_LD_LISTA_KM}': {len(linhas)} linha(s).")
+        # Validação independente: fecha o Excel, reabre o arquivo salvo e só então
+        # confirma a operação. Isso detecta salvamento silencioso em modo somente leitura.
+        linhas_depois = obter_linhas_existentes_ld()
+        chaves_depois = set(linhas_depois)
+        ausentes = esperadas - chaves_depois
+        inesperadas = chaves_depois - esperadas
+        if ausentes or inesperadas or len(linhas_depois) != len(esperadas):
+            raise RuntimeError(
+                "A LD foi fechada e reaberta, mas a consolidação não foi confirmada. "
+                f"Esperados={len(esperadas)}; linhas={len(linhas_depois)}; "
+                f"ausentes={len(ausentes)}; inesperados={len(inesperadas)}."
+            )
+
+        print(
+            f"[INFO] LD consolidada na aba '{ABA_LD_LISTA_KM}': {len(linhas)} documento(s), "
+            "sem duplicidade por documento e somente com PDFs da pasta oficial."
+        )
 
         return {
             "ok": True,
@@ -775,11 +919,12 @@ def atualizar_lista_km_dentro_ld(registros_latest: List[Dict[str, str]]) -> Dict
 
     except Exception:
         # Se falhar depois do backup, restaura para não deixar a LD em estado parcial.
-        try:
-            shutil.copy2(backup_path, str(PLANILHA_LD))
-            print("[INFO] Backup da LD restaurado após falha na atualização KM.")
-        except Exception as rb_err:
-            print(f"[ERRO] Falha ao restaurar backup da LD: {rb_err}")
+        if arquivo_alterado:
+            try:
+                shutil.copy2(backup_path, str(PLANILHA_LD))
+                print("[INFO] Backup da LD restaurado após falha na atualização KM.")
+            except Exception as rb_err:
+                print(f"[ERRO] Falha ao restaurar backup da LD: {rb_err}")
         raise
 
     finally:
@@ -812,12 +957,27 @@ def processar():
             "mensagem": f"Nenhum PDF encontrado em: {PASTA_PDFS}",
         }
 
+    caminhos_pdfs = {_caminho_normalizado(pdf) for pdf in pdfs}
+    arquivos_pdf_oficiais = {str(pdf) for pdf in pdfs}
+    registros_reparo = []
+    registros_banco_fora_da_pasta = 0
+    for obj in TransmittalKM.objects.all().iterator():
+        dados_obj = dados_transmittal_model(obj)
+        if not _registro_pertence_aos_pdfs_atuais(dados_obj, caminhos_pdfs):
+            registros_banco_fora_da_pasta += 1
+            continue
+        # O banco funciona somente como fallback para PDFs oficiais que falhem
+        # na leitura desta execução. A deduplicação posterior escolhe o mais recente.
+        registros_reparo.append(dados_obj)
+
     wb, ws, ws_log = criar_planilha_nova()
 
     total_pdfs_lidos = 0
     total_registros = 0
     total_duplicados = 0
-    registros_extraidos = []
+    # Registros que chegaram ao banco, mas não à LD, entram automaticamente
+    # no lote de reparação mesmo que o PDF já esteja marcado como processado.
+    registros_extraidos = list(registros_reparo)
 
     for pdf in pdfs:
         print(f"[INFO] Processando: {pdf.name}")
@@ -860,11 +1020,30 @@ def processar():
                 )
 
     registros_latest, total_duplicados = filtrar_registros_latest_por_documento(registros_extraidos)
+    versoes_por_documento = {}
+    for dados in registros_extraidos:
+        chave_doc = normalizar_documento_chave(dados.get("Documento", ""))
+        if not chave_doc:
+            continue
+        versoes_por_documento.setdefault(chave_doc, set()).add((
+            normalizar_data(dados.get("Data Envio", "")),
+            limpar_valor(str(dados.get("Transmittal N°", ""))).upper(),
+        ))
+    historicos_distintos = sum(max(0, len(versoes) - 1) for versoes in versoes_por_documento.values())
 
-    for dados in registros_latest:
-        adicionar_linha(ws, dados)
-        salvar_no_banco(dados)
-        total_registros += 1
+    if registros_banco_fora_da_pasta:
+        registrar_log(
+            ws_log,
+            str(PASTA_PDFS),
+            "",
+            "AVISO",
+            f"{registros_banco_fora_da_pasta} registro(s) histórico(s) do banco apontam para PDFs "
+            "fora da pasta oficial ou ausentes. Eles foram ignorados e não foram apagados.",
+        )
+        print(
+            f"[AVISO] {registros_banco_fora_da_pasta} registro(s) do banco fora da pasta oficial "
+            "foram ignorados e preservados no banco."
+        )
 
     if total_duplicados:
         registrar_log(
@@ -872,14 +1051,43 @@ def processar():
             str(PASTA_PDFS),
             "",
             "INFO",
-            f"{total_duplicados} duplicidade(s) por documento ignorada(s); mantida a Data Envio mais recente.",
+            f"{total_duplicados} candidato(s) repetido(s) comparado(s), incluindo o fallback de segurança "
+            f"do banco; {historicos_distintos} versão(ões) histórica(s) realmente distinta(s). "
+            "Mantida uma linha por documento, priorizando Data Envio e depois o maior Transmittal.",
         )
+
+    if registros_latest:
+        resultado_ld = atualizar_lista_km_dentro_ld(registros_latest)
+    else:
+        resultado_ld = {
+            "ok": True,
+            "linhas": 0,
+            "aba": ABA_LD_LISTA_KM,
+            "planilha": str(PLANILHA_LD),
+            "backup": "",
+            "mensagem": "Nenhum transmittal novo encontrado; a LD não foi alterada.",
+        }
+
+    # O banco só passa a marcar novos PDFs como processados depois que a LD
+    # confirmou a gravação. Isso mantém a execução autorreparável.
+    for dados in registros_latest:
+        salvar_no_banco(dados, arquivos_pdf_oficiais=arquivos_pdf_oficiais)
+
+    # A planilha NOVA é um espelho completo do banco, nunca apenas do lote incremental.
+    registros_banco = [
+        dados
+        for obj in TransmittalKM.objects.all()
+        for dados in [dados_transmittal_model(obj)]
+        if _registro_pertence_aos_pdfs_atuais(dados, caminhos_pdfs)
+    ]
+    registros_exportacao, _ = filtrar_registros_latest_por_documento(registros_banco)
+    for dados in registros_exportacao:
+        adicionar_linha(ws, dados)
+    total_registros = int(resultado_ld.get("linhas") or 0)
 
     ajustar_largura(ws)
     ajustar_largura_log(ws_log)
     wb.save(ARQUIVO_EXCEL_NOVO)
-
-    resultado_ld = atualizar_lista_km_dentro_ld(registros_latest)
 
     print("\n=== RESUMO TRANSMITTAL KM ===")
     print(f"PDFs lidos: {total_pdfs_lidos}")
@@ -893,6 +1101,7 @@ def processar():
         "pdfs_lidos": total_pdfs_lidos,
         "linhas_gravadas": total_registros,
         "duplicados_ignorados": total_duplicados,
+        "registros_banco_fora_da_pasta": registros_banco_fora_da_pasta,
         "arquivo": str(ARQUIVO_EXCEL_NOVO),
         "ld_master": resultado_ld,
         "quantidade_processada": total_registros,
@@ -900,6 +1109,7 @@ def processar():
             "pdfs_lidos": total_pdfs_lidos,
             "linhas_gravadas": total_registros,
             "duplicados_ignorados": total_duplicados,
+            "registros_banco_fora_da_pasta": registros_banco_fora_da_pasta,
             "arquivo": str(ARQUIVO_EXCEL_NOVO),
             "ld_master": resultado_ld,
         },
@@ -935,7 +1145,10 @@ def executar():
                 "detalhes": resumo,
             }
 
-        resultado_vinculo = executar_vinculo_km_ld()
+        arquivos_pdf_oficiais = [str(pdf) for pdf in PASTA_PDFS.glob("*.pdf")]
+        resultado_vinculo = executar_vinculo_km_ld(
+            arquivos_pdf_permitidos=arquivos_pdf_oficiais
+        )
         detalhes_vinculo = resultado_vinculo.get("detalhes", {}) if isinstance(resultado_vinculo, dict) else {}
 
         vinculados_auto = int(detalhes_vinculo.get("vinculados_auto") or 0)

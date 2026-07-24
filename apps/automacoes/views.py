@@ -23,7 +23,9 @@ from openpyxl.styles import Font, PatternFill
 from apps.automacoes.models import TransmittalKM, PCFTimeline, DocumentoLD, DocumentoKM, ExecucaoAutomacao, KMFileIndex
 from apps.automacoes.services import (
     atualizar_ld,
+    atualizar_ld_projeto_basico,
     grd_ghenova,
+    relatorio_executivo_km,
     timeline_pcfs,
     transmittal_km,
 )
@@ -678,6 +680,42 @@ def painel(request):
                 ],
             },
             {
+                "nome": "Atualização LD Projeto Básico",
+                "subtitulo": "Projeto Básico + Marenova Executivo",
+                "icone": "bi-diagram-3",
+                "badge": "Piloto",
+                "badge_class": "auto-badge-info",
+                "descricao": "Atualiza a LD PROJETO BASICO e a LD MARENOVA P EXECUTIVO, com GRDs, PCFs, KM, backups e importação para o banco.",
+                "form_url": "automacoes:atualizar_ld_projeto_basico",
+                "botao": "Executar LD Projeto Básico",
+                "botao_class": "btn-info",
+                "dashboard_url": "automacoes:dashboard_ld",
+                "registros_url": "automacoes:lista_ld",
+                "metricas": [
+                    {"label": "Linhas LD", "valor": total_ld},
+                    {"label": "Com PCF", "valor": total_ld_com_pcf},
+                    {"label": "Sem PCF", "valor": total_ld_sem_pcf},
+                ],
+            },
+            {
+                "nome": "Relatório Executivo KM",
+                "subtitulo": "Direção — Projeto Básico, PCF e BV",
+                "icone": "bi-graph-up-arrow",
+                "badge": "Somente leitura",
+                "badge_class": "auto-badge-success",
+                "descricao": "Gera uma nova versão do relatório gerencial, com pendências por TP, ETS, Armature, PCFs, BV e reconciliações de qualidade.",
+                "form_url": "automacoes:relatorio_executivo_km",
+                "botao": "Gerar Relatório Executivo",
+                "botao_class": "btn-success",
+                "dashboard_url": "",
+                "registros_url": "",
+                "metricas": [
+                    {"label": "Fonte", "valor": "LD"},
+                    {"label": "Modo", "valor": "Leitura"},
+                    {"label": "Saída", "valor": "Nova versão"},
+                ],
+            },
+            {
                 "nome": "Timeline PCFs",
                 "subtitulo": "Comentários e revisões",
                 "icone": "bi-bar-chart-line",
@@ -975,6 +1013,48 @@ def executar_atualizar_ld(request):
         "Atualização LD",
     )
 
+
+
+@login_required
+def executar_atualizar_ld_projeto_basico(request):
+    return _executar_automacao(
+        request,
+        atualizar_ld_projeto_basico.executar,
+        "Atualização LD Projeto Básico",
+    )
+
+
+@login_required
+def executar_relatorio_executivo_km(request):
+    return _executar_automacao(
+        request,
+        relatorio_executivo_km.executar,
+        "Relatório Executivo KM",
+    )
+
+
+@login_required
+def progresso_ld_projeto_basico_api(request):
+    """API de progresso da Atualização LD Projeto Básico."""
+    try:
+        if hasattr(atualizar_ld_projeto_basico, "obter_progresso_ld"):
+            return JsonResponse(atualizar_ld_projeto_basico.obter_progresso_ld())
+
+        return JsonResponse({
+            "status": "idle",
+            "percentual": 0,
+            "etapa": "Aguardando execução.",
+            "mensagem": "Rotina de progresso do Projeto Básico não disponível.",
+            "erro": "",
+        })
+    except Exception as exc:
+        return JsonResponse({
+            "status": "error",
+            "percentual": 100,
+            "etapa": "Erro ao ler progresso do Projeto Básico.",
+            "mensagem": str(exc),
+            "erro": str(exc),
+        }, status=500)
 
 
 @login_required

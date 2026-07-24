@@ -36,7 +36,22 @@ urlpatterns = [
 
     # Automações principais
     path("executar-atualizar-ld/", views.executar_atualizar_ld, name="atualizar_ld"),
+    path(
+        "executar-atualizar-ld-projeto-basico/",
+        views.executar_atualizar_ld_projeto_basico,
+        name="atualizar_ld_projeto_basico",
+    ),
+    path(
+        "gerar-relatorio-executivo-km/",
+        views.executar_relatorio_executivo_km,
+        name="relatorio_executivo_km",
+    ),
     path("api/ld/progresso/", views.progresso_ld_api, name="progresso_ld_api"),
+    path(
+        "api/ld-projeto-basico/progresso/",
+        views.progresso_ld_projeto_basico_api,
+        name="progresso_ld_projeto_basico_api",
+    ),
     path("timeline-pcfs/", views.timeline_pcfs_view, name="timeline_pcfs"),
     path("transmittal-km/", views.executar_transmittal_km, name="transmittal_km"),
     path("grd-ghenova/", views.executar_grd_ghenova, name="grd_ghenova"),

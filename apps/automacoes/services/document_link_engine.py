@@ -168,8 +168,9 @@ class DocumentLinkEngine:
     SCORE_AUTO = 90
     SCORE_PENDENTE = 60
 
-    def __init__(self, limite_candidatos: int = 300):
+    def __init__(self, limite_candidatos: int = 300, arquivos_pdf_permitidos=None):
         self.limite_candidatos = limite_candidatos
+        self.arquivos_pdf_permitidos = list(arquivos_pdf_permitidos or [])
 
     def executar(self) -> ResultadoVinculo:
         resultado = ResultadoVinculo()
@@ -178,6 +179,8 @@ class DocumentLinkEngine:
             TransmittalKM.objects.exclude(documento="")
             .order_by("documento", "-criado_em")
         )
+        if self.arquivos_pdf_permitidos:
+            transmittals = transmittals.filter(arquivo_pdf__in=self.arquivos_pdf_permitidos)
 
         for registro in transmittals.iterator(chunk_size=500):
             resultado.processados += 1
@@ -309,8 +312,8 @@ class DocumentLinkEngine:
         )
 
 
-def executar_vinculo_km_ld() -> dict:
-    resultado = DocumentLinkEngine().executar()
+def executar_vinculo_km_ld(arquivos_pdf_permitidos=None) -> dict:
+    resultado = DocumentLinkEngine(arquivos_pdf_permitidos=arquivos_pdf_permitidos).executar()
     dados = resultado.as_dict()
 
     return {

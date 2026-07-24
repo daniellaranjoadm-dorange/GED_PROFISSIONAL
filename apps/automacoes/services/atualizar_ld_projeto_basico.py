@@ -4,7 +4,9 @@ from datetime import datetime, timedelta, date
 import xlwings as xw
 import re
 import threading
+import time
 from openpyxl import load_workbook
+from django.db import transaction
 
 from apps.automacoes.models import DocumentoLD
 
@@ -31,8 +33,6 @@ TIMELINE_PCF = r"\\virm-rgr022\FILESERVER\Projetos\05_HANDYMAX\09. Doc Control\9
 
 PASTA_LOGS = r"\\virm-rgr022\FILESERVER\Projetos\05_HANDYMAX\09. Doc Control\3 - LD\Logs"
 PASTA_BACKUPS = os.path.join(PASTA_LOGS, "Backups")
-os.makedirs(PASTA_BACKUPS, exist_ok=True)
-os.makedirs(PASTA_LOGS, exist_ok=True)
 
 EXTENSOES = {".doc", ".docx", ".pdf", ".dwg", ".xls", ".xlsx", ".xlsm"}
 
@@ -70,7 +70,7 @@ FREEZE_PANES = False
 
 # ✅ Formatação
 APLICAR_FORMATACAO = True
-ULTIMA_COLUNA = "BB"  # novo layout LD Projeto Básico até BB
+ULTIMA_COLUNA = "BD"  # cobre também a última coluna operacional da LD principal
 
 # Excel constants
 xlCenter = -4108
@@ -124,30 +124,40 @@ LAYOUT_PROJETO_BASICO = {
     "titulo": "E",
     "disciplina": "G",
     "disciplina_alt": "F",
-    "status": "L",
-    "status_grd": "M",
-    "grd": "V",
-    "data_grd": "W",
-    "pcf": "X",
-    "data_pcf": "Y",
-    "status_pcf": "Z",
-    "pcf_resposta": "AA",
-    "data_resposta": "AB",
-    "grd_resposta": "AC",
+
+    # H:K permanecem no mesmo lugar.
     "numero_documento_km": "H",
     "km_title": "I",
     "transmittal_km": "J",
     "data_recebimento_km": "K",
-    "casco": "BB",
-    "qtd_comentarios": "AD",
-    "open_comments": "AE",
-    "under_review": "AF",
-    "status_final_pcf": "AG",
-    "posted_date": "AW",
-    "status_bv": "AX",
-    "since_bv": "AY",
-    "action_bv": "AZ",
-    "nb_pending_comments": "BA",
+
+    # Nova coluna inserida no layout.
+    # Ela é preservada pela atualização e não é sobrescrita pelo motor.
+    "documento_km_emitido_tp": "L",
+
+    # Todas as colunas que estavam a partir de L foram deslocadas +1.
+    "status": "M",
+    "status_grd": "N",
+    "grd": "W",
+    "data_grd": "X",
+    "pcf": "Y",
+    "data_pcf": "Z",
+    "status_pcf": "AA",
+    "pcf_resposta": "AB",
+    "data_resposta": "AC",
+    "grd_resposta": "AD",
+
+    "qtd_comentarios": "AE",
+    "open_comments": "AF",
+    "under_review": "AG",
+    "status_final_pcf": "AH",
+
+    "posted_date": "AX",
+    "status_bv": "AY",
+    "since_bv": "AZ",
+    "action_bv": "BA",
+    "nb_pending_comments": "BB",
+    "casco": "BC",
 }
 
 LAYOUT_MARENOVA_EXECUTIVO = {
@@ -233,9 +243,8 @@ def _limpar_hyperlink_layout(ws, layout, campo, row):
 def _setar_hyperlink_layout(ws, layout, campo, row, endereco, texto):
     cell = _cell_layout(ws, layout, campo, row)
     if cell is not None:
-        setar_hyperlink(cell, endereco, texto)
-        return cell
-    return None
+        return setar_hyperlink(cell, endereco, texto)
+    return False
 
 
 # ==========================================================
@@ -443,6 +452,14 @@ def normalizar_rev(v):
 
     return s
 
+
+def normalizar_codigo(v):
+    """Normaliza códigos vindos do Excel e de nomes de arquivo para comparação."""
+    s = str(v or "").strip().upper()
+    for hifen in ("–", "—", "−", "‐", "‑"):
+        s = s.replace(hifen, "-")
+    return re.sub(r"\s+", "", s)
+
 def rev_key(rev: str):
     s = (rev or "").strip().upper()
     if s.isdigit():
@@ -475,6 +492,14 @@ def _split_by_base(rev_pcf: str, base: str) -> tuple[bool, str]:
     if rev_pcf.startswith(base):
         return (True, rev_pcf[len(base):])
     return (False, "")
+
+
+def _revisao_pcf_do_nome(valor) -> str:
+    """Extrai a revisão completa de PCF-..._R<base><sufixo>."""
+    nome = os.path.basename(str(valor or "").strip())
+    nome = re.sub(r"\.(?:XLSX|XLSM)$", "", nome, flags=re.IGNORECASE)
+    m = re.search(r"_R([0-9A-Z]+)", nome, re.IGNORECASE)
+    return normalizar_rev(m.group(1)) if m else ""
 
 # ==========================================================
 # EXTRAIR GRD DO CAMINHO
@@ -525,7 +550,7 @@ def limpar_hyperlink(cell):
         pass
 
 def setar_hyperlink(cell, endereco, texto):
-    """
+    r"""
     Cria hyperlink preservando caminho UNC de rede.
 
     Evita links quebrados do tipo file:///\\servidor\pasta\arquivo.xlsx.
@@ -536,7 +561,7 @@ def setar_hyperlink(cell, endereco, texto):
     cell.value = texto
 
     if not endereco_limpo:
-        return
+        return False
 
     try:
         cell.api.Hyperlinks.Add(
@@ -545,7 +570,15 @@ def setar_hyperlink(cell, endereco, texto):
             TextToDisplay=str(texto or "")
         )
     except Exception:
-        cell.add_hyperlink(endereco_limpo, texto)
+        try:
+            cell.add_hyperlink(endereco_limpo, texto)
+        except Exception:
+            return False
+
+    try:
+        return bool(cell.api.Hyperlinks.Count)
+    except Exception:
+        return False
 
 
 # ==========================================================
@@ -655,36 +688,64 @@ def indexar_engenharia_info():
       idx[codigo][rev] = { "path": pasta_onde_achou, "file": arquivo, "date": mtime_arquivo }
     Se encontrar duplicado (mesmo codigo+rev em lugares diferentes), mantém o mais recente.
     """
-    idx = {}
-    for root, _, files in os.walk(PASTA_DOCS):
-        for f in files:
-            nome, ext = os.path.splitext(f)
-            if ext.lower() not in EXTENSOES:
-                continue
-            if "_R" not in nome:
-                continue
+    ultimo_erro = None
 
-            codigo, resto = nome.split("_R", 1)
-            mrev = re.match(r"([0-9A-Z]+)", str(resto).strip().upper())
-            if not mrev:
-                continue
+    for tentativa in range(1, 4):
+        idx = {}
+        erros_walk = []
 
-            rev = normalizar_rev(mrev.group(1))
-            if not rev:
-                continue
+        if not os.path.isdir(PASTA_DOCS):
+            ultimo_erro = RuntimeError(f"Pasta Engenharia indisponível: {PASTA_DOCS}")
+        else:
+            for root, _, files in os.walk(PASTA_DOCS, onerror=erros_walk.append):
+                for f in files:
+                    nome, ext = os.path.splitext(f)
+                    if ext.lower() not in EXTENSOES:
+                        continue
 
-            full = os.path.join(root, f)
-            dt = _file_datetime(full, "MTIME")
+                    marcador = nome.upper().find("_R")
+                    if marcador < 0:
+                        continue
 
-            codigo = codigo.strip()
-            existente = idx.get(codigo, {}).get(rev)
-            if (existente is None) or (dt and dt > existente["date"]):
-                idx.setdefault(codigo, {})[rev] = {
-                    "path": root,
-                    "file": full,
-                    "date": dt
-                }
-    return idx
+                    codigo = normalizar_codigo(nome[:marcador])
+                    resto = nome[marcador + 2:]
+                    mrev = re.match(r"([0-9A-Z]+)", str(resto).strip().upper())
+                    if not mrev:
+                        continue
+
+                    rev = normalizar_rev(mrev.group(1))
+                    if not codigo or not rev:
+                        continue
+
+                    full = os.path.join(root, f)
+                    dt = _file_datetime(full, "MTIME")
+                    existente = idx.get(codigo, {}).get(rev)
+                    data_existente = existente.get("date") if existente else None
+                    escolher = (
+                        existente is None
+                        or (dt is not None and data_existente is None)
+                        or (dt is not None and data_existente is not None and dt > data_existente)
+                    )
+                    if escolher:
+                        idx.setdefault(codigo, {})[rev] = {
+                            "path": root,
+                            "file": full,
+                            "date": dt,
+                        }
+
+            if idx and not erros_walk:
+                return idx
+
+            detalhes = "; ".join(str(e) for e in erros_walk[:3]) or "nenhum documento indexado"
+            ultimo_erro = RuntimeError(
+                f"Indexação incompleta da Engenharia na tentativa {tentativa}: {detalhes}"
+            )
+
+        if tentativa < 3:
+            log(f"⚠️ {ultimo_erro}. Nova tentativa em 2 segundos.")
+            time.sleep(2)
+
+    raise ultimo_erro or RuntimeError("Falha desconhecida ao indexar a Engenharia.")
 
 def indexar_grds():
     """
@@ -729,7 +790,7 @@ def indexar_grds():
             else:
                 dt_k = dt_doc or dt_grd
 
-            codigo = codigo.strip()
+            codigo = normalizar_codigo(codigo)
             existente = idx.get(codigo, {}).get(rev)
 
             # se houver duplicado, fica com o mais recente (dt_k)
@@ -784,7 +845,7 @@ def indexar_pcfs(pasta, excluir_subpastas=None, data_origem="MTIME"):
             caminho = os.path.join(root, f)
             dt = _file_datetime(caminho, data_origem)
 
-            codigo = codigo.strip()
+            codigo = normalizar_codigo(codigo)
             existente = idx.get(codigo, {}).get(rev)
             info = {
                 "pcf": nome,
@@ -1251,7 +1312,7 @@ def inserir_revisoes_novas(ws, idx_eng):
     all_rows = {}
 
     for r in range(2, last + 1):
-        codigo = str(ws[f"B{r}"].value or "").strip()
+        codigo = normalizar_codigo(ws[f"B{r}"].value)
         if not codigo:
             continue
         rev = normalizar_rev(ws[f"C{r}"].value)
@@ -1324,9 +1385,10 @@ def _set_cell_text(cell, texto: str):
     except Exception:
         pass
 
-def aplicar_formatacao(ws):
-    # última linha usando coluna B (mais estável)
-    last_row = ws.range("B" + str(ws.cells.last_cell.row)).end("up").row
+def aplicar_formatacao(ws, layout=None):
+    layout = layout or LAYOUT_LD
+    doc_col = _col_layout(layout, "documento") or "B"
+    last_row = ws.range(doc_col + str(ws.cells.last_cell.row)).end("up").row
     if last_row < 2:
         return
 
@@ -1620,7 +1682,8 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
         }
 
         for r in range(last, 1, -1):
-            codigo = str(_valor_layout(ws, layout, "documento", r) or "").strip()
+            codigo_exibido = str(_valor_layout(ws, layout, "documento", r) or "").strip()
+            codigo = normalizar_codigo(codigo_exibido)
             rev = normalizar_rev(_valor_layout(ws, layout, "revisao", r))
 
             if not codigo:
@@ -1642,18 +1705,50 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
             status_h = str(_valor_layout(ws, layout, "status", r) or "").strip().upper()
             preservar_status_basico = eh_projeto_basico and status_h in STATUS_H_PRESERVAR_BASICO
 
+            # O hyperlink do documento sempre deve abrir a pasta, inclusive em
+            # linhas cujo status bloqueia as demais atualizações operacionais.
+            info_eng = idx_eng.get(codigo, {}).get(rev)
+            if info_eng:
+                link_ok = _setar_hyperlink_layout(
+                    ws, layout, "documento", r, info_eng["path"], codigo_exibido or codigo
+                )
+                if LOG_DETALHADO:
+                    resultado_link = "criado" if link_ok else "FALHOU"
+                    log(
+                        f"   [DOC] {aba_nome} L{r} | {codigo}_R{rev} => "
+                        f"hyperlink de pasta {resultado_link} | pasta={info_eng['path']}"
+                    )
+            else:
+                # Se a indexação não reencontrar o documento, converte um
+                # hyperlink antigo de arquivo para a pasta que o contém.
+                cell_documento = _cell_layout(ws, layout, "documento", r)
+                link_anterior = _sync_obter_hyperlink(cell_documento) if cell_documento is not None else ""
+                endereco_anterior = normalizar_endereco_hyperlink(link_anterior)
+                extensao_anterior = os.path.splitext(endereco_anterior)[1].lower()
+                if endereco_anterior and extensao_anterior in EXTENSOES:
+                    pasta_anterior = os.path.dirname(endereco_anterior)
+                    link_ok = _setar_hyperlink_layout(
+                        ws, layout, "documento", r, pasta_anterior, codigo_exibido or codigo
+                    )
+                    if LOG_DETALHADO:
+                        resultado_link = "convertido" if link_ok else "FALHOU"
+                        log(
+                            f"   [DOC] {aba_nome} L{r} | {codigo}_R{rev} => "
+                            f"hyperlink antigo {resultado_link} para pasta={pasta_anterior}"
+                        )
+                else:
+                    _set_layout(ws, layout, "documento", r, codigo_exibido or codigo)
+                if LOG_DETALHADO:
+                    if not endereco_anterior:
+                        log(
+                            f"   [DOC] {aba_nome} L{r} | {codigo}_R{rev} => "
+                            "não localizado e sem hyperlink anterior"
+                        )
+
             if not eh_projeto_basico and status_h in STATUS_H_BLOQUEADOS:
                 if LOG_DETALHADO:
                     log(f"   [SKIP] {aba_nome} L{r} ignorada ({status_col} = {status_h})")
                 continue
-
-            # Hyperlink da Engenharia no documento.
-            info_eng = idx_eng.get(codigo, {}).get(rev)
-            if info_eng:
-                _setar_hyperlink_layout(ws, layout, "documento", r, info_eng["path"], codigo)
-            else:
-                _limpar_hyperlink_layout(ws, layout, "documento", r)
-                _set_layout(ws, layout, "documento", r, codigo)
 
             documento_encontrado = codigo in idx_eng_codigos
             pcf_recebida_para_rev = False
@@ -1796,6 +1891,7 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
                         f"| UNDER='{intel_pcf.get('under_review', '')}'"
                     )
             else:
+                revisoes_disponiveis = sorted(mapa.keys(), key=rev_key) if mapa else []
                 _set_layout(ws, layout, "pcf", r, None)
 
                 cell_data_pcf = _cell_layout(ws, layout, "data_pcf", r)
@@ -1810,7 +1906,13 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
                         _set_layout(ws, layout, campo, r, None)
 
                 if LOG_DETALHADO:
-                    log(f"   [PCF] {aba_nome} L{r} | {codigo}_R{rev} => PCF NÃO encontrada")
+                    if revisoes_disponiveis:
+                        log(
+                            f"   [PCF OUTRA REVISÃO IGNORADA] {aba_nome} L{r} | "
+                            f"{codigo}_R{rev_doc} | disponíveis={','.join(revisoes_disponiveis)}"
+                        )
+                    else:
+                        log(f"   [PCF AGUARDANDO] {aba_nome} L{r} | {codigo}_R{rev} => PCF não encontrada")
 
             # Resposta de PCF.
             mapa_resp = idx_pcf_resp.get(codigo, {})
@@ -1852,6 +1954,7 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
                 if LOG_DETALHADO:
                     log(f"   [PCF RESP] {aba_nome} L{r} | {codigo}_R{rev_doc_resp} => PCF_RESP={info_resp['pcf']} | GRD={grd_resp or '-'}")
             else:
+                revisoes_resp_disponiveis = sorted(mapa_resp.keys(), key=rev_key) if mapa_resp else []
                 _set_layout(ws, layout, "pcf_resposta", r, None)
 
                 cell_data_resp = _cell_layout(ws, layout, "data_resposta", r)
@@ -1863,10 +1966,19 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
                 _limpar_hyperlink_layout(ws, layout, "grd_resposta", r)
 
                 if LOG_DETALHADO:
-                    log(f"   [PCF RESP] {aba_nome} L{r} | {codigo}_R{rev} => PCF_RESPOSTA NÃO encontrada")
+                    if revisoes_resp_disponiveis:
+                        log(
+                            f"   [PCF RESP OUTRA REVISÃO IGNORADA] {aba_nome} L{r} | "
+                            f"{codigo}_R{rev_doc_resp} | disponíveis={','.join(revisoes_resp_disponiveis)}"
+                        )
+                    else:
+                        log(
+                            f"   [PCF RESP AGUARDANDO] {aba_nome} L{r} | "
+                            f"{codigo}_R{rev} => resposta não encontrada"
+                        )
 
         if APLICAR_FORMATACAO:
-            aplicar_formatacao(ws)
+            aplicar_formatacao(ws, layout)
     finally:
         restaurar_autofiltro(ws, _af_state)
         garantir_autofiltro(ws)
@@ -1885,6 +1997,105 @@ def _sync_obter_hyperlink(cell):
     except Exception:
         pass
     return ""
+
+
+def validar_revisoes_pcfs_workbook(wb, abas_layouts):
+    """Impede salvamento se PCF recebida/respondida pertencer a outra revisão-base."""
+    divergencias = []
+
+    for aba_nome, layout in abas_layouts:
+        try:
+            ws = wb.sheets[aba_nome]
+        except Exception:
+            continue
+
+        doc_col = _col_layout(layout, "documento")
+        rev_col = _col_layout(layout, "revisao")
+        if not doc_col or not rev_col:
+            continue
+
+        last = ws.range(doc_col + str(ws.cells.last_cell.row)).end("up").row
+        for r in range(2, last + 1):
+            documento = normalizar_codigo(ws[f"{doc_col}{r}"].value)
+            revisao = normalizar_rev(ws[f"{rev_col}{r}"].value)
+            if not documento or not revisao:
+                continue
+
+            for campo, rotulo in (("pcf", "PCF Nº"), ("pcf_resposta", "PCF RESPONDIDA")):
+                coluna = _col_layout(layout, campo)
+                if not coluna:
+                    continue
+                valor = ws[f"{coluna}{r}"].value
+                if not str(valor or "").strip():
+                    continue
+
+                revisao_pcf = _revisao_pcf_do_nome(valor)
+                compativel, _ = _split_by_base(revisao_pcf, revisao)
+                if not compativel:
+                    divergencias.append(
+                        f"{aba_nome} L{r} | {documento}_R{revisao} | "
+                        f"{rotulo}='{valor}' (revisão PCF={revisao_pcf or '?'})"
+                    )
+
+    if divergencias:
+        for item in divergencias[:50]:
+            log(f"🚨 [PCF REVISÃO INCOMPATÍVEL] {item}")
+        raise RuntimeError(
+            f"Validação PCF bloqueou o salvamento: {len(divergencias)} vínculo(s) "
+            "de PCF recebida/respondida pertencem a outra revisão."
+        )
+
+    log("✅ Validação PCF: nenhuma PCF recebida/respondida vinculada a revisão incompatível.")
+    return 0
+
+
+def _status_documento_por_status_pcf(valor):
+    """Converte o status final da PCF no status operacional da LD Projeto Básico."""
+    status = re.sub(r"\s+", " ", str(valor or "").strip().upper())
+    mapa = {
+        "NOT RELEASED": "Reprovado",
+        "RELEASED": "Aprovado sem Comentários",
+        "RELEASED WITH COMMENTS": "Aprovado com comentários",
+    }
+    return mapa.get(status, "")
+
+
+def atualizar_status_documento_por_pcf_ld_basico(wb):
+    """Atualiza M usando AH como fonte prioritária e AA como fallback."""
+    try:
+        ws = wb.sheets[ABA_LD_BASICO]
+    except Exception as exc:
+        log(f"⚠️ Status por PCF não atualizado: {exc}")
+        return 0
+
+    layout = LAYOUT_PROJETO_BASICO
+    doc_col = _col_layout(layout, "documento")
+    last = ws.range(doc_col + str(ws.cells.last_cell.row)).end("up").row
+    atualizados = 0
+    contagem = {}
+
+    for r in range(2, last + 1):
+        if not normalizar_codigo(_valor_layout(ws, layout, "documento", r)):
+            continue
+
+        status_ah = _valor_layout(ws, layout, "status_final_pcf", r)
+        status_aa = _valor_layout(ws, layout, "status_pcf", r)
+        novo_status = (
+            _status_documento_por_status_pcf(status_ah)
+            or _status_documento_por_status_pcf(status_aa)
+        )
+        if not novo_status:
+            continue
+
+        status_atual = str(_valor_layout(ws, layout, "status", r) or "").strip()
+        if status_atual != novo_status:
+            _set_layout(ws, layout, "status", r, novo_status)
+            atualizados += 1
+        contagem[novo_status] = contagem.get(novo_status, 0) + 1
+
+    resumo = ", ".join(f"{status}={qtd}" for status, qtd in sorted(contagem.items())) or "nenhum status reconhecido"
+    log(f"✅ {ABA_LD_BASICO}: status M atualizado pela PCF (AH prioritária; AA fallback): {resumo}.")
+    return atualizados
 
 
 def sincronizar_pcf_intelligence_ld_basico(wb):
@@ -1918,10 +2129,9 @@ def sincronizar_pcf_intelligence_ld_basico(wb):
         return 0
 
     idx_exato = {}
-    idx_por_doc = {}
 
     for r in range(2, last_ld + 1):
-        documento = str(_valor_layout(ws_ld, layout_ld, "documento", r) or "").strip()
+        documento = normalizar_codigo(_valor_layout(ws_ld, layout_ld, "documento", r))
         revisao = normalizar_rev(_valor_layout(ws_ld, layout_ld, "revisao", r))
 
         if not documento:
@@ -1944,20 +2154,17 @@ def sincronizar_pcf_intelligence_ld_basico(wb):
 
         idx_exato[(documento, revisao)] = dados
 
-        atual = idx_por_doc.get(documento)
-        if atual is None or rev_key(revisao) >= rev_key(atual.get("rev", "")):
-            idx_por_doc[documento] = dados
-
     sincronizadas = 0
 
     for r in range(2, last_basico + 1):
-        documento = str(_valor_layout(ws_basico, layout_basico, "documento", r) or "").strip()
+        documento = normalizar_codigo(_valor_layout(ws_basico, layout_basico, "documento", r))
         revisao = normalizar_rev(_valor_layout(ws_basico, layout_basico, "revisao", r))
 
         if not documento:
             continue
 
-        dados = idx_exato.get((documento, revisao)) or idx_por_doc.get(documento)
+        # Correspondência estrita: nunca reutiliza PCF de outra revisão do documento.
+        dados = idx_exato.get((documento, revisao))
         if not dados:
             continue
 
@@ -2102,7 +2309,8 @@ def indexar_general_list_km(wb):
             "numero": _texto_excel_seguro(numero_km),
             "titulo": _texto_excel_seguro(title_km),
             "transmittal": _texto_excel_seguro(transmittal),
-            "data": _texto_excel_seguro(data_km),
+            # Mantém data como valor tipado para o Excel não inverter dia/mês.
+            "data": _coerce_to_date(data_km) or _texto_excel_seguro(data_km),
         }
 
         # Ignora linhas totalmente vazias da GENERAL LIST.
@@ -2195,8 +2403,12 @@ def preencher_numero_km_ld_basico(wb, idx_general_km=None):
       J = GENERAL LIST KM coluna O (Transmittal Number)
       K = GENERAL LIST KM coluna P (Data Recebimento KM)
 
-    Quando houver mais de um vínculo KM para o mesmo Nº Transpetro, a rotina
-    repete a linha inteira na LD PROJETO BASICO e preenche H:K um vínculo por linha.
+    Sincroniza sem sobrescrever ajustes existentes:
+      - Não apaga nem altera H:K de linhas já preenchidas.
+      - Usa H (Nº Documento KM) como chave do vínculo.
+      - Preenche somente linhas com H:K totalmente vazias.
+      - Insere uma nova linha quando não houver linha vazia disponível.
+      - Registra divergências no log para conferência manual.
     """
     if idx_general_km is None:
         idx_general_km = indexar_general_list_km(wb)
@@ -2225,66 +2437,176 @@ def preencher_numero_km_ld_basico(wb, idx_general_km=None):
 
     blocos = _linhas_contiguas_por_chave_ld_basico(ws, doc_col, last)
 
+    # Trava de segurança contra GENERAL LIST parcialmente carregada. Compara os
+    # números KM já existentes na LD com os números disponíveis na fonte. Se a
+    # cobertura cair muito, não sincroniza H:K; as demais partes da atualização
+    # podem continuar normalmente e o log informa a causa.
+    numeros_fonte_globais = {
+        _normalizar_chave_documento(registro.get("numero", ""))
+        for item in idx_general_km.values()
+        for registro in item.get("records", [])
+        if _normalizar_chave_documento(registro.get("numero", ""))
+    }
+    numeros_ld_existentes = set()
+    for rr in range(2, last + 1):
+        numero_ld = _texto_excel_seguro(ws[f"H{rr}"].value)
+        chave_numero_ld = _normalizar_chave_documento(numero_ld)
+        if chave_numero_ld and chave_numero_ld not in {"N/A", "NA", "CANCELADO"}:
+            numeros_ld_existentes.add(chave_numero_ld)
+
+    if len(numeros_ld_existentes) >= 20:
+        encontrados = numeros_ld_existentes & numeros_fonte_globais
+        cobertura = len(encontrados) / len(numeros_ld_existentes)
+        if cobertura < 0.75:
+            log(
+                f"🚨 [KM NÃO SINCRONIZADO] GENERAL LIST KM aparentemente incompleta: "
+                f"somente {len(encontrados)}/{len(numeros_ld_existentes)} números KM existentes "
+                f"na LD foram encontrados na fonte ({cobertura:.1%}). H:K foram integralmente "
+                "preservadas; verifique os vínculos/consultas externas da planilha."
+            )
+            return 0
+
     preenchidas = 0
     linhas_inseridas = 0
     sem_vinculo = 0
+    preservadas = 0
+    avisos = 0
 
     # Processa de baixo para cima para não deslocar blocos ainda pendentes.
     for inicio, fim, chave_tp in reversed(blocos):
         dados = idx_general_km.get(chave_tp, {})
         registros = list(dados.get("records", [])) if dados else []
 
+        def ler_hk(rr):
+            valores = ws.range(f"H{rr}:K{rr}").value
+            if isinstance(valores, list) and len(valores) == 1 and isinstance(valores[0], list):
+                valores = valores[0]
+            elif not isinstance(valores, list):
+                valores = [valores]
+            return tuple(_texto_excel_seguro(v) for v in valores)
+
         if not registros:
             sem_vinculo += 1
-            for rr in range(inicio, fim + 1):
-                ws.range(f"H{rr}:K{rr}").value = [["", "", "", ""]]
+            existentes = [ler_hk(rr) for rr in range(inicio, fim + 1)]
+            if any(any(linha) for linha in existentes):
+                preservadas += sum(1 for linha in existentes if any(linha))
+                log(
+                    f"⚠️ [KM PRESERVADO] {chave_tp} | linhas {inicio}:{fim} possuem H:K manual, "
+                    "mas não há correspondência na GENERAL LIST KM. Nenhum valor foi alterado."
+                )
+                avisos += 1
             continue
 
-        qtd_atual = fim - inicio + 1
-        qtd_necessaria = len(registros)
+        fim_atual = fim
 
-        if qtd_necessaria > qtd_atual:
-            faltantes = qtd_necessaria - qtd_atual
-            insert_at = fim + 1
-            for _ in range(faltantes):
-                _copiar_linha_excel(ws, inicio, insert_at)
+        def escrever_registro(rr, registro):
+            ws.range(f"H{rr}:J{rr}").value = [[
+                registro.get("numero", ""),
+                registro.get("titulo", ""),
+                registro.get("transmittal", ""),
+            ]]
+            valor_data = registro.get("data", "")
+            ws[f"K{rr}"].value = valor_data or None
+            if valor_data:
+                _aplicar_formato_data(ws[f"K{rr}"])
+
+        for registro in registros:
+            numero_fonte = _texto_excel_seguro(registro.get("numero", ""))
+            chave_numero_fonte = _normalizar_chave_documento(numero_fonte)
+
+            if not chave_numero_fonte:
+                log(
+                    f"⚠️ [KM IGNORADO] {chave_tp} | registro da GENERAL LIST KM sem Nº Documento KM: "
+                    f"{registro}. Nenhuma linha foi alterada."
+                )
+                avisos += 1
+                continue
+
+            linhas_mesmo_numero = []
+            linhas_vazias = []
+            for rr in range(inicio, fim_atual + 1):
+                atual = ler_hk(rr)
+                if not any(atual):
+                    linhas_vazias.append(rr)
+                elif _normalizar_chave_documento(atual[0]) == chave_numero_fonte:
+                    linhas_mesmo_numero.append((rr, atual))
+
+            if linhas_mesmo_numero:
+                rr, atual = linhas_mesmo_numero[0]
+                esperado = (
+                    numero_fonte,
+                    _texto_excel_seguro(registro.get("titulo", "")),
+                    _texto_excel_seguro(registro.get("transmittal", "")),
+                    _texto_excel_seguro(registro.get("data", "")),
+                )
+                if atual != esperado:
+                    log(
+                        f"⚠️ [KM DIVERGENTE] {chave_tp} | linha {rr} | "
+                        f"LD={atual} | GENERAL LIST={esperado}. Valores da LD preservados."
+                    )
+                    avisos += 1
+                else:
+                    preservadas += 1
+                if len(linhas_mesmo_numero) > 1:
+                    duplicadas = ", ".join(str(item[0]) for item in linhas_mesmo_numero)
+                    log(
+                        f"⚠️ [KM DUPLICADO] {chave_tp} | Nº KM {numero_fonte} aparece nas linhas "
+                        f"{duplicadas}. Nenhuma duplicidade foi removida."
+                    )
+                    avisos += 1
+                continue
+
+            if linhas_vazias:
+                destino = linhas_vazias[0]
+            else:
+                destino = fim_atual + 1
+                _copiar_linha_excel(ws, inicio, destino)
+                ws.range(f"H{destino}:K{destino}").clear_contents()
+                fim_atual = destino
                 linhas_inseridas += 1
-                insert_at += 1
 
-        # Não apagamos linhas extras caso existam mais linhas do que vínculos, para evitar
-        # remover manualmente revisões/linhas que possam ter sido criadas pelo usuário.
-        linhas_para_preencher = max(qtd_atual, qtd_necessaria)
+            escrever_registro(destino, registro)
+            preenchidas += 1
 
-        for offset in range(linhas_para_preencher):
-            rr = inicio + offset
-            if offset < len(registros):
-                registro = registros[offset]
-                ws.range(f"H{rr}:K{rr}").value = [[
-                    registro.get("numero", ""),
-                    registro.get("titulo", ""),
-                    registro.get("transmittal", ""),
-                    registro.get("data", ""),
-                ]]
-                preenchidas += 1
-            elif rr <= fim:
-                ws.range(f"H{rr}:K{rr}").value = [["", "", "", ""]]
+        numeros_fonte = {
+            _normalizar_chave_documento(registro.get("numero", ""))
+            for registro in registros
+            if _normalizar_chave_documento(registro.get("numero", ""))
+        }
+        for rr in range(inicio, fim_atual + 1):
+            atual = ler_hk(rr)
+            chave_numero_atual = _normalizar_chave_documento(atual[0])
+            if any(atual) and chave_numero_atual not in numeros_fonte:
+                log(
+                    f"⚠️ [KM MANUAL] {chave_tp} | linha {rr} | H:K={atual} não consta na "
+                    "GENERAL LIST KM. Registro manual preservado."
+                )
+                preservadas += 1
+                avisos += 1
 
     try:
         destino_last = ws.range(f"{doc_col}" + str(ws.cells.last_cell.row)).end("up").row
-        destino = ws.range(f"H2:K{destino_last}")
+        destino = ws.range(f"H2:J{destino_last}")
         destino.api.NumberFormat = "@"
         destino.api.Font.Name = "Arial"
         destino.api.Font.Size = 11
         destino.api.HorizontalAlignment = xlCenter
         destino.api.VerticalAlignment = xlCenter
         destino.api.WrapText = True
+        datas = ws.range(f"K2:K{destino_last}")
+        datas.api.NumberFormatLocal = DATE_NUMBERFORMAT_LOCAL
+        datas.api.Font.Name = "Arial"
+        datas.api.Font.Size = 11
+        datas.api.HorizontalAlignment = xlCenter
+        datas.api.VerticalAlignment = xlCenter
     except Exception:
         pass
 
     log(
-        f"✅ {ABA_LD_BASICO} colunas H:K atualizadas sem agrupamento: "
-        f"{preenchidas} vínculo(s) preenchido(s), {linhas_inseridas} linha(s) inserida(s), "
-        f"{sem_vinculo} chave(s) sem vínculo na GENERAL LIST KM."
+        f"✅ {ABA_LD_BASICO} H:K sincronizadas sem sobrescrever: "
+        f"{preenchidas} novo(s) vínculo(s), {linhas_inseridas} linha(s) inserida(s), "
+        f"{preservadas} registro(s) existente(s) preservado(s), "
+        f"{sem_vinculo} chave(s) sem fonte e {avisos} aviso(s) para conferência."
     )
     return preenchidas
 
@@ -2507,8 +2829,6 @@ def importar_ld_banco(wb, wb_marenova=None):
     """
     log("💾 Atualizando banco Django com LD PROJETO BASICO + LD MARENOVA P EXECUTIVO...")
 
-    DocumentoLD.objects.all().delete()
-
     abas = [
         (wb, ABA_LD_BASICO, LAYOUT_PROJETO_BASICO),
     ]
@@ -2520,23 +2840,19 @@ def importar_ld_banco(wb, wb_marenova=None):
     total_linhas = 0
     todos_documentos = set()
 
-    for workbook, nome_aba, layout in abas:
-        try:
-            resultado = importar_aba_ld_banco(workbook.sheets[nome_aba], nome_aba, layout=layout)
-            resumo[nome_aba] = resultado
+    # A exclusão e todas as importações formam uma única operação. Qualquer falha
+    # restaura automaticamente os registros anteriores.
+    with transaction.atomic():
+        DocumentoLD.objects.all().delete()
 
+        for workbook, nome_aba, layout in abas:
+            resultado = importar_aba_ld_banco(workbook.sheets[nome_aba], nome_aba, layout=layout)
+            if resultado["linhas"] <= 0:
+                raise RuntimeError(f"A aba {nome_aba} não possui documentos válidos para importar.")
+
+            resumo[nome_aba] = resultado
             total_linhas += resultado["linhas"]
             todos_documentos.update(resultado["documentos"])
-
-        except Exception as exc:
-            log(f"⚠️ Falha ao importar aba {nome_aba}: {exc}")
-            resumo[nome_aba] = {
-                "aba": nome_aba,
-                "linhas": 0,
-                "exclusivos": 0,
-                "documentos": set(),
-                "erro": str(exc),
-            }
 
     log("✅ Banco Django atualizado.")
     log(f"📊 Total linhas importadas: {total_linhas}")
@@ -2551,6 +2867,8 @@ def importar_ld_banco(wb, wb_marenova=None):
 def processar():
     global LOG_FILE
     atualizar_progresso_ld(2, "Preparando atualização LD Projeto Básico...", "running", "Inicializando rotina da nova Atualização LD.")
+    os.makedirs(PASTA_LOGS, exist_ok=True)
+    os.makedirs(PASTA_BACKUPS, exist_ok=True)
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     LOG_FILE = os.path.join(PASTA_LOGS, f"LDP_PROJETO_BASICO_{ts}.log")
     log(f"🧾 Log: {LOG_FILE}")
@@ -2594,7 +2912,38 @@ def processar():
             log("ℹ️ Timeline PCFs desativada nesta rotina; status final será lido diretamente das PCFs.")
 
             atualizar_progresso_ld(52, "Abrindo LD Projeto Básico...", "running", "Abrindo planilha principal do piloto.")
-            wb = app.books.open(PLANILHA)
+            wb = app.books.open(
+                PLANILHA,
+                update_links=False,
+                read_only=False,
+                ignore_read_only_recommended=True,
+            )
+            if bool(wb.api.ReadOnly):
+                raise RuntimeError(
+                    "A LD principal foi aberta pelo Excel como somente leitura. "
+                    "Feche a planilha em todas as estações e execute novamente."
+                )
+
+            # A GENERAL LIST KM possui dados/consultas que podem continuar sendo
+            # atualizados em segundo plano após a abertura. Aguarda a conclusão
+            # antes de montar qualquer índice, evitando ler uma versão antiga e
+            # somente receber os novos vínculos no salvamento final.
+            atualizar_progresso_ld(
+                55,
+                "Atualizando GENERAL LIST KM...",
+                "running",
+                "Aguardando consultas e cálculos da planilha principal.",
+            )
+            log("🔄 Atualizando consultas e cálculos da planilha principal...")
+            try:
+                wb.api.RefreshAll()
+                app.api.CalculateUntilAsyncQueriesDone()
+                app.api.CalculateFull()
+                log("✅ Consultas e cálculos concluídos antes da indexação KM.")
+            except Exception as exc:
+                raise RuntimeError(
+                    f"Não foi possível concluir a atualização da GENERAL LIST KM: {exc}"
+                ) from exc
 
             # A aba LD principal continua sendo processada para manter a base de sincronização
             # da PCF Intelligence, mas o banco importará somente LD PROJETO BASICO.
@@ -2631,6 +2980,12 @@ def processar():
             )
 
             sincronizar_pcf_intelligence_ld_basico(wb)
+            atualizar_status_documento_por_pcf_ld_basico(wb)
+
+            validar_revisoes_pcfs_workbook(wb, [
+                (ABA_LD, LAYOUT_LD),
+                (ABA_LD_BASICO, LAYOUT_PROJETO_BASICO),
+            ])
 
             atualizar_progresso_ld(82, "Atualizando vínculos KM...", "running", "Preenchendo LD PROJETO BASICO colunas H:K a partir da GENERAL LIST KM.")
             idx_general_km = indexar_general_list_km(wb)
@@ -2638,7 +2993,17 @@ def processar():
 
             if os.path.exists(PLANILHA_MARENOVA_EXECUTIVO):
                 atualizar_progresso_ld(86, "Abrindo LD Marenova Executivo...", "running", "Abrindo planilha Marenova separada.")
-                wb_marenova = app.books.open(PLANILHA_MARENOVA_EXECUTIVO)
+                wb_marenova = app.books.open(
+                    PLANILHA_MARENOVA_EXECUTIVO,
+                    update_links=False,
+                    read_only=False,
+                    ignore_read_only_recommended=True,
+                )
+                if bool(wb_marenova.api.ReadOnly):
+                    raise RuntimeError(
+                        "A LD Marenova Executivo foi aberta pelo Excel como somente leitura. "
+                        "Feche a planilha em todas as estações e execute novamente."
+                    )
 
                 atualizar_progresso_ld(88, "Processando LD MARENOVA P EXECUTIVO...", "running", "Atualizando Marenova Executivo no arquivo separado.")
                 processar_aba(
@@ -2655,6 +3020,9 @@ def processar():
                     pcf_intel_cache=pcf_intel_cache,
                     layout=LAYOUT_MARENOVA_EXECUTIVO,
                 )
+                validar_revisoes_pcfs_workbook(wb_marenova, [
+                    (ABA_LD_MARENOVA_EXECUTIVO, LAYOUT_MARENOVA_EXECUTIVO),
+                ])
             else:
                 log(f"⚠️ Planilha Marenova Executivo não encontrada: {PLANILHA_MARENOVA_EXECUTIVO}")
 

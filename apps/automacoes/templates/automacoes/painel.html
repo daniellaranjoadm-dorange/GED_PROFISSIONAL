@@ -472,22 +472,41 @@
 
   <section id="ld-progress-panel"
            class="ops-panel ld-progress-panel mb-4 d-none"
-           data-endpoint="{% url 'automacoes:progresso_ld_api' %}">
+           data-progress-endpoint="{% url 'automacoes:progresso_ld_api' %}"
+           data-automation-name="Atualização LD">
     <div class="ops-panel-head">
       <div>
         <h2>Atualização LD em andamento</h2>
-        <p id="ld-progress-etapa">Preparando atualização...</p>
+        <p class="ld-progress-step">Preparando atualização...</p>
       </div>
-      <span id="ld-progress-badge" class="ops-status-pill ops-status-warn">RUNNING</span>
+      <span class="ld-progress-badge ops-status-pill ops-status-warn">RUNNING</span>
     </div>
-
     <div class="ld-progress-track">
-      <div id="ld-progress-fill" class="ld-progress-fill"></div>
+      <div class="ld-progress-fill"></div>
     </div>
-
     <div class="ld-progress-meta">
-      <strong id="ld-progress-percent">0%</strong>
-      <span id="ld-progress-time">Aguardando runtime...</span>
+      <strong class="ld-progress-percent">0%</strong>
+      <span class="ld-progress-message">Aguardando runtime...</span>
+    </div>
+  </section>
+
+  <section id="ld-projeto-basico-progress-panel"
+           class="ops-panel ld-progress-panel mb-4 d-none"
+           data-progress-endpoint="{% url 'automacoes:progresso_ld_projeto_basico_api' %}"
+           data-automation-name="Atualização LD Projeto Básico">
+    <div class="ops-panel-head">
+      <div>
+        <h2>Atualização LD Projeto Básico em andamento</h2>
+        <p class="ld-progress-step">Preparando atualização...</p>
+      </div>
+      <span class="ld-progress-badge ops-status-pill ops-status-warn">RUNNING</span>
+    </div>
+    <div class="ld-progress-track">
+      <div class="ld-progress-fill"></div>
+    </div>
+    <div class="ld-progress-meta">
+      <strong class="ld-progress-percent">0%</strong>
+      <span class="ld-progress-message">Aguardando runtime...</span>
     </div>
   </section>
 
@@ -780,7 +799,8 @@
 
         <form method="post"
               action="{% url rotina.form_url %}"
-              class="ged-action-form">
+              class="ged-action-form"
+              data-automation-name="{{ rotina.nome }}">
           {% csrf_token %}
 
           <button type="submit"
