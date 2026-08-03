@@ -378,7 +378,15 @@ def _coerce_to_date(v):
         s = v.strip()
         if not s:
             return None
-        for fmt in ("%d/%m/%Y", "%d/%m/%y", "%Y-%m-%d"):
+        for fmt in (
+            "%d/%m/%Y",
+            "%d/%m/%y",
+            "%d/%m/%Y %H:%M:%S",
+            "%d/%m/%y %H:%M:%S",
+            "%Y-%m-%d",
+            "%Y-%m-%d %H:%M:%S",
+            "%Y-%m-%dT%H:%M:%S",
+        ):
             try:
                 return datetime.strptime(s, fmt).date()
             except Exception:
@@ -405,7 +413,14 @@ def setar_data(cell, v):
     if d is None:
         cell.value = None
         return
-    cell.value = d
+    # Grava pelo serial nativo do Excel para não depender da interpretação
+    # regional do COM/xlwings. Atribuir "10/04/2026" como texto pode ser
+    # interpretado como 4 de outubro em ambientes configurados em inglês.
+    serial_excel = (d - date(1899, 12, 30)).days
+    try:
+        cell.api.Value2 = serial_excel
+    except Exception:
+        cell.value = datetime(d.year, d.month, d.day)
     _aplicar_formato_data(cell)
 
 def forcar_numberformat_coluna(ws, col_letter, start_row, end_row):
@@ -492,6 +507,30 @@ def _split_by_base(rev_pcf: str, base: str) -> tuple[bool, str]:
     if rev_pcf.startswith(base):
         return (True, rev_pcf[len(base):])
     return (False, "")
+
+
+def _pcf_resposta_da_recebida(rev_recebida: str, base: str) -> str:
+    """Retorna a revisao da resposta correspondente a PCF recebida.
+
+    A sequencia do formulario alterna Owner/Builder:
+    R0 -> R0A, R0B -> R0C, R0D -> R0E, e assim por diante.
+    """
+    compativel, sufixo = _split_by_base(rev_recebida, base)
+    if not compativel:
+        return ""
+
+    if not sufixo:
+        proximo = 1
+    elif sufixo.isalpha():
+        proximo = _suffix_key(sufixo) + 1
+    else:
+        return ""
+
+    letras = ""
+    while proximo > 0:
+        proximo, resto = divmod(proximo - 1, 26)
+        letras = chr(ord("A") + resto) + letras
+    return f"{base}{letras}"
 
 
 def _revisao_pcf_do_nome(valor) -> str:
@@ -843,7 +882,10 @@ def indexar_pcfs(pasta, excluir_subpastas=None, data_origem="MTIME"):
 
             rev = normalizar_rev(mrev.group(1))
             caminho = os.path.join(root, f)
-            dt = _file_datetime(caminho, data_origem)
+            # A data oficial da PCF fica no cabeçalho do próprio formulário.
+            # MTIME/CTIME é apenas fallback: a data do arquivo muda quando ele é
+            # copiado, salvo novamente ou movimentado na rede.
+            dt = _pcf_data_documental_arquivo(caminho) or _file_datetime(caminho, data_origem)
 
             codigo = normalizar_codigo(codigo)
             existente = idx.get(codigo, {}).get(rev)
@@ -1089,6 +1131,45 @@ def _pcf_primeira_aba_util(wb_pcf):
         return None
 
 
+def _pcf_data_documental_arquivo(caminho_pcf):
+    """
+    Retorna a data oficial do cabeçalho da PCF.
+
+    Procura o rótulo exato "Date" na área superior e lê o primeiro valor
+    preenchido à direita. Retorna None para permitir fallback ao timestamp do
+    arquivo somente quando a data documental não existir ou o arquivo falhar.
+    """
+    wb_pcf = None
+    try:
+        wb_pcf = load_workbook(caminho_pcf, read_only=False, data_only=True)
+        ws = _pcf_primeira_aba_util(wb_pcf)
+        if ws is None:
+            return None
+
+        max_row = min(ws.max_row or 0, 20)
+        max_col = min(ws.max_column or 0, 40)
+        for r in range(1, max_row + 1):
+            for c in range(1, max_col + 1):
+                if _normalizar_header(ws.cell(r, c).value) != "DATE":
+                    continue
+                for offset in (2, 1, 3, 4):
+                    target_col = c + offset
+                    if target_col > (ws.max_column or 0):
+                        continue
+                    data = _coerce_to_date(ws.cell(r, target_col).value)
+                    if data is not None:
+                        return data
+        return None
+    except Exception:
+        return None
+    finally:
+        if wb_pcf is not None:
+            try:
+                wb_pcf.close()
+            except Exception:
+                pass
+
+
 def _pcf_status_final_timeline(ws):
     """
     Regra idêntica à Timeline PCFs:
@@ -1105,6 +1186,100 @@ def _pcf_status_final_timeline(ws):
             status_final = texto
 
     return status_final
+
+
+def _pcf_saldos_historico(ws):
+    """
+    Lê os saldos vigentes de OPEN e UNDER REVIEW no quadro PCF History.
+
+    O detalhe da PCF pode manter comentarios antigos com o texto OPEN mesmo
+    depois de tachados. Por isso, o quadro historico e a fonte prioritaria
+    para o saldo atual. Retorna None quando o quadro nao puder ser identificado,
+    permitindo usar a contagem detalhada como fallback.
+    """
+    if ws is None:
+        return None, None
+
+    max_row = ws.max_row or 0
+    max_col = min(ws.max_column or 0, 40)
+    history_row = None
+
+    for r in range(1, min(max_row, 60) + 1):
+        for c in range(1, max_col + 1):
+            if _normalizar_header(ws.cell(r, c).value) == "PCF HISTORY":
+                history_row = r
+                break
+        if history_row:
+            break
+
+    if not history_row:
+        return None, None
+
+    round_col = None
+    open_comments_col = None
+    header_end_row = min(max_row, history_row + 8)
+
+    for r in range(history_row + 1, header_end_row + 1):
+        for c in range(1, max_col + 1):
+            header = _normalizar_header(ws.cell(r, c).value)
+            if header == "ROUND" and round_col is None:
+                round_col = c
+            elif header in {"OPEN COMMENTS", "OPEN COMMENT"}:
+                open_comments_col = c
+
+    if round_col is None or open_comments_col is None:
+        return None, None
+
+    ultimo_open = None
+    ultimo_under_review = None
+    data_start_row = header_end_row + 1
+
+    # Cabecalhos mesclados podem terminar antes de history_row + 8. Localiza
+    # a primeira rodada real e, a partir dela, considera somente linhas que
+    # tenham identificador de rodada (a), b), c), ...).
+    for r in range(history_row + 1, min(max_row, history_row + 30) + 1):
+        rodada = str(ws.cell(r, round_col).value or "").strip()
+        if rodada:
+            data_start_row = r
+            break
+
+    linhas_sem_rodada = 0
+    for r in range(data_start_row, min(max_row, data_start_row + 30) + 1):
+        rodada = str(ws.cell(r, round_col).value or "").strip()
+        if not rodada:
+            linhas_sem_rodada += 1
+            if linhas_sem_rodada >= 3:
+                break
+            continue
+
+        linhas_sem_rodada = 0
+        valor_bruto = ws.cell(r, open_comments_col).value
+        if valor_bruto in (None, ""):
+            continue
+
+        valor = _intel_num(valor_bruto)
+        if isinstance(valor, (int, float)):
+            ultimo_open = int(valor)
+            ultimo_under_review = None
+            continue
+
+        texto = _normalizar_header(valor_bruto)
+        match_open = re.search(r"(\d+)\s*OPEN\b", texto)
+        match_under = re.search(
+            r"(\d+)\s*UNDER(?:\s+|[_-])(?:REVIEW|REVISION)\b",
+            texto,
+        )
+        if match_open or match_under:
+            ultimo_open = int(match_open.group(1)) if match_open else 0
+            ultimo_under_review = int(match_under.group(1)) if match_under else 0
+
+    return ultimo_open, ultimo_under_review
+
+
+def _pcf_open_comments_historico(ws):
+    """Compatibilidade: retorna somente o saldo vigente de comentários OPEN."""
+    open_comments, _ = _pcf_saldos_historico(ws)
+    return open_comments
 
 
 def _pcf_qtd_e_open_comments_timeline(ws):
@@ -1157,6 +1332,12 @@ def _pcf_qtd_e_open_comments_timeline(ws):
                 open_count += 1
             elif status in under_review_aliases:
                 under_review_count += 1
+
+    open_historico, under_review_historico = _pcf_saldos_historico(ws)
+    if open_historico is not None:
+        open_count = open_historico
+    if under_review_historico is not None:
+        under_review_count = under_review_historico
 
     return total_comments, open_count, under_review_count
 
@@ -1685,6 +1866,8 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
             codigo_exibido = str(_valor_layout(ws, layout, "documento", r) or "").strip()
             codigo = normalizar_codigo(codigo_exibido)
             rev = normalizar_rev(_valor_layout(ws, layout, "revisao", r))
+            pcf_anterior = str(_valor_layout(ws, layout, "pcf", r) or "").strip()
+            revisao_atualizada = False
 
             if not codigo:
                 continue
@@ -1700,9 +1883,18 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
                     if rev_key(maior_rev) > rev_key(rev):
                         _set_layout(ws, layout, "revisao", r, maior_rev)
                         rev = maior_rev
+                        revisao_atualizada = True
                         log(f"🔄 {aba_nome} L{r} | {codigo}: revisão atualizada para {maior_rev}")
 
             status_h = str(_valor_layout(ws, layout, "status", r) or "").strip().upper()
+            if revisao_atualizada and pcf_anterior and status_h != "CANCELADO":
+                _set_layout(ws, layout, "status", r, "Aguardando PCF")
+                if LOG_DETALHADO:
+                    log(
+                        f"   [{status_col}] {aba_nome} L{r}: nova revisão emitida; "
+                        f"{status_h or '-'} -> Aguardando PCF"
+                    )
+                status_h = "AGUARDANDO PCF"
             preservar_status_basico = eh_projeto_basico and status_h in STATUS_H_PRESERVAR_BASICO
 
             # O hyperlink do documento sempre deve abrir a pasta, inclusive em
@@ -1892,6 +2084,9 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
                     )
             else:
                 revisoes_disponiveis = sorted(mapa.keys(), key=rev_key) if mapa else []
+                # Excluir o hyperlink antes do valor. O Excel pode restaurar o
+                # TextToDisplay antigo quando Hyperlinks.Delete vem depois.
+                _limpar_hyperlink_layout(ws, layout, "pcf", r)
                 _set_layout(ws, layout, "pcf", r, None)
 
                 cell_data_pcf = _cell_layout(ws, layout, "data_pcf", r)
@@ -1899,11 +2094,25 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
                     cell_data_pcf.value = None
 
                 _set_layout(ws, layout, "status_pcf", r, None)
-                _limpar_hyperlink_layout(ws, layout, "pcf", r)
 
                 for campo in ("qtd_comentarios", "open_comments", "under_review", "status_final_pcf"):
                     if _col_layout(layout, campo):
                         _set_layout(ws, layout, campo, r, None)
+
+                status_atual_sem_pcf = str(
+                    _valor_layout(ws, layout, "status", r) or ""
+                ).strip().upper()
+                if (
+                    eh_projeto_basico
+                    and revisoes_disponiveis
+                    and status_atual_sem_pcf != "CANCELADO"
+                ):
+                    _set_layout(ws, layout, "status", r, "Aguardando PCF")
+                    if LOG_DETALHADO:
+                        log(
+                            f"   [{status_col}] {aba_nome} L{r}: PCF apenas de outra revisão; "
+                            f"{status_atual_sem_pcf or '-'} -> Aguardando PCF"
+                        )
 
                 if LOG_DETALHADO:
                     if revisoes_disponiveis:
@@ -1916,24 +2125,23 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
 
             # Resposta de PCF.
             mapa_resp = idx_pcf_resp.get(codigo, {})
-            best = None
-            best_key = None
             rev_doc_resp = normalizar_rev(_valor_layout(ws, layout, "revisao", r))
+            rev_recebida = (info_pcf or {}).get("rev", "")
+            rev_resposta_esperada = _pcf_resposta_da_recebida(rev_recebida, rev_doc_resp)
+            info_resp = mapa_resp.get(rev_resposta_esperada) if rev_resposta_esperada else None
 
-            if mapa_resp and rev_doc_resp:
-                base = (rev_doc_resp or "").strip().upper()
-                for rev_pcf, cand in mapa_resp.items():
-                    ok, sufixo = _split_by_base(rev_pcf, base)
-                    if not ok:
-                        continue
-
-                    dtcand = cand.get("date") or datetime(1900, 1, 1)
-                    k = (_suffix_key(sufixo), dtcand)
-                    if (best_key is None) or (k[0] > best_key[0]) or (k[0] == best_key[0] and k[1] > best_key[1]):
-                        best_key = k
-                        best = cand
-
-            info_resp = best
+            # Uma resposta anterior ao recebimento nao pertence ao ciclo atual.
+            if info_resp and info_pcf:
+                dt_recebida = info_pcf.get("date")
+                dt_resposta = info_resp.get("date")
+                if dt_recebida and dt_resposta and dt_resposta < dt_recebida:
+                    if LOG_DETALHADO:
+                        log(
+                            f"   [PCF RESP CRONOLOGIA INVALIDA] {aba_nome} L{r} | "
+                            f"recebida={rev_recebida} em {_fmt_dt(dt_recebida)} | "
+                            f"resposta={rev_resposta_esperada} em {_fmt_dt(dt_resposta)}"
+                        )
+                    info_resp = None
 
             if info_resp:
                 _setar_hyperlink_layout(ws, layout, "pcf_resposta", r, info_resp["path"], info_resp["pcf"])
@@ -1948,13 +2156,20 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
                 if grd_resp:
                     _setar_hyperlink_layout(ws, layout, "grd_resposta", r, os.path.join(PASTA_GRD, grd_resp), grd_resp)
                 else:
-                    _set_layout(ws, layout, "grd_resposta", r, None)
                     _limpar_hyperlink_layout(ws, layout, "grd_resposta", r)
+                    _set_layout(ws, layout, "grd_resposta", r, None)
 
                 if LOG_DETALHADO:
-                    log(f"   [PCF RESP] {aba_nome} L{r} | {codigo}_R{rev_doc_resp} => PCF_RESP={info_resp['pcf']} | GRD={grd_resp or '-'}")
+                    log(
+                        f"   [PCF RESP PAREADA] {aba_nome} L{r} | "
+                        f"recebida={rev_recebida} => resposta={rev_resposta_esperada} | "
+                        f"PCF_RESP={info_resp['pcf']} | GRD={grd_resp or '-'}"
+                    )
             else:
                 revisoes_resp_disponiveis = sorted(mapa_resp.keys(), key=rev_key) if mapa_resp else []
+                # Mesma protecao contra restauracao do texto do hyperlink.
+                _limpar_hyperlink_layout(ws, layout, "pcf_resposta", r)
+                _limpar_hyperlink_layout(ws, layout, "grd_resposta", r)
                 _set_layout(ws, layout, "pcf_resposta", r, None)
 
                 cell_data_resp = _cell_layout(ws, layout, "data_resposta", r)
@@ -1962,8 +2177,6 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
                     cell_data_resp.value = None
 
                 _set_layout(ws, layout, "grd_resposta", r, None)
-                _limpar_hyperlink_layout(ws, layout, "pcf_resposta", r)
-                _limpar_hyperlink_layout(ws, layout, "grd_resposta", r)
 
                 if LOG_DETALHADO:
                     if revisoes_resp_disponiveis:
@@ -2000,8 +2213,20 @@ def _sync_obter_hyperlink(cell):
 
 
 def validar_revisoes_pcfs_workbook(wb, abas_layouts):
-    """Impede salvamento se PCF recebida/respondida pertencer a outra revisão-base."""
+    """Repara respostas históricas e bloqueia somente PCF recebida de outra base."""
     divergencias = []
+    reparos = 0
+
+    def limpar_resposta(ws, layout, linha, motivo):
+        nonlocal reparos
+        for campo in ("pcf_resposta", "grd_resposta"):
+            if _col_layout(layout, campo):
+                _limpar_hyperlink_layout(ws, layout, campo, linha)
+                _set_layout(ws, layout, campo, linha, None)
+        if _col_layout(layout, "data_resposta"):
+            _set_layout(ws, layout, "data_resposta", linha, None)
+        reparos += 1
+        log(f"🧹 [PCF RESPOSTA HISTÓRICA REMOVIDA] {ws.name} L{linha} | {motivo}")
 
     for aba_nome, layout in abas_layouts:
         try:
@@ -2032,9 +2257,62 @@ def validar_revisoes_pcfs_workbook(wb, abas_layouts):
                 revisao_pcf = _revisao_pcf_do_nome(valor)
                 compativel, _ = _split_by_base(revisao_pcf, revisao)
                 if not compativel:
+                    if campo == "pcf_resposta":
+                        limpar_resposta(
+                            ws, layout, r,
+                            f"resposta={revisao_pcf or '?'} incompatível com documento R{revisao}",
+                        )
+                        continue
                     divergencias.append(
                         f"{aba_nome} L{r} | {documento}_R{revisao} | "
                         f"{rotulo}='{valor}' (revisão PCF={revisao_pcf or '?'})"
+                    )
+
+    # Segunda camada: recebida e respondida precisam pertencer ao mesmo ciclo.
+    for aba_nome, layout in abas_layouts:
+        try:
+            ws = wb.sheets[aba_nome]
+        except Exception:
+            continue
+
+        doc_col = _col_layout(layout, "documento")
+        rev_col = _col_layout(layout, "revisao")
+        col_pcf = _col_layout(layout, "pcf")
+        col_resp = _col_layout(layout, "pcf_resposta")
+        if not doc_col or not rev_col or not col_pcf or not col_resp:
+            continue
+
+        last = ws.range(doc_col + str(ws.cells.last_cell.row)).end("up").row
+        for r in range(2, last + 1):
+            revisao = normalizar_rev(ws[f"{rev_col}{r}"].value)
+            valor_pcf = ws[f"{col_pcf}{r}"].value
+            valor_resp = ws[f"{col_resp}{r}"].value
+            rev_recebida = _revisao_pcf_do_nome(valor_pcf)
+            rev_respondida = _revisao_pcf_do_nome(valor_resp)
+            esperada = _pcf_resposta_da_recebida(rev_recebida, revisao)
+
+            if rev_respondida and rev_respondida != esperada:
+                limpar_resposta(
+                    ws, layout, r,
+                    f"ciclo inválido: recebida=R{rev_recebida}, "
+                    f"respondida=R{rev_respondida}, esperada=R{esperada or '?'}",
+                )
+                continue
+
+            col_data_pcf = _col_layout(layout, "data_pcf")
+            col_data_resp = _col_layout(layout, "data_resposta")
+            if valor_resp and col_data_pcf and col_data_resp:
+                data_pcf = ws[f"{col_data_pcf}{r}"].value
+                data_resp = ws[f"{col_data_resp}{r}"].value
+                if (
+                    isinstance(data_pcf, datetime)
+                    and isinstance(data_resp, datetime)
+                    and data_resp < data_pcf
+                ):
+                    limpar_resposta(
+                        ws, layout, r,
+                        f"cronologia inválida: resposta {_fmt_dt(data_resp)} "
+                        f"anterior ao recebimento {_fmt_dt(data_pcf)}",
                     )
 
     if divergencias:
@@ -2045,8 +2323,11 @@ def validar_revisoes_pcfs_workbook(wb, abas_layouts):
             "de PCF recebida/respondida pertencem a outra revisão."
         )
 
-    log("✅ Validação PCF: nenhuma PCF recebida/respondida vinculada a revisão incompatível.")
-    return 0
+    log(
+        "✅ Validação PCF concluída: nenhuma PCF recebida vinculada a revisão "
+        f"incompatível; respostas históricas removidas={reparos}."
+    )
+    return reparos
 
 
 def _status_documento_por_status_pcf(valor):
@@ -2403,8 +2684,9 @@ def preencher_numero_km_ld_basico(wb, idx_general_km=None):
       J = GENERAL LIST KM coluna O (Transmittal Number)
       K = GENERAL LIST KM coluna P (Data Recebimento KM)
 
-    Sincroniza sem sobrescrever ajustes existentes:
-      - Não apaga nem altera H:K de linhas já preenchidas.
+    Sincroniza preservando os ajustes cadastrais existentes:
+      - Não apaga nem altera H:J de linhas já preenchidas.
+      - Regrava K pela data oficial da GENERAL LIST KM quando o Nº KM coincide.
       - Usa H (Nº Documento KM) como chave do vínculo.
       - Preenche somente linhas com H:K totalmente vazias.
       - Insere uma nova linha quando não houver linha vazia disponível.
@@ -2470,6 +2752,7 @@ def preencher_numero_km_ld_basico(wb, idx_general_km=None):
     linhas_inseridas = 0
     sem_vinculo = 0
     preservadas = 0
+    datas_corrigidas = 0
     avisos = 0
 
     # Processa de baixo para cima para não deslocar blocos ainda pendentes.
@@ -2506,9 +2789,10 @@ def preencher_numero_km_ld_basico(wb, idx_general_km=None):
                 registro.get("transmittal", ""),
             ]]
             valor_data = registro.get("data", "")
-            ws[f"K{rr}"].value = valor_data or None
             if valor_data:
-                _aplicar_formato_data(ws[f"K{rr}"])
+                setar_data(ws[f"K{rr}"], valor_data)
+            else:
+                ws[f"K{rr}"].value = None
 
         for registro in registros:
             numero_fonte = _texto_excel_seguro(registro.get("numero", ""))
@@ -2539,10 +2823,29 @@ def preencher_numero_km_ld_basico(wb, idx_general_km=None):
                     _texto_excel_seguro(registro.get("transmittal", "")),
                     _texto_excel_seguro(registro.get("data", "")),
                 )
-                if atual != esperado:
+
+                # H:J podem conter ajustes manuais e continuam preservadas. K,
+                # porém, tem como fonte oficial GENERAL LIST KM!P e precisa ser
+                # regravada inclusive nas linhas já existentes. Isso também
+                # corrige datas antigas que o Excel interpretou como mm/dd.
+                valor_data_fonte = registro.get("data", "")
+                data_fonte = _coerce_to_date(valor_data_fonte)
+                data_ld_antes = _coerce_to_date(ws[f"K{rr}"].value)
+                if data_fonte is not None:
+                    setar_data(ws[f"K{rr}"], data_fonte)
+                    if data_ld_antes != data_fonte:
+                        datas_corrigidas += 1
+                        log(
+                            f"📅 [DATA KM CORRIGIDA] {chave_tp} | linha {rr} | "
+                            f"{_texto_excel_seguro(data_ld_antes)} -> "
+                            f"{_texto_excel_seguro(data_fonte)}"
+                        )
+
+                if atual[:3] != esperado[:3]:
                     log(
                         f"⚠️ [KM DIVERGENTE] {chave_tp} | linha {rr} | "
-                        f"LD={atual} | GENERAL LIST={esperado}. Valores da LD preservados."
+                        f"LD H:J={atual[:3]} | GENERAL LIST H:J={esperado[:3]}. "
+                        "Valores H:J da LD preservados; K sincronizada pela fonte oficial."
                     )
                     avisos += 1
                 else:
@@ -2605,6 +2908,7 @@ def preencher_numero_km_ld_basico(wb, idx_general_km=None):
     log(
         f"✅ {ABA_LD_BASICO} H:K sincronizadas sem sobrescrever: "
         f"{preenchidas} novo(s) vínculo(s), {linhas_inseridas} linha(s) inserida(s), "
+        f"{datas_corrigidas} data(s) existente(s) corrigida(s), "
         f"{preservadas} registro(s) existente(s) preservado(s), "
         f"{sem_vinculo} chave(s) sem fonte e {avisos} aviso(s) para conferência."
     )

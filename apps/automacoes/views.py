@@ -1,5 +1,6 @@
 
 from pathlib import Path
+from datetime import datetime
 
 from django.conf import settings
 import os
@@ -40,6 +41,13 @@ from apps.automacoes.services.runtime_events import RuntimeEventStreamService
 from apps.automacoes.services.runtime_health_api import RuntimeHealthAPIService
 from apps.automacoes.services.runtime_retention import RuntimeRetentionService
 from apps.automacoes.services.kongsberg_document_list import importar_ld_kongsberg, executar_cruzamento_ld_km
+from apps.automacoes.services.pcf_response_report import (
+    ESCOPO_PROJETO,
+    build_record,
+    document_type,
+    executive_dashboard,
+    summarize,
+)
 
 
 
@@ -4097,6 +4105,457 @@ def abrir_arquivo_ld(request, pk, tipo):
         html += f"<p><strong>Caminho:</strong> {arquivo}</p>"
         html += f"<p><strong>Erro:</strong> {exc}</p>"
         return HttpResponse(html, status=500)
+
+
+def _pcf_response_records(request):
+    queryset = DocumentoLD.objects.exclude(pcf="")
+    if _ld_has_field("origem_aba"):
+        queryset = queryset.filter(
+            Q(origem_aba__iexact=ESCOPO_PROJETO)
+            | Q(origem_aba__iexact="LD Basico")
+            | Q(origem_aba__iexact="LD Básico")
+            | Q(origem_aba__iexact="LD")
+            | Q(origem_aba__iexact="Lista LD")
+            | Q(origem_aba__isnull=True)
+            | Q(origem_aba="")
+        ).exclude(origem_aba__icontains="Marenova")
+    queryset = queryset.order_by("documento", "revisao")
+    records = [build_record(item) for item in queryset]
+
+    filters = {
+        "q": str(request.GET.get("q", "")).strip(),
+        "projeto": ESCOPO_PROJETO,
+        "disciplina": str(request.GET.get("disciplina", "")).strip(),
+        "tipo_documento": str(request.GET.get("tipo_documento", "")).strip(),
+        "responsavel": str(request.GET.get("responsavel", "")).strip(),
+        "status": str(request.GET.get("status", "")).strip(),
+        "situacao": str(request.GET.get("situacao", "")).strip(),
+        "inicio": str(request.GET.get("inicio", "")).strip(),
+        "fim": str(request.GET.get("fim", "")).strip(),
+    }
+
+    def contains(value, query):
+        return query.casefold() in str(value or "").casefold()
+
+    if filters["q"]:
+        q = filters["q"]
+        records = [item for item in records if any(contains(item[key], q) for key in (
+            "documento", "titulo", "pcf", "pcf_resposta", "grd", "responsavel", "status"
+        ))]
+    for key in ("disciplina", "tipo_documento", "responsavel", "status", "situacao"):
+        if filters[key]:
+            records = [item for item in records if str(item[key]).casefold() == filters[key].casefold()]
+
+    try:
+        start = datetime.strptime(filters["inicio"], "%Y-%m-%d").date() if filters["inicio"] else None
+    except ValueError:
+        start = None
+    try:
+        end = datetime.strptime(filters["fim"], "%Y-%m-%d").date() if filters["fim"] else None
+    except ValueError:
+        end = None
+    if start:
+        records = [item for item in records if item["data_recebimento"] and item["data_recebimento"] >= start]
+    if end:
+        records = [item for item in records if item["data_recebimento"] and item["data_recebimento"] <= end]
+
+    records.sort(key=lambda item: (item["criticidade"], item["dias_atraso"], item["open_comments"]), reverse=True)
+    return records, filters
+
+
+def _pcf_response_options():
+    rows = DocumentoLD.objects.exclude(pcf="")
+    if _ld_has_field("origem_aba"):
+        rows = rows.filter(
+            Q(origem_aba__iexact=ESCOPO_PROJETO)
+            | Q(origem_aba__iexact="LD Basico")
+            | Q(origem_aba__iexact="LD Básico")
+            | Q(origem_aba__iexact="LD")
+            | Q(origem_aba__iexact="Lista LD")
+            | Q(origem_aba__isnull=True)
+            | Q(origem_aba="")
+        ).exclude(origem_aba__icontains="Marenova")
+    tipos = sorted({document_type(value) for value in rows.values_list("documento", flat=True)})
+    return {
+        "projetos": [ESCOPO_PROJETO],
+        "disciplinas": sorted(set(rows.exclude(disciplina="").values_list("disciplina", flat=True))),
+        "tipos_documento": tipos,
+        "responsaveis": ["McLaren", "Transpetro", "Transpetro — resposta em atraso"],
+        "status_opcoes": sorted(set(rows.exclude(status_final_pcf="").values_list("status_final_pcf", flat=True))),
+    }
+
+
+@login_required
+def pcf_controle_respostas(request):
+    records, filters = _pcf_response_records(request)
+    paginator = Paginator(records, 50)
+    page_obj = paginator.get_page(request.GET.get("page"))
+    query_params = request.GET.copy()
+    query_params.pop("page", None)
+    context = {
+        "registros": page_obj,
+        "page_obj": page_obj,
+        "resumo": summarize(records),
+        "dashboard": executive_dashboard(records),
+        "ranking": records[:10],
+        "filtros": filters,
+        "querystring": query_params.urlencode(),
+        **_pcf_response_options(),
+    }
+    return render(request, "automacoes/pcf_controle_respostas.html", context)
+
+
+@login_required
+def pcf_controle_respostas_excel(request):
+    from openpyxl.chart import BarChart, DoughnutChart, Reference
+    from openpyxl.styles import Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+
+    records, _ = _pcf_response_records(request)
+    summary = summarize(records)
+    last_data_row = max(2, len(records) + 1)
+    wb = Workbook()
+    dashboard = wb.active
+    dashboard.title = "Resumo Executivo"
+    ws = wb.create_sheet("Base PCFs")
+    headers = [
+        "Documento", "Titulo do Documento", "Tipo", "Revisao", "PCF Recebida", "Data Recebimento", "Resposta Esperada",
+        "PCF Respondida", "Data Resposta", "Situacao", "Dias sem Resposta", "Prazo (15 DU)",
+        "Dias de Atraso", "Status PCF", "Comentarios", "Open", "Under Review", "Closed Calculado",
+        "Responsavel", "GRD Emissao", "Projeto", "Disciplina", "Link PCF", "Link Documento",
+    ]
+    ws.append(headers)
+    for item in records:
+        ws.append([
+            item["documento"], item["titulo"], item["tipo_documento"], item["revisao"], item["pcf"], item["data_recebimento"],
+            item["resposta_esperada"], item["pcf_resposta"], item["data_resposta"], item["situacao"],
+            item["dias_sem_resposta"], item["prazo"], item["dias_atraso"], item["status"],
+            item["qtd_comentarios"], item["open_comments"], item["under_review"], item["closed_comments"], item["responsavel"],
+            item["grd"], item["projeto"], item["disciplina"], item["caminho_pcf"], item["caminho_documento"],
+        ])
+
+    navy, cyan, white, orange = "0B1F33", "32B7E9", "FFFFFF", "F59E0B"
+    light, line = "EDF4F8", "C9D7E2"
+    for cell in ws[1]:
+        cell.fill = PatternFill("solid", fgColor=navy)
+        cell.font = Font(color=white, bold=True)
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    ws.row_dimensions[1].height = 34
+    ws.freeze_panes = "A2"
+    ws.auto_filter.ref = ws.dimensions
+    widths = [30, 50, 10, 10, 38, 17, 18, 38, 17, 22, 18, 17, 16, 26, 13, 10, 15, 15, 24, 16, 20, 18, 55, 55]
+    for index, width in enumerate(widths, 1):
+        ws.column_dimensions[ws.cell(1, index).column_letter].width = width
+    for row in range(2, ws.max_row + 1):
+        if row % 2 == 0:
+            for cell in ws[row]:
+                cell.fill = PatternFill("solid", fgColor="F6F9FB")
+        ws.cell(row, 6).number_format = "dd/mm/yyyy"
+        ws.cell(row, 9).number_format = "dd/mm/yyyy"
+        ws.cell(row, 12).number_format = "dd/mm/yyyy"
+        color = {"Respondida": "DDEBF7", "Vencida": "FCE4D6", "Aguardando resposta": "FFF2CC"}.get(ws.cell(row, 10).value, "E7E6E6")
+        ws.cell(row, 10).fill = PatternFill("solid", fgColor=color)
+        ws.cell(row, 10).font = Font(bold=True, color="203040")
+        if ws.cell(row, 18).value is not None and ws.cell(row, 18).value < 0:
+            ws.cell(row, 18).fill = PatternFill("solid", fgColor="FDECEC")
+            ws.cell(row, 18).font = Font(color="B42318", bold=True)
+        for col in (23, 24):
+            target = ws.cell(row, col)
+            if target.value:
+                target.hyperlink = str(target.value)
+                target.font = Font(color=cyan, underline="single")
+
+    # Resumo executivo: formulas auditaveis ligadas a Base PCFs.
+    dashboard.sheet_view.showGridLines = False
+    dashboard.merge_cells("A1:N2")
+    dashboard["A1"] = "CONTROLE EXECUTIVO DE RESPOSTAS PCF"
+    dashboard["A1"].font = Font(size=24, bold=True, color=white)
+    dashboard["A1"].fill = PatternFill("solid", fgColor=navy)
+    dashboard["A1"].alignment = Alignment(vertical="center")
+    dashboard.merge_cells("A3:N3")
+    dashboard["A3"] = "ESCOPO: LD PROJETO BÁSICO | SLA de 15 dias úteis após a Data Recebimento da PCF"
+    dashboard["A3"].font = Font(size=11, color="53697D")
+
+    kpis = [
+        ("A5", "TOTAL MONITORADO", f"=COUNTA('Base PCFs'!A2:A{last_data_row})", cyan),
+        ("C5", "VENCIDAS", f'=COUNTIF(\'Base PCFs\'!J2:J{last_data_row},"Vencida")', "E05252"),
+        ("E5", "AGUARDANDO", f'=COUNTIF(\'Base PCFs\'!J2:J{last_data_row},"Aguardando resposta")', orange),
+        ("G5", "RESPONDIDAS", f'=COUNTIF(\'Base PCFs\'!J2:J{last_data_row},"Respondida")', "3B82F6"),
+        ("I5", "OPEN", f"=SUM('Base PCFs'!P2:P{last_data_row})", "EF7D00"),
+        ("K5", "UNDER REVIEW", f"=SUM('Base PCFs'!Q2:Q{last_data_row})", "8B5CF6"),
+        ("M5", "CLOSED CALCULADO", f"=SUM('Base PCFs'!R2:R{last_data_row})", "14B8A6"),
+    ]
+    thin = Side(style="thin", color=line)
+    for anchor, label, formula, color in kpis:
+        col = dashboard[anchor].column
+        dashboard.merge_cells(start_row=5, start_column=col, end_row=5, end_column=col+1)
+        dashboard.merge_cells(start_row=6, start_column=col, end_row=7, end_column=col+1)
+        label_cell = dashboard.cell(5, col)
+        value_cell = dashboard.cell(6, col)
+        label_cell.value = label
+        value_cell.value = formula
+        label_cell.fill = PatternFill("solid", fgColor=color)
+        value_cell.fill = PatternFill("solid", fgColor="F7FAFC")
+        label_cell.font = Font(bold=True, color=white, size=10)
+        value_cell.font = Font(bold=True, color=navy, size=22)
+        label_cell.alignment = value_cell.alignment = Alignment(horizontal="center", vertical="center")
+        label_cell.border = value_cell.border = Border(left=thin, right=thin, top=thin, bottom=thin)
+    dashboard["M6"].number_format = "0"
+
+    dashboard["A10"] = "SITUAÇÃO"
+    dashboard["B10"] = "QUANTIDADE"
+    situations = ["Vencida", "Aguardando resposta", "Respondida", "Sem informação"]
+    for index, situation in enumerate(situations, 11):
+        dashboard.cell(index, 1).value = situation
+        dashboard.cell(index, 2).value = f'=COUNTIF(\'Base PCFs\'!J2:J{last_data_row},A{index})'
+    for cell in dashboard[10]:
+        if cell.column <= 2:
+            cell.fill = PatternFill("solid", fgColor=navy)
+            cell.font = Font(color=white, bold=True)
+
+    ranking = sorted(records, key=lambda item: item["criticidade"], reverse=True)[:10]
+    dashboard["D10"] = "TOP 10 PCFs CRÍTICAS"
+    dashboard.merge_cells("D10:N10")
+    dashboard["D10"].fill = PatternFill("solid", fgColor=navy)
+    dashboard["D10"].font = Font(color=white, bold=True)
+    rank_headers = ["Documento", "PCF", "Atraso", "Open", "Under Review", "Responsável"]
+    for col, value in enumerate(rank_headers, 4):
+        dashboard.cell(11, col).value = value
+        dashboard.cell(11, col).fill = PatternFill("solid", fgColor="1D4A68")
+        dashboard.cell(11, col).font = Font(color=white, bold=True)
+    for row_index, item in enumerate(ranking, 12):
+        values = [item["documento"], item["pcf"], item["dias_atraso"], item["open_comments"], item["under_review"], item["responsavel"]]
+        for col, value in enumerate(values, 4):
+            dashboard.cell(row_index, col).value = value
+            dashboard.cell(row_index, col).fill = PatternFill("solid", fgColor="F6F9FB" if row_index % 2 == 0 else white)
+
+    doughnut = DoughnutChart()
+    doughnut.title = "Carteira por situação"
+    doughnut.add_data(Reference(dashboard, min_col=2, min_row=10, max_row=14), titles_from_data=True)
+    doughnut.set_categories(Reference(dashboard, min_col=1, min_row=11, max_row=14))
+    doughnut.height, doughnut.width = 7.5, 11
+    dashboard.add_chart(doughnut, "A17")
+
+    bar = BarChart()
+    bar.type = "bar"
+    bar.title = "Maior exposição - dias de atraso"
+    if ranking:
+        bar.add_data(Reference(dashboard, min_col=6, min_row=11, max_row=11+len(ranking)), titles_from_data=True)
+        bar.set_categories(Reference(dashboard, min_col=4, min_row=12, max_row=11+len(ranking)))
+    bar.height, bar.width = 8, 19
+    bar.legend = None
+    dashboard.add_chart(bar, "G17")
+
+    for col in range(1, 15):
+        dashboard.column_dimensions[get_column_letter(col)].width = 14
+    dashboard.column_dimensions["D"].width = 34
+    dashboard.column_dimensions["E"].width = 42
+    dashboard.column_dimensions["I"].width = 24
+    dashboard.freeze_panes = "A10"
+    dashboard.page_setup.orientation = "landscape"
+    dashboard.page_setup.fitToWidth = 1
+    dashboard.sheet_properties.pageSetUpPr.fitToPage = True
+    response = HttpResponse(content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    response["Content-Disposition"] = 'attachment; filename="controle_respostas_pcf_LD_PROJETO_BASICO.xlsx"'
+    wb.save(response)
+    return response
+
+
+@login_required
+def pcf_controle_respostas_pptx(request):
+    from apps.automacoes.services.pcf_executive_presentation import build_pcf_executive_presentation
+
+    records, _ = _pcf_response_records(request)
+    summary = summarize(records)
+    payload = build_pcf_executive_presentation(records, summary, timezone.localdate())
+    response = HttpResponse(
+        payload,
+        content_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    )
+    response["Content-Disposition"] = (
+        'attachment; filename="controle_respostas_pcf_diretoria_LD_PROJETO_BASICO.pptx"'
+    )
+    return response
+
+def _pcf_controle_respostas_pptx_legacy(request):
+    """Gerador anterior preservado temporariamente para referência de migração."""
+    from io import BytesIO
+    from pptx import Presentation
+    from pptx.chart.data import ChartData
+    from pptx.dml.color import RGBColor
+    from pptx.enum.chart import XL_CHART_TYPE, XL_LEGEND_POSITION
+    from pptx.enum.shapes import MSO_SHAPE
+    from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
+    from pptx.util import Inches, Pt
+
+    records, _ = _pcf_response_records(request)
+    summary = summarize(records)
+    critical = sorted(records, key=lambda item: item["criticidade"], reverse=True)
+
+    prs = Presentation()
+    prs.slide_width = Inches(13.333)
+    prs.slide_height = Inches(7.5)
+    blank = prs.slide_layouts[6]
+    NAVY = RGBColor(6, 20, 36)
+    CYAN = RGBColor(50, 183, 233)
+    ORANGE = RGBColor(245, 158, 11)
+    RED = RGBColor(224, 82, 82)
+    WHITE = RGBColor(247, 251, 255)
+    MUTED = RGBColor(157, 182, 210)
+
+    def background(slide):
+        slide.background.fill.solid()
+        slide.background.fill.fore_color.rgb = NAVY
+        line = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0, prs.slide_width, Inches(.08))
+        line.fill.solid(); line.fill.fore_color.rgb = CYAN; line.line.fill.background()
+
+    def text(slide, value, x, y, w, h, size=18, color=WHITE, bold=False, align=PP_ALIGN.LEFT):
+        box = slide.shapes.add_textbox(Inches(x), Inches(y), Inches(w), Inches(h))
+        frame = box.text_frame
+        frame.clear(); frame.word_wrap = True; frame.vertical_anchor = MSO_ANCHOR.MIDDLE
+        paragraph = frame.paragraphs[0]
+        paragraph.text = str(value)
+        paragraph.alignment = align
+        paragraph.font.name = "Aptos"
+        paragraph.font.size = Pt(size)
+        paragraph.font.bold = bold
+        paragraph.font.color.rgb = color
+        return box
+
+    def title(slide, headline, kicker="PCF RESPONSE CONTROL | NAVAL ENGINEERING"):
+        text(slide, kicker, .65, .38, 8.5, .35, 12, CYAN, True)
+        text(slide, headline, .65, .78, 12, .72, 35, WHITE, True)
+
+    def footer(slide, page):
+        text(slide, f"D'OR@NGE GED ENTERPRISE  |  {timezone.localdate():%d/%m/%Y}", .65, 7.04, 8, .22, 10, MUTED)
+        text(slide, f"{page:02d}", 12.15, 7.02, .5, .22, 10, CYAN, True, PP_ALIGN.RIGHT)
+
+    # 1 - abertura
+    slide = prs.slides.add_slide(blank); background(slide)
+    text(slide, "CONTROLE EXECUTIVO", .7, .7, 5.5, .4, 14, CYAN, True)
+    text(slide, "Respostas PCF", .7, 1.35, 8.8, 1.0, 50, WHITE, True)
+    text(slide, "Exposição contratual, comentários pendentes e prioridades de decisão", .72, 2.45, 9.4, .8, 24, MUTED)
+    text(slide, "SLA contratual: 15 dias úteis", .72, 4.65, 4.8, .5, 20, ORANGE, True)
+    text(slide, f"Base analisada: {summary['total']} PCFs", .72, 5.18, 4.8, .4, 18, WHITE)
+    text(slide, "DIRETORIA", 10.55, 5.55, 1.8, .35, 14, CYAN, True, PP_ALIGN.RIGHT)
+    footer(slide, 1)
+
+    # 2 - mensagem executiva
+    slide = prs.slides.add_slide(blank); background(slide); title(slide, "A carteira exige atuação imediata sobre as PCFs vencidas")
+    metrics = [
+        ("VENCIDAS", summary["vencidas"], RED), ("AGUARDANDO", summary["aguardando"], ORANGE),
+        ("VENCENDO", summary["vencendo"], ORANGE), ("RESPONDIDAS", summary["respondidas"], CYAN),
+        ("OPEN", summary["comentarios_abertos"], RED), ("UNDER REVIEW", summary["comentarios_revisao"], RGBColor(139,92,246)),
+    ]
+    for index, (label, value, color) in enumerate(metrics):
+        x = .72 + (index % 3) * 4.12; y = 1.85 + (index // 3) * 1.72
+        text(slide, label, x, y, 3.4, .3, 13, color, True)
+        text(slide, value, x, y+.35, 3.4, .72, 34, WHITE, True)
+        line = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(x), Inches(y+1.16), Inches(3.35), Inches(.04))
+        line.fill.solid(); line.fill.fore_color.rgb = color; line.line.fill.background()
+    exposure = round(summary["vencidas"] / summary["total"] * 100, 1) if summary["total"] else 0
+    text(slide, f"{exposure}% da carteira monitorada está vencida.", .72, 5.45, 7.2, .55, 24, RED, True)
+    text(slide, "Prioridade: cobrar respostas dos ciclos corretos e reduzir o estoque de comentários OPEN.", .72, 6.03, 11.5, .55, 18, MUTED)
+    footer(slide, 2)
+
+    # 3 - distribuição
+    slide = prs.slides.add_slide(blank); background(slide); title(slide, "O atraso está concentrado nas PCFs sem resposta do ciclo vigente")
+    chart_data = ChartData(); chart_data.categories = ["Vencida", "Aguardando", "Respondida", "Sem informação"]
+    chart_data.add_series("PCFs", [summary["vencidas"], summary["aguardando"], summary["respondidas"], summary["total"]-summary["vencidas"]-summary["aguardando"]-summary["respondidas"]])
+    chart = slide.shapes.add_chart(XL_CHART_TYPE.DOUGHNUT, Inches(.75), Inches(1.75), Inches(6.0), Inches(4.6), chart_data).chart
+    chart.has_legend = True; chart.legend.position = XL_LEGEND_POSITION.BOTTOM; chart.legend.font.size = Pt(14); chart.legend.font.color.rgb = WHITE
+    chart.has_title = False; chart.plots[0].has_data_labels = True; chart.plots[0].data_labels.show_percentage = True; chart.plots[0].data_labels.font.size = Pt(14); chart.plots[0].data_labels.font.color.rgb = WHITE
+    text(slide, "Leitura para decisão", 7.35, 1.9, 4.8, .4, 24, CYAN, True)
+    text(slide, f"• Tempo médio de resposta: {summary['tempo_medio']} dias úteis\n\n• {summary['comentarios_abertos']} comentários permanecem OPEN\n\n• {summary['comentarios_revisao']} comentários estão UNDER REVIEW", 7.35, 2.45, 5.0, 2.75, 20, WHITE)
+    text(slide, "O pareamento considera somente a resposta imediatamente seguinte à PCF recebida.", 7.35, 5.55, 5.1, .7, 17, MUTED)
+    footer(slide, 3)
+
+    # 4 - ranking
+    slide = prs.slides.add_slide(blank); background(slide); title(slide, "Dez documentos concentram a maior criticidade operacional")
+    top = critical[:10]
+    categories = [item["documento"][-18:] for item in reversed(top)] or ["Sem dados"]
+    values = [item["dias_atraso"] for item in reversed(top)] or [0]
+    chart_data = ChartData(); chart_data.categories = categories; chart_data.add_series("Dias úteis de atraso", values)
+    chart = slide.shapes.add_chart(XL_CHART_TYPE.BAR_CLUSTERED, Inches(.7), Inches(1.7), Inches(7.5), Inches(4.85), chart_data).chart
+    chart.has_legend = False; chart.has_title = False; chart.value_axis.has_major_gridlines = True
+    chart.category_axis.tick_labels.font.size = Pt(12); chart.category_axis.tick_labels.font.color.rgb = MUTED
+    chart.value_axis.tick_labels.font.size = Pt(11); chart.value_axis.tick_labels.font.color.rgb = MUTED
+    chart.series[0].format.fill.solid(); chart.series[0].format.fill.fore_color.rgb = RED
+    text(slide, "Foco de cobrança", 8.65, 1.85, 3.7, .4, 24, ORANGE, True)
+    if top:
+        bullets = []
+        for item in top[:5]:
+            bullets.append(f"{item['documento']} — {item['titulo']}\n{item['dias_atraso']} d.u. | {item['open_comments']} open")
+        text(slide, "\n\n".join(bullets), 8.65, 2.38, 3.9, 3.95, 16, WHITE)
+    footer(slide, 4)
+
+    # 5 - ação
+    slide = prs.slides.add_slide(blank); background(slide); title(slide, "A decisão recomendada é atacar atraso, volume OPEN e governança do ciclo")
+    actions = [
+        ("01", "Cobrança imediata", "Priorizar todas as PCFs vencidas, começando pelo ranking de criticidade."),
+        ("02", "Responsabilidade definida", "Atribuir responsável e data de compromisso para cada resposta pendente."),
+        ("03", "Ritual semanal", "Revisar vencidas, vencendo e comentários OPEN com Engenharia e fornecedores."),
+    ]
+    for i, (number, heading, body) in enumerate(actions):
+        y = 1.75 + i * 1.55
+        text(slide, number, .75, y, .75, .55, 26, CYAN, True)
+        text(slide, heading, 1.65, y-.02, 3.7, .5, 24, WHITE, True)
+        text(slide, body, 5.15, y-.02, 7.1, .75, 18, MUTED)
+    text(slide, "Resultado esperado", .75, 6.33, 2.7, .35, 16, ORANGE, True)
+    text(slide, "Redução progressiva do estoque vencido e maior previsibilidade de liberação documental.", 3.15, 6.22, 9.1, .6, 20, WHITE, True)
+    footer(slide, 5)
+
+    stream = BytesIO(); prs.save(stream)
+    response = HttpResponse(stream.getvalue(), content_type="application/vnd.openxmlformats-officedocument.presentationml.presentation")
+    response["Content-Disposition"] = 'attachment; filename="controle_respostas_pcf_diretoria.pptx"'
+    return response
+
+
+@login_required
+def pcf_controle_respostas_pdf(request):
+    from io import BytesIO
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import A3, landscape
+    from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.lib.units import mm
+    from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+
+    records, _ = _pcf_response_records(request)
+    summary = summarize(records)
+    stream = BytesIO()
+    doc = SimpleDocTemplate(stream, pagesize=landscape(A3), rightMargin=12*mm, leftMargin=12*mm, topMargin=12*mm, bottomMargin=12*mm)
+    styles = getSampleStyleSheet()
+    story = [Paragraph("PCF RESPONSE CONTROL - NAVAL ENGINEERING", styles["Title"])]
+    story.append(Paragraph(
+        f"SLA: 15 business days | Awaiting: {summary['aguardando']} | Overdue: {summary['vencidas']} | "
+        f"Due soon: {summary['vencendo']} | Open: {summary['comentarios_abertos']} | Under review: {summary['comentarios_revisao']}",
+        styles["Normal"],
+    ))
+    story.append(Spacer(1, 6*mm))
+    data = [["Document", "Document title", "Type", "Rev", "PCF received", "Received", "Expected", "Situation", "Business days", "Deadline", "Delay", "Status", "Comments", "Open", "Under review", "Responsible", "GRD"]]
+    for item in records:
+        data.append([
+            item["documento"], item["titulo"], item["tipo_documento"], item["revisao"], item["pcf"], item["data_recebimento"].strftime("%d/%m/%Y") if item["data_recebimento"] else "-",
+            item["resposta_esperada"], item["situacao"], item["dias_sem_resposta"] if item["dias_sem_resposta"] is not None else "-",
+            item["prazo"].strftime("%d/%m/%Y") if item["prazo"] else "-", item["dias_atraso"], item["status"],
+            item["qtd_comentarios"], item["open_comments"], item["under_review"], item["responsavel"], item["grd"],
+        ])
+    table = Table(data, repeatRows=1, colWidths=[34*mm, 42*mm, 9*mm, 8*mm, 38*mm, 16*mm, 15*mm, 21*mm, 15*mm, 16*mm, 10*mm, 24*mm, 11*mm, 9*mm, 15*mm, 25*mm, 14*mm])
+    table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0B1F33")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 6.5),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#EEF4F8")]),
+        ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#A8BAC8")),
+        ("TOPPADDING", (0, 0), (-1, -1), 4), ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+    ]))
+    story.append(table)
+    doc.build(story)
+    response = HttpResponse(stream.getvalue(), content_type="application/pdf")
+    response["Content-Disposition"] = 'attachment; filename="controle_respostas_pcf.pdf"'
+    return response
 
 
 # ============================================================
