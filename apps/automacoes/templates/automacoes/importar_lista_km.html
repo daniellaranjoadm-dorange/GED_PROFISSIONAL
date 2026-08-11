@@ -224,6 +224,11 @@
         <label class="ops-label" for="arquivo">Planilha LD Kongsberg (.xlsx)</label>
         <input class="km-file-input" id="arquivo" name="arquivo" type="file" accept=".xlsx,.xlsm" required>
 
+        <label class="d-flex align-items-start gap-2 mt-3 text-light">
+          <input type="checkbox" name="confirmar_execucao" value="SIM" required class="mt-1">
+          <span>Confirmo que revisei a planilha selecionada e autorizo a atualização da base KM e seus vínculos com a LD.</span>
+        </label>
+
         <div class="ops-actions mt-4">
           <button id="km-import-button" type="submit" class="ops-btn ops-btn-primary">
             <i class="bi bi-cloud-upload"></i>

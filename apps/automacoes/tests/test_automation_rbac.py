@@ -31,7 +31,10 @@ class AutomationRBACTests(TestCase):
     @patch("apps.automacoes.views.atualizar_ld_projeto_basico.executar")
     def test_viewer_cannot_execute_production_routine(self, executar):
         self.client.force_login(self.viewer)
-        response = self.client.post(reverse("automacoes:atualizar_ld_projeto_basico"))
+        response = self.client.post(
+            reverse("automacoes:atualizar_ld_projeto_basico"),
+            {"confirmar_execucao": "SIM"},
+        )
         self.assertEqual(response.status_code, 302)
         executar.assert_not_called()
 
@@ -39,7 +42,10 @@ class AutomationRBACTests(TestCase):
     def test_operator_can_execute_authorized_routine(self, executar):
         executar.return_value = {"ok": True, "mensagem": "OK"}
         self.client.force_login(self.operator)
-        response = self.client.post(reverse("automacoes:atualizar_ld_projeto_basico"))
+        response = self.client.post(
+            reverse("automacoes:atualizar_ld_projeto_basico"),
+            {"confirmar_execucao": "SIM"},
+        )
         self.assertEqual(response.status_code, 302)
         executar.assert_called_once()
         log = ExecucaoAutomacao.objects.get(nome="Atualização LD Projeto Básico")
@@ -51,11 +57,29 @@ class AutomationRBACTests(TestCase):
         )
 
     @patch("apps.automacoes.views.atualizar_ld_projeto_basico.executar")
+    def test_chamada_direta_sem_confirmacao_nao_executa(self, executar):
+        self.client.force_login(self.operator)
+        response = self.client.post(reverse("automacoes:atualizar_ld_projeto_basico"))
+        self.assertEqual(response.status_code, 302)
+        executar.assert_not_called()
+        tentativa = ExecucaoAutomacao.objects.get(
+            nome="Atualização LD Projeto Básico",
+            status=ExecucaoAutomacao.STATUS_CANCELADO,
+        )
+        self.assertEqual(
+            tentativa.detalhes["motivo"],
+            "confirmacao_operacional_ausente",
+        )
+
+    @patch("apps.automacoes.views.atualizar_ld_projeto_basico.executar")
     def test_segunda_execucao_simultanea_e_bloqueada_e_auditada(self, executar):
         lock, _ = adquirir_bloqueio("Atualização LD Projeto Básico", self.operator)
         self.assertIsNotNone(lock)
         self.client.force_login(self.operator)
-        response = self.client.post(reverse("automacoes:atualizar_ld_projeto_basico"))
+        response = self.client.post(
+            reverse("automacoes:atualizar_ld_projeto_basico"),
+            {"confirmar_execucao": "SIM"},
+        )
         self.assertEqual(response.status_code, 302)
         executar.assert_not_called()
         tentativa = ExecucaoAutomacao.objects.get(
@@ -69,7 +93,10 @@ class AutomationRBACTests(TestCase):
     def test_bloqueio_e_liberado_apos_erro(self, executar):
         executar.side_effect = RuntimeError("falha controlada")
         self.client.force_login(self.operator)
-        response = self.client.post(reverse("automacoes:atualizar_ld_projeto_basico"))
+        response = self.client.post(
+            reverse("automacoes:atualizar_ld_projeto_basico"),
+            {"confirmar_execucao": "SIM"},
+        )
         self.assertEqual(response.status_code, 302)
         self.assertFalse(
             AutomationExecutionLock.objects.filter(nome="Atualização LD Projeto Básico").exists()
@@ -118,6 +145,7 @@ class LDKMAuditTests(TestCase):
         executar.return_value = {"ok": True, "mensagem": "Sincronizado", "total": 12}
         response = self.client.post(
             reverse("automacoes:executar_sync_km_ld"),
+            {"confirmar_execucao": "SIM"},
             REMOTE_ADDR="10.20.30.40",
         )
         self.assertEqual(response.status_code, 302)
@@ -136,7 +164,7 @@ class LDKMAuditTests(TestCase):
         )
         response = self.client.post(
             reverse("automacoes:importar_lista_km"),
-            {"arquivo": arquivo},
+            {"arquivo": arquivo, "confirmar_execucao": "SIM"},
         )
         self.assertEqual(response.status_code, 302)
         log = ExecucaoAutomacao.objects.get(nome="Importar LD Kongsberg")

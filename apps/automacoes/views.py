@@ -964,6 +964,29 @@ def _executar_automacao(
         messages.error(request, f"Método inválido para executar {nome}.")
         return redirect(redirect_name)
 
+    if request.POST.get("confirmar_execucao") != "SIM":
+        mensagem_confirmacao = (
+            f"A execução de {nome} não foi iniciada porque faltou a confirmação operacional."
+        )
+        ExecucaoAutomacao.objects.create(
+            nome=nome,
+            usuario=request.user if request.user.is_authenticated else None,
+            status=ExecucaoAutomacao.STATUS_CANCELADO,
+            sucesso=False,
+            origem="painel",
+            arquivo_origem=str(arquivo_origem or ""),
+            ip_origem=_ip_origem_request(request),
+            detalhes={
+                "rota": request.path,
+                "metodo": request.method,
+                "motivo": "confirmacao_operacional_ausente",
+            },
+            mensagem=mensagem_confirmacao,
+            finalizado_em=timezone.now(),
+        )
+        messages.warning(request, mensagem_confirmacao)
+        return redirect(redirect_name)
+
     lock, bloqueio_existente = adquirir_bloqueio(nome, request.user)
     if lock is None:
         executor_atual = (

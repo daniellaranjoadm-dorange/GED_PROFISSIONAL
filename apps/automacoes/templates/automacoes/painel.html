@@ -1560,8 +1560,12 @@
         <form method="post"
               action="{% url rotina.form_url %}"
               class="ged-action-form"
-              data-automation-name="{{ rotina.nome }}">
+              data-automation-name="{{ rotina.nome }}"
+              data-automation-scope="{{ rotina.descricao }}"
+              data-automation-destination="Pastas oficiais, banco operacional e dashboards vinculados"
+              data-automation-backup="{% if rotina.modo_operacional == 'producao' or rotina.modo_operacional == 'legado' %}Backup obrigatório antes da alteração{% else %}Nova saída sem substituir a fonte{% endif %}">
           {% csrf_token %}
+          <input type="hidden" name="confirmar_execucao" value="">
 
           <button type="submit"
                   class="ops-btn ops-btn-primary ged-run-btn">
@@ -1719,9 +1723,82 @@
 
 </div>
 
+<style>
+  .ops-confirm-overlay { position: fixed; inset: 0; z-index: 2500; display: none; place-items: center; padding: 20px; background: rgba(2, 6, 23, .86); backdrop-filter: blur(8px); }
+  .ops-confirm-overlay.is-visible { display: grid; }
+  .ops-confirm-card { width: min(100%, 680px); border: 1px solid rgba(245, 158, 11, .5); border-radius: 22px; padding: 22px; background: linear-gradient(145deg, #0f1d32, #09111f); box-shadow: 0 28px 80px rgba(0,0,0,.55); color: #e5e7eb; }
+  .ops-confirm-card h2 { margin: 0; color: #fff; font-weight: 950; }
+  .ops-confirm-warning { margin: 14px 0; padding: 12px 14px; border-left: 4px solid #f59e0b; border-radius: 10px; background: rgba(245, 158, 11, .10); color: #fde68a; }
+  .ops-confirm-grid { display: grid; gap: 9px; margin: 15px 0; }
+  .ops-confirm-item { padding: 11px 13px; border: 1px solid rgba(148,163,184,.18); border-radius: 12px; background: rgba(2,6,23,.45); }
+  .ops-confirm-item span { display: block; color: #7dd3fc; font-size: .68rem; font-weight: 900; text-transform: uppercase; letter-spacing: .07em; }
+  .ops-confirm-item strong { display: block; margin-top: 3px; color: #f8fafc; }
+  .ops-confirm-actions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+</style>
+
+<div id="ops-confirm-overlay" class="ops-confirm-overlay" aria-hidden="true">
+  <section class="ops-confirm-card" role="dialog" aria-modal="true" aria-labelledby="ops-confirm-title">
+    <div class="ops-eyebrow"><i class="bi bi-shield-exclamation"></i> Confirmação operacional</div>
+    <h2 id="ops-confirm-title">Confirmar execução</h2>
+    <div class="ops-confirm-warning">Confirme o escopo antes de alterar bases, arquivos ou dashboards oficiais.</div>
+    <div class="ops-confirm-grid">
+      <div class="ops-confirm-item"><span>Rotina</span><strong id="ops-confirm-name">—</strong></div>
+      <div class="ops-confirm-item"><span>Escopo</span><strong id="ops-confirm-scope">—</strong></div>
+      <div class="ops-confirm-item"><span>Destino</span><strong id="ops-confirm-destination">—</strong></div>
+      <div class="ops-confirm-item"><span>Proteção</span><strong id="ops-confirm-backup">—</strong></div>
+    </div>
+    <div class="ops-confirm-actions">
+      <button type="button" id="ops-confirm-cancel" class="ops-btn"><i class="bi bi-x-circle"></i> Cancelar</button>
+      <button type="button" id="ops-confirm-run" class="ops-btn ops-btn-primary"><i class="bi bi-check2-circle"></i> Confirmar e executar</button>
+    </div>
+  </section>
+</div>
+
 <script>
 (function () {
   const loadingAlert = document.getElementById("loading-alert");
+  const confirmOverlay = document.getElementById("ops-confirm-overlay");
+  const confirmName = document.getElementById("ops-confirm-name");
+  const confirmScope = document.getElementById("ops-confirm-scope");
+  const confirmDestination = document.getElementById("ops-confirm-destination");
+  const confirmBackup = document.getElementById("ops-confirm-backup");
+  const confirmRun = document.getElementById("ops-confirm-run");
+  const confirmCancel = document.getElementById("ops-confirm-cancel");
+  let pendingForm = null;
+  let pendingButton = null;
+
+  function closeConfirmation() {
+    if (confirmOverlay) {
+      confirmOverlay.classList.remove("is-visible");
+      confirmOverlay.setAttribute("aria-hidden", "true");
+    }
+    pendingForm = null;
+    pendingButton = null;
+  }
+
+  function openConfirmation(form, button) {
+    pendingForm = form;
+    pendingButton = button;
+    if (confirmName) confirmName.textContent = form.dataset.automationName || "Automação";
+    if (confirmScope) confirmScope.textContent = form.dataset.automationScope || "Processamento operacional";
+    if (confirmDestination) confirmDestination.textContent = form.dataset.automationDestination || "Bases vinculadas";
+    if (confirmBackup) confirmBackup.textContent = form.dataset.automationBackup || "Auditoria e bloqueio simultâneo ativos";
+    if (confirmOverlay) {
+      confirmOverlay.classList.add("is-visible");
+      confirmOverlay.setAttribute("aria-hidden", "false");
+    }
+  }
+
+  if (confirmCancel) confirmCancel.addEventListener("click", closeConfirmation);
+  if (confirmRun) confirmRun.addEventListener("click", function () {
+    if (!pendingForm) return;
+    const form = pendingForm;
+    const button = pendingButton;
+    const confirmation = form.querySelector('input[name="confirmar_execucao"]');
+    if (confirmation) confirmation.value = "SIM";
+    closeConfirmation();
+    form.requestSubmit(button || undefined);
+  });
   const progressPanel = document.getElementById("ld-progress-panel");
   const progressFill = document.getElementById("ld-progress-fill");
   const progressPercent = document.getElementById("ld-progress-percent");
@@ -1791,6 +1868,13 @@
     if (!form) return;
 
     form.addEventListener("submit", async function(event) {
+      const confirmation = form.querySelector('input[name="confirmar_execucao"]');
+      if (!confirmation || confirmation.value !== "SIM") {
+        event.preventDefault();
+        openConfirmation(form, button);
+        return;
+      }
+
       const action = form.getAttribute("action") || "";
       const isAtualizarLD = action.indexOf("executar-atualizar-ld") !== -1;
 

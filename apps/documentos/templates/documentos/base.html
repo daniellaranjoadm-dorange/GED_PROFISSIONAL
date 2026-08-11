@@ -528,8 +528,10 @@ html body.ged-enterprise-shell.sidebar-collapsed .sidebar-subnav{
             <li>
               {% if user|has_perm:"automacoes.executar_sync_km_ld" %}<form method="post"
                     action="{{ url_executar_sync_km_ld|default:'/automacoes/executar-sync-km-ld/' }}"
-                    class="sidebar-action-form">
+                    class="sidebar-action-form"
+                    onsubmit="return window.confirm('Confirmar Sync KM ↔ LD? A rotina atualizará os vínculos da base operacional.');">
                 {% csrf_token %}
+                <input type="hidden" name="confirmar_execucao" value="SIM">
                 <button type="submit"
                         class="sidebar-link sidebar-action-button sidebar-link-km"
                         title="Executar Sync KM ↔ LD">

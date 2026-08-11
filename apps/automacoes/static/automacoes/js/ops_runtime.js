@@ -321,6 +321,10 @@
 
   document.querySelectorAll("form").forEach((form) => {
     form.addEventListener("submit", function () {
+      const confirmation = form.querySelector('input[name="confirmar_execucao"]');
+      if (form.classList.contains("ged-action-form") && (!confirmation || confirmation.value !== "SIM")) {
+        return;
+      }
       const submitButton = form.querySelector("button[type='submit']");
       const isAutomationForm =
         form.classList.contains("ged-action-form") ||
