@@ -57,6 +57,7 @@ urlpatterns = [
     path("grd-ghenova/", views.executar_grd_ghenova, name="grd_ghenova"),
     path("indexar-km/", views.executar_indice_km, name="indexar_km"),
     path("logs/", views.logs_automacoes, name="logs_automacoes"),
+    path("notificacoes/", views.central_notificacoes, name="central_notificacoes"),
 
     # Runtime APIs
     path("api/runtime/health/", views.runtime_health_api, name="runtime_health_api"),

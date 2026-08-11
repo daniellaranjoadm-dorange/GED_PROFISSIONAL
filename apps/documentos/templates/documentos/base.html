@@ -19,6 +19,7 @@
 {% url 'solicitacoes:listar_solicitacoes' as url_solicitacoes %}
 {% url 'automacoes:busca_global' as url_busca_global %}
 {% url 'automacoes:painel' as url_automacoes_painel %}
+{% url 'automacoes:central_notificacoes' as url_central_notificacoes %}
 {% url 'automacoes:ops_center' as url_ops_center %}
 {% url 'automacoes:logs_automacoes' as url_logs_automacoes %}
 {% url 'automacoes:dashboard_pcfs' as url_dashboard_pcfs %}
@@ -471,6 +472,14 @@ html body.ged-enterprise-shell.sidebar-collapsed .sidebar-subnav{
                 <span class="sidebar-text">Painel Automa&ccedil;&otilde;es</span><span class="sidebar-item-state state-live" title="Em uso"></span>
               </a>
             </li>
+            {% if user|has_perm:"notificacoes.visualizar" %}
+            <li>
+              <a class="sidebar-link" href="{{ url_central_notificacoes|default:'/automacoes/notificacoes/' }}" title="Central de Notifica&ccedil;&otilde;es">
+                <i class="bi bi-bell"></i>
+                <span class="sidebar-text">Central de Notifica&ccedil;&otilde;es</span><span class="sidebar-item-state state-consult" title="Prioridades operacionais"></span>
+              </a>
+            </li>
+            {% endif %}
             <li>
               {% if user|has_perm:"automacoes.ver_ops_center" %}<a class="sidebar-link" href="{{ url_ops_center|default:'/automacoes/ops-center/' }}" title="Operations Center">
                 <i class="bi bi-speedometer2"></i>

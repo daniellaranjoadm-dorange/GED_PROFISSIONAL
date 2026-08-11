@@ -55,7 +55,8 @@ from apps.automacoes.services.pcf_response_report import (
     executive_dashboard,
     summarize,
 )
-from apps.contas.permissions import has_perm
+from apps.contas.permissions import has_perm, usuario_tem_permissao
+from apps.automacoes.services.notification_center import montar_central_notificacoes
 
 
 
@@ -1213,6 +1214,14 @@ def logs_automacoes(request):
             "status_choices": ExecucaoAutomacao.STATUS_CHOICES,
         },
     )
+
+
+@has_perm("notificacoes.visualizar")
+def central_notificacoes(request):
+    context = montar_central_notificacoes(
+        incluir_acessos=usuario_tem_permissao(request.user, "administracao.gerenciar")
+    )
+    return render(request, "automacoes/central_notificacoes.html", context)
 
 
 @has_perm("automacoes.executar_ld_legado")

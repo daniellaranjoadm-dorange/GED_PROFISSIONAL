@@ -1,0 +1,37 @@
+{% extends "documentos/base.html" %}
+{% load static %}
+{% block title %}Central de Notifica&ccedil;&otilde;es &middot; D'OR@NGE{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'automacoes/css/ops_enterprise.css' %}?v=1501">
+<style>
+.notify-page{width:min(100%,1500px);margin:auto}.notify-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:16px 0}.notify-kpi,.notify-panel{border:1px solid rgba(56,189,248,.2);border-radius:18px;background:linear-gradient(145deg,rgba(15,23,42,.96),rgba(2,6,23,.92));padding:16px}.notify-kpi strong{display:block;font-size:2rem;color:#fff}.notify-kpi span{color:#93c5fd;font-size:.72rem;font-weight:900;text-transform:uppercase}.notify-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.notify-panel h2{margin:0;color:#fff}.notify-list{display:grid;gap:9px;margin-top:13px}.notify-item{display:block;padding:12px;border:1px solid rgba(148,163,184,.16);border-left:3px solid #38bdf8;border-radius:12px;background:rgba(2,6,23,.46);color:#e5e7eb;text-decoration:none}.notify-item.is-danger{border-left-color:#ef4444}.notify-item.is-warning{border-left-color:#f59e0b}.notify-item strong{display:block;color:#fff}.notify-item small{display:block;color:#93a4bd;margin-top:4px}.notify-empty{padding:18px;color:#86efac;text-align:center}@media(max-width:1050px){.notify-grid{grid-template-columns:1fr}.notify-kpis{grid-template-columns:repeat(2,1fr)}}@media(max-width:620px){.notify-kpis{grid-template-columns:1fr}}
+</style>
+{% endblock %}
+{% block content %}
+<div class="notify-page">
+  <section class="ops-hero">
+    <div><div class="ops-eyebrow"><i class="bi bi-bell"></i> Monitoramento interno</div><h1>Central de Notifica&ccedil;&otilde;es</h1><p>Prioridades operacionais consolidadas para atua&ccedil;&atilde;o de Engenharia, Document Control e Administra&ccedil;&atilde;o.</p></div>
+    <div class="ops-chip">Atualizado em {{ gerado_em|date:"d/m/Y H:i" }}</div>
+  </section>
+  <section class="notify-kpis">
+    <div class="notify-kpi"><span>Total priorit&aacute;rio</span><strong>{{ total_prioridades }}</strong></div>
+    <div class="notify-kpi"><span>Falhas em 7 dias</span><strong>{{ total_falhas }}</strong></div>
+    <div class="notify-kpi"><span>PCFs vencidas</span><strong>{{ total_pcfs_vencidas }}</strong></div>
+    <div class="notify-kpi"><span>Acessos pendentes</span><strong>{% if inclui_acessos %}{{ total_acessos_pendentes }}{% else %}Restrito{% endif %}</strong></div>
+  </section>
+  <section class="notify-grid">
+    <article class="notify-panel">
+      <div class="ops-panel-head"><div><h2>Falhas de automa&ccedil;&atilde;o</h2><p>Ocorr&ecirc;ncias dos &uacute;ltimos sete dias.</p></div><a class="ops-btn" href="{% url 'automacoes:logs_automacoes' %}?status=erro">Ver logs</a></div>
+      <div class="notify-list">{% for item in falhas %}<a class="notify-item is-danger" href="{% url 'automacoes:logs_automacoes' %}?q={{ item.nome|urlencode }}"><strong>{{ item.nome }}</strong><span>{{ item.mensagem|truncatechars:130 }}</span><small>{{ item.iniciado_em|date:"d/m/Y H:i" }} &middot; {{ item.usuario|default:"Sistema" }}</small></a>{% empty %}<div class="notify-empty"><i class="bi bi-check-circle"></i> Nenhuma falha recente.</div>{% endfor %}</div>
+    </article>
+    <article class="notify-panel">
+      <div class="ops-panel-head"><div><h2>PCFs vencidas</h2><p>SLA oficial de 15 dias &uacute;teis.</p></div><a class="ops-btn" href="{% url 'automacoes:pcf_controle_respostas' %}?situacao=Vencida">Abrir controle</a></div>
+      <div class="notify-list">{% for item in pcfs_vencidas %}<a class="notify-item is-warning" href="{% url 'automacoes:pcf_controle_respostas' %}?busca={{ item.documento|urlencode }}"><strong>{{ item.documento }}</strong><span>{{ item.titulo|truncatechars:95 }}</span><small>{{ item.dias_atraso }} dias &uacute;teis de atraso &middot; {{ item.responsavel|default:"Sem responsavel" }}</small></a>{% empty %}<div class="notify-empty"><i class="bi bi-check-circle"></i> Nenhuma PCF vencida.</div>{% endfor %}</div>
+    </article>
+    <article class="notify-panel">
+      <div class="ops-panel-head"><div><h2>Solicita&ccedil;&otilde;es de acesso</h2><p>Vis&iacute;vel somente para administradores.</p></div>{% if inclui_acessos %}<a class="ops-btn" href="{% url 'solicitacoes:listar_solicitacoes' %}">Analisar</a>{% endif %}</div>
+      {% if inclui_acessos %}<div class="notify-list">{% for item in acessos_pendentes %}<a class="notify-item" href="{% url 'solicitacoes:detalhe_solicitacao' item.pk %}"><strong>{{ item.nome }}</strong><span>{{ item.email }}</span><small>{{ item.perfil_solicitado|default:"Perfil nao informado" }} &middot; {{ item.data_solicitacao|date:"d/m/Y H:i" }}</small></a>{% empty %}<div class="notify-empty"><i class="bi bi-check-circle"></i> Nenhuma solicita&ccedil;&atilde;o pendente.</div>{% endfor %}</div>{% else %}<div class="notify-empty"><i class="bi bi-shield-lock"></i> Conte&uacute;do administrativo protegido.</div>{% endif %}
+    </article>
+  </section>
+</div>
+{% endblock %}
