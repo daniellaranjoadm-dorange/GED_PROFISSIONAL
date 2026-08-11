@@ -18,6 +18,7 @@ from .services.guia_processor import (
 )
 from .services.pdf_stamper import PdfStampError, gerar_copia_controlada
 from .services.revision_control import analisar_revisoes
+from apps.contas.permissions import has_perm
 
 
 def _nome_usuario(request):
@@ -25,7 +26,7 @@ def _nome_usuario(request):
     return nome or request.user.get_username()
 
 
-@login_required
+@has_perm("copias.operar")
 def criar_copia_controlada(request):
     if request.method == "POST":
         form = CopiaControladaForm(request.POST, request.FILES)
@@ -61,7 +62,7 @@ def criar_copia_controlada(request):
     )
 
 
-@login_required
+@has_perm("copias.operar")
 def guias_emissao(request):
     numero = request.GET.get("guia", "").strip()
     previa = None
@@ -108,7 +109,7 @@ def guias_emissao(request):
     )
 
 
-@login_required
+@has_perm("copias.operar")
 def processar_guia_emissao(request):
     if request.method != "POST":
         return redirect("carimbos:guias")
@@ -143,7 +144,7 @@ def processar_guia_emissao(request):
     return redirect(f"{reverse('carimbos:guias')}?{urlencode({'guia': numero})}")
 
 
-@login_required
+@has_perm("copias.visualizar")
 def rastreabilidade(request):
     termo = request.GET.get("q", "").strip()
     status = request.GET.get("status", "").strip()
@@ -171,7 +172,7 @@ def rastreabilidade(request):
     )
 
 
-@login_required
+@has_perm("copias.operar")
 def confirmar_recolhimento(request, pk):
     if request.method != "POST":
         return redirect("carimbos:rastreabilidade")

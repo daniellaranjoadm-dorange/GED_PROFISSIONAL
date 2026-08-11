@@ -105,3 +105,19 @@ class FluxoSolicitacaoAcessoTests(TestCase):
         response = self.client.get(reverse("solicitacoes:detalhe_solicitacao", args=[concluida.pk]))
         self.assertContains(response, "Solicitação já analisada")
         self.assertNotContains(response, 'name="acao" value="aprovar"')
+
+    def test_detalhe_aprovado_exibe_convite_manual_para_conta_inativa(self):
+        User = get_user_model()
+        usuario = User.objects.create_user(
+            username="manual@example.com", email="manual@example.com", is_active=False
+        )
+        usuario.set_unusable_password(); usuario.save()
+        concluida = SolicitarAcesso.objects.create(
+            nome="Convite Manual", email="manual@example.com", motivo="Acesso aprovado",
+            status=SolicitarAcesso.STATUS_APROVADO, perfil_solicitado=self.role,
+            perfil_concedido=self.role,
+        )
+        self.client.force_login(self.master)
+        response = self.client.get(reverse("solicitacoes:detalhe_solicitacao", args=[concluida.pk]))
+        self.assertContains(response, "Convite manual seguro")
+        self.assertContains(response, "/solicitar/convite/")

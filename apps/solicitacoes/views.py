@@ -130,7 +130,19 @@ def detalhe_solicitacao(request, id):
         return redirect("solicitacoes:listar_solicitacoes")
 
     roles = Role.objects.filter(nome__in=PERFIS_OPERACIONAIS).order_by("nome")
-    return render(request, "solicitar_acesso/detalhe.html", {"solicitacao": solicitacao, "roles": roles})
+    convite_manual_url = ""
+    if solicitacao.status == SolicitarAcesso.STATUS_APROVADO:
+        usuario_convite = get_user_model().objects.filter(email__iexact=solicitacao.email).first()
+        if usuario_convite and not usuario_convite.is_active:
+            uid = urlsafe_base64_encode(force_bytes(usuario_convite.pk))
+            token = default_token_generator.make_token(usuario_convite)
+            convite_manual_url = request.build_absolute_uri(
+                reverse("solicitacoes:aceitar_convite", kwargs={"uidb64": uid, "token": token})
+            )
+    return render(request, "solicitar_acesso/detalhe.html", {
+        "solicitacao": solicitacao, "roles": roles,
+        "convite_manual_url": convite_manual_url,
+    })
 
 
 @require_http_methods(["GET", "POST"])

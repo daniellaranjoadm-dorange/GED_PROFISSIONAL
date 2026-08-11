@@ -399,6 +399,7 @@ html body.ged-enterprise-shell.sidebar-collapsed .sidebar-subnav{
                   <span class="sidebar-text">Novo Documento</span>
                 </a>
               </li>
+              {% if user|has_perm:"copias.operar" %}
               <li>
                 <a class="sidebar-link" href="{{ url_copia_controlada|default:'/carimbos/' }}" title="Cópia Controlada">
                   <i class="bi bi-file-earmark-check"></i>
@@ -411,12 +412,15 @@ html body.ged-enterprise-shell.sidebar-collapsed .sidebar-subnav{
                   <span class="sidebar-text">Processar GI / GE</span><span class="sidebar-item-state state-live" title="Em uso"></span>
                 </a>
               </li>
+              {% endif %}
+              {% if user|has_perm:"copias.visualizar" %}
               <li>
                 <a class="sidebar-link" href="{{ url_rastreabilidade_copias|default:'/carimbos/rastreabilidade/' }}" title="Rastreabilidade">
                   <i class="bi bi-clock-history"></i>
                   <span class="sidebar-text">Rastreabilidade</span><span class="sidebar-item-state state-live" title="Em uso"></span>
                 </a>
               </li>
+              {% endif %}
             <li>
               <a class="sidebar-link" href="{{ url_importar_ldp|default:'#' }}" title="Importar LDP">
                 <i class="bi bi-cloud-upload"></i>
