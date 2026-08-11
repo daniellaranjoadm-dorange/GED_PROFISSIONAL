@@ -1,13 +1,17 @@
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 
 from .rbac_helpers import grant_rbac
 from apps.automacoes.models import AutomationExecutionLock, ExecucaoAutomacao
 from apps.automacoes.services.execution_lock import adquirir_bloqueio
+from apps.automacoes.services.execution_comparison import (
+    comparar_snapshots,
+    extrair_arquivos_publicados,
+)
 
 
 class AutomationRBACTests(TestCase):
@@ -52,6 +56,8 @@ class AutomationRBACTests(TestCase):
         self.assertEqual(log.usuario, self.operator)
         self.assertEqual(log.origem, "painel")
         self.assertEqual(log.detalhes["metodo"], "POST")
+        self.assertIn("comparativo", log.detalhes)
+        self.assertIn("linhas", log.detalhes["comparativo"])
         self.assertFalse(
             AutomationExecutionLock.objects.filter(nome="Atualização LD Projeto Básico").exists()
         )
@@ -170,3 +176,23 @@ class LDKMAuditTests(TestCase):
         log = ExecucaoAutomacao.objects.get(nome="Importar LD Kongsberg")
         self.assertEqual(log.arquivo_origem, "LD_Kongsberg_teste.xlsx")
         self.assertEqual(log.usuario, self.operator)
+
+
+class ExecutionComparisonTests(SimpleTestCase):
+    def test_comparativo_calcula_delta_e_linhas_gerenciais(self):
+        comparativo = comparar_snapshots(
+            {"ld_total": 10, "pcf_total": 2},
+            {"ld_total": 13, "pcf_total": 1},
+        )
+        self.assertEqual(comparativo["delta"], {"ld_total": 3, "pcf_total": -1})
+        self.assertEqual(comparativo["alteracoes"], 2)
+        self.assertEqual(comparativo["linhas"][0]["label"], "Documentos LD")
+
+    def test_extrai_apenas_referencias_de_arquivos_publicados(self):
+        arquivos = extrair_arquivos_publicados({
+            "ok": True,
+            "arquivo_html": "dashboard.html",
+            "saidas": ["base.xlsx", "relatorio.pptx"],
+            "total": 15,
+        })
+        self.assertEqual(arquivos, ["dashboard.html", "base.xlsx", "relatorio.pptx"])

@@ -43,6 +43,11 @@ from apps.automacoes.services.runtime_health_api import RuntimeHealthAPIService
 from apps.automacoes.services.runtime_retention import RuntimeRetentionService
 from apps.automacoes.services.kongsberg_document_list import importar_ld_kongsberg, executar_cruzamento_ld_km
 from apps.automacoes.services.execution_lock import adquirir_bloqueio, liberar_bloqueio
+from apps.automacoes.services.execution_comparison import (
+    capturar_snapshot_operacional,
+    comparar_snapshots,
+    extrair_arquivos_publicados,
+)
 from apps.automacoes.services.pcf_response_report import (
     ESCOPO_PROJETO,
     build_record,
@@ -1023,6 +1028,7 @@ def _executar_automacao(
         return redirect(redirect_name)
 
     inicio = time.monotonic()
+    snapshot_antes = capturar_snapshot_operacional()
     try:
         log = ExecucaoAutomacao.objects.create(
             nome=nome,
@@ -1053,7 +1059,13 @@ def _executar_automacao(
             f"{nome} executado com sucesso." if ok else f"Falha ao executar {nome}."
         )
         log.quantidade_processada = _extrair_quantidade_processada(resultado)
-        log.detalhes = {**(log.detalhes or {}), **_detalhes_execucao(resultado)}
+        snapshot_depois = capturar_snapshot_operacional()
+        log.detalhes = {
+            **(log.detalhes or {}),
+            **_detalhes_execucao(resultado),
+            "comparativo": comparar_snapshots(snapshot_antes, snapshot_depois),
+            "arquivos_publicados": extrair_arquivos_publicados(resultado),
+        }
 
         if ok:
             messages.success(request, log.mensagem)
@@ -1064,7 +1076,14 @@ def _executar_automacao(
         log.status = ExecucaoAutomacao.STATUS_ERRO
         log.sucesso = False
         log.mensagem = f"Erro ao executar {nome}: {exc}"
-        log.detalhes = {**(log.detalhes or {}), "erro": str(exc)}
+        log.detalhes = {
+            **(log.detalhes or {}),
+            "erro": str(exc),
+            "comparativo": comparar_snapshots(
+                snapshot_antes,
+                capturar_snapshot_operacional(),
+            ),
+        }
         messages.error(request, log.mensagem)
 
     finally:

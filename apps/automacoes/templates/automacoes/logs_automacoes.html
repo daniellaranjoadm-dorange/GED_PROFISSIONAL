@@ -295,6 +295,32 @@
 
             <td class="ops-message">
               {{ log.mensagem|default:"—" }}
+              {% if log.detalhes.comparativo %}
+              <details class="mt-2">
+                <summary>Antes × depois · {{ log.detalhes.comparativo.alteracoes }} indicador(es) alterado(s)</summary>
+                <div class="table-responsive mt-2">
+                  <table class="table table-sm table-dark mb-2">
+                    <thead><tr><th>Indicador</th><th>Antes</th><th>Depois</th><th>Δ</th></tr></thead>
+                    <tbody>
+                      {% for item in log.detalhes.comparativo.linhas %}
+                      <tr>
+                        <td>{{ item.label }}</td>
+                        <td>{{ item.antes }}</td>
+                        <td>{{ item.depois }}</td>
+                        <td>{% if item.delta > 0 %}+{% endif %}{{ item.delta }}</td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+                {% if log.detalhes.arquivos_publicados %}
+                <strong>Arquivos/saídas publicados:</strong>
+                <ul class="mb-0">
+                  {% for arquivo in log.detalhes.arquivos_publicados %}<li>{{ arquivo }}</li>{% endfor %}
+                </ul>
+                {% endif %}
+              </details>
+              {% endif %}
             </td>
 
           </tr>
