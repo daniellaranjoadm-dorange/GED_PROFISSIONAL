@@ -6,7 +6,8 @@ from django.contrib.auth import get_user_model
 from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 
-from .models import Role, UserRole
+from .models import Role, RolePermission, UserRole
+from .rbac_catalog import PERFIS_OPERACIONAIS
 
 
 class PortalTemplateTests(SimpleTestCase):
@@ -87,3 +88,15 @@ class UsuariosPermissoesTests(TestCase):
             "usuario_id": self.usuario.pk, "roles": [master_role.pk],
         })
         self.assertFalse(UserRole.objects.filter(user=self.usuario, role=master_role).exists())
+
+    def test_arquivo_tecnico_aparece_com_permissoes_operacionais_seguras(self):
+        self.assertIn("ARQUIVO_TECNICO", PERFIS_OPERACIONAIS)
+        role = Role.objects.get(nome="ARQUIVO_TECNICO")
+        codigos = set(
+            RolePermission.objects.filter(role=role).values_list("codigo", flat=True)
+        )
+        self.assertTrue({"ged.visualizar", "documento.criar", "documento.editar", "copias.operar"} <= codigos)
+        self.assertFalse(
+            {"documento.aprovar", "documento.emitir", "documento.excluir", "administracao.gerenciar"}
+            & codigos
+        )

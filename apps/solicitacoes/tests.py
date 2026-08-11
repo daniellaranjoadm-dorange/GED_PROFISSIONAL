@@ -31,6 +31,11 @@ class FluxoSolicitacaoAcessoTests(TestCase):
         self.assertTrue(SolicitarAcesso.objects.filter(email="maria@example.com").exists())
         notificar.assert_called_once()
 
+    def test_formulario_publico_oferece_perfil_arquivo_tecnico(self):
+        response = self.client.get(reverse("solicitacoes:solicitar_acesso"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "ARQUIVO_TECNICO")
+
     def test_impede_solicitacao_duplicada(self):
         SolicitarAcesso.objects.create(
             nome="Maria", email="maria@example.com", motivo="Motivo suficientemente longo",
