@@ -2042,6 +2042,7 @@ def _tr_montar_central_transmittals(registros):
 
 
 @login_required
+@has_perm("km.visualizar")
 def listar_transmittals_km(request):
     busca = request.GET.get("q", "").strip()
     pasta = request.GET.get("pasta", "").strip()
@@ -2127,6 +2128,7 @@ def listar_transmittals_km(request):
 
 
 @login_required
+@has_perm("km.visualizar")
 def lista_km_equipment(request):
     """
     Lista operacional dos documentos extraídos da automação KM Equipment.
@@ -2196,6 +2198,7 @@ def lista_km_equipment(request):
 
 
 @login_required
+@has_perm("km.visualizar")
 def abrir_pdf_transmittal_km(request, pk):
     registro = TransmittalKM.objects.get(pk=pk)
 
@@ -2218,6 +2221,7 @@ def abrir_pdf_transmittal_km(request, pk):
 
 
 @login_required
+@has_perm("km.visualizar")
 def abrir_documento_transmittal_km(request, pk):
     registro = TransmittalKM.objects.get(pk=pk)
 
@@ -2256,6 +2260,7 @@ def abrir_documento_transmittal_km(request, pk):
 
 
 @login_required
+@has_perm("km.visualizar")
 def abrir_pasta_documento_transmittal_km(request, pk):
     registro = TransmittalKM.objects.get(pk=pk)
 
@@ -2724,6 +2729,7 @@ def _pcf_filtros_context(request):
     }
 
 @login_required
+@has_perm("ld_pcf.visualizar")
 def listar_pcfs_timeline(request):
     registros = _filtrar_pcfs_timeline(request)
     filtros_context = _pcf_filtros_context(request)
@@ -2757,6 +2763,7 @@ def listar_pcfs_timeline(request):
 
 
 @login_required
+@has_perm("ld_pcf.visualizar")
 def abrir_arquivo_pcf(request, pk):
     registro = PCFTimeline.objects.get(pk=pk)
 
@@ -2780,6 +2787,7 @@ def abrir_arquivo_pcf(request, pk):
 
 
 @login_required
+@has_perm("ld_pcf.visualizar")
 def exportar_pcfs_timeline_excel(request):
     registros = _pcf_enriquecer_runtime(list(_filtrar_pcfs_timeline(request)))
 
@@ -2852,6 +2860,7 @@ def exportar_pcfs_timeline_excel(request):
 
 
 @login_required
+@has_perm("ld_pcf.visualizar")
 def dashboard_pcfs(request):
     registros = _filtrar_pcfs_timeline(request)
     filtros_context = _pcf_filtros_context(request)
@@ -3549,6 +3558,7 @@ def _ld_montar_chips(request, filtros, status_documentos, status_grds):
 
 
 @login_required
+@has_perm("ld_pcf.visualizar")
 def listar_ld(request):
     registros, filtros = _ld_filtrar_queryset(request)
 
@@ -3649,6 +3659,7 @@ def listar_ld(request):
 
 
 @login_required
+@has_perm("ld_pcf.visualizar")
 def exportar_ld_excel(request):
     registros, _ = _ld_filtrar_queryset(request)
 
@@ -3952,6 +3963,7 @@ def _ld_exportar_dashboard_ppt(request):
 
 
 @login_required
+@has_perm("ld_pcf.visualizar")
 def dashboard_ld(request):
     if request.GET.get("export") == "pptx":
         return _ld_exportar_dashboard_ppt(request)
@@ -4097,6 +4109,7 @@ def dashboard_ld(request):
 
 
 @login_required
+@has_perm("km.visualizar")
 def dashboard_transmittals(request):
     registros = TransmittalKM.objects.all()
 
@@ -4163,6 +4176,7 @@ def dashboard_transmittals(request):
 
 
 @login_required
+@has_perm("ld_pcf.visualizar")
 def abrir_arquivo_ld(request, pk, tipo):
     registro = DocumentoLD.objects.get(pk=pk)
 
@@ -4290,6 +4304,7 @@ def _pcf_response_options():
 
 
 @login_required
+@has_perm("ld_pcf.visualizar")
 def pcf_controle_respostas(request):
     records, filters = _pcf_response_records(request)
     paginator = Paginator(records, 50)
@@ -4310,6 +4325,7 @@ def pcf_controle_respostas(request):
 
 
 @login_required
+@has_perm("ld_pcf.visualizar")
 def pcf_dashboard_bi(request):
     """Dashboard interativo alimentado pelos registros atuais importados da LD."""
     class _DashboardRequest:
@@ -4360,6 +4376,7 @@ def pcf_dashboard_bi(request):
 
 
 @login_required
+@has_perm("ld_pcf.visualizar")
 def pcf_controle_respostas_excel(request):
     from openpyxl.chart import BarChart, DoughnutChart, Reference
     from openpyxl.styles import Alignment, Border, Side
@@ -4608,6 +4625,7 @@ def pcf_controle_respostas_excel(request):
 
 
 @login_required
+@has_perm("ld_pcf.visualizar")
 def pcf_controle_respostas_pptx(request):
     from apps.automacoes.services.pcf_executive_presentation import build_pcf_executive_presentation
 
@@ -4758,6 +4776,7 @@ def _pcf_controle_respostas_pptx_legacy(request):
 
 
 @login_required
+@has_perm("ld_pcf.visualizar")
 def pcf_controle_respostas_pdf(request):
     from io import BytesIO
     from reportlab.lib import colors
@@ -5135,6 +5154,7 @@ def _runtime_severity(evento):
     return "OK"
 
 @login_required
+@has_perm("automacoes.ver_ops_center")
 def runtime_events_api(request):
     """
     API do Live Event Stream.
@@ -5373,6 +5393,7 @@ def runtime_events_api(request):
     })
 
 @login_required
+@has_perm("automacoes.ver_ops_center")
 def runtime_retention_dry_run_api(request):
     days = request.GET.get("days") or 90
 
@@ -5385,6 +5406,7 @@ def runtime_retention_dry_run_api(request):
 
 
 @login_required
+@has_perm("automacoes.executar_sync_km_ld")
 def importar_lista_km(request):
     """
     Importa a LD mestre Kongsberg para DocumentoKM e executa o cruzamento
@@ -6040,6 +6062,7 @@ def _km_exportar_dashboard_ppt(request):
     return response
 
 @login_required
+@has_perm("km.visualizar")
 def dashboard_km_ld(request):
     filtros = _km_filter_state(request)
     registros_base = DocumentoKM.objects.all()
@@ -6162,6 +6185,7 @@ def dashboard_km_ld(request):
 
 
 @login_required
+@has_perm("ld_pcf.visualizar")
 def dashboard_excecoes_documentais(request):
     total_ld = DocumentoLD.objects.count()
     total_km = DocumentoKM.objects.count() if "DocumentoKM" in globals() else 0
@@ -6191,6 +6215,7 @@ def dashboard_excecoes_documentais(request):
 
     return render(request, "automacoes/dashboard_excecoes_documentais.html", context)
 @login_required
+@has_perm("km.visualizar")
 def dashboard_alertas_operacionais(request):
     divergentes = 0
     sem_match = 0
@@ -6218,6 +6243,7 @@ def dashboard_alertas_operacionais(request):
 
 
 @login_required
+@has_perm("km.visualizar")
 def listar_km(request):
     """
     Lista KM como espelho fiel da aba LD_KM importada.
@@ -6307,6 +6333,7 @@ def listar_km(request):
 
 
 @login_required
+@has_perm("ld_pcf.visualizar")
 def exportar_dashboard_pcfs_ppt(request):
     """
     Exporta apresentação executiva PCF em layout escuro D'ORANGE,

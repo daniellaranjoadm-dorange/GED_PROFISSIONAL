@@ -844,6 +844,7 @@ def painel_workflow_exportar_excel(request):
 # 📁 LISTA DE DOCUMENTOS – com filtros funcionando 100%
 # =====================================================================
 @never_cache
+@has_perm("ged.visualizar")
 def listar_documentos(request):
     # Base: só documentos ativos e não deletados
     base_qs = Documento.objects.filter(ativo=True, deletado_em__isnull=True)
@@ -938,6 +939,7 @@ def listar_documentos(request):
 
 
 @never_cache
+@has_perm("ged.visualizar")
 def revisoes(request):
     base_qs = (
         Documento.objects.filter(ativo=True, deletado_em__isnull=True)
@@ -1002,6 +1004,7 @@ def _documento_atual_por_codigo(qs_base, codigo):
 # =================================================================
 
 @login_required
+@has_perm("ged.visualizar")
 def detalhes_documento(request, documento_id):
     documento = get_object_or_404(
         Documento.objects.select_related("projeto", "etapa"), id=documento_id
@@ -1057,6 +1060,7 @@ def detalhes_documento(request, documento_id):
 # =================================================================
 
 @login_required
+@has_perm("ged.visualizar")
 def historico(request, codigo):
     base = Documento.objects.filter(codigo=codigo, ativo=True, deletado_em__isnull=True)
     documento = _documento_atual_por_codigo(base, codigo)
@@ -1120,6 +1124,7 @@ def historico(request, codigo):
 # =================================================================
 
 @login_required
+@has_perm("documento.editar")
 def enviar_proxima_etapa(request, documento_id):
     documento = get_object_or_404(Documento, id=documento_id)
 
@@ -1162,6 +1167,7 @@ def enviar_proxima_etapa(request, documento_id):
 
 
 @login_required
+@has_perm("documento.revisar")
 def retornar_etapa(request, documento_id):
     documento = get_object_or_404(Documento, id=documento_id)
 
@@ -1203,6 +1209,7 @@ def retornar_etapa(request, documento_id):
     )
     messages.success(request, f"Documento retornado para: {destino.nome}")
     return redirect("documentos:detalhes_documento", documento_id=documento.id)
+@has_perm("documento.editar")
 def nova_versao(request, documento_id):
     documento = get_object_or_404(Documento, id=documento_id)
 
@@ -1655,6 +1662,7 @@ def nova_revisao(request, documento_id):
 # =================================================================
 
 @login_required
+@has_perm("documento.editar")
 def adicionar_arquivos(request, documento_id):
     documento = get_object_or_404(Documento, id=documento_id)
 
@@ -1712,6 +1720,7 @@ def adicionar_arquivos(request, documento_id):
 # =================================================================
 
 @login_required
+@has_perm("documento.excluir")
 def excluir_arquivo(request, arquivo_id):
     arq = get_object_or_404(ArquivoDocumento, id=arquivo_id)
     documento_id = arq.documento.id
@@ -1731,6 +1740,7 @@ def excluir_arquivo(request, arquivo_id):
 # =================================================================
 
 @login_required
+@has_perm("documento.editar")
 def enviar_para_revisao(request, documento_id):
     documento = get_object_or_404(Documento, id=documento_id)
 
@@ -1745,6 +1755,7 @@ def enviar_para_revisao(request, documento_id):
     return redirect("documentos:detalhes_documento", documento_id=documento.id)
 
 @login_required
+@has_perm("documento.aprovar")
 def aprovar_documento(request, documento_id):
     documento = get_object_or_404(Documento, id=documento_id)
 
@@ -1759,6 +1770,7 @@ def aprovar_documento(request, documento_id):
     return redirect("documentos:detalhes_documento", documento_id=documento.id)
 
 @login_required
+@has_perm("documento.emitir")
 def emitir_documento(request, documento_id):
     documento = get_object_or_404(Documento, id=documento_id)
 
@@ -1774,6 +1786,7 @@ def emitir_documento(request, documento_id):
     return redirect("documentos:detalhes_documento", documento_id=documento.id)
 
 @login_required
+@has_perm("documento.aprovar")
 def cancelar_documento(request, documento_id):
     documento = get_object_or_404(Documento, id=documento_id)
 
@@ -1928,6 +1941,7 @@ def _find_history_model():
     return None
 
 
+@has_perm("documento.criar")
 def importar_ldp(request):
     """Importa uma planilha LDP (.xlsx/.xlsm) e cria/atualiza Documentos.
 
@@ -2712,6 +2726,7 @@ def exportar_medicao_excel(request):
 # =================================================================
 
 @login_required
+@has_perm("documento.excluir")
 def excluir_documento(request, documento_id):
     documento = get_object_or_404(Documento, id=documento_id)
     motivo = request.POST.get("motivo", "") if request.method == "POST" else ""
@@ -2721,6 +2736,7 @@ def excluir_documento(request, documento_id):
 
 
 @login_required
+@has_perm("documento.excluir")
 def excluir_selecionados(request):
     if request.method != "POST":
         return redirect("documentos:listar_documentos")
@@ -2740,12 +2756,14 @@ def excluir_selecionados(request):
 
 
 @login_required
+@has_perm("documento.excluir")
 def lixeira(request):
     docs = Documento.objects.filter(ativo=False).order_by("-deletado_em")
     return render(request, "documentos/lixeira.html", {"documentos": docs})
 
 
 @login_required
+@has_perm("documento.excluir")
 def restaurar_documento(request, documento_id):
     documento = get_object_or_404(Documento, id=documento_id)
     restaurar_da_lixeira(documento, request)
@@ -2758,6 +2776,7 @@ def restaurar_documento(request, documento_id):
 # =================================================================
 
 @login_required
+@has_perm("administracao.gerenciar")
 def configuracoes(request):
     from apps.contas.models import UserConfig  # Importa aqui para evitar ciclos
     from apps.contas.forms import UserConfigForm  # Importa aqui para evitar ciclos
@@ -2972,6 +2991,7 @@ def buscar_ajax(request):
 
 @login_required
 @require_POST
+@has_perm("documento.excluir")
 def esvaziar_lixeira(request, *args, **kwargs):
     """
     Esvazia a lixeira (hard delete) dos documentos marcados como deletados.

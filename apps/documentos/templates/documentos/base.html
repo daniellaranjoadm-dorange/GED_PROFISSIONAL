@@ -393,12 +393,12 @@ html body.ged-enterprise-shell.sidebar-collapsed .sidebar-subnav{
                 <span class="sidebar-text">Revis&otilde;es</span>
               </a>
             </li>
-              <li>
+              {% if user|has_perm:"documento.criar" %}<li>
                 <a class="sidebar-link" href="{{ url_upload_documento|default:'#' }}" title="Novo Documento">
                   <i class="bi bi-file-earmark-plus"></i>
                   <span class="sidebar-text">Novo Documento</span>
                 </a>
-              </li>
+              </li>{% endif %}
               {% if user|has_perm:"copias.operar" %}
               <li>
                 <a class="sidebar-link" href="{{ url_copia_controlada|default:'/carimbos/' }}" title="Cópia Controlada">
@@ -421,12 +421,12 @@ html body.ged-enterprise-shell.sidebar-collapsed .sidebar-subnav{
                 </a>
               </li>
               {% endif %}
-            <li>
+            {% if user|has_perm:"documento.criar" %}<li>
               <a class="sidebar-link" href="{{ url_importar_ldp|default:'#' }}" title="Importar LDP">
                 <i class="bi bi-cloud-upload"></i>
                 <span class="sidebar-text">Importar LDP</span><span class="sidebar-item-state state-legacy" title="Legado / validar"></span>
               </a>
-            </li>
+            </li>{% endif %}
             <li>
               <a class="sidebar-link" href="{{ url_dashboard_documentos|default:'/documentos/dashboard/' }}" title="Dashboard GED">
                 <i class="bi bi-graph-up-arrow"></i>
@@ -445,12 +445,12 @@ html body.ged-enterprise-shell.sidebar-collapsed .sidebar-subnav{
                 <span class="sidebar-text">Medi&ccedil;&atilde;o</span>
               </a>
             </li>
-            <li>
+            {% if user|has_perm:"documento.excluir" %}<li>
               <a class="sidebar-link" href="{{ url_lixeira|default:'/documentos/lixeira/' }}" title="Lixeira">
                 <i class="bi bi-trash3"></i>
                 <span class="sidebar-text">Lixeira</span>
               </a>
-            </li>
+            </li>{% endif %}
           </ul>
         </li>
 

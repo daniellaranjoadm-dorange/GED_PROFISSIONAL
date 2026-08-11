@@ -39,3 +39,25 @@ class AutomationRBACTests(TestCase):
         response = self.client.post(reverse("automacoes:atualizar_ld_projeto_basico"))
         self.assertEqual(response.status_code, 302)
         executar.assert_called_once()
+
+
+class ConsultaLDKMRouteSecurityTests(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.user = User.objects.create_user(username="consulta_ld_km", password="testpass123")
+        grant_rbac(
+            self.user, "automacoes.visualizar", "ld_pcf.visualizar", "km.visualizar"
+        )
+        self.client.force_login(self.user)
+
+    def test_consulta_le_listas_ld_e_km(self):
+        self.assertEqual(self.client.get(reverse("automacoes:lista_ld")).status_code, 200)
+        self.assertEqual(self.client.get(reverse("automacoes:lista_km")).status_code, 200)
+
+    def test_consulta_nao_importa_lista_km(self):
+        response = self.client.post(reverse("automacoes:importar_lista_km"), {})
+        self.assertEqual(response.status_code, 302)
+
+    def test_consulta_nao_executa_sync_km_ld(self):
+        response = self.client.post(reverse("automacoes:executar_sync_km_ld"), {})
+        self.assertEqual(response.status_code, 302)

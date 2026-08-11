@@ -55,7 +55,12 @@ class KMExecutiveDashboardAccessTests(TestCase):
             username="km_dashboard_user",
             password="testpass123",
         )
-        grant_rbac(self.user, "automacoes.visualizar", "administracao.gerenciar")
+        grant_rbac(
+            self.user,
+            "automacoes.visualizar",
+            "administracao.gerenciar",
+            "km.visualizar",
+        )
 
     def test_dashboard_km_requires_login(self):
         response = self.client.get(reverse("automacoes:dashboard_km_ld"))

@@ -1,5 +1,6 @@
 from datetime import date
 from io import BytesIO
+from inspect import unwrap
 from types import SimpleNamespace
 from unittest.mock import patch
 from zipfile import ZipFile
@@ -115,7 +116,7 @@ class PCFResponseReportTests(SimpleTestCase):
         records = [build_record(_document(), today=date(2026, 2, 10))]
         request = SimpleNamespace(GET={})
         with patch.object(views, "_pcf_response_records", return_value=(records, {})):
-            response = views.pcf_controle_respostas_excel.__wrapped__(request)
+            response = unwrap(views.pcf_controle_respostas_excel)(request)
 
         with ZipFile(BytesIO(response.content)) as package:
             formulas_xml = b"".join(
