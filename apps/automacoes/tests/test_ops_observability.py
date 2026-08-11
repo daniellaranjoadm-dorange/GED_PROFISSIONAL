@@ -3,6 +3,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from apps.automacoes.services.ops_center_service import OperationsCenterService
+from .rbac_helpers import grant_rbac
 
 
 class OperationsCenterObservabilityTests(TestCase):
@@ -25,6 +26,7 @@ class OperationsCenterObservabilityTests(TestCase):
             username="ops_observer",
             password="testpass123",
         )
+        grant_rbac(user, "automacoes.ver_ops_center")
         self.client.login(username="ops_observer", password="testpass123")
 
         response = self.client.get(reverse("automacoes:ops_center_runtime_partial"))

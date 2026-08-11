@@ -25,6 +25,7 @@ urlpatterns = [
     path("documentos/", include(("apps.documentos.urls", "documentos"), namespace="documentos")),
     path("dashboard/", include(("apps.dashboard.urls", "dashboard"), namespace="dashboard")),
     path("automacoes/", include(("apps.automacoes.urls", "automacoes"), namespace="automacoes")),
+    path("carimbos/", include(("apps.carimbos.urls", "carimbos"), namespace="carimbos")),
 
     # Solicitações de Acesso
     path("solicitar/", include(("apps.solicitacoes.urls", "solicitacoes"), namespace="solicitacoes")),

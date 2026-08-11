@@ -92,7 +92,17 @@ INSTALLED_APPS = [
     "apps.solicitacoes",
     "apps.dashboard",
     "apps.automacoes",
+    "apps.carimbos",
 ]
+
+# Cópias controladas: limite configurável para o PDF enviado (em MB).
+CONTROLLED_COPY_MAX_UPLOAD_MB = int(os.getenv("CONTROLLED_COPY_MAX_UPLOAD_MB", "100"))
+GUIAS_EMISSAO_ROOT = Path(
+    os.getenv(
+        "GUIAS_EMISSAO_ROOT",
+        r"\\virm-rgr022\FILESERVER\Projetos\05_HANDYMAX\09. Doc Control\19 - Guias de Emissão - GI",
+    )
+)
 
 # ======================
 # MIDDLEWARE

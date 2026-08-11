@@ -181,8 +181,11 @@ def build_record(document, today=None):
         "pcf": document.pcf,
         "data_recebimento": received_date,
         "resposta_esperada": f"R{expected_revision}" if expected_revision else "-",
+        # AB/AC representam exclusivamente a resposta do ciclo atual de Y.
+        # Respostas históricas não podem aparecer como se respondessem à PCF vigente.
         "pcf_resposta": document.pcf_resposta if paired else "",
         "data_resposta": response_date if paired else None,
+        "resposta_ciclo_atual": paired,
         "situacao": situation,
         "cor": color,
         "dias_sem_resposta": unanswered_days,

@@ -11,6 +11,21 @@ from __future__ import annotations
 from typing import Any, Callable
 
 from apps.automacoes.services.job_manager import executar_job_sincrono
+from apps.automacoes.models import JobExecution
+
+
+def resultado_job_para_automacao(job: JobExecution) -> dict[str, Any]:
+    """Converte JobExecution no contrato dict esperado pelo painel legado."""
+    resultado = dict(job.result or {})
+    sucesso_job = job.status == JobExecution.STATUS_SUCCESS
+    resultado["ok"] = bool(sucesso_job and resultado.get("ok", True))
+    if not resultado["ok"]:
+        resultado["mensagem"] = (
+            resultado.get("mensagem")
+            or job.error
+            or "Falha ao atualizar o Índice KM."
+        )
+    return resultado
 
 
 def _executar_indexador_km() -> dict[str, Any]:

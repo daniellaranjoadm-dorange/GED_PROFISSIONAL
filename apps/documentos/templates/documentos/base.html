@@ -1,4 +1,4 @@
-{% load static %}
+{% load static permisos %}
 {# URLs resolvidas com "as" para N&Atilde;O quebrar se algo estiver fora do ar/namespace #}
 {% url 'set_language' as url_set_language %}
 {% url 'logout' as url_logout %}
@@ -6,6 +6,9 @@
 {% url 'documentos:listar_documentos' as url_listar_documentos %}
 {% url 'documentos:upload_documento' as url_upload_documento %}
 {% url 'documentos:importar_ldp' as url_importar_ldp %}
+{% url 'carimbos:criar' as url_copia_controlada %}
+{% url 'carimbos:guias' as url_guias_emissao %}
+{% url 'carimbos:rastreabilidade' as url_rastreabilidade_copias %}
 {% url 'documentos:painel_workflow' as url_painel_workflow %}
 {% url 'documentos:medicao' as url_medicao %}
 {% url 'documentos:lixeira' as url_lixeira %}
@@ -20,6 +23,7 @@
 {% url 'automacoes:logs_automacoes' as url_logs_automacoes %}
 {% url 'automacoes:dashboard_pcfs' as url_dashboard_pcfs %}
 {% url 'automacoes:pcfs_timeline' as url_pcfs_timeline %}
+{% url 'automacoes:pcf_controle_respostas' as url_pcf_controle_respostas %}
 {% url 'automacoes:lista_ld' as url_lista_ld %}
 {% url 'automacoes:dashboard_ld' as url_dashboard_ld %}
 {% url 'automacoes:dashboard_km_ld' as url_dashboard_km_ld %}
@@ -121,6 +125,22 @@ html body.ged-enterprise-shell .sidebar-group{
   border: 1px solid rgba(148,163,184,.12) !important;
   background: linear-gradient(180deg,rgba(15,23,42,.72),rgba(2,6,23,.38)) !important;
   box-shadow: inset 0 1px 0 rgba(255,255,255,.04) !important;
+  position: relative !important;
+}
+
+html body.ged-enterprise-shell .sidebar-group[data-module-status="live"]{
+  border-left: 3px solid #22c55e !important;
+  background: linear-gradient(180deg,rgba(6,78,59,.16),rgba(2,6,23,.42)) !important;
+}
+html body.ged-enterprise-shell .sidebar-group[data-module-status="partial"]{
+  border-left: 3px solid #f59e0b !important;
+}
+html body.ged-enterprise-shell .sidebar-group[data-module-status="validation"]{
+  border-left: 3px solid #64748b !important;
+  border-style: solid solid solid dashed !important;
+}
+html body.ged-enterprise-shell .sidebar-group[data-module-status="restricted"]{
+  border-left: 3px solid #8b5cf6 !important;
 }
 
 html body.ged-enterprise-shell .sidebar-group-toggle{
@@ -157,6 +177,33 @@ html body.ged-enterprise-shell .sidebar-group-title i,
 html body.ged-enterprise-shell .sidebar-group-chevron{
   color: #38BDF8 !important;
 }
+
+html body.ged-enterprise-shell .sidebar-group-meta{
+  display: flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+}
+html body.ged-enterprise-shell .sidebar-module-state{
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  padding: 3px 6px !important;
+  border: 1px solid rgba(148,163,184,.2) !important;
+  border-radius: 999px !important;
+  color: #94a3b8 !important;
+  font-size: .48rem !important;
+  font-weight: 950 !important;
+  letter-spacing: .06em !important;
+  white-space: nowrap !important;
+}
+html body.ged-enterprise-shell .sidebar-module-state::before{
+  content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor;
+  box-shadow: 0 0 8px currentColor;
+}
+html body.ged-enterprise-shell .sidebar-module-state.state-live{ color: #4ade80 !important; border-color: rgba(74,222,128,.28) !important; }
+html body.ged-enterprise-shell .sidebar-module-state.state-partial{ color: #fbbf24 !important; border-color: rgba(251,191,36,.28) !important; }
+html body.ged-enterprise-shell .sidebar-module-state.state-validation{ color: #94a3b8 !important; }
+html body.ged-enterprise-shell .sidebar-module-state.state-restricted{ color: #a78bfa !important; border-color: rgba(167,139,250,.28) !important; }
 
 html body.ged-enterprise-shell .sidebar-group.is-open .sidebar-group-chevron{
   transform: rotate(180deg) !important;
@@ -222,6 +269,19 @@ html body.ged-enterprise-shell .sidebar-link.active i{
   color: #111827 !important;
 }
 
+html body.ged-enterprise-shell .sidebar-item-state{
+  margin-left: auto !important;
+  width: 7px !important;
+  height: 7px !important;
+  flex: 0 0 7px !important;
+  border-radius: 50% !important;
+  background: #64748b !important;
+}
+html body.ged-enterprise-shell .sidebar-item-state.state-live{ background:#22c55e !important; box-shadow:0 0 8px rgba(34,197,94,.75); }
+html body.ged-enterprise-shell .sidebar-item-state.state-consult{ background:#38bdf8 !important; }
+html body.ged-enterprise-shell .sidebar-item-state.state-validation{ background:#f59e0b !important; }
+html body.ged-enterprise-shell .sidebar-item-state.state-legacy{ background:#64748b !important; }
+
 html body.ged-enterprise-shell .content{
   margin-left: var(--sidebar-width) !important;
   width: calc(100% - var(--sidebar-width)) !important;
@@ -242,6 +302,8 @@ html body.ged-enterprise-shell.sidebar-collapsed .content{
 html body.ged-enterprise-shell.sidebar-collapsed .sidebar-text,
 html body.ged-enterprise-shell.sidebar-collapsed .sidebar-brand-title,
 html body.ged-enterprise-shell.sidebar-collapsed .sidebar-group-chevron,
+html body.ged-enterprise-shell.sidebar-collapsed .sidebar-module-state,
+html body.ged-enterprise-shell.sidebar-collapsed .sidebar-item-state,
 html body.ged-enterprise-shell.sidebar-collapsed .sidebar-footer{
   display: none !important;
 }
@@ -310,13 +372,13 @@ html body.ged-enterprise-shell.sidebar-collapsed .sidebar-subnav{
 
       <ul class="sidebar-nav sidebar-nav-groups">
 
-        <li class="sidebar-group is-open" data-sidebar-group="ged">
+        <li class="sidebar-group is-open" data-sidebar-group="ged" data-module-status="validation">
           <button type="button" class="sidebar-group-toggle" aria-expanded="true">
             <span class="sidebar-group-title">
               <i class="bi bi-folder2-open"></i>
               <span class="sidebar-text">GED</span>
             </span>
-            <i class="bi bi-chevron-down sidebar-group-chevron"></i>
+            <span class="sidebar-group-meta"><span class="sidebar-module-state state-validation">EM VALIDAÇÃO</span><i class="bi bi-chevron-down sidebar-group-chevron"></i></span>
           </button>
           <ul class="sidebar-subnav">
             <li>
@@ -331,16 +393,34 @@ html body.ged-enterprise-shell.sidebar-collapsed .sidebar-subnav{
                 <span class="sidebar-text">Revis&otilde;es</span>
               </a>
             </li>
-            <li>
-              <a class="sidebar-link" href="{{ url_upload_documento|default:'#' }}" title="Novo Documento">
-                <i class="bi bi-file-earmark-plus"></i>
-                <span class="sidebar-text">Novo Documento</span>
-              </a>
-            </li>
+              <li>
+                <a class="sidebar-link" href="{{ url_upload_documento|default:'#' }}" title="Novo Documento">
+                  <i class="bi bi-file-earmark-plus"></i>
+                  <span class="sidebar-text">Novo Documento</span>
+                </a>
+              </li>
+              <li>
+                <a class="sidebar-link" href="{{ url_copia_controlada|default:'/carimbos/' }}" title="Cópia Controlada">
+                  <i class="bi bi-file-earmark-check"></i>
+                  <span class="sidebar-text">Cópia Controlada</span><span class="sidebar-item-state state-live" title="Em uso"></span>
+                </a>
+              </li>
+              <li>
+                <a class="sidebar-link" href="{{ url_guias_emissao|default:'/carimbos/guias/' }}" title="Processar GI / GE">
+                  <i class="bi bi-journal-check"></i>
+                  <span class="sidebar-text">Processar GI / GE</span><span class="sidebar-item-state state-live" title="Em uso"></span>
+                </a>
+              </li>
+              <li>
+                <a class="sidebar-link" href="{{ url_rastreabilidade_copias|default:'/carimbos/rastreabilidade/' }}" title="Rastreabilidade">
+                  <i class="bi bi-clock-history"></i>
+                  <span class="sidebar-text">Rastreabilidade</span><span class="sidebar-item-state state-live" title="Em uso"></span>
+                </a>
+              </li>
             <li>
               <a class="sidebar-link" href="{{ url_importar_ldp|default:'#' }}" title="Importar LDP">
                 <i class="bi bi-cloud-upload"></i>
-                <span class="sidebar-text">Importar LDP</span>
+                <span class="sidebar-text">Importar LDP</span><span class="sidebar-item-state state-legacy" title="Legado / validar"></span>
               </a>
             </li>
             <li>
@@ -370,77 +450,77 @@ html body.ged-enterprise-shell.sidebar-collapsed .sidebar-subnav{
           </ul>
         </li>
 
-        <li class="sidebar-group is-open" data-sidebar-group="automacoes">
+        <li class="sidebar-group is-open" data-sidebar-group="automacoes" data-module-status="live">
           <button type="button" class="sidebar-group-toggle" aria-expanded="true">
             <span class="sidebar-group-title">
               <i class="bi bi-cpu"></i>
               <span class="sidebar-text">Automa&ccedil;&otilde;es</span>
             </span>
-            <i class="bi bi-chevron-down sidebar-group-chevron"></i>
+            <span class="sidebar-group-meta"><span class="sidebar-module-state state-live">EM USO</span><i class="bi bi-chevron-down sidebar-group-chevron"></i></span>
           </button>
           <ul class="sidebar-subnav">
             <li>
               <a class="sidebar-link" href="{{ url_automacoes_painel|default:'/automacoes/' }}" title="Painel de Automações">
                 <i class="bi bi-robot"></i>
-                <span class="sidebar-text">Painel Automa&ccedil;&otilde;es</span>
+                <span class="sidebar-text">Painel Automa&ccedil;&otilde;es</span><span class="sidebar-item-state state-live" title="Em uso"></span>
               </a>
             </li>
             <li>
-              <a class="sidebar-link" href="{{ url_ops_center|default:'/automacoes/ops-center/' }}" title="Operations Center">
+              {% if user|has_perm:"automacoes.ver_ops_center" %}<a class="sidebar-link" href="{{ url_ops_center|default:'/automacoes/ops-center/' }}" title="Operations Center">
                 <i class="bi bi-speedometer2"></i>
-                <span class="sidebar-text">Operations Center</span>
-              </a>
+                <span class="sidebar-text">Operations Center</span><span class="sidebar-item-state state-consult" title="Consulta operacional"></span>
+              </a>{% else %}<span class="sidebar-link opacity-50" title="Seu perfil não possui acesso ao Operations Center"><i class="bi bi-lock"></i><span class="sidebar-text">Operations Center</span></span>{% endif %}
             </li>
             <li>
-              <a class="sidebar-link" href="{{ url_logs_automacoes|default:'/automacoes/logs/' }}" title="Logs Automações">
+              {% if user|has_perm:"automacoes.ver_logs" %}<a class="sidebar-link" href="{{ url_logs_automacoes|default:'/automacoes/logs/' }}" title="Logs Automações">
                 <i class="bi bi-activity"></i>
-                <span class="sidebar-text">Logs Automa&ccedil;&otilde;es</span>
-              </a>
+                <span class="sidebar-text">Logs Automa&ccedil;&otilde;es</span><span class="sidebar-item-state state-consult" title="Consulta operacional"></span>
+              </a>{% else %}<span class="sidebar-link opacity-50" title="Seu perfil não possui acesso aos logs"><i class="bi bi-lock"></i><span class="sidebar-text">Logs Automações</span></span>{% endif %}
             </li>
             <li>
               <a class="sidebar-link" href="{{ url_busca_global|default:'/automacoes/busca-global/' }}" title="Busca Global">
                 <i class="bi bi-search"></i>
-                <span class="sidebar-text">Busca Global</span>
+                <span class="sidebar-text">Busca Global</span><span class="sidebar-item-state state-consult" title="Consulta operacional"></span>
               </a>
             </li>
           </ul>
         </li>
 
-        <li class="sidebar-group is-open sidebar-group-km" data-sidebar-group="km">
+        <li class="sidebar-group is-open sidebar-group-km" data-sidebar-group="km" data-module-status="partial">
           <button type="button" class="sidebar-group-toggle" aria-expanded="true">
             <span class="sidebar-group-title">
               <i class="bi bi-diagram-3"></i>
               <span class="sidebar-text">KM / Kongsberg</span>
             </span>
-            <i class="bi bi-chevron-down sidebar-group-chevron"></i>
+            <span class="sidebar-group-meta"><span class="sidebar-module-state state-partial">PARCIAL</span><i class="bi bi-chevron-down sidebar-group-chevron"></i></span>
           </button>
           <ul class="sidebar-subnav">
             <li>
               <a class="sidebar-link sidebar-link-km" href="{{ url_importar_lista_km|default:'/automacoes/importar-lista-km/' }}" title="Importar LD Kongsberg">
                 <i class="bi bi-file-earmark-spreadsheet"></i>
-                <span class="sidebar-text">Importar LD Kongsberg</span>
+                <span class="sidebar-text">Importar LD Kongsberg</span><span class="sidebar-item-state state-validation" title="Base a validar"></span>
               </a>
             </li>
             <li>
               <a class="sidebar-link sidebar-link-km" href="{{ url_lista_km|default:'/automacoes/lista-km/' }}" title="Lista KM">
                 <i class="bi bi-list-columns"></i>
-                <span class="sidebar-text">Lista KM</span>
+                <span class="sidebar-text">Lista KM</span><span class="sidebar-item-state state-validation" title="Base desatualizada"></span>
               </a>
             </li>
             <li>
               <a class="sidebar-link sidebar-link-km" href="{{ url_dashboard_km_ld|default:'/automacoes/dashboard-km-ld/' }}" title="Dashboard KM ↔ LD">
                 <i class="bi bi-diagram-3"></i>
-                <span class="sidebar-text">Dashboard KM &harr; LD</span>
+                <span class="sidebar-text">Dashboard KM &harr; LD</span><span class="sidebar-item-state state-validation" title="Base a atualizar"></span>
               </a>
             </li>
             <li>
               <a class="sidebar-link sidebar-link-km" href="{{ url_alertas_operacionais|default:'/automacoes/alertas-operacionais/' }}" title="Alertas Operacionais">
                 <i class="bi bi-bell"></i>
-                <span class="sidebar-text">Alertas Operacionais</span>
+                <span class="sidebar-text">Alertas Operacionais</span><span class="sidebar-item-state state-consult" title="Consulta operacional"></span>
               </a>
             </li>
             <li>
-              <form method="post"
+              {% if user|has_perm:"automacoes.executar_sync_km_ld" %}<form method="post"
                     action="{{ url_executar_sync_km_ld|default:'/automacoes/executar-sync-km-ld/' }}"
                     class="sidebar-action-form">
                 {% csrf_token %}
@@ -448,81 +528,87 @@ html body.ged-enterprise-shell.sidebar-collapsed .sidebar-subnav{
                         class="sidebar-link sidebar-action-button sidebar-link-km"
                         title="Executar Sync KM ↔ LD">
                   <i class="bi bi-arrow-repeat"></i>
-                  <span class="sidebar-text">Sync KM &harr; LD</span>
+                  <span class="sidebar-text">Sync KM &harr; LD</span><span class="sidebar-item-state state-validation" title="Executar após validação"></span>
                 </button>
-              </form>
+              </form>{% else %}<span class="sidebar-link opacity-50" title="Seu perfil não pode executar esta sincronização"><i class="bi bi-lock"></i><span class="sidebar-text">Sync KM &harr; LD</span></span>{% endif %}
             </li>
             <li>
               <a class="sidebar-link sidebar-link-km" href="{{ url_transmittals_km|default:'/automacoes/transmittals-km/' }}" title="Transmittals KM">
                 <i class="bi bi-box-seam"></i>
-                <span class="sidebar-text">Transmittals KM</span>
+                <span class="sidebar-text">Transmittals KM</span><span class="sidebar-item-state state-live" title="Em uso"></span>
               </a>
             </li>
             <li>
               <a class="sidebar-link sidebar-link-km" href="{{ url_lista_km_equipment|default:'/automacoes/lista-km-equipment/' }}" title="Lista KM Equipamentos">
                 <i class="bi bi-cpu"></i>
-                <span class="sidebar-text">Lista KM Equipamentos</span>
+                <span class="sidebar-text">Lista KM Equipamentos</span><span class="sidebar-item-state state-legacy" title="Legado / sob demanda"></span>
               </a>
             </li>
             <li>
               <a class="sidebar-link sidebar-link-km" href="{{ url_dashboard_transmittals|default:'/automacoes/dashboard-transmittals/' }}" title="Dashboard Transmittals">
                 <i class="bi bi-bar-chart"></i>
-                <span class="sidebar-text">Dashboard Transmittals</span>
+                <span class="sidebar-text">Dashboard Transmittals</span><span class="sidebar-item-state state-live" title="Em uso"></span>
               </a>
             </li>
           </ul>
         </li>
 
-        <li class="sidebar-group" data-sidebar-group="ld-pcf">
+        <li class="sidebar-group" data-sidebar-group="ld-pcf" data-module-status="live">
           <button type="button" class="sidebar-group-toggle" aria-expanded="false">
             <span class="sidebar-group-title">
               <i class="bi bi-kanban"></i>
               <span class="sidebar-text">LD / PCF</span>
             </span>
-            <i class="bi bi-chevron-down sidebar-group-chevron"></i>
+            <span class="sidebar-group-meta"><span class="sidebar-module-state state-live">EM USO</span><i class="bi bi-chevron-down sidebar-group-chevron"></i></span>
           </button>
           <ul class="sidebar-subnav">
             <li>
               <a class="sidebar-link" href="{{ url_lista_ld|default:'/automacoes/lista-ld/' }}" title="Lista LD">
                 <i class="bi bi-folder2-open"></i>
-                <span class="sidebar-text">Lista LD</span>
+                <span class="sidebar-text">Lista LD</span><span class="sidebar-item-state state-live" title="Em uso"></span>
               </a>
             </li>
             <li>
               <a class="sidebar-link" href="{{ url_dashboard_ld|default:'/automacoes/dashboard-ld/' }}" title="Dashboard LD">
                 <i class="bi bi-pie-chart"></i>
-                <span class="sidebar-text">Dashboard LD</span>
+                <span class="sidebar-text">Dashboard LD</span><span class="sidebar-item-state state-live" title="Em uso"></span>
               </a>
             </li>
             <li>
               <a class="sidebar-link" href="{{ url_dashboard_pcfs|default:'/automacoes/dashboard-pcfs/' }}" title="Dashboard PCFs">
                 <i class="bi bi-graph-up"></i>
-                <span class="sidebar-text">Dashboard PCFs</span>
+                <span class="sidebar-text">Dashboard PCFs</span><span class="sidebar-item-state state-live" title="Em uso"></span>
               </a>
             </li>
             <li>
               <a class="sidebar-link" href="{{ url_pcfs_timeline|default:'/automacoes/pcfs-timeline/' }}" title="Timeline PCFs">
                 <i class="bi bi-table"></i>
-                <span class="sidebar-text">Timeline PCFs</span>
+                <span class="sidebar-text">Timeline PCFs</span><span class="sidebar-item-state state-live" title="Em uso"></span>
+              </a>
+            </li>
+            <li>
+              <a class="sidebar-link" href="{{ url_pcf_controle_respostas|default:'/automacoes/pcfs/controle-respostas/' }}" title="Controle de Respostas PCF">
+                <i class="bi bi-stopwatch"></i>
+                <span class="sidebar-text">SLA Respostas PCF</span><span class="sidebar-item-state state-live" title="Em uso"></span>
               </a>
             </li>
             <li>
               <a class="sidebar-link" href="{{ url_excecoes_documentais|default:'/automacoes/excecoes-documentais/' }}" title="Exceções Documentais">
                 <i class="bi bi-exclamation-triangle"></i>
-                <span class="sidebar-text">Exce&ccedil;&otilde;es Documentais</span>
+                <span class="sidebar-text">Exce&ccedil;&otilde;es Documentais</span><span class="sidebar-item-state state-consult" title="Consulta operacional"></span>
               </a>
             </li>
           </ul>
         </li>
 
-        {% if user.is_authenticated and user.is_staff or user.is_authenticated and user.is_superuser %}
-        <li class="sidebar-group" data-sidebar-group="admin">
+        {% if user|has_perm:"administracao.gerenciar" %}
+        <li class="sidebar-group" data-sidebar-group="admin" data-module-status="restricted">
           <button type="button" class="sidebar-group-toggle" aria-expanded="false">
             <span class="sidebar-group-title">
               <i class="bi bi-shield-lock"></i>
               <span class="sidebar-text">Administra&ccedil;&atilde;o</span>
             </span>
-            <i class="bi bi-chevron-down sidebar-group-chevron"></i>
+            <span class="sidebar-group-meta"><span class="sidebar-module-state state-restricted">RESTRITO</span><i class="bi bi-chevron-down sidebar-group-chevron"></i></span>
           </button>
           <ul class="sidebar-subnav">
             {% if user.is_authenticated and user.is_staff and url_solicitacoes %}

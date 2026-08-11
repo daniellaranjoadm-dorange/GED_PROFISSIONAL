@@ -1,0 +1,130 @@
+{% extends "documentos/base.html" %}
+
+{% block title %}Processar GI / GE | GED{% endblock %}
+
+{% block extra_head %}
+<style>
+  .gi-wrap{max-width:1180px;margin:0 auto}.gi-hero,.gi-card{border:1px solid rgba(148,163,184,.2);border-radius:18px;background:rgba(15,23,42,.86);color:#e2e8f0}
+  .gi-hero{padding:26px;background:linear-gradient(135deg,#0f172a,#111827)}.gi-hero h1{font-weight:900;margin:.35rem 0}.gi-hero p{color:#94a3b8;margin:0}
+  .gi-card{padding:22px;margin-top:18px}.gi-label{font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:#7dd3fc;font-weight:800}
+  .gi-path{font-family:ui-monospace,monospace;color:#cbd5e1;overflow-wrap:anywhere}.gi-form{display:grid;grid-template-columns:1fr auto;gap:12px;margin-top:16px}
+  .gi-input{min-height:44px;border:1px solid #334155;border-radius:10px;background:#020617;color:#f8fafc;padding:0 14px}
+  .gi-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border:0;border-radius:10px;background:#ff8a00;color:#111827;font-weight:900;text-decoration:none}.gi-btn:disabled{opacity:.65;cursor:wait}
+  .gi-btn-blue{background:#38bdf8}.gi-error,.gi-message,.gi-processing{padding:14px;border:1px solid rgba(248,113,113,.35);border-radius:10px;background:rgba(127,29,29,.2);color:#fecaca;margin-top:15px}.gi-message{border-color:rgba(56,189,248,.4);background:rgba(3,105,161,.18);color:#dff6ff}.gi-processing{display:none;border-color:rgba(245,158,11,.5);background:rgba(146,64,14,.2);color:#fde68a;font-weight:800}
+  .gi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}.gi-metric{padding:14px;border:1px solid #243247;border-radius:12px;background:#081121}
+  .gi-metric strong{display:block;margin-top:5px;color:#fff}.gi-table{width:100%;border-collapse:collapse;margin-top:12px}.gi-table th,.gi-table td{padding:10px;border-bottom:1px solid #243247;text-align:left}.gi-table th{color:#7dd3fc;font-size:.72rem;text-transform:uppercase}
+  .gi-check{display:grid;grid-template-columns:auto minmax(180px,1fr) minmax(260px,1.4fr);gap:12px;align-items:center;padding:12px;border:1px solid #334155;border-radius:10px;margin-top:8px;background:#081121;color:#e2e8f0}.gi-stamp-name{display:grid;gap:5px}.gi-stamp-name span{font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:#7dd3fc;font-weight:800}.gi-stamp-input{width:100%;min-height:38px;border:1px solid #334155;border-radius:8px;background:#020617;color:#f8fafc;padding:0 11px}
+  .gi-check strong{color:#f8fafc!important;font-weight:800}.gi-check small{color:#94a3b8!important}.gi-check > input[type="checkbox"]{width:18px;height:18px;accent-color:#38bdf8}
+  .gi-actions{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-top:18px;flex-wrap:wrap}
+  .gi-impact{margin-top:18px;padding:18px;border:1px solid rgba(245,158,11,.5);border-radius:12px;background:rgba(120,53,15,.22)}.gi-impact h3{margin:0 0 6px;color:#fde68a}.gi-impact p{color:#fed7aa}.gi-alert{margin-top:10px;padding:12px;border:1px solid rgba(248,113,113,.45);border-radius:9px;background:rgba(127,29,29,.25);color:#fecaca}
+  @media(max-width:760px){.gi-form,.gi-grid,.gi-check{grid-template-columns:1fr}.gi-btn{width:100%}}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="gi-wrap">
+  {% if messages %}{% for message in messages %}<div class="gi-message">{{ message }}</div>{% endfor %}{% endif %}
+  <section class="gi-hero">
+    <div class="gi-label">Cópias controladas e rastreabilidade</div>
+    <h1>Processar Guia de Emissão</h1>
+    <p>Leia a GI ou GE, confira remetente, revisão e destinatários antes de gerar as cópias.</p>
+  </section>
+
+  <section class="gi-card">
+    <div class="gi-label">Pasta oficial monitorada</div>
+    <div class="gi-path">{{ raiz_guias }}</div>
+    <form method="get" class="gi-form">
+      <input class="gi-input" name="guia" list="guias-disponiveis" value="{{ numero_selecionado }}" placeholder="Digite ou selecione o número da GI/GE" required>
+      <datalist id="guias-disponiveis">{% for guia in guias %}<option value="{{ guia }}">{% endfor %}</datalist>
+      <button class="gi-btn" type="submit"><i class="bi bi-search"></i>Ler e conferir GI/GE</button>
+    </form>
+    {% if erro %}<div class="gi-error">{{ erro }}</div>{% endif %}
+  </section>
+
+  {% if previa %}
+  <form method="post" action="{% url 'carimbos:processar_guia' %}" class="gi-card" id="gi-process-form">
+    {% csrf_token %}
+    <input type="hidden" name="guia" value="{{ numero_selecionado }}">
+    <div class="gi-grid">
+      <div class="gi-metric"><span class="gi-label">Guia</span><strong>{{ previa.numero }}</strong></div>
+      <div class="gi-metric"><span class="gi-label">Emissão</span><strong>{{ previa.data_emissao|date:"d/m/Y H:i" }}</strong></div>
+      <div class="gi-metric"><span class="gi-label">Remetente</span><strong>{{ previa.remetente }}</strong></div>
+    </div>
+
+    {% if analise_revisoes.impactos %}
+    <section class="gi-impact">
+      <h3><i class="bi bi-arrow-repeat"></i> Nova revisÃ£o: reenvio e recolhimento necessÃ¡rios</h3>
+      <p>Os destinatÃ¡rios abaixo possuem uma revisÃ£o anterior. Eles foram selecionados automaticamente para receber a nova cÃ³pia.</p>
+      <div class="table-responsive">
+        <table class="gi-table">
+          <thead><tr><th>Documento</th><th>Nova rev.</th><th>DestinatÃ¡rio</th><th>Rev. anterior</th><th>Guia anterior</th><th>EmissÃ£o anterior</th></tr></thead>
+          <tbody>{% for item in analise_revisoes.impactos %}<tr><td>{{ item.documento }}</td><td><strong>{{ item.revisao_nova }}</strong></td><td>{{ item.destinatario }}{% if item.email_destinatario %}<br><small>{{ item.email_destinatario }}</small>{% endif %}</td><td>{{ item.revisao_anterior }}</td><td>{{ item.guia_anterior }}</td><td>{{ item.emitida_em|date:"d/m/Y H:i" }}</td></tr>{% endfor %}</tbody>
+        </table>
+      </div>
+    </section>
+    {% endif %}
+    {% for alerta in analise_revisoes.alertas %}<div class="gi-alert"><strong>{{ alerta.tipo }}:</strong> {{ alerta.documento }} recebeu revisÃ£o {{ alerta.revisao_nova }}, mas a guia {{ alerta.guia_anterior }} registra revisÃ£o {{ alerta.revisao_anterior }}. {{ alerta.mensagem }}</div>{% endfor %}
+
+    <h3 class="mt-4">Documentos e revisões</h3>
+    <div class="table-responsive">
+      <table class="gi-table">
+        <thead><tr><th>Documento</th><th>Folha</th><th>Revisão</th></tr></thead>
+        <tbody>{% for doc in previa.documentos %}<tr><td>{{ doc.numero }}</td><td>{{ doc.folha }}</td><td>{{ doc.revisao }}</td></tr>{% endfor %}</tbody>
+      </table>
+    </div>
+
+    <h3 class="mt-4">Cópias por destinatário</h3>
+    <p class="text-secondary">Desmarque alguém caso não deva receber cópia nesta execução.</p>
+    {% for pessoa in destinatarios_exibicao %}
+      <label class="gi-check">
+        <input type="checkbox" name="destinatarios" value="{{ pessoa.nome }}"{% if pessoa.na_guia or pessoa.nome in analise_revisoes.destinatarios_impactados %} checked{% endif %}>
+        <span><strong>{{ pessoa.nome }}</strong>{% if pessoa.email %}<br><small>{{ pessoa.email }} · identificado na guia</small>{% elif pessoa.na_guia %}<br><small>Identificado na guia</small>{% else %}<br><small>Grupo adicional · não consta na guia</small>{% endif %}</span>
+        <span class="gi-stamp-name"><span>Nome impresso no carimbo</span><input type="hidden" name="destinatarios_originais" value="{{ pessoa.nome }}"><input class="gi-stamp-input" type="text" name="nomes_carimbo" value="{{ pessoa.nome }}" maxlength="180" required></span>
+      </label>
+    {% endfor %}
+
+    <label class="gi-check">
+      <input type="checkbox" name="corrigir_orientacao_paisagem" value="1" checked>
+      <span><strong>Corrigir páginas retrato para paisagem</strong><br><small>Use para desenhos que aparecem virados. Desmarque para documentos originalmente verticais.</small></span>
+    </label>
+    <label class="gi-check">
+      <input type="checkbox" name="usar_folha_controle" value="1" checked>
+      <span><strong>Preservar integralmente o desenho - usar folha de controle separada</strong><br><small>Recomendado: adiciona uma folha inicial com os dados do carimbo e não sobrepõe nenhuma cota ou informação técnica.</small></span>
+    </label>
+    <label class="gi-check">
+      <input type="checkbox" name="posicionar_em_espaco_livre" value="1">
+      <span><strong>Alternativa: posicionar carimbo dentro das folhas</strong><br><small>Analisa cada página, mas desenhos densos podem não possuir área totalmente livre. Não use junto com a folha de controle.</small></span>
+    </label>
+
+    <div class="gi-actions">
+      <span class="text-secondary">O original não será modificado. Uma pasta será criada para cada destinatário.</span>
+      <button class="gi-btn gi-btn-blue" type="submit"><i class="bi bi-file-earmark-check"></i>Gerar cópias e registrar emissão</button>
+    </div>
+    <div class="gi-processing" id="gi-processing" role="status" aria-live="polite">Processando o PDF e aplicando o carimbo em todas as páginas. Aguarde; não feche esta tela.</div>
+  </form>
+  {% endif %}
+
+  <div class="gi-actions">
+    <a class="gi-btn gi-btn-blue" href="{% url 'carimbos:rastreabilidade' %}"><i class="bi bi-clock-history"></i>Ver rastreabilidade</a>
+  </div>
+</div>
+<script>
+  (() => {
+    const form = document.getElementById('gi-process-form');
+    if (!form) return;
+    const cover = form.querySelector('[name="usar_folha_controle"]');
+    const automatic = form.querySelector('[name="posicionar_em_espaco_livre"]');
+    cover?.addEventListener('change', () => { if (cover.checked && automatic) automatic.checked = false; });
+    automatic?.addEventListener('change', () => { if (automatic.checked && cover) cover.checked = false; });
+    form.addEventListener('submit', () => {
+      const button = form.querySelector('button[type="submit"]');
+      const status = document.getElementById('gi-processing');
+      if (button) {
+        button.disabled = true;
+        button.innerHTML = '<i class="bi bi-hourglass-split"></i> Processando carimbo…';
+      }
+      if (status) status.style.display = 'block';
+    });
+  })();
+</script>
+{% endblock %}

@@ -3,6 +3,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from apps.automacoes.services.live_operations import LiveOperationsService
+from .rbac_helpers import grant_rbac
 
 
 class LiveOperationsServiceTests(TestCase):
@@ -24,6 +25,7 @@ class LiveOperationsViewTests(TestCase):
             username="live_ops_user",
             password="testpass123",
         )
+        grant_rbac(self.user, "automacoes.ver_ops_center")
 
     def test_live_operations_partial_requires_login(self):
         response = self.client.get(reverse("automacoes:ops_center_live_partial"))

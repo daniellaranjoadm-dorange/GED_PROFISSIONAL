@@ -1,6 +1,7 @@
 
 from pathlib import Path
 from datetime import datetime
+import json
 
 from django.conf import settings
 import os
@@ -35,7 +36,7 @@ from apps.automacoes.services.ld_path_resolver import gerar_hyperlink_ld, resolv
 from apps.automacoes.services.status_normalizer import normalizar_status
 from apps.automacoes.services.search_engine import buscar_global_enterprise
 from apps.automacoes.services.search_analytics import obter_search_analytics
-from apps.automacoes.services.km_index_jobs import executar_reindexacao_km_job
+from apps.automacoes.services.km_index_jobs import executar_reindexacao_km_job, resultado_job_para_automacao
 from apps.automacoes.services.ops_center_service import OperationsCenterService
 from apps.automacoes.services.runtime_events import RuntimeEventStreamService
 from apps.automacoes.services.runtime_health_api import RuntimeHealthAPIService
@@ -48,6 +49,7 @@ from apps.automacoes.services.pcf_response_report import (
     executive_dashboard,
     summarize,
 )
+from apps.contas.permissions import has_perm
 
 
 
@@ -205,6 +207,52 @@ def _health_automacoes(nomes):
             "duracao_media_fmt": _formatar_duracao(duracao_media),
         }
 
+    return health
+
+
+def _classificar_saude_rotina(rotina, health):
+    """Traduz o histórico técnico em um estado claro para quem opera o painel."""
+    modo = rotina.get("modo_operacional", "producao")
+    ultima = health.get("ultima")
+    idade_horas = None
+    if ultima and ultima.iniciado_em:
+        idade_horas = max((timezone.now() - ultima.iniciado_em).total_seconds() / 3600, 0)
+
+    if modo == "legado":
+        estado, classe, card_class = "LEGADO", "auto-status-legacy", "ops-card-legacy"
+    elif ultima and ultima.status == ExecucaoAutomacao.STATUS_INICIADO:
+        if idade_horas is not None and idade_horas > 6:
+            estado, classe, card_class = "INTERROMPIDO", "auto-status-error", "ops-card-unavailable"
+        else:
+            estado, classe, card_class = "EXECUTANDO", "auto-status-running", "ops-card-production"
+    elif ultima and ultima.status == ExecucaoAutomacao.STATUS_ERRO:
+        estado, classe, card_class = "COM ERRO", "auto-status-error", "ops-card-unavailable"
+    elif modo == "demanda":
+        estado, classe, card_class = "SOB DEMANDA", "auto-status-demand", "ops-card-demand"
+    elif not ultima:
+        estado, classe, card_class = "NÃO INICIADO", "auto-status-idle", "ops-card-idle"
+    elif idade_horas is not None and idade_horas > rotina.get("frescor_horas", 72):
+        estado, classe, card_class = "DESATUALIZADO", "auto-status-warn", "ops-card-stale"
+    else:
+        estado, classe, card_class = "OPERACIONAL", "auto-status-online", "ops-card-production"
+
+    icones = {
+        "LEGADO": "bi-archive",
+        "INTERROMPIDO": "bi-exclamation-octagon",
+        "EXECUTANDO": "bi-arrow-repeat",
+        "COM ERRO": "bi-exclamation-triangle",
+        "SOB DEMANDA": "bi-calendar2-check",
+        "NÃO INICIADO": "bi-circle",
+        "DESATUALIZADO": "bi-clock-history",
+        "OPERACIONAL": "bi-check-circle",
+    }
+    health.update({
+        "estado": estado,
+        "classe": classe,
+        "card_class": card_class,
+        "icone": icones[estado],
+        "idade_horas": round(idade_horas, 1) if idade_horas is not None else None,
+    })
     return health
 
 
@@ -570,7 +618,7 @@ def _runtime_events_summary(events):
     return summary
 
 
-@login_required
+@has_perm("automacoes.visualizar")
 def painel(request):
     def _build_painel_context():
         total_ld = DocumentoLD.objects.count()
@@ -671,6 +719,8 @@ def painel(request):
         automacoes = [
             {
                 "nome": "Atualização LD",
+                "modo_operacional": "legado",
+                "grupo_operacional": "legado",
                 "subtitulo": "Lista de Documentos",
                 "icone": "bi-file-earmark-spreadsheet",
                 "badge": "Crítica",
@@ -689,6 +739,9 @@ def painel(request):
             },
             {
                 "nome": "Atualização LD Projeto Básico",
+                "modo_operacional": "producao",
+                "grupo_operacional": "producao",
+                "frescor_horas": 72,
                 "subtitulo": "Projeto Básico + Marenova Executivo",
                 "icone": "bi-diagram-3",
                 "badge": "Piloto",
@@ -697,7 +750,9 @@ def painel(request):
                 "form_url": "automacoes:atualizar_ld_projeto_basico",
                 "botao": "Executar LD Projeto Básico",
                 "botao_class": "btn-info",
-                "dashboard_url": "automacoes:dashboard_ld",
+                "dashboard_url": "automacoes:pcf_controle_respostas",
+                "dashboard_label": "Controle de Respostas PCF",
+                "dashboard_icon": "bi-stopwatch",
                 "registros_url": "automacoes:lista_ld",
                 "metricas": [
                     {"label": "Linhas LD", "valor": total_ld},
@@ -707,6 +762,8 @@ def painel(request):
             },
             {
                 "nome": "Relatório Executivo KM",
+                "modo_operacional": "demanda",
+                "grupo_operacional": "demanda",
                 "subtitulo": "Direção — Projeto Básico, PCF e BV",
                 "icone": "bi-graph-up-arrow",
                 "badge": "Somente leitura",
@@ -725,6 +782,9 @@ def painel(request):
             },
             {
                 "nome": "Timeline PCFs",
+                "modo_operacional": "producao",
+                "grupo_operacional": "producao",
+                "frescor_horas": 72,
                 "subtitulo": "Comentários e revisões",
                 "icone": "bi-bar-chart-line",
                 "badge": "Integrada",
@@ -743,6 +803,9 @@ def painel(request):
             },
             {
                 "nome": "Transmittal KM",
+                "modo_operacional": "producao",
+                "grupo_operacional": "producao",
+                "frescor_horas": 72,
                 "subtitulo": "Parser PDF",
                 "icone": "bi-box-seam",
                 "badge": "Parser PDF",
@@ -761,6 +824,9 @@ def painel(request):
             },
             {
                 "nome": "Índice KM",
+                "modo_operacional": "producao",
+                "grupo_operacional": "producao",
+                "frescor_horas": 168,
                 "subtitulo": "Arquivos e documentos KM",
                 "icone": "bi-hdd-network",
                 "badge": "Indexação",
@@ -779,6 +845,8 @@ def painel(request):
             },
             {
                 "nome": "GRD GHENOVA",
+                "modo_operacional": "demanda",
+                "grupo_operacional": "demanda",
                 "subtitulo": "Consolidação GRDs 7K e 14K",
                 "icone": "bi-diagram-3",
                 "badge": "Engenharia",
@@ -797,9 +865,41 @@ def painel(request):
             },
         ]
 
+        permissoes_execucao = {
+            "automacoes:atualizar_ld": "automacoes.executar_ld_legado",
+            "automacoes:atualizar_ld_projeto_basico": "automacoes.executar_ld_projeto_basico",
+            "automacoes:relatorio_executivo_km": "automacoes.executar_relatorio_km",
+            "automacoes:timeline_pcfs": "automacoes.executar_timeline_pcf",
+            "automacoes:transmittal_km": "automacoes.executar_transmittal_km",
+            "automacoes:indexar_km": "automacoes.executar_indice_km",
+            "automacoes:grd_ghenova": "automacoes.executar_grd",
+        }
+        for rotina in automacoes:
+            rotina["permissao_execucao"] = permissoes_execucao.get(rotina["form_url"], "")
+
         health_map = _health_automacoes([rotina["nome"] for rotina in automacoes])
         for rotina in automacoes:
-            rotina["health"] = health_map.get(rotina["nome"], {})
+            rotina["health"] = _classificar_saude_rotina(
+                rotina,
+                health_map.get(rotina["nome"], {}),
+            )
+            rotina["card_class"] = rotina["health"].get("card_class", "ops-card-idle")
+
+        grupos_config = [
+            ("producao", "Em produção", "Rotinas que sustentam a operação atual de LD, PCF e KM.", "bi-check-circle"),
+            ("demanda", "Sob demanda", "Produtos executados quando existe uma entrega ou necessidade específica.", "bi-calendar2-check"),
+            ("legado", "Legado / em validação", "Mantidas para consulta e contingência; não utilizar sem validação técnica.", "bi-archive"),
+        ]
+        automacoes_grupos = [
+            {
+                "codigo": codigo,
+                "titulo": titulo,
+                "descricao": descricao,
+                "icone": icone,
+                "rotinas": [item for item in automacoes if item.get("grupo_operacional") == codigo],
+            }
+            for codigo, titulo, descricao, icone in grupos_config
+        ]
 
         return {
             "total_ld": total_ld,
@@ -811,6 +911,7 @@ def painel(request):
             "total_transmittals_unicos": total_transmittals_unicos,
             "ultima_atualizacao": ultima_atualizacao,
             "automacoes": automacoes,
+            "automacoes_grupos": automacoes_grupos,
             "ultimos_pcfs": ultimos_pcfs,
             "ultimos_transmittals": ultimos_transmittals,
             "ultimas_execucoes": ultimas_execucoes,
@@ -906,7 +1007,7 @@ def _executar_automacao(request, executor, nome):
     return redirect("automacoes:painel")
 
 
-@login_required
+@has_perm("automacoes.ver_logs")
 def logs_automacoes(request):
     busca = request.GET.get("q", "").strip()
     tipo_doc = request.GET.get("tipo_doc", "").strip().upper()
@@ -1013,7 +1114,7 @@ def logs_automacoes(request):
     )
 
 
-@login_required
+@has_perm("automacoes.executar_ld_legado")
 def executar_atualizar_ld(request):
     return _executar_automacao(
         request,
@@ -1023,7 +1124,7 @@ def executar_atualizar_ld(request):
 
 
 
-@login_required
+@has_perm("automacoes.executar_ld_projeto_basico")
 def executar_atualizar_ld_projeto_basico(request):
     return _executar_automacao(
         request,
@@ -1032,7 +1133,7 @@ def executar_atualizar_ld_projeto_basico(request):
     )
 
 
-@login_required
+@has_perm("automacoes.executar_relatorio_km")
 def executar_relatorio_executivo_km(request):
     return _executar_automacao(
         request,
@@ -1041,7 +1142,7 @@ def executar_relatorio_executivo_km(request):
     )
 
 
-@login_required
+@has_perm("automacoes.executar_ld_projeto_basico")
 def progresso_ld_projeto_basico_api(request):
     """API de progresso da Atualização LD Projeto Básico."""
     try:
@@ -1065,7 +1166,7 @@ def progresso_ld_projeto_basico_api(request):
         }, status=500)
 
 
-@login_required
+@has_perm("automacoes.executar_ld_legado")
 def progresso_ld_api(request):
     """
     API de progresso realtime da Atualização LD.
@@ -1093,7 +1194,7 @@ def progresso_ld_api(request):
         }, status=500)
 
 
-@login_required
+@has_perm("automacoes.executar_timeline_pcf")
 def timeline_pcfs_view(request):
     return _executar_automacao(
         request,
@@ -1102,7 +1203,7 @@ def timeline_pcfs_view(request):
     )
 
 
-@login_required
+@has_perm("automacoes.executar_transmittal_km")
 def executar_transmittal_km(request):
     return _executar_automacao(
         request,
@@ -1111,7 +1212,7 @@ def executar_transmittal_km(request):
     )
 
 
-@login_required
+@has_perm("automacoes.executar_grd")
 def executar_grd_ghenova(request):
     return _executar_automacao(
         request,
@@ -1227,11 +1328,18 @@ def _km_indexar_banco():
     }
 
 
-@login_required
+@has_perm("automacoes.executar_indice_km")
 def executar_indice_km(request):
+    def executar_e_normalizar_resultado():
+        job = executar_reindexacao_km_job(
+            user=request.user if request.user.is_authenticated else None,
+            payload={"origem": "painel_automacoes"},
+        )
+        return resultado_job_para_automacao(job)
+
     return _executar_automacao(
         request,
-        executar_reindexacao_km_job,
+        executar_e_normalizar_resultado,
         "Índice KM",
     )
 
@@ -4114,11 +4222,9 @@ def _pcf_response_records(request):
             Q(origem_aba__iexact=ESCOPO_PROJETO)
             | Q(origem_aba__iexact="LD Basico")
             | Q(origem_aba__iexact="LD Básico")
-            | Q(origem_aba__iexact="LD")
-            | Q(origem_aba__iexact="Lista LD")
-            | Q(origem_aba__isnull=True)
-            | Q(origem_aba="")
-        ).exclude(origem_aba__icontains="Marenova")
+            | Q(origem_aba__iexact="LD PROJETO BASICO")
+            | Q(origem_aba__iexact="LD PROJETO BÁSICO")
+        )
     queryset = queryset.order_by("documento", "revisao")
     records = [build_record(item) for item in queryset]
 
@@ -4170,11 +4276,9 @@ def _pcf_response_options():
             Q(origem_aba__iexact=ESCOPO_PROJETO)
             | Q(origem_aba__iexact="LD Basico")
             | Q(origem_aba__iexact="LD Básico")
-            | Q(origem_aba__iexact="LD")
-            | Q(origem_aba__iexact="Lista LD")
-            | Q(origem_aba__isnull=True)
-            | Q(origem_aba="")
-        ).exclude(origem_aba__icontains="Marenova")
+            | Q(origem_aba__iexact="LD PROJETO BASICO")
+            | Q(origem_aba__iexact="LD PROJETO BÁSICO")
+        )
     tipos = sorted({document_type(value) for value in rows.values_list("documento", flat=True)})
     return {
         "projetos": [ESCOPO_PROJETO],
@@ -4206,10 +4310,61 @@ def pcf_controle_respostas(request):
 
 
 @login_required
+def pcf_dashboard_bi(request):
+    """Dashboard interativo alimentado pelos registros atuais importados da LD."""
+    class _DashboardRequest:
+        GET = {}
+
+    records, _ = _pcf_response_records(_DashboardRequest())
+
+    def iso(value):
+        return value.isoformat() if value else None
+
+    def status_normalizado(value):
+        texto = str(value or "-").strip().upper()
+        return "NOT RELEASED" if texto in {"NOT RELEASED", "NOT RELESED"} else texto
+
+    payload = []
+    for item in records:
+        payload.append({
+            "Documento": item["documento"],
+            "Titulo do Documento": item["titulo"],
+            "Tipo": item["tipo_documento"],
+            "Revisao": item["revisao"],
+            "PCF Recebida": item["pcf"],
+            "Data Recebimento": iso(item["data_recebimento"]),
+            "Resposta Esperada": item["resposta_esperada"],
+            "PCF Respondida": item["pcf_resposta"],
+            "Data Resposta": iso(item["data_resposta"]),
+            "Situacao": item["situacao"],
+            "Dias sem Resposta": item["dias_sem_resposta"] or 0,
+            "Prazo (15 DU)": iso(item["prazo"]),
+            "Dias de Atraso": item["dias_atraso"] or 0,
+            "Status PCF": status_normalizado(item["status"]),
+            "Comentarios": item["qtd_comentarios"] or 0,
+            "Open": item["open_comments"] or 0,
+            "Under Review": item["under_review"] or 0,
+            "Closed Calculado": item["closed_comments"] or 0,
+            "Responsavel": item["responsavel"],
+            "GRD Emissao": item["grd"],
+            "Projeto": item["projeto"],
+            "Disciplina": item["disciplina"],
+            "Link PCF": item["caminho_pcf"] or "",
+            "Link Documento": item["caminho_documento"] or "",
+        })
+
+    return render(request, "automacoes/pcf_dashboard_bi.html", {
+        "pcf_dashboard_data": json.dumps(payload, ensure_ascii=False).replace("</", "<\\/"),
+        "pcf_source_label": "LD Projeto Básico · dados atuais do painel",
+    })
+
+
+@login_required
 def pcf_controle_respostas_excel(request):
     from openpyxl.chart import BarChart, DoughnutChart, Reference
     from openpyxl.styles import Alignment, Border, Side
     from openpyxl.utils import get_column_letter
+    from openpyxl.worksheet.datavalidation import DataValidation
 
     records, _ = _pcf_response_records(request)
     summary = summarize(records)
@@ -4217,7 +4372,9 @@ def pcf_controle_respostas_excel(request):
     wb = Workbook()
     dashboard = wb.active
     dashboard.title = "Resumo Executivo"
-    ws = wb.create_sheet("Base PCFs")
+    ws = wb.create_sheet("Dados PCFs")
+    filtered_ws = wb.create_sheet("Base Filtrada")
+    lists_ws = wb.create_sheet("Listas")
     headers = [
         "Documento", "Titulo do Documento", "Tipo", "Revisao", "PCF Recebida", "Data Recebimento", "Resposta Esperada",
         "PCF Respondida", "Data Resposta", "Situacao", "Dias sem Resposta", "Prazo (15 DU)",
@@ -4234,15 +4391,47 @@ def pcf_controle_respostas_excel(request):
             item["grd"], item["projeto"], item["disciplina"], item["caminho_pcf"], item["caminho_documento"],
         ])
 
+    # Colunas auxiliares ocultas: critério do filtro e ordem sequencial.
+    # Evitam fórmulas matriciais/AGGREGATE que retornavam vazio no Excel real.
+    ws["Y1"] = "Filtro Ativo"
+    ws["Z1"] = "Ordem Filtro"
+    for row in range(2, last_data_row + 1):
+        ws[f"Y{row}"] = (
+            f'=--AND($A{row}<>"",'
+            f'OR(\'Resumo Executivo\'!$B$4="Todos",$C{row}=\'Resumo Executivo\'!$B$4),'
+            f'OR(\'Resumo Executivo\'!$D$4="Todos",$J{row}=\'Resumo Executivo\'!$D$4),'
+            f'OR(\'Resumo Executivo\'!$F$4="Todos",$S{row}=\'Resumo Executivo\'!$F$4),'
+            f'OR(\'Resumo Executivo\'!$H$4="Todos",$N{row}=\'Resumo Executivo\'!$H$4))'
+        )
+        ws[f"Z{row}"] = f'=IF(Y{row}=1,COUNTIF($Y$2:Y{row},1),"")'
+    ws.column_dimensions["Y"].hidden = True
+    ws.column_dimensions["Z"].hidden = True
+
+    # A base integral fica preservada; a aba de consulta acompanha os seletores
+    # do Dashboard por meio das matrizes dinâmicas do Excel 365/2021.
+    filtered_ws.append(headers)
+    # Base filtrada sem fórmula matricial: MATCH encontra a ordem calculada nas
+    # colunas auxiliares ocultas da base integral.
+    for output_row in range(2, last_data_row + 1):
+        rank = output_row - 1
+        for output_col in range(1, len(headers) + 1):
+            source_col = get_column_letter(output_col)
+            filtered_ws.cell(output_row, output_col).value = (
+                f'=IFERROR(INDEX(\'Dados PCFs\'!${source_col}$2:${source_col}${last_data_row},'
+                f'MATCH({rank},\'Dados PCFs\'!$Z$2:$Z${last_data_row},0)),"")'
+            )
+
     navy, cyan, white, orange = "0B1F33", "32B7E9", "FFFFFF", "F59E0B"
     light, line = "EDF4F8", "C9D7E2"
+    thin = Side(style="thin", color=line)
+    medium = Side(style="medium", color=cyan)
     for cell in ws[1]:
         cell.fill = PatternFill("solid", fgColor=navy)
         cell.font = Font(color=white, bold=True)
         cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
     ws.row_dimensions[1].height = 34
     ws.freeze_panes = "A2"
-    ws.auto_filter.ref = ws.dimensions
+    ws.auto_filter.ref = f"A1:X{last_data_row}"
     widths = [30, 50, 10, 10, 38, 17, 18, 38, 17, 22, 18, 17, 16, 26, 13, 10, 15, 15, 24, 16, 20, 18, 55, 55]
     for index, width in enumerate(widths, 1):
         ws.column_dimensions[ws.cell(1, index).column_letter].width = width
@@ -4265,6 +4454,21 @@ def pcf_controle_respostas_excel(request):
                 target.hyperlink = str(target.value)
                 target.font = Font(color=cyan, underline="single")
 
+    for cell in filtered_ws[1]:
+        cell.fill = PatternFill("solid", fgColor=navy)
+        cell.font = Font(color=white, bold=True)
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    filtered_ws.row_dimensions[1].height = 34
+    filtered_ws.freeze_panes = "A2"
+    filtered_ws.auto_filter.ref = f"A1:X{last_data_row}"
+    for index, width in enumerate(widths, 1):
+        filtered_ws.column_dimensions[filtered_ws.cell(1, index).column_letter].width = width
+    # Formato de data abreviada em toda a Base Filtrada. A terceira seção vazia
+    # oculta zeros retornados pelo INDEX quando a data de origem não existe.
+    for row in range(2, last_data_row + 1):
+        for col in (6, 9, 12):
+            filtered_ws.cell(row, col).number_format = "dd/mm/yyyy;;"
+
     # Resumo executivo: formulas auditaveis ligadas a Base PCFs.
     dashboard.sheet_view.showGridLines = False
     dashboard.merge_cells("A1:N2")
@@ -4276,16 +4480,46 @@ def pcf_controle_respostas_excel(request):
     dashboard["A3"] = "ESCOPO: LD PROJETO BÁSICO | SLA de 15 dias úteis após a Data Recebimento da PCF"
     dashboard["A3"].font = Font(size=11, color="53697D")
 
-    kpis = [
-        ("A5", "TOTAL MONITORADO", f"=COUNTA('Base PCFs'!A2:A{last_data_row})", cyan),
-        ("C5", "VENCIDAS", f'=COUNTIF(\'Base PCFs\'!J2:J{last_data_row},"Vencida")', "E05252"),
-        ("E5", "AGUARDANDO", f'=COUNTIF(\'Base PCFs\'!J2:J{last_data_row},"Aguardando resposta")', orange),
-        ("G5", "RESPONDIDAS", f'=COUNTIF(\'Base PCFs\'!J2:J{last_data_row},"Respondida")', "3B82F6"),
-        ("I5", "OPEN", f"=SUM('Base PCFs'!P2:P{last_data_row})", "EF7D00"),
-        ("K5", "UNDER REVIEW", f"=SUM('Base PCFs'!Q2:Q{last_data_row})", "8B5CF6"),
-        ("M5", "CLOSED CALCULADO", f"=SUM('Base PCFs'!R2:R{last_data_row})", "14B8A6"),
+    selectors = [
+        ("A4", "B4", "TIPO", sorted({item["tipo_documento"] for item in records if item["tipo_documento"]})),
+        ("C4", "D4", "SITUAÇÃO", sorted({item["situacao"] for item in records if item["situacao"]})),
+        ("E4", "F4", "RESPONSÁVEL", sorted({item["responsavel"] for item in records if item["responsavel"]})),
+        ("G4", "H4", "STATUS PCF", sorted({item["status"] for item in records if item["status"]})),
     ]
-    thin = Side(style="thin", color=line)
+    dashboard.row_dimensions[4].height = 30
+    for list_col, (label_ref, value_ref, label, values) in enumerate(selectors, 1):
+        dashboard[label_ref] = f"{label}  ▼"
+        dashboard[label_ref].fill = PatternFill("solid", fgColor=navy)
+        dashboard[label_ref].font = Font(bold=True, color=white, size=9)
+        dashboard[label_ref].alignment = Alignment(horizontal="center", vertical="center")
+        dashboard[label_ref].border = Border(left=medium, right=medium, top=medium, bottom=medium)
+        dashboard[value_ref] = "Todos"
+        dashboard[value_ref].fill = PatternFill("solid", fgColor="FFF2CC")
+        dashboard[value_ref].font = Font(bold=True, color=navy, size=11)
+        dashboard[value_ref].alignment = Alignment(horizontal="center", vertical="center")
+        dashboard[value_ref].border = Border(left=medium, right=medium, top=medium, bottom=medium)
+        list_values = ["Todos", *values]
+        for row_no, value in enumerate(list_values, 1):
+            lists_ws.cell(row_no, list_col).value = value
+        dv = DataValidation(type="list", formula1=f"='Listas'!${get_column_letter(list_col)}$1:${get_column_letter(list_col)}${len(list_values)}")
+        dashboard.add_data_validation(dv)
+        dv.add(dashboard[value_ref])
+    dashboard.merge_cells("J4:N4")
+    dashboard["J4"] = "▼ FILTROS INTERATIVOS — atualizam KPIs, gráficos e a BASE FILTRADA"
+    dashboard["J4"].fill = PatternFill("solid", fgColor="D9EAF7")
+    dashboard["J4"].font = Font(bold=True, color=navy, size=10)
+    dashboard["J4"].alignment = Alignment(horizontal="center", vertical="center")
+    dashboard["J4"].border = Border(left=medium, right=medium, top=medium, bottom=medium)
+
+    kpis = [
+        ("A5", "TOTAL MONITORADO", f"=SUM('Dados PCFs'!Y2:Y{last_data_row})", cyan),
+        ("C5", "VENCIDAS", f'=COUNTIF(\'Base Filtrada\'!J2:J{last_data_row},"Vencida")', "E05252"),
+        ("E5", "AGUARDANDO", f'=COUNTIF(\'Base Filtrada\'!J2:J{last_data_row},"Aguardando resposta")', orange),
+        ("G5", "RESPONDIDAS", f'=COUNTIF(\'Base Filtrada\'!J2:J{last_data_row},"Respondida")', "3B82F6"),
+        ("I5", "OPEN", f"=SUM('Base Filtrada'!P2:P{last_data_row})", "EF7D00"),
+        ("K5", "UNDER REVIEW", f"=SUM('Base Filtrada'!Q2:Q{last_data_row})", "8B5CF6"),
+        ("M5", "CLOSED CALCULADO", f"=SUM('Base Filtrada'!R2:R{last_data_row})", "14B8A6"),
+    ]
     for anchor, label, formula, color in kpis:
         col = dashboard[anchor].column
         dashboard.merge_cells(start_row=5, start_column=col, end_row=5, end_column=col+1)
@@ -4307,13 +4541,12 @@ def pcf_controle_respostas_excel(request):
     situations = ["Vencida", "Aguardando resposta", "Respondida", "Sem informação"]
     for index, situation in enumerate(situations, 11):
         dashboard.cell(index, 1).value = situation
-        dashboard.cell(index, 2).value = f'=COUNTIF(\'Base PCFs\'!J2:J{last_data_row},A{index})'
+        dashboard.cell(index, 2).value = f'=COUNTIF(\'Base Filtrada\'!J2:J{last_data_row},A{index})'
     for cell in dashboard[10]:
         if cell.column <= 2:
             cell.fill = PatternFill("solid", fgColor=navy)
             cell.font = Font(color=white, bold=True)
 
-    ranking = sorted(records, key=lambda item: item["criticidade"], reverse=True)[:10]
     dashboard["D10"] = "TOP 10 PCFs CRÍTICAS"
     dashboard.merge_cells("D10:N10")
     dashboard["D10"].fill = PatternFill("solid", fgColor=navy)
@@ -4323,10 +4556,18 @@ def pcf_controle_respostas_excel(request):
         dashboard.cell(11, col).value = value
         dashboard.cell(11, col).fill = PatternFill("solid", fgColor="1D4A68")
         dashboard.cell(11, col).font = Font(color=white, bold=True)
-    for row_index, item in enumerate(ranking, 12):
-        values = [item["documento"], item["pcf"], item["dias_atraso"], item["open_comments"], item["under_review"], item["responsavel"]]
-        for col, value in enumerate(values, 4):
-            dashboard.cell(row_index, col).value = value
+    # A origem já está ordenada por criticidade; o Top 10 pode referenciar as
+    # dez primeiras linhas filtradas sem usar matrizes dinâmicas.
+    rank_source_columns = ("A", "E", "M", "P", "Q", "S")
+    for rank_row in range(12, 22):
+        source_row = rank_row - 10
+        for rank_col, source_col in enumerate(rank_source_columns, 4):
+            dashboard.cell(rank_row, rank_col).value = (
+                f'=IFERROR(INDEX(\'Base Filtrada\'!${source_col}$2:${source_col}${last_data_row},'
+                f'{source_row}-1),"")'
+            )
+    for row_index in range(12, 22):
+        for col in range(4, 10):
             dashboard.cell(row_index, col).fill = PatternFill("solid", fgColor="F6F9FB" if row_index % 2 == 0 else white)
 
     doughnut = DoughnutChart()
@@ -4339,9 +4580,9 @@ def pcf_controle_respostas_excel(request):
     bar = BarChart()
     bar.type = "bar"
     bar.title = "Maior exposição - dias de atraso"
-    if ranking:
-        bar.add_data(Reference(dashboard, min_col=6, min_row=11, max_row=11+len(ranking)), titles_from_data=True)
-        bar.set_categories(Reference(dashboard, min_col=4, min_row=12, max_row=11+len(ranking)))
+    if records:
+        bar.add_data(Reference(dashboard, min_col=6, min_row=11, max_row=21), titles_from_data=True)
+        bar.set_categories(Reference(dashboard, min_col=4, min_row=12, max_row=21))
     bar.height, bar.width = 8, 19
     bar.legend = None
     dashboard.add_chart(bar, "G17")
@@ -4355,6 +4596,11 @@ def pcf_controle_respostas_excel(request):
     dashboard.page_setup.orientation = "landscape"
     dashboard.page_setup.fitToWidth = 1
     dashboard.sheet_properties.pageSetUpPr.fitToPage = True
+    ws.sheet_state = "hidden"
+    lists_ws.sheet_state = "veryHidden"
+    wb.calculation.fullCalcOnLoad = True
+    wb.calculation.forceFullCalc = True
+    wb.calculation.calcMode = "auto"
     response = HttpResponse(content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     response["Content-Disposition"] = 'attachment; filename="controle_respostas_pcf_LD_PROJETO_BASICO.xlsx"'
     wb.save(response)
@@ -4767,7 +5013,7 @@ def busca_global(request):
 # UNIFIED OPERATIONS CENTER
 # ============================================================
 
-@login_required
+@has_perm("automacoes.ver_ops_center")
 def ops_center(request):
     context = {
         "ops": OperationsCenterService.build_dashboard(),
@@ -4780,7 +5026,7 @@ def ops_center(request):
     )
 
 
-@login_required
+@has_perm("automacoes.ver_ops_center")
 def ops_center_runtime_partial(request):
     context = {
         "ops": OperationsCenterService.build_dashboard(),
@@ -4793,7 +5039,7 @@ def ops_center_runtime_partial(request):
     )
 
 
-@login_required
+@has_perm("automacoes.ver_ops_center")
 def ops_center_events_partial(request):
     return render(
         request,
@@ -4805,7 +5051,7 @@ def ops_center_events_partial(request):
     )
 
 
-@login_required
+@has_perm("automacoes.ver_ops_center")
 def ops_center_live_partial(request):
     from apps.automacoes.services.live_operations import (
         LiveOperationsService,
@@ -4817,12 +5063,12 @@ def ops_center_live_partial(request):
         LiveOperationsService.build_payload(),
     )
 
-@login_required
+@has_perm("automacoes.ver_ops_center")
 def runtime_health_api(request):
     return JsonResponse(RuntimeHealthAPIService.health())
 
 
-@login_required
+@has_perm("automacoes.ver_ops_center")
 def runtime_metrics_api(request):
     return JsonResponse(RuntimeHealthAPIService.metrics())
 
@@ -5185,7 +5431,7 @@ def importar_lista_km(request):
     )
 
 
-@login_required
+@has_perm("automacoes.executar_sync_km_ld")
 def executar_sync_km_ld(request):
     """
     Reexecuta o cruzamento DocumentoKM ↔ TransmittalKM ↔ DocumentoLD
@@ -5201,9 +5447,6 @@ def executar_sync_km_ld(request):
         messages.error(request, f"Erro ao executar sync KM ↔ LD: {exc}")
 
     return redirect("automacoes:dashboard_km_ld")
-
-
-@login_required
 
 
 def _km_clean_getlist(request, nome):
@@ -5796,6 +6039,7 @@ def _km_exportar_dashboard_ppt(request):
     response["Content-Disposition"] = 'attachment; filename="dashboard_km_executivo.pptx"'
     return response
 
+@login_required
 def dashboard_km_ld(request):
     filtros = _km_filter_state(request)
     registros_base = DocumentoKM.objects.all()

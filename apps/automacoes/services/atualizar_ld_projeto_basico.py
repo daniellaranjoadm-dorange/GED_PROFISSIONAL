@@ -5,6 +5,7 @@ import xlwings as xw
 import re
 import threading
 import time
+from pathlib import Path
 from openpyxl import load_workbook
 from django.db import transaction
 
@@ -33,6 +34,14 @@ TIMELINE_PCF = r"\\virm-rgr022\FILESERVER\Projetos\05_HANDYMAX\09. Doc Control\9
 
 PASTA_LOGS = r"\\virm-rgr022\FILESERVER\Projetos\05_HANDYMAX\09. Doc Control\3 - LD\Logs"
 PASTA_BACKUPS = os.path.join(PASTA_LOGS, "Backups")
+DASHBOARD_LD = os.environ.get(
+    "DASHBOARD_LD_PROJETO_BASICO",
+    os.path.join(os.path.dirname(PLANILHA), "Dashboard_Gerencial_Doc_Control_LD_Projeto_Basico.html"),
+)
+DASHBOARD_LD_GOOGLE_DRIVE = os.environ.get(
+    "DASHBOARD_LD_GOOGLE_DRIVE",
+    r"G:\Drives compartilhados\CONSÓRCIO_MARENOVA\ENGENHARIA\DOC_CONTROL\Dashboard_Gerencial_Doc_Control_LD_Projeto_Basico.html",
+)
 
 EXTENSOES = {".doc", ".docx", ".pdf", ".dwg", ".xls", ".xlsx", ".xlsm"}
 
@@ -321,7 +330,7 @@ def resetar_progresso_ld():
 
 
 def log(msg: str):
-    print(msg)
+    print(msg, flush=True)
     if LOG_FILE:
         try:
             with open(LOG_FILE, "a", encoding="utf-8") as f:
@@ -539,6 +548,27 @@ def _revisao_pcf_do_nome(valor) -> str:
     nome = re.sub(r"\.(?:XLSX|XLSM)$", "", nome, flags=re.IGNORECASE)
     m = re.search(r"_R([0-9A-Z]+)", nome, re.IGNORECASE)
     return normalizar_rev(m.group(1)) if m else ""
+
+
+def _ha_revisao_superior(codigo, rev_documento, pcf_atual, idx_eng, idx_pcf):
+    """Informa se documento ou PCF mais novo deve superar o status da linha."""
+    rev_documento = normalizar_rev(rev_documento)
+    maior_documento = any(
+        rev_key(rev_encontrada) > rev_key(rev_documento)
+        for rev_encontrada in idx_eng.get(codigo, {})
+    )
+
+    rev_pcf_atual = _revisao_pcf_do_nome(pcf_atual)
+    atual_compativel, sufixo_atual = _split_by_base(rev_pcf_atual, rev_documento)
+    chave_atual = _suffix_key(sufixo_atual) if atual_compativel else -1
+    maior_pcf = any(
+        compativel and _suffix_key(sufixo) > chave_atual
+        for compativel, sufixo in (
+            _split_by_base(rev_pcf, rev_documento)
+            for rev_pcf in idx_pcf.get(codigo, {})
+        )
+    )
+    return maior_documento, maior_pcf
 
 # ==========================================================
 # EXTRAIR GRD DO CAMINHO
@@ -885,7 +915,10 @@ def indexar_pcfs(pasta, excluir_subpastas=None, data_origem="MTIME"):
             # A data oficial da PCF fica no cabeçalho do próprio formulário.
             # MTIME/CTIME é apenas fallback: a data do arquivo muda quando ele é
             # copiado, salvo novamente ou movimentado na rede.
-            dt = _pcf_data_documental_arquivo(caminho) or _file_datetime(caminho, data_origem)
+            dt = _coerce_to_date(
+                _pcf_data_documental_arquivo(caminho)
+                or _file_datetime(caminho, data_origem)
+            )
 
             codigo = normalizar_codigo(codigo)
             existente = idx.get(codigo, {}).get(rev)
@@ -896,7 +929,12 @@ def indexar_pcfs(pasta, excluir_subpastas=None, data_origem="MTIME"):
                 "rev": rev
             }
 
-            if (existente is None) or (dt and dt > existente["date"]):
+            data_existente = _coerce_to_date(existente.get("date")) if existente else None
+            if (
+                existente is None
+                or (dt is not None and data_existente is None)
+                or (dt is not None and data_existente is not None and dt > data_existente)
+            ):
                 idx.setdefault(codigo, {})[rev] = info
     return idx
 
@@ -1170,6 +1208,21 @@ def _pcf_data_documental_arquivo(caminho_pcf):
                 pass
 
 
+STATUS_PCF_VALIDOS = {
+    "NOT RELEASED": "NOT RELEASED",
+    "NOT RELESED": "NOT RELEASED",
+    "RELEASED": "RELEASED",
+    "RELEASED WITH COMMENTS": "RELEASED WITH COMMENTS",
+    "UNDER REVIEW": "UNDER REVIEW",
+}
+
+
+def _normalizar_status_pcf_valido(valor):
+    """Retorna somente estados PCF reconhecidos e ignora erros do Excel."""
+    texto = _normalizar_header(_valor_intel(valor))
+    return STATUS_PCF_VALIDOS.get(texto, "")
+
+
 def _pcf_status_final_timeline(ws):
     """
     Regra idêntica à Timeline PCFs:
@@ -1179,11 +1232,32 @@ def _pcf_status_final_timeline(ws):
     if ws is None:
         return status_final
 
-    for row in range(9, (ws.max_row or 0) + 1):
-        v = ws.cell(row=row, column=5).value  # coluna E
-        texto = _valor_intel(v)
-        if str(texto).strip():
-            status_final = texto
+    history_row = None
+    status_header_row = None
+    status_col = None
+    max_row = ws.max_row or 0
+    max_col = min(ws.max_column or 0, 30)
+
+    for row in range(1, min(max_row, 60) + 1):
+        for col in range(1, max_col + 1):
+            header = _normalizar_header(ws.cell(row, col).value)
+            if header == "PCF HISTORY":
+                history_row = row
+            elif history_row and row <= history_row + 8 and header == "STATUS":
+                status_header_row = row
+                status_col = col
+                break
+        if status_header_row:
+            break
+
+    if status_header_row and status_col:
+        for row in range(status_header_row + 1, min(max_row, status_header_row + 20) + 1):
+            first_col = _normalizar_header(ws.cell(row, 1).value)
+            if first_col in {"ITEM", "COMMENTS", "OWNER S COMMENTS"}:
+                break
+            status = _normalizar_status_pcf_valido(ws.cell(row, status_col).value)
+            if status:
+                status_final = status
 
     return status_final
 
@@ -1442,10 +1516,19 @@ def carregar_status_pcfs_timeline(app):
 
         for rr in range(2, last + 1):
             chave = normalizar_chave_pcf(ws_tl[f"B{rr}"].value)
-            status = ws_tl[f"L{rr}"].value
+            status_bruto = ws_tl[f"L{rr}"].value
+            status = _normalizar_status_pcf_valido(status_bruto)
 
             if not chave:
                 vazias += 1
+                continue
+
+            if not status:
+                if str(status_bruto or "").strip():
+                    log(
+                        f"AVISO: status PCF invalido ignorado na Timeline L{rr}: "
+                        f"{status_bruto!r}"
+                    )
                 continue
 
             if chave in idx:
@@ -1480,23 +1563,26 @@ def status_final_da_pcf(status_pcfs, pcf_nome_coluna_l):
       retorna Timeline coluna L
     """
     chave = normalizar_chave_pcf(pcf_nome_coluna_l)
-    return status_pcfs.get(chave, "")
+    return _normalizar_status_pcf_valido(status_pcfs.get(chave, ""))
 
 
 # ==========================================================
 # INSERIR REVISÕES NOVAS (ENGENHARIA) + LOG
 # ==========================================================
-def inserir_revisoes_novas(ws, idx_eng):
-    last = ws.range("B" + str(ws.cells.last_cell.row)).end("up").row
+def inserir_revisoes_novas(ws, idx_eng, layout=None):
+    layout = layout or LAYOUT_LD
+    doc_col = _col_layout(layout, "documento") or "B"
+    rev_col = _col_layout(layout, "revisao") or "C"
+    last = ws.range(doc_col + str(ws.cells.last_cell.row)).end("up").row
 
     rev_rows = {}
     all_rows = {}
 
     for r in range(2, last + 1):
-        codigo = normalizar_codigo(ws[f"B{r}"].value)
+        codigo = normalizar_codigo(ws[f"{doc_col}{r}"].value)
         if not codigo:
             continue
-        rev = normalizar_rev(ws[f"C{r}"].value)
+        rev = normalizar_rev(ws[f"{rev_col}{r}"].value)
         rev_rows.setdefault(codigo, {})[rev] = r
         all_rows.setdefault(codigo, []).append(r)
 
@@ -1528,11 +1614,26 @@ def inserir_revisoes_novas(ws, idx_eng):
             ws.api.Rows(base_row).Copy()
             ws.api.Rows(insert_at).Insert()
 
-            ws[f"C{insert_at}"].value = new_rev
+            ws[f"{rev_col}{insert_at}"].value = new_rev
 
-            ws.range(f"H{insert_at}:Q{insert_at}").value = None
-            for col in ["B", "J", "L", "O", "Q"]:
-                limpar_hyperlink(ws[f"{col}{insert_at}"])
+            # Limpa somente os campos operacionais mapeados no layout atual.
+            # Assim a LD-002 (revisão em D) preserva título/fórmulas e recebe
+            # GRD/PCF/status novos sem herdar os valores da revisão anterior.
+            campos_limpar = (
+                "status", "status_grd", "grd", "data_grd", "pcf", "data_pcf",
+                "status_pcf", "pcf_resposta", "data_resposta", "grd_resposta",
+                "qtd_comentarios", "open_comments", "under_review", "status_final_pcf",
+                "posted_date", "status_bv", "since_bv", "action_bv", "nb_pending_comments",
+            )
+            for campo in campos_limpar:
+                col = _col_layout(layout, campo)
+                if col:
+                    ws[f"{col}{insert_at}"].value = None
+
+            for campo in ("documento", "grd", "pcf", "pcf_resposta", "grd_resposta"):
+                col = _col_layout(layout, campo)
+                if col:
+                    limpar_hyperlink(ws[f"{col}{insert_at}"])
 
             total_inseridas += 1
             inseridas_map.setdefault(codigo, []).append(new_rev)
@@ -1819,11 +1920,8 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
     remover_autofiltro(ws)
 
     try:
-        # Inserção de revisões novas só é segura no layout da LD principal.
-        if inserir_revisoes and aba_nome == ABA_LD:
-            inserir_revisoes_novas(ws, idx_eng)
-        elif inserir_revisoes:
-            log(f"ℹ️ Inserção de revisões novas ignorada para {aba_nome}: layout diferente da LD principal.")
+        if inserir_revisoes:
+            inserir_revisoes_novas(ws, idx_eng, layout=layout)
         else:
             log(f"ℹ️ Inserção de revisões novas desativada para a aba {aba_nome}. Atualizando apenas linhas existentes.")
 
@@ -1937,10 +2035,25 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
                             "não localizado e sem hyperlink anterior"
                         )
 
-            if not eh_projeto_basico and status_h in STATUS_H_BLOQUEADOS:
+            maior_documento, maior_pcf = _ha_revisao_superior(
+                codigo, rev, pcf_anterior, idx_eng, idx_pcf
+            )
+            ignorar_status_por_revisao = maior_documento or maior_pcf
+
+            if (
+                not eh_projeto_basico
+                and status_h in STATUS_H_BLOQUEADOS
+                and not ignorar_status_por_revisao
+            ):
                 if LOG_DETALHADO:
                     log(f"   [SKIP] {aba_nome} L{r} ignorada ({status_col} = {status_h})")
                 continue
+            if status_h in STATUS_H_BLOQUEADOS and ignorar_status_por_revisao:
+                log(
+                    f"   [STATUS IGNORADO POR REVISÃO MAIOR] {aba_nome} L{r} | "
+                    f"documento_maior={'SIM' if maior_documento else 'NÃO'} | "
+                    f"pcf_maior={'SIM' if maior_pcf else 'NÃO'} | status={status_h}"
+                )
 
             documento_encontrado = codigo in idx_eng_codigos
             pcf_recebida_para_rev = False
@@ -1959,7 +2072,7 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
             valor_data_recebimento_km = _valor_layout(ws, layout, "data_recebimento_km", r)
             tem_data_recebimento_km = bool(
                 _coerce_to_date(valor_data_recebimento_km)
-                or str(valor_data_recebimento_km or "").strip()
+                or _valor_km_informado(valor_data_recebimento_km)
             )
 
             not_applicable_com_recebimento = (
@@ -2040,7 +2153,7 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
                     if not ok:
                         continue
 
-                    k = (_suffix_key(sufixo), cand.get("date") or datetime.min)
+                    k = (_suffix_key(sufixo), _coerce_to_date(cand.get("date")) or date.min)
                     if (best_key is None) or (k[0] > best_key[0]) or (k[0] == best_key[0] and k[1] > best_key[1]):
                         best_key = k
                         best = cand
@@ -2123,24 +2236,23 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
                     else:
                         log(f"   [PCF AGUARDANDO] {aba_nome} L{r} | {codigo}_R{rev} => PCF não encontrada")
 
-            # Resposta de PCF.
+            # AB/AC representam somente a resposta do ciclo atual de Y/Z.
+            # Ex.: Y=R0D exige AB=R0E. Uma R0C histórica deve ser removida.
             mapa_resp = idx_pcf_resp.get(codigo, {})
             rev_doc_resp = normalizar_rev(_valor_layout(ws, layout, "revisao", r))
             rev_recebida = (info_pcf or {}).get("rev", "")
             rev_resposta_esperada = _pcf_resposta_da_recebida(rev_recebida, rev_doc_resp)
             info_resp = mapa_resp.get(rev_resposta_esperada) if rev_resposta_esperada else None
 
-            # Uma resposta anterior ao recebimento nao pertence ao ciclo atual.
             if info_resp and info_pcf:
-                dt_recebida = info_pcf.get("date")
-                dt_resposta = info_resp.get("date")
+                dt_recebida = _coerce_to_date(info_pcf.get("date"))
+                dt_resposta = _coerce_to_date(info_resp.get("date"))
                 if dt_recebida and dt_resposta and dt_resposta < dt_recebida:
-                    if LOG_DETALHADO:
-                        log(
-                            f"   [PCF RESP CRONOLOGIA INVALIDA] {aba_nome} L{r} | "
-                            f"recebida={rev_recebida} em {_fmt_dt(dt_recebida)} | "
-                            f"resposta={rev_resposta_esperada} em {_fmt_dt(dt_resposta)}"
-                        )
+                    log(
+                        f"   [PCF RESP CRONOLOGIA INVÁLIDA] {aba_nome} L{r} | "
+                        f"recebida=R{rev_recebida} em {_fmt_dt(dt_recebida)} | "
+                        f"resposta=R{rev_resposta_esperada} em {_fmt_dt(dt_resposta)}"
+                    )
                     info_resp = None
 
             if info_resp:
@@ -2161,8 +2273,8 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
 
                 if LOG_DETALHADO:
                     log(
-                        f"   [PCF RESP PAREADA] {aba_nome} L{r} | "
-                        f"recebida={rev_recebida} => resposta={rev_resposta_esperada} | "
+                        f"   [PCF RESP CICLO ATUAL] {aba_nome} L{r} | "
+                        f"recebida=R{rev_recebida} | resposta=R{rev_resposta_esperada} | "
                         f"PCF_RESP={info_resp['pcf']} | GRD={grd_resp or '-'}"
                     )
             else:
@@ -2179,16 +2291,11 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
                 _set_layout(ws, layout, "grd_resposta", r, None)
 
                 if LOG_DETALHADO:
-                    if revisoes_resp_disponiveis:
-                        log(
-                            f"   [PCF RESP OUTRA REVISÃO IGNORADA] {aba_nome} L{r} | "
-                            f"{codigo}_R{rev_doc_resp} | disponíveis={','.join(revisoes_resp_disponiveis)}"
-                        )
-                    else:
-                        log(
-                            f"   [PCF RESP AGUARDANDO] {aba_nome} L{r} | "
-                            f"{codigo}_R{rev} => resposta não encontrada"
-                        )
+                    log(
+                        f"   [PCF RESP CICLO PENDENTE] {aba_nome} L{r} | "
+                        f"recebida=R{rev_recebida or '-'} | esperada=R{rev_resposta_esperada or '-'} | "
+                        f"disponíveis={','.join(revisoes_resp_disponiveis) or '-'}"
+                    )
 
         if APLICAR_FORMATACAO:
             aplicar_formatacao(ws, layout)
@@ -2213,7 +2320,7 @@ def _sync_obter_hyperlink(cell):
 
 
 def validar_revisoes_pcfs_workbook(wb, abas_layouts):
-    """Repara respostas históricas e bloqueia somente PCF recebida de outra base."""
+    """Bloqueia PCF recebida incompatível e remove respostas fora do ciclo atual."""
     divergencias = []
     reparos = 0
 
@@ -2268,34 +2375,15 @@ def validar_revisoes_pcfs_workbook(wb, abas_layouts):
                         f"{rotulo}='{valor}' (revisão PCF={revisao_pcf or '?'})"
                     )
 
-    # Segunda camada: recebida e respondida precisam pertencer ao mesmo ciclo.
-    for aba_nome, layout in abas_layouts:
-        try:
-            ws = wb.sheets[aba_nome]
-        except Exception:
-            continue
-
-        doc_col = _col_layout(layout, "documento")
-        rev_col = _col_layout(layout, "revisao")
-        col_pcf = _col_layout(layout, "pcf")
-        col_resp = _col_layout(layout, "pcf_resposta")
-        if not doc_col or not rev_col or not col_pcf or not col_resp:
-            continue
-
-        last = ws.range(doc_col + str(ws.cells.last_cell.row)).end("up").row
-        for r in range(2, last + 1):
-            revisao = normalizar_rev(ws[f"{rev_col}{r}"].value)
-            valor_pcf = ws[f"{col_pcf}{r}"].value
-            valor_resp = ws[f"{col_resp}{r}"].value
+            valor_pcf = _valor_layout(ws, layout, "pcf", r)
+            valor_resp = _valor_layout(ws, layout, "pcf_resposta", r)
             rev_recebida = _revisao_pcf_do_nome(valor_pcf)
             rev_respondida = _revisao_pcf_do_nome(valor_resp)
             esperada = _pcf_resposta_da_recebida(rev_recebida, revisao)
-
             if rev_respondida and rev_respondida != esperada:
                 limpar_resposta(
                     ws, layout, r,
-                    f"ciclo inválido: recebida=R{rev_recebida}, "
-                    f"respondida=R{rev_respondida}, esperada=R{esperada or '?'}",
+                    f"ciclo atual exige R{esperada or '?'}; encontrada R{rev_respondida}",
                 )
                 continue
 
@@ -2304,15 +2392,10 @@ def validar_revisoes_pcfs_workbook(wb, abas_layouts):
             if valor_resp and col_data_pcf and col_data_resp:
                 data_pcf = ws[f"{col_data_pcf}{r}"].value
                 data_resp = ws[f"{col_data_resp}{r}"].value
-                if (
-                    isinstance(data_pcf, datetime)
-                    and isinstance(data_resp, datetime)
-                    and data_resp < data_pcf
-                ):
+                if isinstance(data_pcf, datetime) and isinstance(data_resp, datetime) and data_resp < data_pcf:
                     limpar_resposta(
                         ws, layout, r,
-                        f"cronologia inválida: resposta {_fmt_dt(data_resp)} "
-                        f"anterior ao recebimento {_fmt_dt(data_pcf)}",
+                        f"resposta {_fmt_dt(data_resp)} anterior à PCF {_fmt_dt(data_pcf)}",
                     )
 
     if divergencias:
@@ -2324,8 +2407,8 @@ def validar_revisoes_pcfs_workbook(wb, abas_layouts):
         )
 
     log(
-        "✅ Validação PCF concluída: nenhuma PCF recebida vinculada a revisão "
-        f"incompatível; respostas históricas removidas={reparos}."
+        "✅ Validação PCF concluída: AB/AC contém somente resposta do ciclo atual de Y/Z; "
+        f"respostas históricas/incompatíveis removidas={reparos}."
     )
     return reparos
 
@@ -2501,6 +2584,14 @@ def _texto_excel_seguro(valor):
         return str(valor)
 
     return str(valor).replace("\xa0", " ").strip()
+
+
+VALORES_KM_NAO_INFORMADOS = {"", "-", "N/A", "NA", "#N/A", "NOT APPLICABLE"}
+
+
+def _valor_km_informado(valor):
+    """N/A e equivalentes nao constituem evidencia de recebimento KM."""
+    return _texto_excel_seguro(valor).strip().upper() not in VALORES_KM_NAO_INFORMADOS
 
 
 def _normalizar_chave_documento(valor):
@@ -2824,6 +2915,24 @@ def preencher_numero_km_ld_basico(wb, idx_general_km=None):
                     _texto_excel_seguro(registro.get("data", "")),
                 )
 
+                # H identifica o vinculo. I/J vazios ou N/A sao lacunas e
+                # devem ser completados pela GENERAL LIST KM. Valores manuais
+                # nao vazios continuam preservados.
+                for rr_vinculo, atual_vinculo in linhas_mesmo_numero:
+                    if not _valor_km_informado(atual_vinculo[1]) and _valor_km_informado(esperado[1]):
+                        ws[f"I{rr_vinculo}"].value = esperado[1]
+                        preenchidas += 1
+                    if not _valor_km_informado(atual_vinculo[2]) and _valor_km_informado(esperado[2]):
+                        ws[f"J{rr_vinculo}"].value = esperado[2]
+                        preenchidas += 1
+                    data_fonte_vinculo = _coerce_to_date(registro.get("data", ""))
+                    if data_fonte_vinculo is not None:
+                        data_antes_vinculo = _coerce_to_date(ws[f"K{rr_vinculo}"].value)
+                        setar_data(ws[f"K{rr_vinculo}"], data_fonte_vinculo)
+                        if data_antes_vinculo != data_fonte_vinculo:
+                            datas_corrigidas += 1
+                atual = ler_hk(rr)
+
                 # H:J podem conter ajustes manuais e continuam preservadas. K,
                 # porém, tem como fonte oficial GENERAL LIST KM!P e precisa ser
                 # regravada inclusive nas linhas já existentes. Isso também
@@ -2913,6 +3022,52 @@ def preencher_numero_km_ld_basico(wb, idx_general_km=None):
         f"{sem_vinculo} chave(s) sem fonte e {avisos} aviso(s) para conferência."
     )
     return preenchidas
+
+
+def recalcular_status_recebimento_km_ld_basico(wb):
+    """Recalcula STATUS de documentos nao emitidos usando H:K como evidencia."""
+    try:
+        ws = wb.sheets[ABA_LD_BASICO]
+    except Exception as exc:
+        log(f"AVISO: STATUS por recebimento KM nao recalculado: {exc}")
+        return 0
+
+    last = ws.range("C" + str(ws.cells.last_cell.row)).end("up").row
+    alterados = 0
+    contagem = {"Não Recebido": 0, "Recebido e não Emitido": 0}
+
+    for row in range(2, last + 1):
+        documento = _texto_excel_seguro(ws[f"C{row}"].value)
+        if not documento:
+            continue
+
+        status_atual = _texto_excel_seguro(ws[f"M{row}"].value)
+        status_emissao = _texto_excel_seguro(ws[f"N{row}"].value).upper()
+        if status_atual.upper() == "CANCELADO" or status_emissao == "EMITIDO":
+            continue
+
+        numero_km = ws[f"H{row}"].value
+        titulo_km = ws[f"I{row}"].value
+        transmittal = ws[f"J{row}"].value
+        data_km = ws[f"K{row}"].value
+        recebimento_completo = (
+            _valor_km_informado(numero_km)
+            and _valor_km_informado(titulo_km)
+            and _valor_km_informado(transmittal)
+            and _coerce_to_date(data_km) is not None
+        )
+        novo_status = "Recebido e não Emitido" if recebimento_completo else "Não Recebido"
+        contagem[novo_status] += 1
+        if status_atual != novo_status:
+            ws[f"M{row}"].value = novo_status
+            alterados += 1
+
+    log(
+        f"{ABA_LD_BASICO}: STATUS de nao emitidos recalculado por H:K | "
+        f"Recebido e nao Emitido={contagem['Recebido e não Emitido']} | "
+        f"Nao Recebido={contagem['Não Recebido']} | alterados={alterados}."
+    )
+    return alterados
 
 # ==========================================================
 # PROCESSAMENTO
@@ -3177,6 +3332,32 @@ def processar():
     LOG_FILE = os.path.join(PASTA_LOGS, f"LDP_PROJETO_BASICO_{ts}.log")
     log(f"🧾 Log: {LOG_FILE}")
 
+    # O Excel cria um arquivo "~$" enquanto a pasta de trabalho está aberta.
+    # Detectar isso antes da indexação evita processar toda a carteira para só
+    # descobrir no salvamento que a LD foi aberta como somente leitura.
+    arquivos_bloqueados = []
+    for planilha in (PLANILHA, PLANILHA_MARENOVA_EXECUTIVO):
+        lock_excel = os.path.join(
+            os.path.dirname(planilha),
+            f"~${os.path.basename(planilha)}",
+        )
+        if os.path.exists(lock_excel):
+            arquivos_bloqueados.append((planilha, lock_excel))
+
+    if arquivos_bloqueados:
+        detalhes = "; ".join(
+            f"{os.path.basename(planilha)} (lock: {lock_excel})"
+            for planilha, lock_excel in arquivos_bloqueados
+        )
+        mensagem = (
+            "Planilha LD aberta no Excel e bloqueada para gravação. "
+            "Feche o arquivo em todas as estações e execute novamente. "
+            f"Detectado: {detalhes}"
+        )
+        atualizar_progresso_ld(100, "Atualização bloqueada pelo Excel.", "blocked", mensagem)
+        log(f"⛔ {mensagem}")
+        raise RuntimeError(mensagem)
+
     backup_path = backup_arquivo(PLANILHA)
     backup_marenova_path = None
     if os.path.exists(PLANILHA_MARENOVA_EXECUTIVO):
@@ -3283,7 +3464,7 @@ def processar():
                 layout=LAYOUT_PROJETO_BASICO,
             )
 
-            sincronizar_pcf_intelligence_ld_basico(wb)
+            log("ℹ️ Sincronização LD → Projeto Básico desativada: Y/AB são preenchidas diretamente pelas pastas oficiais.")
             atualizar_status_documento_por_pcf_ld_basico(wb)
 
             validar_revisoes_pcfs_workbook(wb, [
@@ -3294,6 +3475,7 @@ def processar():
             atualizar_progresso_ld(82, "Atualizando vínculos KM...", "running", "Preenchendo LD PROJETO BASICO colunas H:K a partir da GENERAL LIST KM.")
             idx_general_km = indexar_general_list_km(wb)
             preencher_numero_km_ld_basico(wb, idx_general_km)
+            recalcular_status_recebimento_km_ld_basico(wb)
 
             if os.path.exists(PLANILHA_MARENOVA_EXECUTIVO):
                 atualizar_progresso_ld(86, "Abrindo LD Marenova Executivo...", "running", "Abrindo planilha Marenova separada.")
@@ -3320,7 +3502,7 @@ def processar():
                     idx_pcf_resp,
                     idx_grd_resp,
                     status_pcfs,
-                    inserir_revisoes=False,
+                    inserir_revisoes=True,
                     pcf_intel_cache=pcf_intel_cache,
                     layout=LAYOUT_MARENOVA_EXECUTIVO,
                 )
@@ -3330,12 +3512,10 @@ def processar():
             else:
                 log(f"⚠️ Planilha Marenova Executivo não encontrada: {PLANILHA_MARENOVA_EXECUTIVO}")
 
-            atualizar_progresso_ld(92, "Importando bases para o banco...", "running", "Atualizando DocumentoLD com Projeto Básico e Marenova Executivo.")
-            log("💾 Importando LD Projeto Básico + Marenova Executivo para banco do GED...")
-            resumo_ld = importar_ld_banco(wb, wb_marenova)
-            log(f"✅ LD importada para o banco: {resumo_ld.get('total', 0)} registros.")
-
-            atualizar_progresso_ld(97, "Salvando planilhas LD...", "running", "Salvando alterações nas planilhas do piloto.")
+            # A planilha é a fonte oficial. Grave primeiro e somente depois
+            # publique no banco; assim o painel nunca apresenta uma versão que
+            # falhou no salvamento e foi restaurada pelo backup.
+            atualizar_progresso_ld(92, "Salvando planilhas LD...", "running", "Salvando alterações nas planilhas do piloto.")
             backup_arquivo(PLANILHA)
             if os.path.exists(PLANILHA_MARENOVA_EXECUTIVO):
                 backup_arquivo(PLANILHA_MARENOVA_EXECUTIVO)
@@ -3346,12 +3526,76 @@ def processar():
             if wb_marenova is not None:
                 wb_marenova.save()
 
+            atualizar_progresso_ld(97, "Importando bases para o banco...", "running", "Publicando no GED somente as planilhas já salvas.")
+            log("💾 Importando LD Projeto Básico + Marenova Executivo para banco do GED...")
+            resumo_ld = importar_ld_banco(wb, wb_marenova)
+
+            # O dashboard e um produto derivado. Se a geracao falhar, a LD ja
+            # salva permanece valida e nao deve ser substituida pelo backup.
+            atualizar_progresso_ld(
+                99,
+                "Gerando dashboard executivo...",
+                "running",
+                "Publicando o dashboard na rede e no Google Drive.",
+            )
+            try:
+                from scripts.build_ld_document_control_dashboard import build as build_ld_dashboard
+
+                dashboard_rede_ok = False
+                try:
+                    resumo_dashboard = build_ld_dashboard(
+                        Path(PLANILHA), Path(DASHBOARD_LD)
+                    )
+                    dashboard_rede_ok = True
+                    log(
+                        "Dashboard executivo atualizado em Rede interna: "
+                        f"{resumo_dashboard.get('records', 0)} documentos | {DASHBOARD_LD}"
+                    )
+                except Exception as dashboard_error:
+                    log(f"AVISO: falha publicando dashboard em Rede interna: {dashboard_error}")
+
+                try:
+                    destino_google = Path(DASHBOARD_LD_GOOGLE_DRIVE)
+                    if dashboard_rede_ok:
+                        destino_google.parent.mkdir(parents=True, exist_ok=True)
+                        temporario_google = destino_google.with_suffix(destino_google.suffix + ".tmp")
+                        shutil.copy2(DASHBOARD_LD, temporario_google)
+                        os.replace(temporario_google, destino_google)
+                        total_dashboard = resumo_dashboard.get("records", 0)
+                    else:
+                        resumo_google = build_ld_dashboard(Path(PLANILHA), destino_google)
+                        total_dashboard = resumo_google.get("records", 0)
+                    log(
+                        "Dashboard executivo atualizado em Google Drive: "
+                        f"{total_dashboard} documentos | {DASHBOARD_LD_GOOGLE_DRIVE}"
+                    )
+                except Exception as dashboard_error:
+                    log(f"AVISO: falha publicando dashboard em Google Drive: {dashboard_error}")
+            except Exception as dashboard_import_error:
+                log(
+                    "AVISO: gerador do dashboard indisponivel; a LD permanece valida: "
+                    f"{dashboard_import_error}"
+                )
+            log(f"✅ LD importada para o banco: {resumo_ld.get('total', 0)} registros.")
+
             atualizar_progresso_ld(100, "Atualização LD Projeto Básico concluída.", "done", "Atualização LD Projeto Básico finalizada com sucesso.")
             log("✅ LDP Projeto Básico finalizado com sucesso!")
 
     except Exception as e:
         atualizar_progresso_ld(100, "Erro na Atualização LD Projeto Básico.", "error", f"Erro durante processamento: {e}", erro=str(e))
         log(f"❌ Erro durante processamento: {e}")
+
+        # Libera os arquivos antes da restauração; copiar por cima de uma pasta
+        # de trabalho ainda aberta pode falhar ou deixar arquivo inconsistente.
+        for livro in (wb_marenova, wb):
+            if livro is not None:
+                try:
+                    livro.close()
+                except Exception:
+                    pass
+        wb_marenova = None
+        wb = None
+
         log(f"🧯 Tentando restaurar backup principal: {backup_path}")
 
         try:
@@ -3453,7 +3697,7 @@ def executar():
     _criar_lock(LOCK_FILE)
 
     try:
-        print("🚀 Atualização LD Projeto Básico iniciada pelo GED")
+        print("🚀 Atualização LD Projeto Básico iniciada pelo GED", flush=True)
         atualizar_progresso_ld(1, "Atualização LD iniciada.", "running", "Execução iniciada pelo GED.")
         processar()
 
@@ -3471,7 +3715,7 @@ def executar():
         }
 
     except Exception as e:
-        print(f"❌ Erro na Atualização LD Projeto Básico: {e}")
+        print(f"❌ Erro na Atualização LD Projeto Básico: {e}", flush=True)
         return {
             "ok": False,
             "mensagem": f"Erro na Atualização LD Projeto Básico: {e}",

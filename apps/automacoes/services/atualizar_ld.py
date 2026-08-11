@@ -16,7 +16,7 @@ PLANILHA = r"\\virm-rgr022\FILESERVER\Projetos\05_HANDYMAX\09. Doc Control\3 - L
 
 ABA_LD = "LD"
 ABA_LD_MARENOVA = "LD MARENOVA"
-ABA_LD_BASICO = "LD BASICO"
+ABA_LD_BASICO = "LD PROJETO BASICO"
 ABA_GENERAL_LIST_KM = "GENERAL LIST KM"
 ABA_MEDICAO = "MEDIÇÃO"  # exatamente como está no Excel
 
@@ -29,8 +29,12 @@ TIMELINE_PCF = r"\\virm-rgr022\FILESERVER\Projetos\05_HANDYMAX\09. Doc Control\9
 
 PASTA_LOGS = r"\\virm-rgr022\FILESERVER\Projetos\05_HANDYMAX\09. Doc Control\3 - LD\Logs"
 PASTA_BACKUPS = os.path.join(PASTA_LOGS, "Backups")
-os.makedirs(PASTA_BACKUPS, exist_ok=True)
-os.makedirs(PASTA_LOGS, exist_ok=True)
+
+
+def _garantir_pastas_operacionais():
+    """Cria pastas somente ao executar a rotina, nunca ao importar o Django."""
+    os.makedirs(PASTA_LOGS, exist_ok=True)
+    os.makedirs(PASTA_BACKUPS, exist_ok=True)
 
 EXTENSOES = {".doc", ".docx", ".pdf", ".dwg", ".xls", ".xlsx", ".xlsm"}
 
@@ -311,6 +315,46 @@ def _split_by_base(rev_pcf: str, base: str) -> tuple[bool, str]:
     if rev_pcf.startswith(base):
         return (True, rev_pcf[len(base):])
     return (False, "")
+
+
+def _revisao_pcf_do_nome(valor):
+    match = re.search(r"_R([0-9A-Z]+)", str(valor or "").upper())
+    return normalizar_rev(match.group(1)) if match else ""
+
+
+def _pcf_resposta_da_recebida(rev_recebida, base):
+    compativel, sufixo = _split_by_base(rev_recebida, base)
+    if not compativel:
+        return ""
+    proximo = 1 if not sufixo else _suffix_key(sufixo) + 1
+    if proximo <= 0:
+        return ""
+    letras = ""
+    while proximo:
+        proximo, resto = divmod(proximo - 1, 26)
+        letras = chr(ord("A") + resto) + letras
+    return f"{base}{letras}"
+
+
+def _ha_revisao_superior(codigo, rev_documento, pcf_atual, idx_eng, idx_pcf):
+    """Informa se documento ou PCF mais novo deve superar o status da linha."""
+    rev_documento = normalizar_rev(rev_documento)
+    maior_documento = any(
+        rev_key(rev_encontrada) > rev_key(rev_documento)
+        for rev_encontrada in idx_eng.get(codigo, {})
+    )
+
+    rev_pcf_atual = _revisao_pcf_do_nome(pcf_atual)
+    atual_compativel, sufixo_atual = _split_by_base(rev_pcf_atual, rev_documento)
+    chave_atual = _suffix_key(sufixo_atual) if atual_compativel else -1
+    maior_pcf = any(
+        compativel and _suffix_key(sufixo) > chave_atual
+        for compativel, sufixo in (
+            _split_by_base(rev_pcf, rev_documento)
+            for rev_pcf in idx_pcf.get(codigo, {})
+        )
+    )
+    return maior_documento, maior_pcf
 
 # ==========================================================
 # EXTRAIR GRD DO CAMINHO
@@ -1396,10 +1440,26 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
                 and status_h in STATUS_H_PRESERVAR_LD_BASICO
             )
 
-            if aba_nome != ABA_LD_BASICO and status_h in STATUS_H_BLOQUEADOS:
+            pcf_atual = str(ws[f"L{r}"].value or "").strip()
+            maior_documento, maior_pcf = _ha_revisao_superior(
+                codigo, rev, pcf_atual, idx_eng, idx_pcf
+            )
+            ignorar_status_por_revisao = maior_documento or maior_pcf
+
+            if (
+                aba_nome != ABA_LD_BASICO
+                and status_h in STATUS_H_BLOQUEADOS
+                and not ignorar_status_por_revisao
+            ):
                 if LOG_DETALHADO:
                     log(f"   [SKIP] {aba_nome} L{r} ignorada (H = {status_h})")
                 continue
+            if status_h in STATUS_H_BLOQUEADOS and ignorar_status_por_revisao:
+                log(
+                    f"   [STATUS IGNORADO POR REVISÃO MAIOR] {aba_nome} L{r} | "
+                    f"documento_maior={'SIM' if maior_documento else 'NÃO'} | "
+                    f"pcf_maior={'SIM' if maior_pcf else 'NÃO'} | status={status_h}"
+                )
 
             if not codigo:
                 continue
@@ -1593,26 +1653,14 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
             info_resp = None
             mapa_resp = idx_pcf_resp.get(codigo, {})
             rev_doc = normalizar_rev(ws[f"C{r}"].value)
-            best = None
-            best_key = None
-
-            if mapa_resp and rev_doc:
-                base = (rev_doc or "").strip().upper()
-                for rev_pcf, cand in mapa_resp.items():
-                    ok, sufixo = _split_by_base(rev_pcf, base)
-                    if not ok:
-                        continue
-
-                    dtcand = cand.get("date")
-                    if dtcand is None:
-                        dtcand = datetime(1900, 1, 1)
-
-                    k = (_suffix_key(sufixo), dtcand)
-                    if (best_key is None) or (k[0] > best_key[0]) or (k[0] == best_key[0] and k[1] > best_key[1]):
-                        best_key = k
-                        best = cand
-
-            info_resp = best
+            rev_recebida = (info_pcf or {}).get("rev", "")
+            rev_resposta_esperada = _pcf_resposta_da_recebida(rev_recebida, rev_doc)
+            info_resp = mapa_resp.get(rev_resposta_esperada) if rev_resposta_esperada else None
+            if info_resp and info_pcf:
+                dt_recebida = info_pcf.get("date")
+                dt_resposta = info_resp.get("date")
+                if dt_recebida and dt_resposta and dt_resposta < dt_recebida:
+                    info_resp = None
             if info_resp:
                 setar_hyperlink(ws[f"O{r}"], info_resp["path"], info_resp["pcf"])
                 _preencher_data_por_modo(ws[f"P{r}"], COL_P_MODO, info_resp.get("date"), OBS_COL_P)
@@ -1628,7 +1676,7 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
                     limpar_hyperlink(ws[f"Q{r}"])
 
                 if LOG_DETALHADO:
-                    log(f"   [O/P/Q] {aba_nome} L{r} | {codigo}_R{rev_doc} => PCF_RESP base='{rev_doc}' escolheu rev_pcf='{info_resp.get('rev','-')}' | file={info_resp['pcf']} | P={_fmt_dt(info_resp.get('date'))} | Q_GRD={grd_resp or '-'}")
+                    log(f"   [O/P/Q CICLO ATUAL] {aba_nome} L{r} | recebida=R{rev_recebida} | resposta=R{rev_resposta_esperada} | file={info_resp['pcf']} | P={_fmt_dt(info_resp.get('date'))} | Q_GRD={grd_resp or '-'}")
             else:
                 ws[f"O{r}"].value = None
                 if (COL_P_MODO or "").upper() != "MANTER":
@@ -1638,14 +1686,27 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
                 limpar_hyperlink(ws[f"Q{r}"])
 
                 if LOG_DETALHADO:
-                    log(f"   [O/P/Q] {aba_nome} L{r} | {codigo}_R{rev} => PCF_RESPOSTA NÃO encontrada")
+                    log(f"   [O/P/Q CICLO PENDENTE] {aba_nome} L{r} | recebida=R{rev_recebida or '-'} | esperada=R{rev_resposta_esperada or '-'}")
 
         # 4) formatar
         if APLICAR_FORMATACAO:
-            aplicar_formatacao(ws)
+            log(f"   [FORMATAÇÃO] {aba_nome}: iniciando formatação visual.")
+            try:
+                aplicar_formatacao(ws)
+                log(f"   [FORMATAÇÃO] {aba_nome}: concluída.")
+            except Exception as exc:
+                # Formatação é acessória. Uma incompatibilidade COM em fonte,
+                # alinhamento, bordas ou intervalo não pode invalidar os dados
+                # já atualizados nem provocar restauração desnecessária do backup.
+                log(
+                    f"⚠️ [FORMATAÇÃO] {aba_nome}: Excel recusou uma propriedade "
+                    f"visual; atualização de dados continuará. Erro: {exc!r}"
+                )
     finally:
+        log(f"   [AUTOFILTRO] {aba_nome}: restaurando filtros.")
         restaurar_autofiltro(ws, _af_state)
         garantir_autofiltro(ws)
+        log(f"   [AUTOFILTRO] {aba_nome}: concluído.")
 
 def _sync_obter_hyperlink(cell):
     """Obtém hyperlink de uma célula xlwings sem interromper a atualização."""
@@ -2247,6 +2308,7 @@ def importar_ld_banco(wb):
 
 def processar():
     global LOG_FILE
+    _garantir_pastas_operacionais()
     atualizar_progresso_ld(2, "Preparando atualização LD...", "running", "Inicializando rotina da Atualização LD.")
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     LOG_FILE = os.path.join(PASTA_LOGS, f"LDP_{ts}.log")
@@ -2292,18 +2354,23 @@ def processar():
             atualizar_progresso_ld(52, "Abrindo planilha LD...", "running", "Abrindo planilha principal LD.")
             wb = app.books.open(PLANILHA)
             pcf_intel_cache = {}
+            abas_disponiveis = [str(sheet.name).strip() for sheet in wb.sheets]
+            log(f"📑 Abas encontradas na planilha: {abas_disponiveis}")
 
             atualizar_progresso_ld(65, "Processando aba LD...", "running", "Atualizando status, GRDs, PCFs e respostas da aba LD.")
             processar_aba(wb, ABA_LD, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_pcf_resp, idx_grd_resp, status_pcfs, inserir_revisoes=True, pcf_intel_cache=pcf_intel_cache)
 
-            atualizar_progresso_ld(78, "Processando aba LD MARENOVA...", "running", "Atualizando status, GRDs, PCFs e respostas da aba LD MARENOVA.")
-            processar_aba(wb, ABA_LD_MARENOVA, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_pcf_resp, idx_grd_resp, status_pcfs, inserir_revisoes=True, pcf_intel_cache=pcf_intel_cache)
+            if ABA_LD_MARENOVA in abas_disponiveis:
+                atualizar_progresso_ld(78, "Processando aba LD MARENOVA...", "running", "Atualizando status, GRDs, PCFs e respostas da aba LD MARENOVA.")
+                processar_aba(wb, ABA_LD_MARENOVA, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_pcf_resp, idx_grd_resp, status_pcfs, inserir_revisoes=True, pcf_intel_cache=pcf_intel_cache)
+            else:
+                log(f"ℹ️ Aba opcional '{ABA_LD_MARENOVA}' ausente; etapa ignorada.")
 
             try:
                 wb.sheets[ABA_LD_BASICO]
                 atualizar_progresso_ld(84, "Processando aba LD BASICO...", "running", "Atualizando LD BASICO sem inserir novas revisões.")
                 processar_aba(wb, ABA_LD_BASICO, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_pcf_resp, idx_grd_resp, status_pcfs, inserir_revisoes=False, pcf_intel_cache=pcf_intel_cache)
-                sincronizar_pcf_intelligence_ld_basico(wb)
+                log("ℹ️ Sincronização LD → Projeto Básico desativada: PCF recebida/resposta vêm diretamente das pastas oficiais.")
 
                 atualizar_progresso_ld(85, "Atualizando vínculos KM...", "running", "Preenchendo LD BASICO colunas AN:AQ a partir da GENERAL LIST KM.")
                 idx_general_km = indexar_general_list_km(wb)
@@ -2313,20 +2380,26 @@ def processar():
 
             atualizar_progresso_ld(86, "Medição desabilitada.", "running", "Etapa de atualização da aba MEDIÇÃO ignorada por regra operacional.")
 
-            atualizar_progresso_ld(92, "Importando LD para o banco...", "running", "Atualizando registros DocumentoLD no banco Django.")
-            log("💾 Importando LD para banco do GED...")
-            resumo_ld = importar_ld_banco(wb)
-            log(f"✅ LD importada para o banco: {resumo_ld.get('total', 0)} registros.")
-
-            atualizar_progresso_ld(97, "Salvando planilha LD...", "running", "Salvando alterações na planilha LD.")
+            atualizar_progresso_ld(92, "Salvando planilha LD...", "running", "Salvando alterações antes de publicar no banco.")
             backup_planilha()
             log("🔒 Backup de segurança criado antes do salvamento da LD.")
             wb.save()
+
+            atualizar_progresso_ld(97, "Importando LD para o banco...", "running", "Publicando no GED somente a planilha já salva.")
+            log("💾 Importando LD para banco do GED...")
+            resumo_ld = importar_ld_banco(wb)
+            log(f"✅ LD importada para o banco: {resumo_ld.get('total', 0)} registros.")
             atualizar_progresso_ld(100, "Atualização LD concluída.", "done", "Atualização LD finalizada com sucesso.")
             log("✅ LDP finalizado com sucesso!")
     except Exception as e:
         atualizar_progresso_ld(100, "Erro na Atualização LD.", "error", f"Erro durante processamento: {e}", erro=str(e))
         log(f"❌ Erro durante processamento: {e}")
+        if wb is not None:
+            try:
+                wb.close()
+            except Exception:
+                pass
+            wb = None
         log(f"🧯 Tentando restaurar backup: {backup_path}")
         try:
             shutil.copy2(backup_path, PLANILHA)

@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
+from .rbac_helpers import grant_rbac
 
 
 class OperationsCenterViewTests(TestCase):
@@ -10,6 +11,7 @@ class OperationsCenterViewTests(TestCase):
             username="ops_user",
             password="testpass123",
         )
+        grant_rbac(self.user, "automacoes.ver_ops_center")
 
     def test_ops_center_requires_login(self):
         response = self.client.get(reverse("automacoes:ops_center"))

@@ -136,6 +136,9 @@ def build_pcf_executive_presentation(records, summary, report_date):
     chart.series[0].format.fill.solid(); chart.series[0].format.fill.fore_color.rgb = BLUE
     chart.plots[0].has_data_labels = True
     chart.plots[0].data_labels.show_value = True
+    chart.plots[0].data_labels.font.color.rgb = WHITE
+    chart.plots[0].data_labels.font.size = Pt(11)
+    chart.plots[0].data_labels.font.bold = True
     top_three = discipline_items[:3]
     top_total = sum(value for _, value in top_three)
     _text(slide, "FOCO DE GESTÃO", 9.25, 1.8, 2.6, .3, 13, CYAN, True)
@@ -155,6 +158,9 @@ def build_pcf_executive_presentation(records, summary, report_date):
     chart = slide.shapes.add_chart(XL_CHART_TYPE.COLUMN_CLUSTERED, Inches(.7), Inches(1.72), Inches(7.6), Inches(4.6), data).chart
     _chart_style(chart); chart.series[0].format.fill.solid(); chart.series[0].format.fill.fore_color.rgb = RED
     chart.plots[0].has_data_labels = True; chart.plots[0].data_labels.show_value = True
+    chart.plots[0].data_labels.font.color.rgb = WHITE
+    chart.plots[0].data_labels.font.size = Pt(11)
+    chart.plots[0].data_labels.font.bold = True
     _text(slide, "Comentários das PCFs", 8.9, 1.75, 3.2, .35, 18, CYAN, True)
     comment_rows = [("OPEN", summary["comentarios_abertos"], AMBER), ("UNDER REVIEW", summary["comentarios_revisao"], CYAN), ("CLOSED CALCULADO", summary["comentarios_fechados"], GREEN)]
     for index, (label, value, color) in enumerate(comment_rows):
@@ -164,14 +170,16 @@ def build_pcf_executive_presentation(records, summary, report_date):
         bar = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(9.15), Inches(y+.62), Inches(3.0), Inches(.04))
         bar.fill.solid(); bar.fill.fore_color.rgb = color; bar.line.fill.background()
     if summary["comentarios_inconsistentes"]:
-        _text(slide, f"{summary['comentarios_inconsistentes']} inconsistência na fonte sinalizada", 9.15, 5.98, 3.0, .42, 11, RED, True)
+        quantidade = summary["comentarios_inconsistentes"]
+        rotulo = "inconsistência" if quantidade == 1 else "inconsistências"
+        _text(slide, f"{quantidade} {rotulo} na fonte sinalizada", 9.15, 5.98, 3.0, .42, 11, RED, True)
 
     # 5 — prioridades
     slide = _base_slide(presentation, "Oito documentos concentram a maior criticidade", "PRIORIDADES DE COBRANÇA", 5, report_date)
     top = sorted(records, key=lambda item: (item["dias_atraso"], item["open_comments"]), reverse=True)[:8]
-    columns = [(.75, 3.6), (4.4, 4.1), (8.9, 1.5), (10.75, 1.65)]
-    for (label, (x, width)) in zip(("DOCUMENTO / TÍTULO", "PCF RECEBIDA", "ATRASO", "COMENT. O/U/C"), columns):
-        _text(slide, label, x, 1.62, width, .28, 11, CYAN, True)
+    columns = [(.75, 3.45), (4.25, 3.75), (8.25, 1.25), (9.72, 2.7)]
+    for (label, (x, width)) in zip(("DOCUMENTO / TÍTULO", "PCF RECEBIDA", "ATRASO", "COMENTÁRIOS — OPEN / UNDER REVIEW / CLOSED"), columns):
+        _text(slide, label, x, 1.56, width, .4, 10 if x < 9 else 9, CYAN, True)
     for index, item in enumerate(top):
         y = 2.05 + index * .52
         if index % 2 == 0:
@@ -180,25 +188,39 @@ def build_pcf_executive_presentation(records, summary, report_date):
         if len(title) > 36:
             title = title[:35] + "…"
         _text(slide, f"{item['documento']}\n{title}", .75, y, 3.55, .4, 10, WHITE, True)
-        _text(slide, item["pcf"], 4.4, y+.06, 4.0, .27, 10, TEXT)
-        _text(slide, f"{item['dias_atraso']} d.u.", 8.9, y+.06, 1.4, .27, 12, RED, True)
-        _text(slide, f"{item['open_comments']}/{item['under_review']}/{item['closed_comments']}", 10.75, y+.06, 1.6, .27, 12, AMBER, True)
+        _text(slide, item["pcf"], 4.25, y+.06, 3.7, .27, 9, TEXT)
+        _text(slide, f"{item['dias_atraso']} d.u.", 8.25, y+.06, 1.2, .27, 12, RED, True)
+        _text(slide, f"{item['open_comments']} / {item['under_review']} / {item['closed_comments']}", 9.72, y+.06, 2.65, .27, 12, AMBER, True)
 
-    # 6 — decisões
-    slide = _base_slide(presentation, "Quatro decisões para recuperar o controle da carteira", "DECISÕES E GOVERNANÇA", 6, report_date)
-    actions = [
-        ("01", "Fixar a data-base", "Aging calculado somente pela Data Recebimento registrada na PCF."),
-        ("02", "Atacar vencidas", "McLaren assume plano de resposta, responsável técnico e compromisso por PCF."),
-        ("03", "Tratar comentários", "Priorizar OPEN, acompanhar UNDER REVIEW e reconciliar CLOSED por PCF."),
-        ("04", "Ritual semanal", "Revisar aging, comentários e compromissos até normalização do estoque."),
-    ]
-    for index, (number, heading, body) in enumerate(actions):
-        y = 1.62 + index * 1.12
-        _text(slide, number, .8, y, .7, .45, 24, CYAN, True)
-        _text(slide, heading, 1.75, y, 3.3, .4, 19, WHITE, True)
-        _text(slide, body, 5.3, y, 6.7, .55, 16, MUTED)
-    _rect(slide, .72, 6.3, 11.9, .5, BLUE)
-    _text(slide, "RESULTADO ESPERADO  |  cobrança confiável, rastreável e orientada por risco", 1.05, 6.36, 11.2, .25, 15, NAVY, True)
+    # 6 — composição da carteira
+    document_types = {}
+    disciplines = {}
+    for item in records:
+        document_type = item.get("tipo_documento") or "NÃO INFORMADO"
+        discipline = item.get("disciplina") or "NÃO INFORMADA"
+        document_types[document_type] = document_types.get(document_type, 0) + 1
+        disciplines[discipline] = disciplines.get(discipline, 0) + 1
+    type_items = sorted(document_types.items(), key=lambda pair: (-pair[1], pair[0]))[:6] or [("SEM DADOS", 0)]
+    discipline_items = sorted(disciplines.items(), key=lambda pair: (-pair[1], pair[0]))[:6] or [("SEM DADOS", 0)]
+
+    slide = _base_slide(presentation, "Tipos documentais e disciplinas definem o foco da carteira", "COMPOSIÇÃO DA CARTEIRA", 6, report_date)
+    _text(slide, "TIPOS DE DOCUMENTO", .72, 1.5, 5.7, .3, 13, CYAN, True)
+    _text(slide, "DISCIPLINAS", 6.85, 1.5, 5.7, .3, 13, CYAN, True)
+
+    for items, x, color in ((type_items, .65, BLUE), (discipline_items, 6.78, CYAN)):
+        ranked = list(reversed(items))
+        data = ChartData()
+        data.categories = [label for label, _ in ranked]
+        data.add_series("PCFs", [value for _, value in ranked])
+        chart = slide.shapes.add_chart(XL_CHART_TYPE.BAR_CLUSTERED, Inches(x), Inches(1.88), Inches(5.85), Inches(4.72), data).chart
+        _chart_style(chart)
+        chart.series[0].format.fill.solid()
+        chart.series[0].format.fill.fore_color.rgb = color
+        chart.plots[0].has_data_labels = True
+        chart.plots[0].data_labels.show_value = True
+        chart.plots[0].data_labels.font.color.rgb = WHITE
+        chart.plots[0].data_labels.font.size = Pt(11)
+        chart.plots[0].data_labels.font.bold = True
 
     output = BytesIO()
     presentation.save(output)

@@ -1,0 +1,95 @@
+{% extends "documentos/base.html" %}
+
+{% block title %}Cópia Controlada | GED{% endblock %}
+
+{% block extra_head %}
+<style>
+  .cc-page { max-width: 980px; margin: 0 auto; }
+  .cc-hero {
+    padding: 28px; border: 1px solid rgba(148,163,184,.22);
+    border-radius: 18px; background: linear-gradient(135deg, rgba(30,41,59,.92), rgba(15,23,42,.97));
+    box-shadow: 0 20px 60px rgba(2,6,23,.25);
+  }
+  .cc-eyebrow { color: #fca5a5; font-size: .76rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+  .cc-title { margin: 7px 0 8px; color: #f8fafc; font-size: clamp(1.55rem, 3vw, 2.25rem); font-weight: 800; }
+  .cc-subtitle { margin: 0; color: #cbd5e1; max-width: 760px; line-height: 1.6; }
+  .cc-card {
+    margin-top: 20px; padding: 28px; border: 1px solid rgba(148,163,184,.2);
+    border-radius: 18px; background: var(--surface, #fff);
+  }
+  .cc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .cc-field--wide { grid-column: 1 / -1; }
+  .cc-label { display: block; margin-bottom: 7px; font-weight: 750; }
+  .cc-help { margin-top: 7px; color: #64748b; font-size: .82rem; }
+  .cc-error { margin-top: 7px; color: #dc2626; font-size: .84rem; }
+  .cc-info {
+    grid-column: 1 / -1; display: flex; gap: 12px; padding: 15px 17px;
+    border: 1px solid rgba(59,130,246,.2); border-radius: 12px;
+    background: rgba(59,130,246,.07); color: #334155; line-height: 1.5;
+  }
+  .cc-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; margin-top: 4px; }
+  .cc-submit {
+    display: inline-flex; align-items: center; gap: 9px; min-height: 44px; padding: 0 20px;
+    border: 0; border-radius: 10px; background: #c00000; color: #fff; font-weight: 800;
+    box-shadow: 0 10px 24px rgba(192,0,0,.2); cursor: pointer;
+  }
+  .cc-submit:hover { background: #a00000; transform: translateY(-1px); }
+  @media (max-width: 720px) {
+    .cc-grid { grid-template-columns: 1fr; }
+    .cc-field--wide, .cc-info, .cc-actions { grid-column: 1; }
+    .cc-hero, .cc-card { padding: 20px; }
+    .cc-submit { width: 100%; justify-content: center; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cc-page">
+  <section class="cc-hero">
+    <div class="cc-eyebrow">Controle de distribuição</div>
+    <h1 class="cc-title">Gerar cópia controlada</h1>
+    <p class="cc-subtitle">
+      Revise e edite a GI e o usuário antes de gerar. O GED aplicará um carimbo permanente
+      em uma faixa externa, abaixo do documento, em todas as folhas.
+    </p>
+  </section>
+
+  <form method="post" enctype="multipart/form-data" class="cc-card">
+    {% csrf_token %}
+    <div class="cc-grid">
+      <div class="cc-field cc-field--wide">
+        <label class="cc-label" for="{{ form.arquivo_pdf.id_for_label }}">{{ form.arquivo_pdf.label }}</label>
+        {{ form.arquivo_pdf }}
+        <div class="cc-help">{{ form.arquivo_pdf.help_text }}</div>
+        {% for error in form.arquivo_pdf.errors %}<div class="cc-error">{{ error }}</div>{% endfor %}
+      </div>
+
+      <div class="cc-field">
+        <label class="cc-label" for="{{ form.numero_gi.id_for_label }}">{{ form.numero_gi.label }}</label>
+        {{ form.numero_gi }}
+        {% for error in form.numero_gi.errors %}<div class="cc-error">{{ error }}</div>{% endfor %}
+      </div>
+
+      <div class="cc-field">
+        <label class="cc-label" for="{{ form.usuario.id_for_label }}">{{ form.usuario.label }}</label>
+        {{ form.usuario }}
+        {% for error in form.usuario.errors %}<div class="cc-error">{{ error }}</div>{% endfor %}
+      </div>
+
+      {% for error in form.non_field_errors %}<div class="cc-error cc-field--wide">{{ error }}</div>{% endfor %}
+
+      <div class="cc-info">
+        <i class="bi bi-shield-check" aria-hidden="true"></i>
+        <span>O arquivo original permanece intacto. A data e a hora são registradas automaticamente no momento da geração.</span>
+      </div>
+
+      <div class="cc-actions">
+        <button type="submit" class="cc-submit">
+          <i class="bi bi-file-earmark-arrow-down" aria-hidden="true"></i>
+          Gerar e baixar PDF
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

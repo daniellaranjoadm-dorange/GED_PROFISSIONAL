@@ -3,6 +3,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from apps.automacoes.services.runtime_health_api import RuntimeHealthAPIService
+from .rbac_helpers import grant_rbac
 
 
 class RuntimeHealthAPIServiceTests(TestCase):
@@ -22,6 +23,7 @@ class RuntimeHealthAPIViewTests(TestCase):
             username="runtime_api_user",
             password="testpass123",
         )
+        grant_rbac(self.user, "automacoes.ver_ops_center")
 
     def test_runtime_health_api_requires_login(self):
         response = self.client.get(reverse("automacoes:runtime_health_api"))

@@ -1,4 +1,5 @@
 {% extends "documentos/base.html" %}
+{% load permisos %}
 {% load static %}
 
 {% block title %}D'ORANGE — Operations Automation{% endblock %}
@@ -1016,6 +1017,68 @@
     .executive-v4 .ops-snapshot-panel .ops-grid-3 { grid-template-columns: 1fr; }
   }
 
+  .ops-routine-group-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin: 24px 0 11px;
+    padding: 13px 15px;
+    border: 1px solid rgba(112, 143, 184, .2);
+    border-radius: 14px;
+    scroll-margin-top: 18px;
+  }
+  .ops-routine-group-title { display: flex; align-items: center; gap: 11px; }
+  .ops-routine-group-title i { font-size: 1.1rem; color: var(--v4-cyan); }
+  .ops-routine-group-title h3 { margin: 0; font-size: 1rem; color: #f5fbff; }
+  .ops-routine-group-title p { margin: 3px 0 0; font-size: .72rem; color: #8da4bd; }
+  .ops-routine-group-count {
+    flex: 0 0 auto; padding: 5px 9px; border: 1px solid rgba(112,143,184,.25);
+    border-radius: 999px; color: #9eb5ca; font-size: .66rem; font-weight: 800;
+  }
+  .ops-routine-group-head.ops-group-producao {
+    border-color: rgba(61,220,151,.38);
+    border-left: 5px solid #3ddc97;
+    background: linear-gradient(90deg,rgba(6,95,70,.24),rgba(3,9,19,.45));
+    box-shadow: 0 10px 28px rgba(16,185,129,.08);
+  }
+  .ops-routine-group-head.ops-group-producao .ops-routine-group-title i,
+  .ops-routine-group-head.ops-group-producao .ops-routine-group-count { color:#4ade80; }
+  .ops-routine-group-head.ops-group-demanda {
+    border-color: rgba(56,189,248,.34); border-left:5px solid #38bdf8;
+    background: linear-gradient(90deg,rgba(14,116,144,.20),rgba(3,9,19,.45));
+  }
+  .ops-routine-group-head.ops-group-demanda .ops-routine-group-title i,
+  .ops-routine-group-head.ops-group-demanda .ops-routine-group-count { color:#38bdf8; }
+  .ops-routine-group-head.ops-group-legado {
+    border-style: dashed; border-color:rgba(148,163,184,.35); border-left:5px solid #64748b;
+    background: linear-gradient(90deg,rgba(71,85,105,.18),rgba(3,9,19,.38));
+  }
+  .ops-routines-legado { opacity:.82; }
+  .ops-btn-focus {
+    border-color:rgba(74,222,128,.46) !important; color:#86efac !important;
+    background:rgba(22,101,52,.18) !important;
+  }
+
+  .executive-v4 .ops-routine-card { border-left-width: 4px !important; }
+  .executive-v4 .ops-routine-card.ops-card-production { border-color: rgba(61,220,151,.48) !important; }
+  .executive-v4 .ops-routine-card.ops-card-demand { border-color: rgba(56,189,248,.48) !important; }
+  .executive-v4 .ops-routine-card.ops-card-stale { border-color: rgba(245,158,11,.58) !important; }
+  .executive-v4 .ops-routine-card.ops-card-unavailable { border-color: rgba(248,113,113,.62) !important; }
+  .executive-v4 .ops-routine-card.ops-card-legacy {
+    border-style: dashed !important; border-color: rgba(148,163,184,.42) !important;
+    filter: saturate(.72); opacity: .88;
+  }
+  .executive-v4 .ops-routine-card.ops-card-legacy::before { background: #64748b; }
+  .executive-v4 .ops-routine-card.ops-card-unavailable::before { background: #f87171; }
+  .executive-v4 .ops-routine-card.ops-card-stale::before { background: #f59e0b; }
+  .auto-status-online { color: #4ade80 !important; border-color: rgba(74,222,128,.34) !important; }
+  .auto-status-demand { color: #38bdf8 !important; border-color: rgba(56,189,248,.34) !important; }
+  .auto-status-warn { color: #fbbf24 !important; border-color: rgba(251,191,36,.38) !important; }
+  .auto-status-error { color: #fb7185 !important; border-color: rgba(251,113,133,.42) !important; }
+  .auto-status-legacy, .auto-status-idle { color: #94a3b8 !important; border-color: rgba(148,163,184,.32) !important; }
+  .ops-last-run { margin-top: 8px; font-size: .66rem; color: #7890aa; }
+
 </style>
 
 {% endblock %}
@@ -1056,6 +1119,11 @@
            class="ops-btn">
           <i class="bi bi-search"></i>
           Busca Global
+        </a>
+
+        <a href="#rotinas-producao" class="ops-btn ops-btn-focus">
+          <i class="bi bi-check-circle"></i>
+          Ver rotinas em uso
         </a>
 
       </div>
@@ -1362,17 +1430,14 @@
         </div>
         <div class="gi-ops-strip-copy">
           <div class="gi-ops-strip-title">
-            <h2>Cópias Controladas por GI</h2>
+            <h2>Cópias Controladas por GI / GE</h2>
             <span class="ops-chip">Rastreável</span>
           </div>
           <p>Leia a guia, gere uma cópia por destinatário e acompanhe revisões e recolhimentos.</p>
         </div>
         <div class="gi-ops-strip-actions">
-          <a href="{% url 'automacoes:pcf_controle_respostas' %}" class="ops-btn">
-            <i class="bi bi-stopwatch"></i> SLA Respostas PCF
-          </a>
           <a href="{% url 'carimbos:guias' %}" class="ops-btn ops-btn-primary">
-            <i class="bi bi-play-fill"></i>Processar GI
+            <i class="bi bi-play-fill"></i>Processar GI / GE
           </a>
           <a href="{% url 'carimbos:rastreabilidade' %}" class="ops-btn">
             <i class="bi bi-clock-history"></i>Rastreabilidade
@@ -1381,9 +1446,22 @@
       </div>
     </article>
 
-    {% for rotina in automacoes %}
+  </section>
 
-    <article class="ops-panel ops-routine-card">
+    {% for grupo in automacoes_grupos %}
+    <div class="ops-routine-group-head ops-group-{{ grupo.codigo }}" id="rotinas-{{ grupo.codigo }}">
+      <div class="ops-routine-group-title">
+        <i class="bi {{ grupo.icone }}"></i>
+        <div><h3>{{ grupo.titulo }}</h3><p>{{ grupo.descricao }}</p></div>
+      </div>
+      <span class="ops-routine-group-count">{{ grupo.rotinas|length }} ROTINA{{ grupo.rotinas|length|pluralize:"S" }}</span>
+    </div>
+
+  <section class="ops-grid ops-grid-2 ops-stack ops-routines-grid ops-routines-{{ grupo.codigo }}">
+
+    {% for rotina in grupo.rotinas %}
+
+    <article class="ops-panel ops-routine-card {{ rotina.card_class }}">
 
       <div class="ops-panel-head">
 
@@ -1414,7 +1492,7 @@
           </span>
 
           {% if rotina.health %}
-          <span class="ops-status-pill">
+          <span class="ops-status-pill {{ rotina.health.classe }}">
             <i class="bi {{ rotina.health.icone|default:'bi-circle' }}"></i>
             {{ rotina.health.estado|default:'OCIOSO' }}
           </span>
@@ -1465,12 +1543,20 @@
         <div class="ops-health-track" aria-hidden="true">
           <span style="width: {{ rotina.health.taxa_sucesso|default:0|floatformat:0 }}%"></span>
         </div>
+        <div class="ops-last-run">
+          {% if rotina.health.ultima %}
+            Última execução: {{ rotina.health.ultima.iniciado_em|date:"d/m/Y H:i" }}
+          {% else %}
+            Nenhuma execução registrada
+          {% endif %}
+        </div>
       </div>
 
       {% endif %}
 
       <div class="ops-actions mt-3">
 
+        {% if user|has_perm:rotina.permissao_execucao %}
         <form method="post"
               action="{% url rotina.form_url %}"
               class="ged-action-form"
@@ -1483,12 +1569,18 @@
             {{ rotina.botao }}
           </button>
         </form>
+        {% else %}
+        <span class="ops-btn" title="Seu perfil possui acesso somente para consulta nesta rotina">
+          <i class="bi bi-lock"></i>
+          Somente consulta
+        </span>
+        {% endif %}
 
         {% if rotina.dashboard_url %}
         <a href="{% url rotina.dashboard_url %}"
            class="ops-btn">
-          <i class="bi bi-bar-chart"></i>
-          Dashboard
+          <i class="bi {{ rotina.dashboard_icon|default:'bi-bar-chart' }}"></i>
+          {{ rotina.dashboard_label|default:"Dashboard" }}
         </a>
         {% endif %}
 
@@ -1507,6 +1599,8 @@
     {% endfor %}
 
   </section>
+
+    {% endfor %}
 
   <section class="ops-grid ops-grid-2 ops-stack ops-history-grid">
 

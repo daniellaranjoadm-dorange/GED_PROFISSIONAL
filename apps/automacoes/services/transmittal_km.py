@@ -51,6 +51,12 @@ PROPOSITOS_CONHECIDOS = [
     "For Information",
 ]
 
+# Identificador dos documentos KM. Há famílias somente com hífens
+# (630-051) e famílias mistas com hífen e pontos (263-433.100.01).
+# Cada separador precisa ser seguido por um bloco numérico para não capturar
+# o hífen que inicia o título do documento.
+PADRAO_DOCUMENTO_KM = r"[0-9]{3,4}(?:[-.][0-9]{2,4})+"
+
 PREENCHIMENTO_AMARELO = PatternFill(fill_type="solid", fgColor="FFF2CC")
 PREENCHIMENTO_VERMELHO = PatternFill(fill_type="solid", fgColor="F4CCCC")
 FONTE_LINK = Font(color="0563C1", underline="single")
@@ -360,7 +366,7 @@ def encontrar_documentos_no_bloco(bloco: str) -> List[Dict[str, str]]:
     # Alguns relatórios quebram título/pasta em duas ou mais linhas. Captura o
     # bloco inteiro até "Comment:" antes do fallback linha a linha.
     padrao_multilinha = re.compile(
-        r"(?m)^([0-9]{3,4}(?:-[0-9]{2,4}){1,4})(?:-ETS)?[- ]+"
+        rf"(?m)^({PADRAO_DOCUMENTO_KM})(?:-ETS)?[- ]+"
         r"(.+?)\s+\(([^)]+)\)\s*(?=\nComment:)",
         re.IGNORECASE | re.DOTALL,
     )
@@ -384,7 +390,7 @@ def encontrar_documentos_no_bloco(bloco: str) -> List[Dict[str, str]]:
             continue
 
         m = re.match(
-            r"^([0-9]{3,4}(?:-[0-9]{2,4}){1,4})(?:-ETS)?[- ]+(.+?)\s+\(([^)]+)\)$",
+            rf"^({PADRAO_DOCUMENTO_KM})(?:-ETS)?[- ]+(.+?)\s+\(([^)]+)\)$",
             linha,
             re.IGNORECASE,
         )
@@ -456,7 +462,7 @@ def extrair_registros_pdf(texto: str, nome_arquivo: str, caminho_pdf: Path) -> L
         return registros
 
     m_nome = re.search(
-        r"\d{2}-\d{4}-\d{2}-([0-9]{3,4}(?:-[0-9]{2,4}){1,4})(?:-ETS)?[- ]+(.+?);\s*(.+?)\.pdf$",
+        rf"\d{{2}}-\d{{4}}-\d{{2}}-({PADRAO_DOCUMENTO_KM})(?:-ETS)?[- ]+(.+?);\s*(.+?)\.pdf$",
         nome_arquivo,
         re.IGNORECASE,
     )
@@ -694,10 +700,11 @@ def obter_linhas_existentes_ld() -> list:
             except Exception:
                 return []
 
-            ultima_linha = max(
-                int(ws.range(f"A{ws.cells.last_cell.row}").end("up").row),
-                int(ws.range(f"G{ws.cells.last_cell.row}").end("up").row),
-            )
+            # End(xlUp) respeita filtros ativos e pode parar na última linha
+            # visível, ignorando documentos gravados em linhas filtradas/ocultas.
+            # O UsedRange fornece o limite físico real; as linhas vazias são
+            # descartadas logo abaixo pela própria compreensão da lista.
+            ultima_linha = int(ws.used_range.last_cell.row)
             if ultima_linha < 2:
                 return []
 
@@ -890,6 +897,12 @@ def atualizar_lista_km_dentro_ld(registros_latest: List[Dict[str, str]]) -> Dict
 
             wb.save()
             arquivo_alterado = True
+
+            # Fecha explicitamente o workbook antes da validação independente.
+            # Em arquivos de rede, sair apenas do contexto do Excel pode deixar o
+            # flush do Save pendente e a reabertura imediata enxergar a versão anterior.
+            wb.close()
+            wb = None
 
         # Validação independente: fecha o Excel, reabre o arquivo salvo e só então
         # confirma a operação. Isso detecta salvamento silencioso em modo somente leitura.

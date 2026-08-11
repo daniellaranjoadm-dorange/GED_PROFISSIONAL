@@ -75,6 +75,7 @@ urlpatterns = [
     path("pcfs/", views.listar_pcfs_timeline, name="listar_pcfs_timeline"),
     path("pcfs/exportar-excel/", views.exportar_pcfs_timeline_excel, name="exportar_pcfs_timeline_excel"),
     path("pcfs/controle-respostas/", views.pcf_controle_respostas, name="pcf_controle_respostas"),
+    path("pcfs/controle-respostas/dashboard-bi/", views.pcf_dashboard_bi, name="pcf_dashboard_bi"),
     path("pcfs/controle-respostas/excel/", views.pcf_controle_respostas_excel, name="pcf_controle_respostas_excel"),
     path("pcfs/controle-respostas/pdf/", views.pcf_controle_respostas_pdf, name="pcf_controle_respostas_pdf"),
     path("pcfs/controle-respostas/pptx/", views.pcf_controle_respostas_pptx, name="pcf_controle_respostas_pptx"),

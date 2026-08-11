@@ -1,6 +1,8 @@
 import os
 import tempfile
 from datetime import date, datetime
+from pathlib import Path
+from unittest.mock import patch
 
 from django.test import SimpleTestCase
 from openpyxl import Workbook
@@ -8,10 +10,65 @@ from openpyxl import Workbook
 from apps.automacoes.services.atualizar_ld_projeto_basico import (
     _pcf_data_documental_arquivo,
     _pcf_qtd_e_open_comments_timeline,
+    _pcf_status_final_timeline,
+    _valor_km_informado,
+    indexar_pcfs,
+    status_final_da_pcf,
 )
 
 
 class PCFCommentsReaderTests(SimpleTestCase):
+    def test_na_is_not_receipt_evidence_for_km(self):
+        for value in (None, "", "-", "N/A", "NA", "#N/A", "NOT APPLICABLE"):
+            self.assertFalse(_valor_km_informado(value))
+        self.assertTrue(_valor_km_informado("T-44943"))
+        self.assertTrue(_valor_km_informado(datetime(2026, 7, 26)))
+
+    def test_status_reader_ignores_excel_errors_in_comment_area(self):
+        ws = Workbook().active
+        ws["A6"] = "PCF History"
+        ws["E7"] = "Status"
+        ws["E9"] = "NOT RELEASED"
+        ws["A18"] = "Item"
+        ws["E28"] = "#VALUE!"
+        ws["E46"] = "#VALUE!"
+
+        self.assertEqual(_pcf_status_final_timeline(ws), "NOT RELEASED")
+
+    def test_timeline_fallback_rejects_invalid_status(self):
+        key = "PCF-I-DE-4880.00-4034-610-CZ1-001_R0"
+        self.assertEqual(status_final_da_pcf({key: "#VALUE!"}, key), "")
+        self.assertEqual(
+            status_final_da_pcf({key: "NOT RELESED"}, key),
+            "NOT RELEASED",
+        )
+
+    def test_indexer_normalizes_document_date_and_file_datetime(self):
+        with tempfile.TemporaryDirectory() as pasta:
+            raiz = Path(pasta)
+            primeira = raiz / "a" / "PCF-I-PT-4880.00-0001-000-CZ1-001_R0.xlsx"
+            segunda = raiz / "b" / "PCF-I-PT-4880.00-0001-000-CZ1-001_R0.xlsx"
+            primeira.parent.mkdir()
+            segunda.parent.mkdir()
+            primeira.touch()
+            segunda.touch()
+
+            def data_documental(caminho):
+                return date(2026, 8, 1) if Path(caminho).parent.name == "a" else None
+
+            with patch(
+                "apps.automacoes.services.atualizar_ld_projeto_basico._pcf_data_documental_arquivo",
+                side_effect=data_documental,
+            ), patch(
+                "apps.automacoes.services.atualizar_ld_projeto_basico._file_datetime",
+                return_value=datetime(2026, 8, 2, 17, 30),
+            ):
+                indice = indexar_pcfs(raiz)
+
+        registro = indice["I-PT-4880.00-0001-000-CZ1-001"]["0"]
+        self.assertEqual(registro["date"], date(2026, 8, 2))
+        self.assertEqual(Path(registro["path"]).parent.name, "b")
+
     def test_uses_latest_open_comments_from_pcf_history(self):
         ws = Workbook().active
         ws["A1"] = "PCF History"

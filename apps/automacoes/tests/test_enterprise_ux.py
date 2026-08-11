@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
+from .rbac_helpers import grant_rbac
 
 
 class EnterpriseUXOperationsCenterTests(TestCase):
@@ -10,6 +11,7 @@ class EnterpriseUXOperationsCenterTests(TestCase):
             username="enterprise_ux_user",
             password="testpass123",
         )
+        grant_rbac(self.user, "automacoes.ver_ops_center")
 
     def test_ops_center_renders_enterprise_sections(self):
         self.client.login(username="enterprise_ux_user", password="testpass123")

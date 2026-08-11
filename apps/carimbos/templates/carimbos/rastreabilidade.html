@@ -1,0 +1,62 @@
+{% extends "documentos/base.html" %}
+
+{% block title %}Rastreabilidade de Cópias | GED{% endblock %}
+
+{% block extra_head %}
+<style>
+  .rt-wrap{max-width:1500px;margin:0 auto}.rt-hero,.rt-card{border:1px solid rgba(148,163,184,.2);border-radius:18px;background:rgba(15,23,42,.88);color:#e2e8f0}
+  .rt-hero{padding:25px;background:linear-gradient(135deg,#0f172a,#111827)}.rt-hero h1{font-weight:900;margin:.35rem 0}.rt-hero p{color:#94a3b8;margin:0}
+  .rt-card{padding:18px;margin-top:18px}.rt-tools{display:grid;grid-template-columns:1fr 240px auto;gap:10px}.rt-input{min-height:42px;border:1px solid #334155;border-radius:9px;background:#020617;color:#fff;padding:0 12px}
+  .rt-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:42px;padding:0 15px;border:0;border-radius:9px;background:#38bdf8;color:#082f49;font-weight:900;text-decoration:none}
+  .rt-table{width:100%;border-collapse:collapse}.rt-table th,.rt-table td{padding:10px;border-bottom:1px solid #243247;text-align:left;vertical-align:top}.rt-table th{font-size:.7rem;text-transform:uppercase;color:#7dd3fc;white-space:nowrap}
+  .rt-status{display:inline-flex;padding:5px 8px;border-radius:999px;background:#172554;color:#bfdbfe;font-size:.72rem;font-weight:800}.rt-status-pendente{background:#451a03;color:#fed7aa}
+  .rt-count{display:inline-flex;padding:7px 11px;border-radius:999px;background:#7c2d12;color:#ffedd5;font-weight:900}.rt-note{width:170px;background:#020617;color:#fff;border:1px solid #334155;border-radius:7px;padding:7px}
+  @media(max-width:800px){.rt-tools{grid-template-columns:1fr}.rt-btn{width:100%}}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="rt-wrap">
+  <section class="rt-hero">
+    <div class="text-info fw-bold small">CONTROLE DE DISTRIBUIÇÃO</div>
+    <h1>Rastreabilidade de cópias</h1>
+    <p>Histórico por documento, revisão, GI e recebedor. <span class="rt-count">{{ pendentes }} recolhimento(s) pendente(s)</span></p>
+  </section>
+
+  <section class="rt-card">
+    <form method="get" class="rt-tools">
+      <input class="rt-input" name="q" value="{{ termo }}" placeholder="Documento, GI ou destinatário">
+      <select class="rt-input" name="status"><option value="">Todos os estados</option>{% for valor, rotulo in status_choices %}<option value="{{ valor }}" {% if status_selecionado == valor %}selected{% endif %}>{{ rotulo }}</option>{% endfor %}</select>
+      <button class="rt-btn" type="submit"><i class="bi bi-funnel"></i>Filtrar</button>
+    </form>
+  </section>
+
+  <section class="rt-card table-responsive">
+    <table class="rt-table">
+      <thead><tr><th>Documento</th><th>Rev.</th><th>GI</th><th>Emissão</th><th>Emitido por</th><th>Recebedor</th><th>Situação</th><th>Ação</th></tr></thead>
+      <tbody>
+      {% for item in registros %}
+        <tr>
+          <td><strong>{{ item.documento }}</strong></td><td>{{ item.revisao|default:"-" }}</td><td>{{ item.guia.numero }}</td>
+          <td>{{ item.emitida_em|date:"d/m/Y H:i" }}</td><td>{{ item.guia.remetente }}</td><td>{{ item.destinatario }}{% if item.email_destinatario %}<br><small>{{ item.email_destinatario }}</small>{% endif %}</td>
+          <td><span class="rt-status {% if item.status == 'RECOLHIMENTO_PENDENTE' %}rt-status-pendente{% endif %}">{{ item.get_status_display }}</span></td>
+          <td>
+            {% if item.status == 'RECOLHIMENTO_PENDENTE' %}
+            <form method="post" action="{% url 'carimbos:confirmar_recolhimento' item.pk %}">{% csrf_token %}
+              <input class="rt-note" name="observacao" placeholder="Observação">
+              <button class="rt-btn mt-1" type="submit">Confirmar recolhimento</button>
+            </form>
+            {% else %}-{% endif %}
+          </td>
+        </tr>
+      {% empty %}<tr><td colspan="8">Nenhuma emissão registrada.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <div class="mt-3 d-flex gap-2">
+    <a class="rt-btn" href="{% url 'carimbos:guias' %}"><i class="bi bi-plus-circle"></i>Processar nova GI</a>
+    <a class="rt-btn" href="{% url 'automacoes:painel' %}"><i class="bi bi-arrow-left"></i>Painel de automações</a>
+  </div>
+</div>
+{% endblock %}

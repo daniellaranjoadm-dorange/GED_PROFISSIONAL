@@ -1,6 +1,8 @@
 from datetime import date
 from io import BytesIO
 from types import SimpleNamespace
+from unittest.mock import patch
+from zipfile import ZipFile
 
 from django.test import SimpleTestCase
 from pptx import Presentation
@@ -9,6 +11,7 @@ from apps.automacoes.services.pcf_executive_presentation import (
     build_pcf_executive_presentation,
 )
 from apps.automacoes.services.pcf_response_report import build_record, summarize
+from apps.automacoes import views
 
 
 def _document(**overrides):
@@ -72,6 +75,62 @@ class PCFResponseReportTests(SimpleTestCase):
         self.assertEqual(result["comentarios_reconciliacao"], 0)
         self.assertEqual(result["comentarios_inconsistentes"], 1)
 
+    def test_historical_response_is_hidden_and_does_not_close_latest_cycle(self):
+        record = build_record(
+            _document(
+                documento="I-PT-4880.00-2493-000-CZ1-001",
+                pcf="PCF-I-PT-4880.00-2493-000-CZ1-001_R0D",
+                data_pcf=date(2026, 6, 12),
+                pcf_resposta="PCF-I-PT-4880.00-2493-000-CZ1-001_R0C",
+                data_resposta=date(2026, 6, 2),
+            ),
+            today=date(2026, 8, 3),
+        )
+
+        self.assertEqual(record["pcf"], "PCF-I-PT-4880.00-2493-000-CZ1-001_R0D")
+        self.assertEqual(record["pcf_resposta"], "")
+        self.assertIsNone(record["data_resposta"])
+        self.assertEqual(record["resposta_esperada"], "R0E")
+        self.assertFalse(record["resposta_ciclo_atual"])
+        self.assertEqual(record["situacao"], "Vencida")
+        self.assertEqual(record["responsavel"], "McLaren")
+
+    def test_response_to_latest_received_cycle_is_assigned_to_transpetro(self):
+        record = build_record(
+            _document(
+                documento="I-PT-4880.00-2493-000-CZ1-001",
+                pcf="PCF-I-PT-4880.00-2493-000-CZ1-001_R0D",
+                data_pcf=date(2026, 6, 12),
+                pcf_resposta="PCF-I-PT-4880.00-2493-000-CZ1-001_R0E",
+                data_resposta=date(2026, 6, 15),
+            ),
+            today=date(2026, 8, 3),
+        )
+
+        self.assertTrue(record["resposta_ciclo_atual"])
+        self.assertEqual(record["situacao"], "Respondida")
+        self.assertEqual(record["responsavel"], "Transpetro")
+
+    def test_excel_export_uses_compatible_formulas(self):
+        records = [build_record(_document(), today=date(2026, 2, 10))]
+        request = SimpleNamespace(GET={})
+        with patch.object(views, "_pcf_response_records", return_value=(records, {})):
+            response = views.pcf_controle_respostas_excel.__wrapped__(request)
+
+        with ZipFile(BytesIO(response.content)) as package:
+            formulas_xml = b"".join(
+                package.read(name)
+                for name in package.namelist()
+                if name.startswith("xl/worksheets/sheet") and name.endswith(".xml")
+            )
+
+        for unsupported in (b"FILTER(", b"TAKE(", b"SORTBY(", b"CHOOSECOLS(", b"AGGREGATE("):
+            self.assertNotIn(unsupported, formulas_xml)
+        self.assertIn(b"MATCH(", formulas_xml)
+        self.assertIn(b"COUNTIF($Y$2:Y", formulas_xml)
+        self.assertIn(b"SUM('Dados PCFs'!Y2:Y", formulas_xml)
+        self.assertNotIn(b"COUNTA('Base Filtrada'!A2:A", formulas_xml)
+
     def test_executive_presentation_has_six_slides(self):
         records = [build_record(_document(open_comments=1, qtd_comentarios=1), today=date(2026, 2, 10))]
         payload = build_pcf_executive_presentation(records, summarize(records), date(2026, 2, 10))
@@ -79,3 +138,9 @@ class PCFResponseReportTests(SimpleTestCase):
 
         self.assertEqual(len(deck.slides), 6)
         self.assertIn("LD PROJETO BÁSICO", " ".join(shape.text for shape in deck.slides[0].shapes if hasattr(shape, "text_frame")))
+        slide_five_text = " ".join(shape.text for shape in deck.slides[4].shapes if hasattr(shape, "text_frame"))
+        slide_six_text = " ".join(shape.text for shape in deck.slides[5].shapes if hasattr(shape, "text_frame"))
+        self.assertIn("OPEN / UNDER REVIEW / CLOSED", slide_five_text)
+        self.assertNotIn("O/U/C", slide_five_text)
+        self.assertIn("TIPOS DE DOCUMENTO", slide_six_text)
+        self.assertIn("DISCIPLINAS", slide_six_text)
