@@ -27,6 +27,19 @@ def usuario_tem_permissao(usuario, codigo_perm):
     return codigo_perm in permissoes
 
 
+def rota_inicial_usuario(usuario):
+    """Retorna uma tela inicial que o perfil realmente pode acessar."""
+    if usuario_tem_permissao(usuario, "automacoes.visualizar"):
+        return "automacoes:painel"
+    if usuario_tem_permissao(usuario, "ged.visualizar"):
+        return "documentos:listar_documentos"
+    if usuario_tem_permissao(usuario, "copias.operar"):
+        return "carimbos:guias"
+    if usuario_tem_permissao(usuario, "copias.visualizar"):
+        return "carimbos:rastreabilidade"
+    return "contas:minhas_configuracoes"
+
+
 def has_perm(codigo):
     """
     Decorador: @has_perm("documento.aprovar")
@@ -39,7 +52,7 @@ def has_perm(codigo):
                 return view_func(request, *args, **kwargs)
 
             messages.error(request, "Você não tem permissão para acessar esta função.")
-            return redirect("documentos:listar_documentos")
+            return redirect(rota_inicial_usuario(request.user))
 
         return wrapper
 

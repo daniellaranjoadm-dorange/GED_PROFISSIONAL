@@ -381,18 +381,20 @@ html body.ged-enterprise-shell.sidebar-collapsed .sidebar-subnav{
             <span class="sidebar-group-meta"><span class="sidebar-module-state state-validation">EM VALIDAÇÃO</span><i class="bi bi-chevron-down sidebar-group-chevron"></i></span>
           </button>
           <ul class="sidebar-subnav">
+            {% if user|has_perm:"ged.visualizar" %}
             <li>
               <a class="sidebar-link" href="{{ url_listar_documentos|default:'/documentos/documentos/' }}" title="Lista de Documentos">
                 <i class="bi bi-table"></i>
                 <span class="sidebar-text">Lista de Documentos</span>
               </a>
             </li>
-            <li>
+            {% endif %}
+            {% if user|has_perm:"ged.visualizar" %}<li>
               <a class="sidebar-link" href="{% url 'documentos:revisoes' %}" title="Revisões">
                 <i class="bi bi-arrow-repeat"></i>
                 <span class="sidebar-text">Revis&otilde;es</span>
               </a>
-            </li>
+            </li>{% endif %}
               {% if user|has_perm:"documento.criar" %}<li>
                 <a class="sidebar-link" href="{{ url_upload_documento|default:'#' }}" title="Novo Documento">
                   <i class="bi bi-file-earmark-plus"></i>
@@ -427,7 +429,7 @@ html body.ged-enterprise-shell.sidebar-collapsed .sidebar-subnav{
                 <span class="sidebar-text">Importar LDP</span><span class="sidebar-item-state state-legacy" title="Legado / validar"></span>
               </a>
             </li>{% endif %}
-            <li>
+            {% if user|has_perm:"ged.visualizar" %}<li>
               <a class="sidebar-link" href="{{ url_dashboard_documentos|default:'/documentos/dashboard/' }}" title="Dashboard GED">
                 <i class="bi bi-graph-up-arrow"></i>
                 <span class="sidebar-text">Dashboard GED</span>
@@ -444,7 +446,7 @@ html body.ged-enterprise-shell.sidebar-collapsed .sidebar-subnav{
                 <i class="bi bi-cash-coin"></i>
                 <span class="sidebar-text">Medi&ccedil;&atilde;o</span>
               </a>
-            </li>
+            </li>{% endif %}
             {% if user|has_perm:"documento.excluir" %}<li>
               <a class="sidebar-link" href="{{ url_lixeira|default:'/documentos/lixeira/' }}" title="Lixeira">
                 <i class="bi bi-trash3"></i>
@@ -454,7 +456,7 @@ html body.ged-enterprise-shell.sidebar-collapsed .sidebar-subnav{
           </ul>
         </li>
 
-        <li class="sidebar-group is-open" data-sidebar-group="automacoes" data-module-status="live">
+        {% if user|has_perm:"automacoes.visualizar" %}<li class="sidebar-group is-open" data-sidebar-group="automacoes" data-module-status="live">
           <button type="button" class="sidebar-group-toggle" aria-expanded="true">
             <span class="sidebar-group-title">
               <i class="bi bi-cpu"></i>
@@ -488,9 +490,9 @@ html body.ged-enterprise-shell.sidebar-collapsed .sidebar-subnav{
               </a>
             </li>
           </ul>
-        </li>
+        </li>{% endif %}
 
-        <li class="sidebar-group is-open sidebar-group-km" data-sidebar-group="km" data-module-status="partial">
+        {% if user|has_perm:"km.visualizar" %}<li class="sidebar-group is-open sidebar-group-km" data-sidebar-group="km" data-module-status="partial">
           <button type="button" class="sidebar-group-toggle" aria-expanded="true">
             <span class="sidebar-group-title">
               <i class="bi bi-diagram-3"></i>
@@ -555,9 +557,9 @@ html body.ged-enterprise-shell.sidebar-collapsed .sidebar-subnav{
               </a>
             </li>
           </ul>
-        </li>
+        </li>{% endif %}
 
-        <li class="sidebar-group" data-sidebar-group="ld-pcf" data-module-status="live">
+        {% if user|has_perm:"ld_pcf.visualizar" %}<li class="sidebar-group" data-sidebar-group="ld-pcf" data-module-status="live">
           <button type="button" class="sidebar-group-toggle" aria-expanded="false">
             <span class="sidebar-group-title">
               <i class="bi bi-kanban"></i>
@@ -603,7 +605,7 @@ html body.ged-enterprise-shell.sidebar-collapsed .sidebar-subnav{
               </a>
             </li>
           </ul>
-        </li>
+        </li>{% endif %}
 
         {% if user|has_perm:"administracao.gerenciar" %}
         <li class="sidebar-group" data-sidebar-group="admin" data-module-status="restricted">

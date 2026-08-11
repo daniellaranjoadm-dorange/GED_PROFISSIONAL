@@ -95,8 +95,11 @@ class UsuariosPermissoesTests(TestCase):
         codigos = set(
             RolePermission.objects.filter(role=role).values_list("codigo", flat=True)
         )
-        self.assertTrue({"ged.visualizar", "documento.criar", "documento.editar", "copias.operar"} <= codigos)
-        self.assertFalse(
-            {"documento.aprovar", "documento.emitir", "documento.excluir", "administracao.gerenciar"}
-            & codigos
-        )
+        self.assertSetEqual(codigos, {"copias.visualizar", "copias.operar"})
+
+    def test_arquivo_tecnico_autenticado_entra_diretamente_em_gi_ge(self):
+        arquivo = Role.objects.get(nome="ARQUIVO_TECNICO")
+        UserRole.objects.create(user=self.usuario, role=arquivo)
+        self.client.force_login(self.usuario)
+        response = self.client.get(reverse("portal"))
+        self.assertRedirects(response, reverse("carimbos:guias"), fetch_redirect_response=False)

@@ -93,7 +93,14 @@ class AutomationPanelGroupingTests(TestCase):
             password="testpass123",
             is_staff=True,
         )
-        grant_rbac(self.user, "automacoes.visualizar", "administracao.gerenciar")
+        grant_rbac(
+            self.user,
+            "automacoes.visualizar",
+            "administracao.gerenciar",
+            "ged.visualizar",
+            "km.visualizar",
+            "ld_pcf.visualizar",
+        )
 
     def test_panel_separates_production_demand_and_legacy(self):
         self.client.force_login(self.user)

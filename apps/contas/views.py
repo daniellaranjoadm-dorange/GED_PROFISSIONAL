@@ -13,7 +13,7 @@ import logging
 
 from .models import Role, UserConfig, UserRole, Usuario
 from .forms import UserConfigForm
-from .permissions import has_perm
+from .permissions import has_perm, rota_inicial_usuario
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +26,8 @@ def landing(request):
     Usuários autenticados e visitantes são direcionados ao painel enterprise.
     O login_required da rota de destino cuida do redirecionamento para login.
     """
+    if request.user.is_authenticated:
+        return redirect(rota_inicial_usuario(request.user))
     return redirect("automacoes:painel")
 
 
@@ -48,7 +50,7 @@ def login_view(request):
             next_url = (
                 request.POST.get("next")
                 or request.GET.get("next")
-                or reverse("automacoes:painel")
+                or reverse(rota_inicial_usuario(user))
             )
 
             if not url_has_allowed_host_and_scheme(
@@ -56,7 +58,7 @@ def login_view(request):
                 allowed_hosts={request.get_host()},
                 require_https=request.is_secure(),
             ):
-                next_url = reverse("automacoes:painel")
+                next_url = reverse(rota_inicial_usuario(user))
 
             return redirect(next_url)
 
