@@ -1,175 +1,85 @@
-from django.core.mail import send_mail
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group
-from django.utils.crypto import get_random_string
+from django.core.mail import send_mail
 
-from .models import SolicitarAcesso, AuditoriaSolicitacao
-from apps.contas.models import Role, UserRole, UserConfig
-
+from apps.contas.models import Role, UserConfig, UserRole
+from .models import AuditoriaSolicitacao, SolicitarAcesso
 
 
-# ============================================================
-# E-MAIL PARA ADMINISTRADORES
-# ============================================================
-def _get_admin_emails() -> list[str]:
+def _get_admin_emails():
     return [getattr(settings, "EMAIL_HOST_USER", settings.DEFAULT_FROM_EMAIL)]
 
 
-# ============================================================
-# RBAC AUTOMÁTICO
-# ============================================================
-def _garantir_role_usuario_ged():
-    """Garante que a Role 'Usuário GED' exista."""
-    role, created = Role.objects.get_or_create(
-        nome="Usuário GED",
-        defaults={"descricao": "Acesso padrão ao GED"},
-    )
-    return role
-
-
-def _garantir_group_usuario_ged():
-    """Cria ou obtém o grupo Django 'usuario_ged'."""
-    group, created = Group.objects.get_or_create(name="usuario_ged")
-    # Aqui podemos adicionar permissões no futuro
-    return group
-
-
-def criar_usuario_para_solicitacao(instancia: SolicitarAcesso):
-    """
-    Cria usuário automaticamente ao aprovar solicitação.
-    - Username = e-mail
-    - Cria Role 'Usuário GED'
-    - Adiciona ao Group Django 'usuario_ged'
-    - Gera senha temporária se for novo usuário
-    """
+def criar_usuario_para_solicitacao(instancia: SolicitarAcesso, role: Role):
+    """Cria uma conta inativa e sem senha até a aceitação do convite."""
     User = get_user_model()
-
     email = (instancia.email or "").strip().lower()
     nome = (instancia.nome or "").strip()
-
     if not email:
-        return None, None, False
+        return None, False
 
     usuario, created = User.objects.get_or_create(
         email=email,
-        defaults={
-            "username": email,
-            "first_name": nome,
-            "is_active": True,
-        },
+        defaults={"username": email, "first_name": nome, "is_active": False},
     )
-
-    senha_temporaria = None
-
     if created:
-        senha_temporaria = get_random_string(12)
-        usuario.set_password(senha_temporaria)
-        usuario.save()
+        usuario.set_unusable_password()
+        usuario.save(update_fields=["password"])
+    else:
+        usuario.is_active = False
+        usuario.set_unusable_password()
+        usuario.save(update_fields=["is_active", "password"])
 
-    # Garante UserConfig
     UserConfig.objects.get_or_create(user=usuario)
-
-    # ============================================================
-    # Role → Banco de Dados
-    # ============================================================
-    role = _garantir_role_usuario_ged()
+    UserRole.objects.filter(user=usuario).exclude(role__nome="MASTER").delete()
     UserRole.objects.get_or_create(user=usuario, role=role)
-
-    # ============================================================
-    # Group → Django Admin
-    # ============================================================
-    group = _garantir_group_usuario_ged()
-    usuario.groups.add(group)
-
-    return usuario, senha_temporaria, created
+    return usuario, created
 
 
-# ============================================================
-# AUDITORIA
-# ============================================================
 def registrar_auditoria_solicitacao(
-    instancia: SolicitarAcesso,
-    usuario_responsavel=None,
-    status_anterior: str | None = None,
-    status_novo: str | None = None,
-    ip: str | None = None,
-    observacao: str = "",
-    usuario_criado=None,
-) -> None:
-    """Registra um evento de auditoria para a solicitação."""
+    instancia, usuario_responsavel=None, status_anterior=None, status_novo=None,
+    ip=None, observacao="", usuario_criado=None,
+):
     AuditoriaSolicitacao.objects.create(
-        solicitacao=instancia,
-        usuario_responsavel=usuario_responsavel,
-        usuario_criado=usuario_criado,
-        status_anterior=status_anterior or "",
-        status_novo=status_novo or "",
-        ip=ip,
-        observacao=observacao or "",
+        solicitacao=instancia, usuario_responsavel=usuario_responsavel,
+        usuario_criado=usuario_criado, status_anterior=status_anterior or "",
+        status_novo=status_novo or "", ip=ip, observacao=observacao or "",
     )
 
 
-# ============================================================
-# NOTIFICAÇÕES
-# ============================================================
-def notificar_nova_solicitacao(instancia: SolicitarAcesso) -> None:
-    assunto = "[GED] Nova solicitação de acesso"
-    mensagem = (
-        "Uma nova solicitação de acesso foi registrada no GED.\n\n"
-        f"Nome: {instancia.nome}\n"
-        f"E-mail: {instancia.email}\n"
-        f"Setor: {instancia.setor or '-'}\n"
-        f"Status: {instancia.get_status_display()}\n\n"
-        f"Motivo:\n{instancia.motivo}\n"
-    )
-
+def notificar_nova_solicitacao(instancia):
     send_mail(
-        subject=assunto,
-        message=mensagem,
+        subject="[GED] Nova solicitação de acesso",
+        message=(
+            "Uma nova solicitação de acesso foi registrada no GED.\n\n"
+            f"Nome: {instancia.nome}\nE-mail: {instancia.email}\n"
+            f"Setor: {instancia.setor or '-'}\nProjeto: {instancia.projeto_empresa or '-'}\n"
+            f"Perfil solicitado: {instancia.perfil_solicitado or '-'}\n\n"
+            f"Motivo:\n{instancia.motivo}\n"
+        ),
         from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=_get_admin_emails(),
-        fail_silently=True,
+        recipient_list=_get_admin_emails(), fail_silently=True,
     )
 
 
-def notificar_decisao_solicitacao(
-    instancia: SolicitarAcesso,
-    senha_temporaria: str | None = None,
-) -> None:
+def notificar_decisao_solicitacao(instancia, convite_url=None):
     if not instancia.email:
         return
-
-    assunto = "[GED] Decisão sobre sua solicitação de acesso"
-
-    if instancia.status == SolicitarAcesso.STATUS_APROVADO:
-        status_msg = "APROVADA"
-    elif instancia.status == SolicitarAcesso.STATUS_NEGADO:
-        status_msg = "NEGADA"
-    else:
-        status_msg = instancia.get_status_display().upper()
-
+    status_msg = instancia.get_status_display().upper()
     mensagem = (
-        f"Olá, {instancia.nome}.\n\n"
-        "Sua solicitação de acesso ao GED foi analisada.\n\n"
-        f"Status: {status_msg}\n"
+        f"Olá, {instancia.nome}.\n\nSua solicitação de acesso ao GED foi analisada.\n\n"
+        f"Status: {status_msg}\nPerfil concedido: {instancia.perfil_concedido or '-'}\n"
     )
-
     if instancia.observacao_admin:
         mensagem += f"\nObservação do responsável:\n{instancia.observacao_admin}\n"
-
-    # Credenciais se for aprovado e novo
-    if senha_temporaria and instancia.status == SolicitarAcesso.STATUS_APROVADO:
+    if convite_url and instancia.status == SolicitarAcesso.STATUS_APROVADO:
         mensagem += (
-            "\nSeus dados de acesso ao GED:\n"
-            f"Usuário (login): {instancia.email}\n"
-            f"Senha temporária: {senha_temporaria}\n"
-            "\nPor segurança, altere sua senha no primeiro acesso.\n"
+            "\nCrie sua senha pessoal pelo link seguro abaixo:\n"
+            f"Usuário (login): {instancia.email}\n{convite_url}\n"
+            "\nO link é individual, possui validade limitada e nenhuma senha é enviada por e-mail.\n"
         )
-
     send_mail(
-        subject=assunto,
-        message=mensagem,
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[instancia.email],
-        fail_silently=True,
+        subject="[GED] Decisão sobre sua solicitação de acesso",
+        message=mensagem, from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[instancia.email], fail_silently=True,
     )

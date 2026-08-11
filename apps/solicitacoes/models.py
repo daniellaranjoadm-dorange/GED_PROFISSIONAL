@@ -16,6 +16,15 @@ class SolicitarAcesso(models.Model):
     nome = models.CharField("Nome", max_length=200)
     email = models.EmailField("E-mail")
     setor = models.CharField("Setor", max_length=200, blank=True)
+    projeto_empresa = models.CharField("Projeto / empresa", max_length=200, blank=True)
+    perfil_solicitado = models.ForeignKey(
+        "contas.Role", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="solicitacoes_acesso", verbose_name="Perfil solicitado",
+    )
+    perfil_concedido = models.ForeignKey(
+        "contas.Role", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="solicitacoes_aprovadas", verbose_name="Perfil concedido",
+    )
     motivo = models.TextField("Motivo do acesso")
 
     status = models.CharField(
@@ -38,6 +47,12 @@ class SolicitarAcesso(models.Model):
     observacao_admin = models.TextField(
         "Observação do administrador",
         blank=True,
+    )
+    arquivada = models.BooleanField("Arquivada", default=False)
+    data_arquivamento = models.DateTimeField("Data do arquivamento", null=True, blank=True)
+    arquivada_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="solicitacoes_arquivadas", verbose_name="Arquivada por",
     )
 
     class Meta:

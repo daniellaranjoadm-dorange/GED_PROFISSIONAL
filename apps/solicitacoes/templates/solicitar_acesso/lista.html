@@ -32,6 +32,23 @@
     </div>
 
     <div class="d-flex gap-2 flex-wrap">
+      <a class="dash-btn{% if visualizacao == 'ativas' %} dash-btn-primary{% endif %}" href="?visualizacao=ativas">
+        Pendentes / atuais <span class="dash-badge">{{ total_pendentes }}</span>
+      </a>
+      <a class="dash-btn{% if visualizacao == 'arquivadas' %} dash-btn-primary{% endif %}" href="?visualizacao=arquivadas">
+        <i class="bi bi-archive"></i> Arquivadas <span class="dash-badge">{{ total_arquivadas }}</span>
+      </a>
+      {% if total_concluidas_ativas %}
+      <form method="post" onsubmit="return confirm('Arquivar todas as solicitações concluídas? O histórico será preservado.');">
+        {% csrf_token %}<input type="hidden" name="acao" value="arquivar_concluidas">
+        <button class="dash-btn" type="submit"><i class="bi bi-archive-fill"></i> Arquivar concluídas ({{ total_concluidas_ativas }})</button>
+      </form>
+      {% endif %}
+      {% if visualizacao == 'arquivadas' and total_arquivadas %}
+      <form method="post">{% csrf_token %}<input type="hidden" name="acao" value="restaurar_todas">
+        <button class="dash-btn" type="submit"><i class="bi bi-arrow-counterclockwise"></i> Restaurar todas</button>
+      </form>
+      {% endif %}
       <a class="dash-btn dash-btn-primary btn btn-sm" href="{{ url_nova_solicitacao|default:'/solicitar/' }}">
         <i class="bi bi-plus-circle"></i> Nova solicitação
       </a>
@@ -50,6 +67,7 @@
             <th style="min-width:200px;">Nome</th>
             <th style="min-width:240px;">E-mail</th>
             <th style="min-width:140px;">Setor</th>
+            <th style="min-width:180px;">Perfil solicitado</th>
             <th style="min-width:140px;">Status</th>
             <th style="min-width:170px;">Data</th>
             <th class="text-end" style="min-width:130px;">Ações</th>
@@ -63,6 +81,7 @@
               <td class="fw-semibold">{{ s.nome|default:"-" }}</td>
               <td>{{ s.email|default:"-" }}</td>
               <td>{% if s.setor %}{{ s.setor }}{% else %}-{% endif %}</td>
+              <td>{{ s.perfil_solicitado.nome|default:"-" }}</td>
 
               <td>
                 {% with st=s.get_status_display|default:s.status %}
@@ -96,7 +115,7 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="6" class="text-center py-4" style="color:var(--dash-muted);">
+              <td colspan="7" class="text-center py-4" style="color:var(--dash-muted);">
                 Nenhuma solicitação encontrada.
               </td>
             </tr>

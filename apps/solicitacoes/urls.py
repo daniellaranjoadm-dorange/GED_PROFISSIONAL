@@ -8,5 +8,6 @@ urlpatterns = [
     path("sucesso/", views.solicitar_acesso_sucesso, name="solicitar_acesso_sucesso"),
     path("lista/", views.listar_solicitacoes, name="listar_solicitacoes"),
     path("detalhe/<int:id>/", views.detalhe_solicitacao, name="detalhe_solicitacao"),
+    path("convite/<uidb64>/<token>/", views.aceitar_convite, name="aceitar_convite"),
 ]
 

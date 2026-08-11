@@ -21,3 +21,5 @@ PERMISSOES_POR_PAPEL = {
     "CONSULTA": ["ged.visualizar", "ld_pcf.visualizar", "km.visualizar", "automacoes.visualizar"],
     "OPERADOR_AUTOMACOES": ["ld_pcf.visualizar", "km.visualizar", "automacoes.visualizar", "automacoes.ver_logs", "automacoes.ver_ops_center", "automacoes.executar_ld_projeto_basico", "automacoes.executar_timeline_pcf", "automacoes.executar_transmittal_km", "automacoes.executar_indice_km", "automacoes.executar_sync_km_ld", "automacoes.executar_relatorio_km", "automacoes.executar_grd"],
 }
+
+PERFIS_OPERACIONAIS = tuple(nome for nome in ROLES_PADRAO if nome != "MASTER")

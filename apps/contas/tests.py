@@ -2,7 +2,11 @@ from pathlib import Path
 
 from django.template import TemplateSyntaxError
 from django.template.loader import get_template
-from django.test import SimpleTestCase
+from django.contrib.auth import get_user_model
+from django.test import SimpleTestCase, TestCase
+from django.urls import reverse
+
+from .models import Role, UserRole
 
 
 class PortalTemplateTests(SimpleTestCase):
@@ -21,3 +25,65 @@ class PortalTemplateTests(SimpleTestCase):
         response = self.client.get("/")
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response["Location"], "/automacoes/")
+
+
+class UsuariosPermissoesTests(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.admin = User.objects.create_user(
+            username="gestor_acessos", password="testpass123", is_master=True
+        )
+        self.usuario = User.objects.create_user(
+            username="colaborador", password="testpass123"
+        )
+        self.master_alvo = User.objects.create_superuser(
+            username="master_alvo", password="testpass123", email="master@example.com"
+        )
+        self.consulta = Role.objects.create(nome="CONSULTA_TESTE", descricao="Somente leitura")
+        self.operador = Role.objects.create(nome="OPERADOR_TESTE", descricao="Executa rotinas")
+
+    def test_usuario_sem_permissao_nao_acessa_central(self):
+        self.client.force_login(self.usuario)
+        response = self.client.get(reverse("contas:usuarios_permissoes"))
+        self.assertEqual(response.status_code, 302)
+
+    def test_master_visualiza_central(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse("contas:usuarios_permissoes"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Usuários e Permissões")
+        self.assertContains(response, "colaborador")
+
+    def test_master_atribui_perfis_ao_colaborador(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(reverse("contas:usuarios_permissoes"), {
+            "usuario_id": self.usuario.pk,
+            "roles": [self.consulta.pk, self.operador.pk],
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertSetEqual(
+            set(UserRole.objects.filter(user=self.usuario).values_list("role_id", flat=True)),
+            {self.consulta.pk, self.operador.pk},
+        )
+
+    def test_nao_permite_alterar_proprio_acesso(self):
+        self.client.force_login(self.admin)
+        self.client.post(reverse("contas:usuarios_permissoes"), {
+            "usuario_id": self.admin.pk, "roles": [self.consulta.pk],
+        })
+        self.assertFalse(UserRole.objects.filter(user=self.admin).exists())
+
+    def test_nao_permite_alterar_superusuario(self):
+        self.client.force_login(self.admin)
+        self.client.post(reverse("contas:usuarios_permissoes"), {
+            "usuario_id": self.master_alvo.pk, "roles": [self.consulta.pk],
+        })
+        self.assertFalse(UserRole.objects.filter(user=self.master_alvo).exists())
+
+    def test_admin_nao_superusuario_nao_pode_atribuir_master(self):
+        master_role, _ = Role.objects.get_or_create(nome="MASTER", defaults={"descricao": "Acesso total"})
+        self.client.force_login(self.admin)
+        self.client.post(reverse("contas:usuarios_permissoes"), {
+            "usuario_id": self.usuario.pk, "roles": [master_role.pk],
+        })
+        self.assertFalse(UserRole.objects.filter(user=self.usuario, role=master_role).exists())
