@@ -946,16 +946,32 @@ def painel(request):
     return render(request, "automacoes/painel.html", context)
 
 
-def _executar_automacao(request, executor, nome):
+def _ip_origem_request(request):
+    encaminhado = (request.META.get("HTTP_X_FORWARDED_FOR") or "").split(",")[0].strip()
+    return encaminhado or request.META.get("REMOTE_ADDR") or None
+
+
+def _executar_automacao(
+    request,
+    executor,
+    nome,
+    *,
+    arquivo_origem="",
+    redirect_name="automacoes:painel",
+):
     if request.method != "POST":
         messages.error(request, f"Método inválido para executar {nome}.")
-        return redirect("automacoes:painel")
+        return redirect(redirect_name)
 
     inicio = time.monotonic()
     log = ExecucaoAutomacao.objects.create(
         nome=nome,
         usuario=request.user if request.user.is_authenticated else None,
         status=ExecucaoAutomacao.STATUS_INICIADO,
+        origem="painel",
+        arquivo_origem=str(arquivo_origem or ""),
+        ip_origem=_ip_origem_request(request),
+        detalhes={"rota": request.path, "metodo": request.method},
         mensagem="Execução iniciada.",
     )
 
@@ -974,7 +990,7 @@ def _executar_automacao(request, executor, nome):
             f"{nome} executado com sucesso." if ok else f"Falha ao executar {nome}."
         )
         log.quantidade_processada = _extrair_quantidade_processada(resultado)
-        log.detalhes = _detalhes_execucao(resultado)
+        log.detalhes = {**(log.detalhes or {}), **_detalhes_execucao(resultado)}
 
         if ok:
             messages.success(request, log.mensagem)
@@ -985,7 +1001,7 @@ def _executar_automacao(request, executor, nome):
         log.status = ExecucaoAutomacao.STATUS_ERRO
         log.sucesso = False
         log.mensagem = f"Erro ao executar {nome}: {exc}"
-        log.detalhes = {"erro": str(exc)}
+        log.detalhes = {**(log.detalhes or {}), "erro": str(exc)}
         messages.error(request, log.mensagem)
 
     finally:
@@ -1004,7 +1020,7 @@ def _executar_automacao(request, executor, nome):
         )
         cache.delete("automacoes:painel:context:v1")
 
-    return redirect("automacoes:painel")
+    return redirect(redirect_name)
 
 
 @has_perm("automacoes.ver_logs")
@@ -5424,27 +5440,20 @@ def importar_lista_km(request):
             messages.error(request, "Selecione a planilha .xlsx da LD Kongsberg.")
             return redirect("automacoes:importar_lista_km")
 
-        try:
-            resultado = importar_ld_kongsberg(
+        def executar_importacao():
+            return importar_ld_kongsberg(
                 arquivo,
                 nome_arquivo=getattr(arquivo, "name", "LD Kongsberg"),
                 executar_cruzamento=True,
             )
 
-            if resultado.get("ok"):
-                messages.success(request, resultado.get("mensagem", "LD Kongsberg importada."))
-            else:
-                messages.warning(
-                    request,
-                    f"{resultado.get('mensagem', 'Importação concluída com alertas.')} "
-                    f"Erros: {resultado.get('total_erros', 0)}"
-                )
-
-            return redirect("automacoes:dashboard_km_ld")
-
-        except Exception as exc:
-            messages.error(request, f"Erro ao importar LD Kongsberg: {exc}")
-            return redirect("automacoes:importar_lista_km")
+        return _executar_automacao(
+            request,
+            executar_importacao,
+            "Importar LD Kongsberg",
+            arquivo_origem=getattr(arquivo, "name", "LD Kongsberg"),
+            redirect_name="automacoes:dashboard_km_ld",
+        )
 
     return render(
         request,
@@ -5459,16 +5468,12 @@ def executar_sync_km_ld(request):
     Reexecuta o cruzamento DocumentoKM ↔ TransmittalKM ↔ DocumentoLD
     sem reimportar a planilha.
     """
-    try:
-        resultado = executar_cruzamento_ld_km()
-        if resultado.get("ok"):
-            messages.success(request, resultado.get("mensagem", "Sync KM ↔ LD executado."))
-        else:
-            messages.warning(request, resultado.get("mensagem", "Sync KM ↔ LD concluído com alertas."))
-    except Exception as exc:
-        messages.error(request, f"Erro ao executar sync KM ↔ LD: {exc}")
-
-    return redirect("automacoes:dashboard_km_ld")
+    return _executar_automacao(
+        request,
+        executar_cruzamento_ld_km,
+        "Sync KM ↔ LD",
+        redirect_name="automacoes:dashboard_km_ld",
+    )
 
 
 def _km_clean_getlist(request, nome):

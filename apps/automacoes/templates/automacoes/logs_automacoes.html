@@ -233,6 +233,8 @@
             <th>Automação</th>
             <th>Status</th>
             <th>Usuário</th>
+            <th>Origem</th>
+            <th>Arquivo / IP</th>
             <th>Qtd.</th>
             <th>Duração</th>
             <th>Mensagem</th>
@@ -280,6 +282,13 @@
 
             <td>{{ log.usuario|default:"Sistema" }}</td>
 
+            <td>{{ log.origem|default:"painel"|upper }}</td>
+
+            <td>
+              {% if log.arquivo_origem %}<strong>{{ log.arquivo_origem }}</strong><br>{% endif %}
+              <small>{{ log.ip_origem|default:"IP não registrado" }}</small>
+            </td>
+
             <td>{{ log.quantidade_processada|default:0 }}</td>
 
             <td>{{ log.duracao_segundos|default:0 }}s</td>
@@ -292,7 +301,7 @@
 
           {% empty %}
           <tr>
-            <td colspan="7" class="ops-empty">
+            <td colspan="9" class="ops-empty">
               Nenhum log encontrado.
             </td>
           </tr>
