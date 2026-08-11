@@ -42,6 +42,7 @@ from apps.automacoes.services.runtime_events import RuntimeEventStreamService
 from apps.automacoes.services.runtime_health_api import RuntimeHealthAPIService
 from apps.automacoes.services.runtime_retention import RuntimeRetentionService
 from apps.automacoes.services.kongsberg_document_list import importar_ld_kongsberg, executar_cruzamento_ld_km
+from apps.automacoes.services.execution_lock import adquirir_bloqueio, liberar_bloqueio
 from apps.automacoes.services.pcf_response_report import (
     ESCOPO_PROJETO,
     build_record,
@@ -963,17 +964,56 @@ def _executar_automacao(
         messages.error(request, f"Método inválido para executar {nome}.")
         return redirect(redirect_name)
 
+    lock, bloqueio_existente = adquirir_bloqueio(nome, request.user)
+    if lock is None:
+        executor_atual = (
+            str(bloqueio_existente.usuario)
+            if bloqueio_existente and bloqueio_existente.usuario
+            else "Sistema"
+        )
+        mensagem_bloqueio = (
+            f"{nome} já está em execução por {executor_atual}. "
+            "Aguarde a conclusão antes de tentar novamente."
+        )
+        agora = timezone.now()
+        ExecucaoAutomacao.objects.create(
+            nome=nome,
+            usuario=request.user if request.user.is_authenticated else None,
+            status=ExecucaoAutomacao.STATUS_CANCELADO,
+            sucesso=False,
+            origem="painel",
+            arquivo_origem=str(arquivo_origem or ""),
+            ip_origem=_ip_origem_request(request),
+            detalhes={
+                "rota": request.path,
+                "metodo": request.method,
+                "motivo": "execucao_simultanea",
+                "executado_por": executor_atual,
+                "expira_em": bloqueio_existente.expira_em.isoformat()
+                if bloqueio_existente
+                else None,
+            },
+            mensagem=mensagem_bloqueio,
+            finalizado_em=agora,
+        )
+        messages.warning(request, mensagem_bloqueio)
+        return redirect(redirect_name)
+
     inicio = time.monotonic()
-    log = ExecucaoAutomacao.objects.create(
-        nome=nome,
-        usuario=request.user if request.user.is_authenticated else None,
-        status=ExecucaoAutomacao.STATUS_INICIADO,
-        origem="painel",
-        arquivo_origem=str(arquivo_origem or ""),
-        ip_origem=_ip_origem_request(request),
-        detalhes={"rota": request.path, "metodo": request.method},
-        mensagem="Execução iniciada.",
-    )
+    try:
+        log = ExecucaoAutomacao.objects.create(
+            nome=nome,
+            usuario=request.user if request.user.is_authenticated else None,
+            status=ExecucaoAutomacao.STATUS_INICIADO,
+            origem="painel",
+            arquivo_origem=str(arquivo_origem or ""),
+            ip_origem=_ip_origem_request(request),
+            detalhes={"rota": request.path, "metodo": request.method},
+            mensagem="Execução iniciada.",
+        )
+    except Exception:
+        liberar_bloqueio(lock)
+        raise
 
     try:
         resultado = executor()
@@ -1005,20 +1045,23 @@ def _executar_automacao(
         messages.error(request, log.mensagem)
 
     finally:
-        log.finalizado_em = timezone.now()
-        log.duracao_segundos = round(time.monotonic() - inicio, 3)
-        log.save(
-            update_fields=[
-                "status",
-                "sucesso",
-                "mensagem",
-                "detalhes",
-                "quantidade_processada",
-                "duracao_segundos",
-                "finalizado_em",
-            ]
-        )
-        cache.delete("automacoes:painel:context:v1")
+        try:
+            log.finalizado_em = timezone.now()
+            log.duracao_segundos = round(time.monotonic() - inicio, 3)
+            log.save(
+                update_fields=[
+                    "status",
+                    "sucesso",
+                    "mensagem",
+                    "detalhes",
+                    "quantidade_processada",
+                    "duracao_segundos",
+                    "finalizado_em",
+                ]
+            )
+            cache.delete("automacoes:painel:context:v1")
+        finally:
+            liberar_bloqueio(lock)
 
     return redirect(redirect_name)
 

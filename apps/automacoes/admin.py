@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from apps.automacoes.models import DocumentoLD, ExecucaoAutomacao, PCFTimeline, TransmittalKM
+from apps.automacoes.models import AutomationExecutionLock, DocumentoLD, ExecucaoAutomacao, PCFTimeline, TransmittalKM
 
 
 @admin.register(ExecucaoAutomacao)
@@ -36,6 +36,13 @@ class ExecucaoAutomacaoAdmin(admin.ModelAdmin):
         "finalizado_em",
     )
     ordering = ("-iniciado_em",)
+
+
+@admin.register(AutomationExecutionLock)
+class AutomationExecutionLockAdmin(admin.ModelAdmin):
+    list_display = ("nome", "usuario", "adquirido_em", "expira_em")
+    search_fields = ("nome", "usuario__username")
+    readonly_fields = ("nome", "token", "usuario", "adquirido_em", "expira_em")
 
 
 @admin.register(TransmittalKM)

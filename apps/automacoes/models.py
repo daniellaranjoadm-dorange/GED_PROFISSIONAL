@@ -53,6 +53,28 @@ class ExecucaoAutomacao(models.Model):
         return f"{self.nome} - {self.status}"
 
 
+class AutomationExecutionLock(models.Model):
+    nome = models.CharField(max_length=100, unique=True)
+    token = models.UUIDField(unique=True, editable=False)
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="bloqueios_automacoes",
+    )
+    adquirido_em = models.DateTimeField(auto_now_add=True)
+    expira_em = models.DateTimeField(db_index=True)
+
+    class Meta:
+        ordering = ["nome"]
+        verbose_name = "Bloqueio de execução de automação"
+        verbose_name_plural = "Bloqueios de execução de automações"
+
+    def __str__(self):
+        return f"{self.nome} até {self.expira_em:%d/%m/%Y %H:%M}"
+
+
 class SearchAudit(models.Model):
     """Registro operacional das buscas executadas no GED."""
 

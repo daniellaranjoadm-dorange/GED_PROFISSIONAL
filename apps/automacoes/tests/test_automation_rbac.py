@@ -6,7 +6,8 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 
 from .rbac_helpers import grant_rbac
-from apps.automacoes.models import ExecucaoAutomacao
+from apps.automacoes.models import AutomationExecutionLock, ExecucaoAutomacao
+from apps.automacoes.services.execution_lock import adquirir_bloqueio
 
 
 class AutomationRBACTests(TestCase):
@@ -45,6 +46,40 @@ class AutomationRBACTests(TestCase):
         self.assertEqual(log.usuario, self.operator)
         self.assertEqual(log.origem, "painel")
         self.assertEqual(log.detalhes["metodo"], "POST")
+        self.assertFalse(
+            AutomationExecutionLock.objects.filter(nome="Atualização LD Projeto Básico").exists()
+        )
+
+    @patch("apps.automacoes.views.atualizar_ld_projeto_basico.executar")
+    def test_segunda_execucao_simultanea_e_bloqueada_e_auditada(self, executar):
+        lock, _ = adquirir_bloqueio("Atualização LD Projeto Básico", self.operator)
+        self.assertIsNotNone(lock)
+        self.client.force_login(self.operator)
+        response = self.client.post(reverse("automacoes:atualizar_ld_projeto_basico"))
+        self.assertEqual(response.status_code, 302)
+        executar.assert_not_called()
+        tentativa = ExecucaoAutomacao.objects.get(
+            nome="Atualização LD Projeto Básico",
+            status=ExecucaoAutomacao.STATUS_CANCELADO,
+        )
+        self.assertEqual(tentativa.detalhes["motivo"], "execucao_simultanea")
+        self.assertIn(self.operator.username, tentativa.mensagem)
+
+    @patch("apps.automacoes.views.atualizar_ld_projeto_basico.executar")
+    def test_bloqueio_e_liberado_apos_erro(self, executar):
+        executar.side_effect = RuntimeError("falha controlada")
+        self.client.force_login(self.operator)
+        response = self.client.post(reverse("automacoes:atualizar_ld_projeto_basico"))
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(
+            AutomationExecutionLock.objects.filter(nome="Atualização LD Projeto Básico").exists()
+        )
+        self.assertTrue(
+            ExecucaoAutomacao.objects.filter(
+                nome="Atualização LD Projeto Básico",
+                status=ExecucaoAutomacao.STATUS_ERRO,
+            ).exists()
+        )
 
 
 class ConsultaLDKMRouteSecurityTests(TestCase):
