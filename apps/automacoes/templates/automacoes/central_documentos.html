@@ -37,7 +37,7 @@
     <div class="ops-kpi"><span>Documentos GED</span><strong>{{ metricas.total }}</strong><small>cadastro central ativo</small></div>
     <div class="ops-kpi"><span>Vinculados à LD</span><strong>{{ metricas.com_ld }}</strong><small>correspondência exata</small></div>
     <div class="ops-kpi"><span>GED sem LD</span><strong>{{ metricas.sem_ld }}</strong><small>requer análise</small></div>
-    <div class="ops-kpi"><span>LD sem GED</span><strong>{{ metricas.ld_sem_vinculo }}</strong><small>fila de reconciliação</small></div>
+    <a class="ops-kpi" href="{% url 'automacoes:reconciliacao_documentos' %}"><span>LD sem GED</span><strong>{{ metricas.ld_sem_vinculo }}</strong><small>abrir fila de reconciliação</small></a>
     <div class="ops-kpi"><span>Com referência DOX</span><strong>{{ metricas.com_dox }}</strong><small>integração preparada</small></div>
   </section>
 

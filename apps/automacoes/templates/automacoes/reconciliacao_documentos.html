@@ -1,0 +1,25 @@
+{% extends "documentos/base.html" %}
+{% load static %}
+{% block title %}Reconciliação documental{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'automacoes/css/ops_enterprise.css' %}?v=1701">
+<style>
+ .rec-page{width:min(1700px,calc(100vw - 36px));margin:auto}.rec-filter{display:grid;grid-template-columns:1.5fr .8fr auto;gap:12px;align-items:end}
+ .rec-table{width:100%;border-collapse:collapse}.rec-table th,.rec-table td{padding:12px 10px;border-bottom:1px solid rgba(148,163,184,.16);vertical-align:top}.rec-table th{font-size:11px;color:#94a3b8;text-transform:uppercase}.rec-table td{font-size:13px}
+ .rec-code{font-weight:800;color:#e2e8f0}.rec-sub{display:block;color:#94a3b8;font-size:11px;margin-top:3px}.rec-candidate{display:block;padding:8px 10px;margin-bottom:6px;border:1px solid rgba(56,189,248,.25);border-radius:9px;color:#bae6fd;text-decoration:none;background:rgba(14,116,144,.12)}.rec-candidate.warn{border-color:rgba(251,191,36,.3);color:#fde68a;background:rgba(146,64,14,.12)}
+ .rec-note{padding:10px 12px;border-left:3px solid #38bdf8;background:rgba(14,116,144,.12);color:#bae6fd;font-size:12px;border-radius:8px}
+ @media(max-width:800px){.rec-filter{grid-template-columns:1fr}.rec-table{display:block;overflow-x:auto}}
+</style>
+{% endblock %}
+{% block content %}
+<div class="ops-page rec-page">
+ <section class="ops-hero"><div class="ops-hero-main"><div class="ops-eyebrow"><i class="bi bi-link-45deg"></i> QUALIDADE DOCUMENTAL</div><h1>Fila de reconciliação LD → GED</h1><p>Registros da LD que ainda não possuem vínculo com o Documento central. As sugestões são explicáveis e não alteram dados.</p></div><div class="ops-actions"><a class="ops-btn" href="{% url 'automacoes:central_documentos' %}"><i class="bi bi-arrow-left"></i> Central</a></div></section>
+ <div class="rec-note">Nesta etapa, nenhuma sugestão é aplicada automaticamente. Códigos iguais com revisão diferente são apresentados apenas para análise.</div>
+ <section class="ops-panel mt-3"><form class="rec-filter" method="get"><div><label class="ops-filter-label">Busca</label><input class="form-control" name="q" value="{{ busca }}" placeholder="Documento, DOX interno, KM, título, PCF ou GRD"></div><div><label class="ops-filter-label">Origem LD</label><select class="form-select" name="origem"><option value="">Todas</option>{% for item in origens %}<option value="{{ item }}" {% if origem == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div><button class="ops-btn ops-btn-primary" type="submit"><i class="bi bi-search"></i> Filtrar</button></form></section>
+ <section class="ops-panel mt-3"><div class="ops-panel-head"><div><h2>Pendências</h2><p>{{ pagina.paginator.count }} registro(s) sem vínculo</p></div></div><div style="overflow-x:auto"><table class="rec-table"><thead><tr><th>Registro LD</th><th>Título / origem</th><th>Referências operacionais</th><th>Sugestões no GED</th></tr></thead><tbody>
+ {% for item in pagina %}<tr><td><span class="rec-code">{{ item.documento }}</span><span class="rec-sub">Rev. {{ item.revisao|default:"—" }}</span>{% if item.numero_interno %}<span class="rec-sub">DOX interno: {{ item.numero_interno }}</span>{% endif %}</td><td>{{ item.titulo|default:"Sem título" }}<span class="rec-sub">{{ item.origem_aba|default:"Origem não informada" }} · {{ item.disciplina|default:"Sem disciplina" }}</span></td><td>{% if item.numero_documento_km %}<span class="rec-sub">KM: {{ item.numero_documento_km }}</span>{% endif %}{% if item.transmittal_km %}<span class="rec-sub">Transmittal: {{ item.transmittal_km }}</span>{% endif %}{% if item.pcf %}<span class="rec-sub">PCF: {{ item.pcf }}</span>{% endif %}{% if item.grd %}<span class="rec-sub">GRD: {{ item.grd }}</span>{% endif %}</td><td>{% for sugestao in item.sugestoes_ged %}<a class="rec-candidate {% if not sugestao.revisao_igual %}warn{% endif %}" href="{% url 'documentos:detalhes_documento' sugestao.documento.id %}"><strong>{{ sugestao.documento.codigo }}</strong> · Rev. {{ sugestao.documento.revisao }}<span class="rec-sub">{{ sugestao.motivo }}{% if not sugestao.revisao_igual %} · revisão divergente{% endif %}</span></a>{% empty %}<span class="rec-sub">Nenhum candidato por identificador exato.</span>{% endfor %}</td></tr>{% empty %}<tr><td colspan="4">Nenhuma pendência encontrada.</td></tr>{% endfor %}
+ </tbody></table></div>
+ {% if pagina.paginator.num_pages > 1 %}<div class="ops-actions mt-3">{% if pagina.has_previous %}<a class="ops-btn" href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ pagina.previous_page_number }}">Anterior</a>{% endif %}<span>Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>{% if pagina.has_next %}<a class="ops-btn" href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ pagina.next_page_number }}">Próxima</a>{% endif %}</div>{% endif %}
+ </section>
+</div>
+{% endblock %}

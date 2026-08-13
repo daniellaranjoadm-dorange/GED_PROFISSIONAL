@@ -62,6 +62,11 @@ from apps.automacoes.services.document_center import (
     consulta_central_documentos,
     metricas_central_documentos,
 )
+from apps.automacoes.services.document_reconciliation import (
+    adicionar_sugestoes_explicaveis,
+    consulta_pendencias_ld,
+    origens_pendentes,
+)
 
 
 
@@ -92,6 +97,30 @@ def central_documentos(request):
             "busca": busca,
             "vinculo": vinculo,
             "dox": dox,
+            "query_string": parametros.urlencode(),
+        },
+    )
+
+
+@login_required
+@has_perm("automacoes.visualizar")
+def reconciliacao_documentos(request):
+    busca = request.GET.get("q", "").strip()
+    origem = request.GET.get("origem", "").strip()
+    queryset = consulta_pendencias_ld(busca=busca, origem=origem)
+    paginator = Paginator(queryset, 50)
+    pagina = paginator.get_page(request.GET.get("page"))
+    pagina.object_list = adicionar_sugestoes_explicaveis(list(pagina.object_list))
+    parametros = request.GET.copy()
+    parametros.pop("page", None)
+    return render(
+        request,
+        "automacoes/reconciliacao_documentos.html",
+        {
+            "pagina": pagina,
+            "busca": busca,
+            "origem": origem,
+            "origens": origens_pendentes(),
             "query_string": parametros.urlencode(),
         },
     )
