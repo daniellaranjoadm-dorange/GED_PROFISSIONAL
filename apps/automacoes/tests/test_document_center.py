@@ -76,8 +76,16 @@ class DocumentCenterViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "DOC-DOX-001")
         self.assertContains(response, "Status geral")
-        self.assertContains(response, "Status PCF")
+        self.assertContains(response, "Status da PCF")
         self.assertContains(response, "Responsável")
+        self.assertContains(response, "Filtros ativos")
+        self.assertContains(response, "Excel filtrado")
+        self.assertContains(response, "PPTX executivo")
+        self.assertContains(response, "Salvar PDF")
+        self.assertContains(response, "status_doc=Aprovado+com+coment%C3%A1rios")
+        self.assertContains(response, "status_grd=Emitido")
+        self.assertContains(response, "responsavel=Kongsberg")
+        self.assertContains(response, "casco=CMN-01")
 
     def test_filtro_gerencial_sem_correspondencia_remove_documento(self):
         response = self.client.get(

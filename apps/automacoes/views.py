@@ -104,6 +104,33 @@ def central_documentos(request):
 
     parametros = request.GET.copy()
     parametros.pop("page", None)
+    parametros_ld = request.GET.copy()
+    parametros_ld.pop("page", None)
+    for nome in ("vinculo", "dox"):
+        parametros_ld.pop(nome, None)
+    mapeamento_ld = {
+        "tipo": "tipo_doc",
+        "status": "status_doc",
+        "emissao": "status_grd",
+    }
+    for origem, destino in mapeamento_ld.items():
+        valor = parametros_ld.get(origem, "")
+        parametros_ld.pop(origem, None)
+        if valor:
+            parametros_ld[destino] = valor
+
+    filtros_ativos = []
+    rotulos = {
+        "tipo": "Tipo", "disciplina": "Disciplina", "status": "Status",
+        "emissao": "Emissão", "status_pcf": "PCF", "responsavel": "Responsável",
+        "casco": "Casco", "origem": "Origem", "vinculo": "Vínculo", "dox": "DOX",
+    }
+    if busca:
+        filtros_ativos.append(("Busca", busca))
+    for nome, rotulo in rotulos.items():
+        valor = request.GET.get(nome, "").strip()
+        if valor:
+            filtros_ativos.append((rotulo, valor))
     return render(
         request,
         "automacoes/central_documentos.html",
@@ -116,6 +143,8 @@ def central_documentos(request):
             "filtros_ld": filtros_ld,
             "opcoes_filtros": opcoes_filtros_central_documentos(),
             "query_string": parametros.urlencode(),
+            "query_string_ld": parametros_ld.urlencode(),
+            "filtros_ativos": filtros_ativos,
         },
     )
 
@@ -3451,6 +3480,8 @@ def _ld_filtrar_queryset(request):
     status_docs = _ld_getlist(request, "status_doc")
     status_grds = _ld_getlist(request, "status_grd")
     status_pcfs = _ld_getlist(request, "status_pcf")
+    responsaveis = _ld_getlist(request, "responsavel")
+    cascos = _ld_getlist(request, "casco")
 
     com_pcf = _ld_bool(request.GET.get("com_pcf"))
     sem_pcf = _ld_bool(request.GET.get("sem_pcf"))
@@ -3523,6 +3554,12 @@ def _ld_filtrar_queryset(request):
 
         registros = registros.filter(condicao_status_pcf)
 
+    if responsaveis:
+        registros = registros.filter(resp_for_issue__in=responsaveis)
+
+    if cascos:
+        registros = registros.filter(casco__in=cascos)
+
     if com_pcf and not sem_pcf:
         registros = registros.exclude(pcf__isnull=True).exclude(pcf="")
 
@@ -3543,6 +3580,8 @@ def _ld_filtrar_queryset(request):
         "status_doc": status_docs[0] if len(status_docs) == 1 else "",
         "status_grd": status_grds[0] if len(status_grds) == 1 else "",
         "status_pcf": status_pcfs[0] if len(status_pcfs) == 1 else "",
+        "responsavel": responsaveis[0] if len(responsaveis) == 1 else "",
+        "casco": cascos[0] if len(cascos) == 1 else "",
         "origens_selecionadas": origens,
         "disciplinas_selecionadas": disciplinas,
         "tipos_doc_selecionados": tipos_doc,
