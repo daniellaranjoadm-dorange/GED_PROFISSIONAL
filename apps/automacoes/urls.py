@@ -7,6 +7,11 @@ urlpatterns = [
     path("", views.painel, name="painel"),
     path("central-documentos/", views.central_documentos, name="central_documentos"),
     path("central-documentos/reconciliacao/", views.reconciliacao_documentos, name="reconciliacao_documentos"),
+    path(
+        "central-documentos/reconciliacao/<int:ld_id>/vincular/<int:documento_id>/",
+        views.vincular_documento_ld_ged,
+        name="vincular_documento_ld_ged",
+    ),
 
     # Operations Center
     path("ops-center/", views.ops_center, name="ops_center"),

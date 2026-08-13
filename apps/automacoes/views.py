@@ -19,6 +19,7 @@ from django.db.models import Avg, Count, Q, Sum
 from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
+from django.views.decorators.http import require_POST
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 
@@ -66,6 +67,7 @@ from apps.automacoes.services.document_reconciliation import (
     adicionar_sugestoes_explicaveis,
     consulta_pendencias_ld,
     origens_pendentes,
+    vincular_pendencia_exata,
 )
 
 
@@ -124,6 +126,22 @@ def reconciliacao_documentos(request):
             "query_string": parametros.urlencode(),
         },
     )
+
+
+@login_required
+@require_POST
+@has_perm("documento.editar")
+def vincular_documento_ld_ged(request, ld_id, documento_id):
+    try:
+        vincular_pendencia_exata(
+            registro_id=ld_id,
+            documento_id=documento_id,
+            usuario=request.user,
+        )
+        messages.success(request, "Registro da LD vinculado ao Documento GED com auditoria.")
+    except (DocumentoLD.DoesNotExist, ValueError) as erro:
+        messages.error(request, str(erro))
+    return redirect("automacoes:reconciliacao_documentos")
 
 KM_EXTENSOES_PRIORITARIAS = {
     ".docx": 60,
