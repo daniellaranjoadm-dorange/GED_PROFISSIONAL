@@ -37,6 +37,7 @@ from django.conf import settings
 
 from apps.contas.decorators import allow_admin
 from apps.contas.permissions import has_perm
+from apps.automacoes.services.ld_parser import extrair_tipo_documental
 
 from .models import (
     ArquivoDocumento,
@@ -1073,6 +1074,22 @@ def detalhes_documento(request, documento_id):
         "data_pcf": primeiro_valor_ld("data_pcf"),
         "transmittal_km": primeiro_valor_ld("transmittal_km"),
         "data_recebimento_km": primeiro_valor_ld("data_recebimento_km"),
+        "numero_interno": primeiro_valor_ld("numero_interno"),
+        "numero_documento_km": primeiro_valor_ld("numero_documento_km"),
+    }
+    data_emissao_principal = documento.data_emissao_grdt or resumo_ld["data_grd"]
+    if hasattr(data_emissao_principal, "strftime"):
+        data_emissao_principal = data_emissao_principal.strftime("%d/%m/%Y")
+
+    detalhes_principais = {
+        "tipo_documento": documento.tipo_doc or extrair_tipo_documental(documento.codigo),
+        "status_documento": documento.status_documento
+        or resumo_ld["status_documento"],
+        "status_emissao": documento.status_emissao
+        or primeiro_valor_ld("status_grd", "status_final_pcf"),
+        "documento_referencia": resumo_ld["numero_interno"]
+        or resumo_ld["numero_documento_km"],
+        "data_emissao": data_emissao_principal,
     }
 
     context = {
@@ -1085,6 +1102,7 @@ def detalhes_documento(request, documento_id):
         "registros_ld": registros_ld,
         "arquivos_ld": arquivos_ld,
         "resumo_ld": resumo_ld,
+        "detalhes_principais": detalhes_principais,
         "pode_avancar_etapa": pode_avancar_etapa(request.user, documento),
         "proxima_etapa": proxima_etapa(documento),
         "pode_retornar_etapa": pode_retornar_etapa(request.user, documento),

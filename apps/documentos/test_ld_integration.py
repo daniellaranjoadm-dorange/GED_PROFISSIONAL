@@ -27,9 +27,11 @@ class DocumentoDetalheLDIntegrationTests(TestCase):
             documento=self.documento.codigo,
             revisao="0",
             status_documento="EMITIDO",
+            status_grd="Emitido ao cliente",
             grd="GRD-123",
             data_grd="12/08/2026",
             transmittal_km="T-45976",
+            numero_interno="DOX-123",
             data_recebimento_km="12/08/2026",
             caminho_documento=r"\\servidor\documentos\desenho.pdf",
         )
@@ -43,6 +45,9 @@ class DocumentoDetalheLDIntegrationTests(TestCase):
         self.assertContains(response, "LD Projeto Basico")
         self.assertContains(response, "GRD-123")
         self.assertContains(response, "T-45976")
+        self.assertContains(response, "Emitido ao cliente")
+        self.assertContains(response, "DOX-123")
+        self.assertContains(response, ">DE<")
         self.assertContains(response, "desenho.pdf")
         self.assertContains(
             response,

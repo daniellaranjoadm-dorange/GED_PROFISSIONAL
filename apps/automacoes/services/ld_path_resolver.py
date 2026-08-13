@@ -7,6 +7,12 @@ LD_RAIZ_HISTORICA = Path(
     r"\\virm-rgr022\FILESERVER\Projetos\05_HANDYMAX\09. Doc Control"
 )
 
+EXTENSOES_PRIORITARIAS = (
+    (".pdf",),
+    (".doc", ".docx", ".docm", ".rtf"),
+    (".xls", ".xlsx", ".xlsm", ".xlsb", ".csv"),
+)
+
 
 def _texto(valor):
     return str(valor or "").strip()
@@ -84,6 +90,24 @@ def resolver_caminho_ld(caminho_salvo):
             return candidato, candidatos
 
     return None, candidatos
+
+
+def selecionar_arquivo_documental(caminho):
+    """Resolve pastas da LD para PDF, Word, Excel ou o primeiro nativo."""
+    caminho = Path(caminho)
+    if not caminho.is_dir():
+        return caminho
+
+    arquivos = sorted(
+        (item for item in caminho.iterdir() if item.is_file()),
+        key=lambda item: item.name.casefold(),
+    )
+    for extensoes in EXTENSOES_PRIORITARIAS:
+        for arquivo in arquivos:
+            if arquivo.suffix.casefold() in extensoes:
+                return arquivo
+
+    return arquivos[0] if arquivos else caminho
 
 
 def gerar_hyperlink_ld(caminho_salvo):

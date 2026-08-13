@@ -588,15 +588,15 @@
                 </tr>
                 <tr>
                     <th>Tipo Documento</th>
-                    <td>{{ documento.tipo_doc }}</td>
+                    <td>{{ detalhes_principais.tipo_documento|default:"—" }}</td>
                 </tr>
                 <tr>
                     <th>Status Documento</th>
-                    <td>{{ documento.status_documento }}</td>
+                    <td>{{ detalhes_principais.status_documento|default:"—" }}</td>
                 </tr>
                 <tr>
                     <th>Status Emissão</th>
-                    <td>{{ documento.status_emissao }}</td>
+                    <td>{{ detalhes_principais.status_emissao|default:"—" }}</td>
                 </tr>
                 {% if registros_ld %}
                 <tr>
@@ -625,14 +625,14 @@
                 </tr>
                 <tr>
                     <th>Documento de Referencia</th>
-                    <td>{{ documento.documento_Referencia }}</td>
+                    <td>{{ detalhes_principais.documento_referencia|default:"—" }}</td>
                 </tr>
                 <tr>
 
                     <th>Data Emissão</th>
                     <td>
-                        {% if documento.data_emissao_tp %}
-                            {{ documento.data_emissao_tp|date:"d/m/Y" }}
+                        {% if detalhes_principais.data_emissao %}
+                            {{ detalhes_principais.data_emissao }}
                         {% else %}
                             —
                         {% endif %}

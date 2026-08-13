@@ -33,7 +33,11 @@ from apps.automacoes.services import (
     transmittal_km,
 )
 from apps.automacoes.services.ld_parser import extrair_tipo_documental
-from apps.automacoes.services.ld_path_resolver import gerar_hyperlink_ld, resolver_caminho_ld
+from apps.automacoes.services.ld_path_resolver import (
+    gerar_hyperlink_ld,
+    resolver_caminho_ld,
+    selecionar_arquivo_documental,
+)
 from apps.automacoes.services.status_normalizer import normalizar_status
 from apps.automacoes.services.search_engine import buscar_global_enterprise
 from apps.automacoes.services.search_analytics import obter_search_analytics
@@ -4398,6 +4402,9 @@ def abrir_arquivo_ld(request, pk, tipo):
         return HttpResponse(html, status=404)
 
     try:
+        if arquivo.is_dir():
+            arquivo = selecionar_arquivo_documental(arquivo)
+
         if arquivo.is_dir():
             os.startfile(str(arquivo))
             html = "<h3>Pasta aberta no Windows Explorer.</h3>"
