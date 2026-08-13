@@ -129,17 +129,51 @@ def carregar_relacionamentos_da_pagina(pagina):
     )
 
 
-def metricas_central_documentos() -> dict[str, int]:
-    documentos = Documento.objects.filter(ativo=True, deletado_em__isnull=True)
-    total = documentos.count()
-    com_ld = documentos.filter(registros_ld__isnull=False).distinct().count()
-    com_dox = documentos.filter(
-        referencias_externas__sistema=DocumentoReferenciaExterna.SISTEMA_DOX
-    ).distinct().count()
+def metricas_central_documentos(documentos=None) -> dict[str, int | float]:
+    documentos = documentos or Documento.objects.filter(
+        ativo=True, deletado_em__isnull=True
+    )
+    ids = list(documentos.values_list("id", flat=True).distinct())
+    total = len(ids)
+    registros = DocumentoLD.objects.filter(documento_ged_id__in=ids)
+    com_ld = registros.values("documento_ged_id").distinct().count()
+    emitidos_ids = registros.filter(status_grd__iexact="Emitido").values("documento_ged_id")
+    emitidos = emitidos_ids.distinct().count()
+    recebidos_pendentes = (
+        registros.filter(status_documento__icontains="Recebido")
+        .exclude(documento_ged_id__in=emitidos_ids)
+        .values("documento_ged_id").distinct().count()
+    )
+    pcf_nao_liberadas = (
+        registros.exclude(pcf="")
+        .exclude(
+            Q(status_final_pcf__iexact="RELEASED")
+            | Q(status_final_pcf__iexact="RELEASED WITH COMMENTS")
+        )
+        .values("documento_ged_id").distinct().count()
+    )
+    aprovados_sem_comentarios = (
+        registros.filter(status_documento__icontains="Aprovado")
+        .exclude(status_documento__icontains="coment")
+        .values("documento_ged_id").distinct().count()
+    )
+    comentarios_open = 0
+    for valor in registros.exclude(open_comments="").values_list("open_comments", flat=True):
+        try:
+            comentarios_open += int(float(str(valor).replace(",", ".")))
+        except (TypeError, ValueError):
+            continue
+    com_pcf = registros.exclude(pcf="").values("documento_ged_id").distinct().count()
     return {
         "total": total,
         "com_ld": com_ld,
         "sem_ld": max(total - com_ld, 0),
-        "com_dox": com_dox,
+        "emitidos": emitidos,
+        "progresso_emissao": round((emitidos / total) * 100, 1) if total else 0,
+        "recebidos_pendentes": recebidos_pendentes,
+        "comentarios_open": comentarios_open,
+        "pcf_nao_liberadas": pcf_nao_liberadas,
+        "aprovados_sem_comentarios": aprovados_sem_comentarios,
+        "com_pcf": com_pcf,
         "ld_sem_vinculo": DocumentoLD.objects.filter(documento_ged__isnull=True).count(),
     }

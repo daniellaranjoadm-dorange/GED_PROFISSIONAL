@@ -16,8 +16,13 @@
   .doc-table th{color:#94a3b8;font-size:11px;text-transform:uppercase;letter-spacing:.05em}
   .doc-table td{font-size:13px}.doc-table a{color:#67d4ff;text-decoration:none}
   .doc-muted{color:#64748b}.doc-sub{display:block;color:#94a3b8;font-size:11px;margin-top:3px}
-  @media(max-width:1100px){.doc-grid{grid-template-columns:repeat(2,1fr)}}
+  .doc-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:16px 0}
+  .doc-kpi{position:relative;overflow:hidden;min-height:142px;padding:18px;border:1px solid rgba(91,171,210,.28);border-radius:16px;background:linear-gradient(145deg,#0d2637,#071923);box-shadow:0 16px 38px rgba(0,0,0,.24)}
+  .doc-kpi:before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:linear-gradient(90deg,var(--accent,#37c8f4),transparent)}
+  .doc-kpi span{display:block;color:#9ac8df;font-size:10px;font-weight:900;letter-spacing:.11em;text-transform:uppercase}.doc-kpi strong{display:block;margin:20px 0 5px;color:#fff;font-size:34px;line-height:1}.doc-kpi small{color:#9bb6c5;font-size:11px}
+  @media(max-width:1100px){.doc-grid{grid-template-columns:repeat(2,1fr)}.doc-kpis{grid-template-columns:repeat(2,1fr)}}
   @media(max-width:900px){.doc-grid{grid-template-columns:1fr}.doc-search{grid-column:auto}.doc-table{display:block;overflow-x:auto}}
+  @media(max-width:560px){.doc-kpis{grid-template-columns:1fr}}
 </style>
 {% endblock %}
 
@@ -35,12 +40,15 @@
     </div>
   </section>
 
-  <section class="ops-kpi-grid ops-kpi-grid-5">
-    <div class="ops-kpi"><span>Documentos GED</span><strong>{{ metricas.total }}</strong><small>cadastro central ativo</small></div>
-    <div class="ops-kpi"><span>Vinculados à LD</span><strong>{{ metricas.com_ld }}</strong><small>correspondência exata</small></div>
-    <div class="ops-kpi"><span>GED sem LD</span><strong>{{ metricas.sem_ld }}</strong><small>requer análise</small></div>
-    <a class="ops-kpi" href="{% url 'automacoes:reconciliacao_documentos' %}"><span>LD sem GED</span><strong>{{ metricas.ld_sem_vinculo }}</strong><small>abrir fila de reconciliação</small></a>
-    <div class="ops-kpi"><span>Com referência DOX</span><strong>{{ metricas.com_dox }}</strong><small>integração preparada</small></div>
+  <section class="doc-kpis">
+    <div class="doc-kpi" style="--accent:#37c8f4"><span>Documentos no escopo</span><strong>{{ metricas.total }}</strong><small>resultado do filtro atual</small></div>
+    <div class="doc-kpi" style="--accent:#1dd6b5"><span>Progresso de emissão</span><strong>{{ metricas.progresso_emissao }}%</strong><small>{{ metricas.emitidos }} documentos emitidos</small></div>
+    <div class="doc-kpi" style="--accent:#ffad32"><span>Recebidos pendentes</span><strong>{{ metricas.recebidos_pendentes }}</strong><small>recebidos e ainda não emitidos</small></div>
+    <div class="doc-kpi" style="--accent:#9a83ff"><span>Comentários open</span><strong>{{ metricas.comentarios_open }}</strong><small>tratativas ainda abertas</small></div>
+    <div class="doc-kpi" style="--accent:#ff6670"><span>PCFs não liberadas</span><strong>{{ metricas.pcf_nao_liberadas }}</strong><small>PCFs recebidas com restrição</small></div>
+    <div class="doc-kpi" style="--accent:#24d1c1"><span>Documentos emitidos</span><strong>{{ metricas.emitidos }}</strong><small>quantidade absoluta emitida</small></div>
+    <div class="doc-kpi" style="--accent:#62dfb2"><span>Aprovados sem comentários</span><strong>{{ metricas.aprovados_sem_comentarios }}</strong><small>aprovação sem ressalvas</small></div>
+    <div class="doc-kpi" style="--accent:#5fa8ff"><span>Documentos com PCF</span><strong>{{ metricas.com_pcf }}</strong><small>PCFs recebidas no recorte</small></div>
   </section>
 
   <section class="ops-panel mt-3">

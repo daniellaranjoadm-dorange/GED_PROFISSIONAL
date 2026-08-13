@@ -84,6 +84,16 @@ class DocumentCenterViewTests(TestCase):
             reverse("automacoes:central_documentos"), {"casco": "CMN-99"}
         )
         self.assertNotContains(response, "DOC-DOX-001")
+        self.assertContains(response, "Documentos no escopo")
+        self.assertContains(response, "<strong>0</strong>", html=True)
+
+    def test_cards_refletem_o_recorte_filtrado(self):
+        response = self.client.get(
+            reverse("automacoes:central_documentos"), {"casco": "CMN-01"}
+        )
+        self.assertContains(response, "Progresso de emissão")
+        self.assertContains(response, "100,0%")
+        self.assertContains(response, "Comentários open")
 
     def test_requer_autenticacao(self):
         self.client.logout()

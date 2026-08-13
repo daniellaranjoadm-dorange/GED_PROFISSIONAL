@@ -109,7 +109,7 @@ def central_documentos(request):
         "automacoes/central_documentos.html",
         {
             "pagina": pagina,
-            "metricas": metricas_central_documentos(),
+            "metricas": metricas_central_documentos(queryset),
             "busca": busca,
             "vinculo": vinculo,
             "dox": dox,
