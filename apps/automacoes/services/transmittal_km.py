@@ -686,7 +686,7 @@ def backup_ld_master() -> str:
 
 
 def obter_linhas_existentes_ld() -> list:
-    """Retorna uma chave Documento + Transmittal por linha efetivamente gravada."""
+    """Retorna os campos A:G de cada linha efetivamente gravada na LD."""
     if not PLANILHA_LD.exists():
         return []
 
@@ -715,10 +715,15 @@ def obter_linhas_existentes_ld() -> list:
                 valores = [valores]
 
             return [
-                chave_documento_transmittal({
-                    "Documento": linha[0] if isinstance(linha, list) else "",
-                    "Transmittal N°": linha[6] if isinstance(linha, list) and len(linha) > 6 else "",
-                })
+                {
+                    "Documento": linha[0] or "",
+                    "Titulo": linha[1] or "",
+                    "Pasta": linha[2] or "",
+                    "Emissão": linha[3] or "",
+                    "Proposito de Emissão": linha[4] or "",
+                    "Data Envio": normalizar_data(linha[5] or ""),
+                    "Transmittal N°": linha[6] or "",
+                }
                 for linha in valores
                 if isinstance(linha, list) and len(linha) > 6 and linha[0] and linha[6]
             ]
@@ -728,7 +733,7 @@ def obter_linhas_existentes_ld() -> list:
 
 def obter_registros_existentes_ld() -> set:
     """Retorna as chaves Documento + Transmittal realmente gravadas na LD."""
-    return set(obter_linhas_existentes_ld())
+    return {chave_documento_transmittal(item) for item in obter_linhas_existentes_ld()}
 
 
 def obter_transmittals_existentes_ld() -> set:
@@ -780,12 +785,24 @@ def atualizar_lista_km_dentro_ld(registros_latest: List[Dict[str, str]]) -> Dict
     backup_path = backup_ld_master()
     wb = None
     arquivo_alterado = False
-    esperadas = {chave_documento_transmittal(dados) for dados in registros_latest}
+    esperados_por_documento = {
+        normalizar_documento_chave(dados.get("Documento", "")): dados
+        for dados in registros_latest
+    }
 
     try:
         with xw.App(visible=False, add_book=False) as app:
             app.display_alerts = False
             app.screen_updating = False
+            # Impede macros/eventos da LD de reporem valores anteriores enquanto
+            # a aba é reconstruída programaticamente.
+            app.enable_events = False
+            try:
+                app.calculation = "manual"
+            except Exception:
+                # Algumas instalações do Excel bloqueiam a troca global do modo
+                # de cálculo; a escrita explícita por célula continua segura.
+                pass
 
             wb = app.books.open(
                 str(PLANILHA_LD),
@@ -848,6 +865,22 @@ def atualizar_lista_km_dentro_ld(registros_latest: List[Dict[str, str]]) -> Dict
                 _setar_hyperlink_xlwings(ws[f"A{idx}"], dados.get("Documento", ""), arquivo_pdf)
                 _setar_hyperlink_xlwings(ws[f"G{idx}"], dados.get("Transmittal N°", ""), arquivo_pdf)
 
+                # Reforça os campos sem hyperlink após a escrita em lote. Em
+                # arquivos XLSM extensos, o Excel pode reaproveitar valores das
+                # linhas antigas durante a expansão do intervalo.
+                valores_diretos = (
+                    dados.get("Titulo", ""),
+                    dados.get("Pasta", ""),
+                    dados.get("Emissão", ""),
+                    dados.get("Proposito de Emissão", ""),
+                    normalizar_data(dados.get("Data Envio", "")),
+                )
+                for coluna, valor in zip("BCDEF", valores_diretos):
+                    celula = ws[f"{coluna}{idx}"]
+                    if coluna == "F":
+                        celula.api.NumberFormat = "@"
+                    celula.api.Value2 = str(valor or "")
+
             # Formatação básica enterprise.
             rng = ws.range(f"A{primeira_linha_nova}:G{last_row}") if linhas else ws.range("A1:G1")
             try:
@@ -875,14 +908,6 @@ def atualizar_lista_km_dentro_ld(registros_latest: List[Dict[str, str]]) -> Dict
             try:
                 if linhas:
                     ws.range(f"F{primeira_linha_nova}:F{last_row}").api.NumberFormat = "@"
-                # Regrava as datas já normalizadas como texto para garantir
-                # dd/mm/aaaa mesmo quando a origem veio como dd-mm-aaaa.
-                if linhas:
-                    datas_formatadas = [
-                        [normalizar_data(dados.get("Data Envio", ""))]
-                        for dados in registros_latest
-                    ]
-                    ws.range(f"F{primeira_linha_nova}:F{last_row}").value = datas_formatadas
             except Exception:
                 pass
 
@@ -907,14 +932,48 @@ def atualizar_lista_km_dentro_ld(registros_latest: List[Dict[str, str]]) -> Dict
         # Validação independente: fecha o Excel, reabre o arquivo salvo e só então
         # confirma a operação. Isso detecta salvamento silencioso em modo somente leitura.
         linhas_depois = obter_linhas_existentes_ld()
-        chaves_depois = set(linhas_depois)
-        ausentes = esperadas - chaves_depois
-        inesperadas = chaves_depois - esperadas
-        if ausentes or inesperadas or len(linhas_depois) != len(esperadas):
+        atuais_por_documento = {
+            normalizar_documento_chave(item.get("Documento", "")): item
+            for item in linhas_depois
+        }
+        ausentes = set(esperados_por_documento) - set(atuais_por_documento)
+        inesperadas = set(atuais_por_documento) - set(esperados_por_documento)
+        divergencias = []
+        campos_validacao = (
+            "Titulo",
+            "Pasta",
+            "Emissão",
+            "Proposito de Emissão",
+            "Data Envio",
+            "Transmittal N°",
+        )
+        for documento in set(esperados_por_documento) & set(atuais_por_documento):
+            esperado = esperados_por_documento[documento]
+            atual = atuais_por_documento[documento]
+            for campo in campos_validacao:
+                if campo == "Data Envio":
+                    valor_esperado = normalizar_data(esperado.get(campo, ""))
+                    valor_atual = normalizar_data(atual.get(campo, ""))
+                else:
+                    valor_esperado = limpar_valor(str(esperado.get(campo, "")))
+                    valor_atual = limpar_valor(str(atual.get(campo, "")))
+                if valor_esperado != valor_atual:
+                    divergencias.append(
+                        f"{documento}/{campo}: esperado={valor_esperado!r}, gravado={valor_atual!r}"
+                    )
+
+        if (
+            ausentes
+            or inesperadas
+            or divergencias
+            or len(linhas_depois) != len(esperados_por_documento)
+        ):
             raise RuntimeError(
                 "A LD foi fechada e reaberta, mas a consolidação não foi confirmada. "
-                f"Esperados={len(esperadas)}; linhas={len(linhas_depois)}; "
-                f"ausentes={len(ausentes)}; inesperados={len(inesperadas)}."
+                f"Esperados={len(esperados_por_documento)}; linhas={len(linhas_depois)}; "
+                f"ausentes={len(ausentes)}; inesperados={len(inesperadas)}; "
+                f"divergências={len(divergencias)}. "
+                + (" | ".join(divergencias[:10]) if divergencias else "")
             )
 
         print(
@@ -955,7 +1014,7 @@ def processar():
             "ok": False,
             "pdfs_lidos": 0,
             "linhas_gravadas": 0,
-            "arquivo": str(ARQUIVO_EXCEL_NOVO),
+            "arquivo": str(PLANILHA_LD),
             "mensagem": f"Pasta não encontrada: {PASTA_PDFS}",
         }
 
@@ -966,7 +1025,7 @@ def processar():
             "ok": False,
             "pdfs_lidos": 0,
             "linhas_gravadas": 0,
-            "arquivo": str(ARQUIVO_EXCEL_NOVO),
+            "arquivo": str(PLANILHA_LD),
             "mensagem": f"Nenhum PDF encontrado em: {PASTA_PDFS}",
         }
 
@@ -1086,27 +1145,13 @@ def processar():
     for dados in registros_latest:
         salvar_no_banco(dados, arquivos_pdf_oficiais=arquivos_pdf_oficiais)
 
-    # A planilha NOVA é um espelho completo do banco, nunca apenas do lote incremental.
-    registros_banco = [
-        dados
-        for obj in TransmittalKM.objects.all()
-        for dados in [dados_transmittal_model(obj)]
-        if _registro_pertence_aos_pdfs_atuais(dados, caminhos_pdfs)
-    ]
-    registros_exportacao, _ = filtrar_registros_latest_por_documento(registros_banco)
-    for dados in registros_exportacao:
-        adicionar_linha(ws, dados)
     total_registros = int(resultado_ld.get("linhas") or 0)
-
-    ajustar_largura(ws)
-    ajustar_largura_log(ws_log)
-    wb.save(ARQUIVO_EXCEL_NOVO)
+    wb.close()
 
     print("\n=== RESUMO TRANSMITTAL KM ===")
     print(f"PDFs lidos: {total_pdfs_lidos}")
     print(f"Linhas gravadas: {total_registros}")
     print(f"Duplicados ignorados por documento: {total_duplicados}")
-    print(f"Arquivo gerado: {ARQUIVO_EXCEL_NOVO}")
     print(f"LD atualizada: {resultado_ld.get('planilha')} | Aba: {resultado_ld.get('aba')}")
 
     return {
@@ -1115,7 +1160,7 @@ def processar():
         "linhas_gravadas": total_registros,
         "duplicados_ignorados": total_duplicados,
         "registros_banco_fora_da_pasta": registros_banco_fora_da_pasta,
-        "arquivo": str(ARQUIVO_EXCEL_NOVO),
+        "arquivo": str(PLANILHA_LD),
         "ld_master": resultado_ld,
         "quantidade_processada": total_registros,
         "detalhes": {
@@ -1123,7 +1168,7 @@ def processar():
             "linhas_gravadas": total_registros,
             "duplicados_ignorados": total_duplicados,
             "registros_banco_fora_da_pasta": registros_banco_fora_da_pasta,
-            "arquivo": str(ARQUIVO_EXCEL_NOVO),
+            "arquivo": str(PLANILHA_LD),
             "ld_master": resultado_ld,
         },
     }
@@ -1148,7 +1193,7 @@ def executar():
         ok = bool(resumo.get("ok", True))
         pdfs_lidos = int(resumo.get("pdfs_lidos") or 0)
         linhas_gravadas = int(resumo.get("linhas_gravadas") or 0)
-        arquivo = resumo.get("arquivo") or str(ARQUIVO_EXCEL_NOVO)
+        arquivo = resumo.get("arquivo") or str(PLANILHA_LD)
 
         if not ok:
             return {

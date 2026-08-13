@@ -36,6 +36,25 @@ DEFAULT_OUTPUT = Path(
 )
 
 
+def resolve_template(template: Path) -> Path:
+    """Localiza o template mesmo se a pasta receber outro prefixo numérico."""
+    if template.is_file():
+        return template
+
+    nome_arquivo = template.name
+    raiz_ld = template.parent.parent
+    candidatos = sorted(
+        raiz_ld.glob(f"*Dashboard_Doc_Control_LD_Projeto_Bascico/{nome_arquivo}")
+    )
+    if candidatos:
+        return candidatos[-1]
+
+    raise FileNotFoundError(
+        f"Template do dashboard não encontrado: {template}. "
+        f"Também foi pesquisado em: {raiz_ld}"
+    )
+
+
 def _safe_json(value) -> str:
     return json.dumps(value, ensure_ascii=False, separators=(",", ":")).replace(
         "</", "<\\/"
@@ -112,6 +131,7 @@ def build(
         "ldHeaders": load_ld_headers(source),
     }
 
+    template = resolve_template(template)
     html = template.read_text(encoding="utf-8")
     data_start = html.index("const DATA=")
     runtime_start = html.index("const $=id", data_start)
