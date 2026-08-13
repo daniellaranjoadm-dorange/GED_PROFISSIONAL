@@ -1036,6 +1036,45 @@ def detalhes_documento(request, documento_id):
 
     workflow_status = getattr(documento, "workflow_status", None)
 
+    # Os arquivos oficiais permanecem na origem da LD. A tela apenas referencia
+    # esses caminhos, evitando duplicar o mesmo arquivo no armazenamento do GED.
+    registros_ld = list(documento.registros_ld.all().order_by("origem_aba", "id"))
+    arquivos_ld = []
+    caminhos_vistos = set()
+    for registro in registros_ld:
+        caminho = (registro.caminho_documento or "").strip()
+        chave = caminho.casefold()
+        if caminho and chave not in caminhos_vistos:
+            caminhos_vistos.add(chave)
+            arquivos_ld.append(
+                {
+                    "registro": registro,
+                    "nome": os.path.basename(caminho.rstrip("\\/")) or caminho,
+                    "url": reverse(
+                        "automacoes:abrir_arquivo_ld",
+                        kwargs={"pk": registro.pk, "tipo": "documento"},
+                    ),
+                }
+            )
+
+    def primeiro_valor_ld(*campos):
+        for registro in registros_ld:
+            for campo in campos:
+                valor = getattr(registro, campo, "")
+                if str(valor or "").strip():
+                    return valor
+        return ""
+
+    resumo_ld = {
+        "status_documento": primeiro_valor_ld("status_documento", "status"),
+        "grd": primeiro_valor_ld("grd"),
+        "data_grd": primeiro_valor_ld("data_grd"),
+        "pcf": primeiro_valor_ld("pcf"),
+        "data_pcf": primeiro_valor_ld("data_pcf"),
+        "transmittal_km": primeiro_valor_ld("transmittal_km"),
+        "data_recebimento_km": primeiro_valor_ld("data_recebimento_km"),
+    }
+
     context = {
         "documento": documento,
         "anexos": anexos,
@@ -1043,6 +1082,9 @@ def detalhes_documento(request, documento_id):
         "versao_atual": versao_atual,
         "proxima_revisao": proxima_revisao,
         "workflow_status": workflow_status,
+        "registros_ld": registros_ld,
+        "arquivos_ld": arquivos_ld,
+        "resumo_ld": resumo_ld,
         "pode_avancar_etapa": pode_avancar_etapa(request.user, documento),
         "proxima_etapa": proxima_etapa(documento),
         "pode_retornar_etapa": pode_retornar_etapa(request.user, documento),
