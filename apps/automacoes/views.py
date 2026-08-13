@@ -57,12 +57,44 @@ from apps.automacoes.services.pcf_response_report import (
 )
 from apps.contas.permissions import has_perm, usuario_tem_permissao
 from apps.automacoes.services.notification_center import montar_central_notificacoes
+from apps.automacoes.services.document_center import (
+    carregar_relacionamentos_da_pagina,
+    consulta_central_documentos,
+    metricas_central_documentos,
+)
 
 
 
 KM_DOCUMENTOS_BASE = Path(
     r"\\virm-rgr022\FILESERVER\Projetos\05_HANDYMAX\09. Doc Control\15 - Documentos KM"
 )
+
+
+@login_required
+@has_perm("automacoes.visualizar")
+def central_documentos(request):
+    busca = request.GET.get("q", "").strip()
+    vinculo = request.GET.get("vinculo", "").strip()
+    dox = request.GET.get("dox", "").strip()
+    queryset = consulta_central_documentos(busca=busca, vinculo=vinculo, dox=dox)
+    paginator = Paginator(queryset, 40)
+    pagina = paginator.get_page(request.GET.get("page"))
+    pagina.object_list = carregar_relacionamentos_da_pagina(pagina)
+
+    parametros = request.GET.copy()
+    parametros.pop("page", None)
+    return render(
+        request,
+        "automacoes/central_documentos.html",
+        {
+            "pagina": pagina,
+            "metricas": metricas_central_documentos(),
+            "busca": busca,
+            "vinculo": vinculo,
+            "dox": dox,
+            "query_string": parametros.urlencode(),
+        },
+    )
 
 KM_EXTENSOES_PRIORITARIAS = {
     ".docx": 60,

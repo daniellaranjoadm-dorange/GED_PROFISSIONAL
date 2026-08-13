@@ -1,0 +1,84 @@
+{% extends "documentos/base.html" %}
+{% load static %}
+
+{% block title %}Central de Documentos{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'automacoes/css/ops_enterprise.css' %}?v=1701">
+<style>
+  .doc-center{width:min(1760px,calc(100vw - 36px));margin:auto}
+  .doc-grid{display:grid;grid-template-columns:1.5fr .7fr .7fr auto;gap:12px;align-items:end}
+  .doc-code{font-weight:800;color:#e2e8f0}.doc-title{max-width:420px;color:#94a3b8;font-size:12px}
+  .doc-tags{display:flex;gap:6px;flex-wrap:wrap}.doc-tag{padding:4px 8px;border-radius:999px;background:#17324a;color:#ccecff;font-size:11px}
+  .doc-tag.warn{background:#4a3013;color:#fde68a}.doc-tag.ok{background:#123d35;color:#a7f3d0}
+  .doc-table{width:100%;border-collapse:collapse}.doc-table th,.doc-table td{padding:12px 10px;border-bottom:1px solid rgba(148,163,184,.16);vertical-align:top}
+  .doc-table th{color:#94a3b8;font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+  .doc-table td{font-size:13px}.doc-table a{color:#67d4ff;text-decoration:none}
+  .doc-muted{color:#64748b}.doc-sub{display:block;color:#94a3b8;font-size:11px;margin-top:3px}
+  @media(max-width:900px){.doc-grid{grid-template-columns:1fr}.doc-table{display:block;overflow-x:auto}}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ops-page doc-center">
+  <section class="ops-hero">
+    <div class="ops-hero-main">
+      <div class="ops-eyebrow"><i class="bi bi-diagram-3"></i> REGISTRO DOCUMENTAL INTEGRADO</div>
+      <h1>Central de Documentos</h1>
+      <p>Visão consolidada do Documento GED com suas revisões da LD, KM, transmittals, PCFs, GRDs e referências externas.</p>
+    </div>
+    <div class="ops-actions">
+      <a class="ops-btn" href="{% url 'automacoes:lista_ld' %}"><i class="bi bi-table"></i> Lista LD</a>
+      <a class="ops-btn" href="{% url 'automacoes:painel' %}"><i class="bi bi-arrow-left"></i> Automações</a>
+    </div>
+  </section>
+
+  <section class="ops-kpi-grid ops-kpi-grid-5">
+    <div class="ops-kpi"><span>Documentos GED</span><strong>{{ metricas.total }}</strong><small>cadastro central ativo</small></div>
+    <div class="ops-kpi"><span>Vinculados à LD</span><strong>{{ metricas.com_ld }}</strong><small>correspondência exata</small></div>
+    <div class="ops-kpi"><span>GED sem LD</span><strong>{{ metricas.sem_ld }}</strong><small>requer análise</small></div>
+    <div class="ops-kpi"><span>LD sem GED</span><strong>{{ metricas.ld_sem_vinculo }}</strong><small>fila de reconciliação</small></div>
+    <div class="ops-kpi"><span>Com referência DOX</span><strong>{{ metricas.com_dox }}</strong><small>integração preparada</small></div>
+  </section>
+
+  <section class="ops-panel mt-3">
+    <form method="get" class="doc-grid">
+      <div><label class="ops-filter-label">Busca integrada</label><input class="form-control" type="search" name="q" value="{{ busca }}" placeholder="GED, DOX, TP, KM, título, PCF ou GRD"></div>
+      <div><label class="ops-filter-label">Vínculo LD</label><select class="form-select" name="vinculo"><option value="">Todos</option><option value="com_ld" {% if vinculo == 'com_ld' %}selected{% endif %}>Com LD</option><option value="sem_ld" {% if vinculo == 'sem_ld' %}selected{% endif %}>Sem LD</option></select></div>
+      <div><label class="ops-filter-label">Referência DOX</label><select class="form-select" name="dox"><option value="">Todos</option><option value="com_dox" {% if dox == 'com_dox' %}selected{% endif %}>Com DOX</option><option value="sem_dox" {% if dox == 'sem_dox' %}selected{% endif %}>Sem DOX</option></select></div>
+      <div><button class="ops-btn ops-btn-primary" type="submit"><i class="bi bi-search"></i> Filtrar</button></div>
+    </form>
+  </section>
+
+  <section class="ops-panel mt-3">
+    <div class="ops-panel-head"><div><h2>Registro documental</h2><p>{{ pagina.paginator.count }} resultado(s)</p></div></div>
+    <div style="overflow-x:auto">
+      <table class="doc-table">
+        <thead><tr><th>Documento GED</th><th>LD / Cliente</th><th>KM / Transmittal</th><th>PCF / GRD</th><th>Referências externas</th><th>Situação</th></tr></thead>
+        <tbody>
+        {% for doc in pagina %}
+          {% with ld=doc.ld_relacionadas.0 %}
+          <tr>
+            <td><a class="doc-code" href="{% url 'documentos:detalhes_documento' doc.id %}">{{ doc.codigo }}</a><span class="doc-sub">Rev. {{ doc.revisao }} · {{ doc.disciplina|default:"Sem disciplina" }}</span><div class="doc-title">{{ doc.titulo }}</div></td>
+            <td>{% if ld %}<strong>{{ ld.documento }}</strong><span class="doc-sub">{{ ld.origem_aba }} · Rev. {{ ld.revisao }}</span>{% if ld.numero_interno %}<span class="doc-sub">DOX interno: {{ ld.numero_interno }}</span>{% endif %}{% else %}<span class="doc-muted">Sem vínculo LD</span>{% endif %}</td>
+            <td>{% if ld and ld.numero_documento_km %}<strong>{{ ld.numero_documento_km }}</strong><span class="doc-sub">{{ ld.transmittal_km|default:"Sem transmittal" }} · {{ ld.data_recebimento_km|default:"Sem data" }}</span>{% else %}<span class="doc-muted">Sem vínculo KM</span>{% endif %}</td>
+            <td>{% if ld %}<strong>{{ ld.pcf|default:"Sem PCF" }}</strong><span class="doc-sub">GRD: {{ ld.grd|default:"—" }}</span><span class="doc-sub">{{ ld.status_final_pcf|default:"Sem status PCF" }}</span>{% else %}<span class="doc-muted">—</span>{% endif %}</td>
+            <td><div class="doc-tags">{% for ref in doc.referencias_carregadas %}{% if ref.url %}<a class="doc-tag ok" href="{{ ref.url }}" target="_blank" rel="noopener">{{ ref.sistema }} · {{ ref.identificador_externo }}</a>{% else %}<span class="doc-tag">{{ ref.sistema }} · {{ ref.identificador_externo }}</span>{% endif %}{% empty %}<span class="doc-muted">Nenhuma</span>{% endfor %}</div></td>
+            <td><div class="doc-tags">{% if doc.total_registros_ld %}<span class="doc-tag ok">LD vinculada</span>{% else %}<span class="doc-tag warn">Sem LD</span>{% endif %}{% if doc.total_referencias_dox %}<span class="doc-tag ok">DOX</span>{% else %}<span class="doc-tag warn">Sem DOX</span>{% endif %}</div></td>
+          </tr>
+          {% endwith %}
+        {% empty %}<tr><td colspan="6" class="doc-muted">Nenhum documento encontrado para os filtros informados.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if pagina.paginator.num_pages > 1 %}
+    <div class="ops-actions mt-3">
+      {% if pagina.has_previous %}<a class="ops-btn" href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ pagina.previous_page_number }}">Anterior</a>{% endif %}
+      <span class="doc-muted">Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
+      {% if pagina.has_next %}<a class="ops-btn" href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ pagina.next_page_number }}">Próxima</a>{% endif %}
+    </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

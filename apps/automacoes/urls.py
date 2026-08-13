@@ -5,6 +5,7 @@ app_name = "automacoes"
 
 urlpatterns = [
     path("", views.painel, name="painel"),
+    path("central-documentos/", views.central_documentos, name="central_documentos"),
 
     # Operations Center
     path("ops-center/", views.ops_center, name="ops_center"),
