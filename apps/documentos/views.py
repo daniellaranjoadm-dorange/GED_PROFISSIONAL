@@ -1042,21 +1042,28 @@ def detalhes_documento(request, documento_id):
     registros_ld = list(documento.registros_ld.all().order_by("origem_aba", "id"))
     arquivos_ld = []
     caminhos_vistos = set()
+    tipos_arquivo_ld = (
+        ("documento", "Documento oficial", "caminho_documento"),
+        ("pcf", "PCF recebida", "caminho_pcf"),
+    )
     for registro in registros_ld:
-        caminho = (registro.caminho_documento or "").strip()
-        chave = caminho.casefold()
-        if caminho and chave not in caminhos_vistos:
-            caminhos_vistos.add(chave)
-            arquivos_ld.append(
-                {
-                    "registro": registro,
-                    "nome": os.path.basename(caminho.rstrip("\\/")) or caminho,
-                    "url": reverse(
-                        "automacoes:abrir_arquivo_ld",
-                        kwargs={"pk": registro.pk, "tipo": "documento"},
-                    ),
-                }
-            )
+        for tipo, rotulo, campo in tipos_arquivo_ld:
+            caminho = (getattr(registro, campo, "") or "").strip()
+            chave = (tipo, caminho.casefold())
+            if caminho and chave not in caminhos_vistos:
+                caminhos_vistos.add(chave)
+                arquivos_ld.append(
+                    {
+                        "registro": registro,
+                        "tipo": tipo,
+                        "rotulo": rotulo,
+                        "nome": os.path.basename(caminho.rstrip("\\/")) or caminho,
+                        "url": reverse(
+                            "automacoes:abrir_arquivo_ld",
+                            kwargs={"pk": registro.pk, "tipo": tipo},
+                        ),
+                    }
+                )
 
     def primeiro_valor_ld(*campos):
         for registro in registros_ld:

@@ -34,6 +34,7 @@ class DocumentoDetalheLDIntegrationTests(TestCase):
             numero_interno="DOX-123",
             data_recebimento_km="12/08/2026",
             caminho_documento=r"\\servidor\documentos\desenho.pdf",
+            caminho_pcf=r"\\servidor\pcfs\PCF-recebida.xlsx",
         )
 
         response = self.client.get(
@@ -49,11 +50,20 @@ class DocumentoDetalheLDIntegrationTests(TestCase):
         self.assertContains(response, "DOX-123")
         self.assertContains(response, ">DE<")
         self.assertContains(response, "desenho.pdf")
+        self.assertContains(response, "PCF recebida")
+        self.assertContains(response, "PCF-recebida.xlsx")
         self.assertContains(
             response,
             reverse(
                 "automacoes:abrir_arquivo_ld",
                 kwargs={"pk": registro.pk, "tipo": "documento"},
+            ),
+        )
+        self.assertContains(
+            response,
+            reverse(
+                "automacoes:abrir_arquivo_ld",
+                kwargs={"pk": registro.pk, "tipo": "pcf"},
             ),
         )
         self.assertEqual(self.documento.arquivos.count(), 0)

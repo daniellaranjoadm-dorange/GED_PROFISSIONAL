@@ -653,13 +653,14 @@
     <div class="card shadow-sm p-3 mb-4">
         {% if arquivos_ld %}
         <table class="table table-striped table-bordered align-middle mb-0">
-            <thead class="table-light"><tr><th>Arquivo</th><th>Origem</th><th>Ação</th></tr></thead>
+            <thead class="table-light"><tr><th>Tipo</th><th>Arquivo</th><th>Origem</th><th>Ação</th></tr></thead>
             <tbody>
                 {% for item in arquivos_ld %}
                 <tr>
+                    <td><strong>{{ item.rotulo }}</strong></td>
                     <td>{{ item.nome }}</td>
                     <td>{{ item.registro.origem_aba|default:"LD" }}</td>
-                    <td><a href="{{ item.url }}" target="_blank" class="btn btn-outline-info btn-sm btn-pill">Abrir arquivo oficial</a></td>
+                    <td><a href="{{ item.url }}" target="_blank" class="btn btn-outline-info btn-sm btn-pill">Abrir {{ item.rotulo|lower }}</a></td>
                 </tr>
                 {% endfor %}
             </tbody>
