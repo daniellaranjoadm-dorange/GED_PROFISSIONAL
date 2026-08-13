@@ -2,9 +2,13 @@ from django.db.models import Count, Prefetch, Q
 
 from apps.automacoes.models import DocumentoLD
 from apps.documentos.models import Documento, DocumentoReferenciaExterna
+from apps.automacoes.services.ld_parser import extrair_tipo_documental
 
 
-def consulta_central_documentos(*, busca="", vinculo="", dox=""):
+def consulta_central_documentos(
+    *, busca="", vinculo="", dox="", tipo="", disciplina="", status="",
+    emissao="", status_pcf="", responsavel="", casco="", origem=""
+):
     queryset = (
         Documento.objects.filter(ativo=True, deletado_em__isnull=True)
         .select_related("projeto", "etapa")
@@ -42,7 +46,72 @@ def consulta_central_documentos(*, busca="", vinculo="", dox=""):
     elif dox == "sem_dox":
         queryset = queryset.filter(total_referencias_dox=0)
 
-    return queryset.order_by("codigo", "revisao")
+    if tipo:
+        ids_tipo = [
+            documento.id
+            for documento in queryset.only("id", "codigo")
+            if extrair_tipo_documental(documento.codigo) == tipo.upper()
+        ]
+        queryset = queryset.filter(id__in=ids_tipo)
+    if disciplina:
+        queryset = queryset.filter(
+            Q(disciplina__iexact=disciplina)
+            | Q(registros_ld__disciplina__iexact=disciplina)
+        )
+    if status:
+        queryset = queryset.filter(registros_ld__status_documento__iexact=status)
+    if emissao:
+        queryset = queryset.filter(registros_ld__status_grd__iexact=emissao)
+    if status_pcf:
+        queryset = queryset.filter(registros_ld__status_final_pcf__iexact=status_pcf)
+    if responsavel:
+        queryset = queryset.filter(registros_ld__resp_for_issue__iexact=responsavel)
+    if casco:
+        queryset = queryset.filter(registros_ld__casco__iexact=casco)
+    if origem:
+        queryset = queryset.filter(registros_ld__origem_aba__iexact=origem)
+
+    return queryset.distinct().order_by("codigo", "revisao")
+
+
+def opcoes_filtros_central_documentos() -> dict[str, list[str]]:
+    def distintos(campo):
+        return list(
+            DocumentoLD.objects.exclude(**{f"{campo}__isnull": True})
+            .exclude(**{campo: ""})
+            .order_by(campo)
+            .values_list(campo, flat=True)
+            .distinct()
+        )
+
+    tipos = sorted(
+        {
+            tipo
+            for codigo in Documento.objects.filter(
+                ativo=True, deletado_em__isnull=True
+            ).values_list("codigo", flat=True)
+            if (tipo := extrair_tipo_documental(codigo))
+        }
+    )
+    disciplinas = sorted(
+        set(distintos("disciplina"))
+        | set(
+            Documento.objects.filter(ativo=True, deletado_em__isnull=True)
+            .exclude(disciplina__isnull=True)
+            .exclude(disciplina="")
+            .values_list("disciplina", flat=True)
+        )
+    )
+    return {
+        "tipos": tipos,
+        "disciplinas": disciplinas,
+        "status": distintos("status_documento"),
+        "emissoes": distintos("status_grd"),
+        "status_pcf": distintos("status_final_pcf"),
+        "responsaveis": distintos("resp_for_issue"),
+        "cascos": distintos("casco"),
+        "origens": distintos("origem_aba"),
+    }
 
 
 def carregar_relacionamentos_da_pagina(pagina):

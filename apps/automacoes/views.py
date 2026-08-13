@@ -66,6 +66,7 @@ from apps.automacoes.services.document_center import (
     carregar_relacionamentos_da_pagina,
     consulta_central_documentos,
     metricas_central_documentos,
+    opcoes_filtros_central_documentos,
 )
 from apps.automacoes.services.document_reconciliation import (
     adicionar_sugestoes_explicaveis,
@@ -87,7 +88,16 @@ def central_documentos(request):
     busca = request.GET.get("q", "").strip()
     vinculo = request.GET.get("vinculo", "").strip()
     dox = request.GET.get("dox", "").strip()
-    queryset = consulta_central_documentos(busca=busca, vinculo=vinculo, dox=dox)
+    filtros_ld = {
+        nome: request.GET.get(nome, "").strip()
+        for nome in (
+            "tipo", "disciplina", "status", "emissao", "status_pcf",
+            "responsavel", "casco", "origem",
+        )
+    }
+    queryset = consulta_central_documentos(
+        busca=busca, vinculo=vinculo, dox=dox, **filtros_ld
+    )
     paginator = Paginator(queryset, 40)
     pagina = paginator.get_page(request.GET.get("page"))
     pagina.object_list = carregar_relacionamentos_da_pagina(pagina)
@@ -103,6 +113,8 @@ def central_documentos(request):
             "busca": busca,
             "vinculo": vinculo,
             "dox": dox,
+            "filtros_ld": filtros_ld,
+            "opcoes_filtros": opcoes_filtros_central_documentos(),
             "query_string": parametros.urlencode(),
         },
     )

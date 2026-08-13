@@ -7,7 +7,8 @@
 <link rel="stylesheet" href="{% static 'automacoes/css/ops_enterprise.css' %}?v=1701">
 <style>
   .doc-center{width:min(1760px,calc(100vw - 36px));margin:auto}
-  .doc-grid{display:grid;grid-template-columns:1.5fr .7fr .7fr auto;gap:12px;align-items:end}
+  .doc-grid{display:grid;grid-template-columns:repeat(4,minmax(180px,1fr));gap:12px;align-items:end}
+  .doc-search{grid-column:span 2}.doc-filter-actions{display:flex;gap:8px;align-items:center}
   .doc-code{font-weight:800;color:#e2e8f0}.doc-title{max-width:420px;color:#94a3b8;font-size:12px}
   .doc-tags{display:flex;gap:6px;flex-wrap:wrap}.doc-tag{padding:4px 8px;border-radius:999px;background:#17324a;color:#ccecff;font-size:11px}
   .doc-tag.warn{background:#4a3013;color:#fde68a}.doc-tag.ok{background:#123d35;color:#a7f3d0}
@@ -15,7 +16,8 @@
   .doc-table th{color:#94a3b8;font-size:11px;text-transform:uppercase;letter-spacing:.05em}
   .doc-table td{font-size:13px}.doc-table a{color:#67d4ff;text-decoration:none}
   .doc-muted{color:#64748b}.doc-sub{display:block;color:#94a3b8;font-size:11px;margin-top:3px}
-  @media(max-width:900px){.doc-grid{grid-template-columns:1fr}.doc-table{display:block;overflow-x:auto}}
+  @media(max-width:1100px){.doc-grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:900px){.doc-grid{grid-template-columns:1fr}.doc-search{grid-column:auto}.doc-table{display:block;overflow-x:auto}}
 </style>
 {% endblock %}
 
@@ -43,10 +45,18 @@
 
   <section class="ops-panel mt-3">
     <form method="get" class="doc-grid">
-      <div><label class="ops-filter-label">Busca integrada</label><input class="form-control" type="search" name="q" value="{{ busca }}" placeholder="GED, DOX, TP, KM, título, PCF ou GRD"></div>
+      <div class="doc-search"><label class="ops-filter-label">Busca integrada</label><input class="form-control" type="search" name="q" value="{{ busca }}" placeholder="GED, DOX, TP, KM, título, PCF ou GRD"></div>
       <div><label class="ops-filter-label">Vínculo LD</label><select class="form-select" name="vinculo"><option value="">Todos</option><option value="com_ld" {% if vinculo == 'com_ld' %}selected{% endif %}>Com LD</option><option value="sem_ld" {% if vinculo == 'sem_ld' %}selected{% endif %}>Sem LD</option></select></div>
       <div><label class="ops-filter-label">Referência DOX</label><select class="form-select" name="dox"><option value="">Todos</option><option value="com_dox" {% if dox == 'com_dox' %}selected{% endif %}>Com DOX</option><option value="sem_dox" {% if dox == 'sem_dox' %}selected{% endif %}>Sem DOX</option></select></div>
-      <div><button class="ops-btn ops-btn-primary" type="submit"><i class="bi bi-search"></i> Filtrar</button></div>
+      <div><label class="ops-filter-label">Tipo</label><select class="form-select" name="tipo"><option value="">Todos</option>{% for item in opcoes_filtros.tipos %}<option value="{{ item }}" {% if filtros_ld.tipo == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+      <div><label class="ops-filter-label">Disciplina</label><select class="form-select" name="disciplina"><option value="">Todas</option>{% for item in opcoes_filtros.disciplinas %}<option value="{{ item }}" {% if filtros_ld.disciplina == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+      <div><label class="ops-filter-label">Status geral</label><select class="form-select" name="status"><option value="">Todos</option>{% for item in opcoes_filtros.status %}<option value="{{ item }}" {% if filtros_ld.status == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+      <div><label class="ops-filter-label">Emissão</label><select class="form-select" name="emissao"><option value="">Todas</option>{% for item in opcoes_filtros.emissoes %}<option value="{{ item }}" {% if filtros_ld.emissao == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+      <div><label class="ops-filter-label">Status PCF</label><select class="form-select" name="status_pcf"><option value="">Todos</option>{% for item in opcoes_filtros.status_pcf %}<option value="{{ item }}" {% if filtros_ld.status_pcf == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+      <div><label class="ops-filter-label">Responsável</label><select class="form-select" name="responsavel"><option value="">Todos</option>{% for item in opcoes_filtros.responsaveis %}<option value="{{ item }}" {% if filtros_ld.responsavel == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+      <div><label class="ops-filter-label">Casco</label><select class="form-select" name="casco"><option value="">Todos</option>{% for item in opcoes_filtros.cascos %}<option value="{{ item }}" {% if filtros_ld.casco == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+      <div><label class="ops-filter-label">Origem LD</label><select class="form-select" name="origem"><option value="">Todas</option>{% for item in opcoes_filtros.origens %}<option value="{{ item }}" {% if filtros_ld.origem == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+      <div class="doc-filter-actions"><button class="ops-btn ops-btn-primary" type="submit"><i class="bi bi-search"></i> Filtrar</button><a class="ops-btn" href="{% url 'automacoes:central_documentos' %}">Limpar</a></div>
     </form>
   </section>
 
