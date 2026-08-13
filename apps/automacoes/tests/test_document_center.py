@@ -41,6 +41,8 @@ class DocumentCenterViewTests(TestCase):
     def test_exibe_documento_e_relacionamentos_integrados(self):
         response = self.client.get(reverse("automacoes:central_documentos"))
         self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Central de Documentos")
+        self.assertContains(response, reverse("automacoes:central_documentos"))
         self.assertContains(response, "DOC-DOX-001")
         self.assertContains(response, "805-100")
         self.assertContains(response, "T-45976")
