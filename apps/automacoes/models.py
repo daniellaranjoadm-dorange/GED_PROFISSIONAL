@@ -360,6 +360,14 @@ class DocumentoLD(models.Model):
     ]
 
     origem_aba = models.CharField(max_length=100, blank=True)
+    documento_ged = models.ForeignKey(
+        "documentos.Documento",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="registros_ld",
+        help_text="Documento central do GED correspondente a esta linha/revisão da LD.",
+    )
     documento = models.CharField(max_length=255, blank=True)
     revisao = models.CharField(max_length=50, blank=True)
 

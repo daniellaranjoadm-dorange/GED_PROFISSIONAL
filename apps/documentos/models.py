@@ -348,6 +348,45 @@ class DocumentoVersao(models.Model):
         return f"{self.documento.codigo} - Rev {self.numero_revisao}"
 
 
+class DocumentoReferenciaExterna(models.Model):
+    """Identidade do documento em sistemas externos, como DOX, KM ou cliente."""
+
+    SISTEMA_DOX = "DOX"
+    SISTEMA_KM = "KM"
+    SISTEMA_CLIENTE = "CLIENTE"
+    SISTEMA_CHOICES = [
+        (SISTEMA_DOX, "DOX"),
+        (SISTEMA_KM, "Kongsberg/KM"),
+        (SISTEMA_CLIENTE, "Cliente"),
+    ]
+
+    documento = models.ForeignKey(
+        Documento,
+        on_delete=models.CASCADE,
+        related_name="referencias_externas",
+    )
+    sistema = models.CharField(max_length=30, choices=SISTEMA_CHOICES, db_index=True)
+    identificador_externo = models.CharField(max_length=255, db_index=True)
+    url = models.URLField(max_length=1000, blank=True)
+    metadados = models.JSONField(default=dict, blank=True)
+    sincronizado_em = models.DateTimeField(null=True, blank=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["sistema", "identificador_externo"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["sistema", "identificador_externo"],
+                name="uniq_referencia_externa_sistema_id",
+            )
+        ]
+        indexes = [models.Index(fields=["documento", "sistema"])]
+
+    def __str__(self) -> str:
+        return f"{self.sistema}: {self.identificador_externo}"
+
+
 # ======================================================================
 # 👷 RESPONSÁVEL POR DISCIPLINA
 # ======================================================================
