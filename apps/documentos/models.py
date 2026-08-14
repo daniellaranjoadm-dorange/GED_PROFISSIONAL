@@ -126,7 +126,37 @@ class WorkflowTransicao(models.Model):
 # ======================================================================
 # 📄 DOCUMENTO CENTRAL DO GED
 # ======================================================================
+class DocumentoMestre(models.Model):
+    codigo = models.CharField(max_length=200)
+    codigo_normalizado = models.CharField(max_length=220, unique=True, db_index=True)
+    titulo = models.CharField(max_length=255, blank=True)
+    disciplina = models.CharField(max_length=100, blank=True)
+    revisao_atual = models.ForeignKey(
+        "Documento",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="mestres_como_revisao_atual",
+    )
+    ativo = models.BooleanField(default=True, db_index=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["codigo"]
+
+    def __str__(self):
+        return self.codigo
+
+
 class Documento(models.Model):
+    mestre = models.ForeignKey(
+        DocumentoMestre,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="revisoes",
+    )
     projeto = models.ForeignKey(
         Projeto,
         on_delete=models.CASCADE,
@@ -369,6 +399,10 @@ class DocumentoReferenciaExterna(models.Model):
     identificador_externo = models.CharField(max_length=255, db_index=True)
     url = models.URLField(max_length=1000, blank=True)
     metadados = models.JSONField(default=dict, blank=True)
+    status_externo = models.CharField(max_length=120, blank=True, db_index=True)
+    divergente = models.BooleanField(default=False, db_index=True)
+    divergencias = models.JSONField(default=list, blank=True)
+    conferido_em = models.DateTimeField(null=True, blank=True)
     sincronizado_em = models.DateTimeField(null=True, blank=True)
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)

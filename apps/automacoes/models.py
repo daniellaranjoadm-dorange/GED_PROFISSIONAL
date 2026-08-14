@@ -129,6 +129,13 @@ class SearchAudit(models.Model):
 
 
 class TransmittalKM(models.Model):
+    documento_ged = models.ForeignKey(
+        "documentos.Documento",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="transmittals_km",
+    )
     documento = models.CharField(max_length=100, blank=True)
     titulo = models.TextField(blank=True)
     pasta = models.CharField(max_length=255, blank=True)
@@ -299,6 +306,13 @@ class KMFileIndex(models.Model):
         return self.nome_arquivo
 
 class PCFTimeline(models.Model):
+    documento_ged = models.ForeignKey(
+        "documentos.Documento",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="pcfs_timeline",
+    )
     tipo = models.CharField(max_length=50, blank=True)
 
     caminho = models.TextField(blank=True)
@@ -493,6 +507,73 @@ class DocumentoLD(models.Model):
 
     def __str__(self):
         return f"{self.documento} R{self.revisao}"
+
+
+class PendenciaDocumental(models.Model):
+    SEVERIDADE_INFO = "INFO"
+    SEVERIDADE_ATENCAO = "ATENCAO"
+    SEVERIDADE_CRITICA = "CRITICA"
+    SEVERIDADES = [
+        (SEVERIDADE_INFO, "Informativa"),
+        (SEVERIDADE_ATENCAO, "Atenção"),
+        (SEVERIDADE_CRITICA, "Crítica"),
+    ]
+    STATUS_ABERTA = "ABERTA"
+    STATUS_EM_TRATAMENTO = "EM_TRATAMENTO"
+    STATUS_RESOLVIDA = "RESOLVIDA"
+    STATUS_CHOICES = [
+        (STATUS_ABERTA, "Aberta"),
+        (STATUS_EM_TRATAMENTO, "Em tratamento"),
+        (STATUS_RESOLVIDA, "Resolvida"),
+    ]
+
+    chave = models.CharField(max_length=300, unique=True)
+    documento = models.ForeignKey(
+        "documentos.Documento",
+        on_delete=models.CASCADE,
+        related_name="pendencias",
+    )
+    registro_ld = models.ForeignKey(
+        DocumentoLD,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="pendencias",
+    )
+    tipo = models.CharField(max_length=80, db_index=True)
+    titulo = models.CharField(max_length=200)
+    descricao = models.TextField(blank=True)
+    acao_recomendada = models.TextField(blank=True)
+    origem = models.CharField(max_length=50, blank=True, db_index=True)
+    severidade = models.CharField(
+        max_length=20, choices=SEVERIDADES, default=SEVERIDADE_ATENCAO, db_index=True
+    )
+    status = models.CharField(
+        max_length=20, choices=STATUS_CHOICES, default=STATUS_ABERTA, db_index=True
+    )
+    responsavel = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="pendencias_documentais",
+    )
+    responsavel_texto = models.CharField(max_length=255, blank=True)
+    prazo = models.DateField(null=True, blank=True, db_index=True)
+    detectada_em = models.DateTimeField(auto_now_add=True)
+    atualizada_em = models.DateTimeField(auto_now=True)
+    resolvida_em = models.DateTimeField(null=True, blank=True)
+    metadados = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ["-severidade", "prazo", "documento__codigo"]
+        indexes = [
+            models.Index(fields=["status", "severidade"]),
+            models.Index(fields=["tipo", "origem"]),
+        ]
+
+    def __str__(self):
+        return f"{self.documento.codigo}: {self.titulo}"
 
 
 class JobExecution(models.Model):

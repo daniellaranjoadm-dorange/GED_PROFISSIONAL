@@ -6,6 +6,7 @@ app_name = "automacoes"
 urlpatterns = [
     path("", views.painel, name="painel"),
     path("central-documentos/", views.central_documentos, name="central_documentos"),
+    path("central-documentos/pendencias/", views.pendencias_documentais, name="pendencias_documentais"),
     path("central-documentos/reconciliacao/", views.reconciliacao_documentos, name="reconciliacao_documentos"),
     path(
         "central-documentos/reconciliacao/<int:ld_id>/vincular/<int:documento_id>/",

@@ -23,7 +23,7 @@ from django.views.decorators.http import require_POST
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 
-from apps.automacoes.models import TransmittalKM, PCFTimeline, DocumentoLD, DocumentoKM, ExecucaoAutomacao, KMFileIndex
+from apps.automacoes.models import TransmittalKM, PCFTimeline, DocumentoLD, DocumentoKM, ExecucaoAutomacao, KMFileIndex, PendenciaDocumental
 from apps.automacoes.services import (
     atualizar_ld,
     atualizar_ld_projeto_basico,
@@ -74,6 +74,7 @@ from apps.automacoes.services.document_reconciliation import (
     origens_pendentes,
     vincular_pendencia_exata,
 )
+from apps.automacoes.services.document_lifecycle import executar_ciclo_documental
 
 
 
@@ -147,6 +148,51 @@ def central_documentos(request):
             "filtros_ativos": filtros_ativos,
         },
     )
+
+
+@login_required
+@has_perm("automacoes.visualizar")
+def pendencias_documentais(request):
+    busca = request.GET.get("q", "").strip()
+    status = request.GET.get("status", PendenciaDocumental.STATUS_ABERTA).strip()
+    severidade = request.GET.get("severidade", "").strip()
+    tipo = request.GET.get("tipo", "").strip()
+    queryset = PendenciaDocumental.objects.select_related(
+        "documento", "registro_ld", "responsavel"
+    )
+    if busca:
+        queryset = queryset.filter(
+            Q(documento__codigo__icontains=busca)
+            | Q(documento__titulo__icontains=busca)
+            | Q(titulo__icontains=busca)
+            | Q(responsavel_texto__icontains=busca)
+        )
+    if status:
+        queryset = queryset.filter(status=status)
+    if severidade:
+        queryset = queryset.filter(severidade=severidade)
+    if tipo:
+        queryset = queryset.filter(tipo=tipo)
+    metricas = {
+        "abertas": PendenciaDocumental.objects.filter(status="ABERTA").count(),
+        "criticas": PendenciaDocumental.objects.filter(status="ABERTA", severidade="CRITICA").count(),
+        "em_tratamento": PendenciaDocumental.objects.filter(status="EM_TRATAMENTO").count(),
+        "resolvidas": PendenciaDocumental.objects.filter(status="RESOLVIDA").count(),
+    }
+    paginator = Paginator(queryset, 50)
+    pagina = paginator.get_page(request.GET.get("page"))
+    parametros = request.GET.copy()
+    parametros.pop("page", None)
+    return render(request, "automacoes/pendencias_documentais.html", {
+        "pagina": pagina,
+        "metricas": metricas,
+        "busca": busca,
+        "status": status,
+        "severidade": severidade,
+        "tipo": tipo,
+        "tipos": PendenciaDocumental.objects.order_by("tipo").values_list("tipo", flat=True).distinct(),
+        "query_string": parametros.urlencode(),
+    })
 
 
 @login_required
@@ -1089,6 +1135,7 @@ def _executar_automacao(
     *,
     arquivo_origem="",
     redirect_name="automacoes:painel",
+    pos_processador=None,
 ):
     if request.method != "POST":
         messages.error(request, f"Método inválido para executar {nome}.")
@@ -1172,6 +1219,11 @@ def _executar_automacao(
     try:
         resultado = executor()
         ok = bool(resultado.get("ok")) if isinstance(resultado, dict) else False
+        ciclo_documental = None
+        if ok and pos_processador:
+            ciclo_documental = pos_processador(
+                usuario=request.user if request.user.is_authenticated else None
+            )
         mensagem = (
             resultado.get("mensagem")
             if isinstance(resultado, dict)
@@ -1190,6 +1242,7 @@ def _executar_automacao(
             **_detalhes_execucao(resultado),
             "comparativo": comparar_snapshots(snapshot_antes, snapshot_depois),
             "arquivos_publicados": extrair_arquivos_publicados(resultado),
+            "ciclo_documental": ciclo_documental,
         }
 
         if ok:
@@ -1354,6 +1407,7 @@ def executar_atualizar_ld(request):
         request,
         atualizar_ld.executar,
         "Atualização LD",
+        pos_processador=executar_ciclo_documental,
     )
 
 
@@ -1364,6 +1418,7 @@ def executar_atualizar_ld_projeto_basico(request):
         request,
         atualizar_ld_projeto_basico.executar,
         "Atualização LD Projeto Básico",
+        pos_processador=executar_ciclo_documental,
     )
 
 

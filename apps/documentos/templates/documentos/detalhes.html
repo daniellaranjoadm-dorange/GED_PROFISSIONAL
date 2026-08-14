@@ -722,6 +722,19 @@
         {% endfor %}
     {% endif %}
 
+    <h3 class="doc-section-title mt-4 mb-2"><span class="icon">🧭</span><span>Linha do tempo integrada</span></h3>
+    <div class="card shadow-sm p-3 mb-4">
+      {% if documento_mestre %}<p><strong>Identidade mestre:</strong> {{ documento_mestre.codigo }} · Revisão atual: {{ documento_mestre.revisao_atual.revisao|default:"—" }}</p>{% endif %}
+      <div class="row g-3">
+        <div class="col-lg-3"><strong>Revisões</strong>{% for rev in revisoes_documentais %}<div><a href="{% url 'documentos:detalhes_documento' rev.id %}">Rev. {{ rev.revisao }}</a>{% if documento_mestre.revisao_atual_id == rev.id %} <span class="badge bg-success">Atual</span>{% endif %}</div>{% empty %}<div class="text-muted">Nenhuma</div>{% endfor %}</div>
+        <div class="col-lg-3"><strong>PCFs da revisão</strong>{% for item in pcfs_vinculadas %}<div>{{ item.numero_pcf|default:item.pcf_link }} · {{ item.status_final|default:"Sem status" }}</div>{% empty %}<div class="text-muted">Nenhuma</div>{% endfor %}</div>
+        <div class="col-lg-3"><strong>Transmittals KM</strong>{% for item in transmittals_vinculados %}<div>{{ item.transmittal_numero }} · {{ item.data_envio|default:"Sem data" }}</div>{% empty %}<div class="text-muted">Nenhum</div>{% endfor %}</div>
+        <div class="col-lg-3"><strong>Referências externas</strong>{% for item in referencias_externas %}<div>{{ item.sistema }} · {{ item.identificador_externo }}{% if item.divergente %} <span class="badge bg-danger">Divergente</span>{% endif %}</div>{% empty %}<div class="text-muted">Nenhuma</div>{% endfor %}</div>
+      </div>
+    </div>
+
+    {% if pendencias_abertas %}<h3 class="doc-section-title mt-4 mb-2"><span class="icon">⚠️</span><span>Pendências abertas</span></h3><div class="card shadow-sm p-3 mb-4">{% for item in pendencias_abertas %}<div class="border-bottom py-2"><strong>{{ item.titulo }}</strong> · {{ item.get_severidade_display }}<div class="text-muted">{{ item.acao_recomendada }}</div></div>{% endfor %}</div>{% endif %}
+
     <!-- ============================
          ANEXOS DO DOCUMENTO
          (Arquivos complementares)

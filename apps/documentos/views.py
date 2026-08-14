@@ -1117,6 +1117,16 @@ def detalhes_documento(request, documento_id):
         "historico_workflow": documento.historico_workflow.select_related(
             "etapa", "usuario"
         ).order_by("-data"),
+        "documento_mestre": documento.mestre,
+        "revisoes_documentais": (
+            documento.mestre.revisoes.filter(ativo=True, deletado_em__isnull=True)
+            .order_by("codigo", "revisao")
+            if documento.mestre_id else Documento.objects.none()
+        ),
+        "pcfs_vinculadas": documento.pcfs_timeline.all().order_by("-criado_em"),
+        "transmittals_vinculados": documento.transmittals_km.all().order_by("-criado_em"),
+        "referencias_externas": documento.referencias_externas.all(),
+        "pendencias_abertas": documento.pendencias.exclude(status="RESOLVIDA").order_by("-severidade", "prazo"),
     }
 
     return render(request, "documentos/detalhes.html", context)
