@@ -776,3 +776,35 @@ class RuntimeMetricSnapshot(models.Model):
 
     def __str__(self):
         return f"{self.captured_at:%Y-%m-%d %H:%M:%S} | {self.runtime_status} | {self.runtime_score}"
+
+
+class ExecutiveMetricSnapshot(models.Model):
+    """Fechamento diário auditável da carteira documental por origem LD."""
+
+    origem = models.CharField(max_length=100, db_index=True)
+    data_referencia = models.DateField(db_index=True)
+    total = models.PositiveIntegerField(default=0)
+    emitidos = models.PositiveIntegerField(default=0)
+    vencidos_nao_emitidos = models.PositiveIntegerField(default=0)
+    vencendo_30_dias = models.PositiveIntegerField(default=0)
+    pcf_criticas = models.PositiveIntegerField(default=0)
+    pcf_aguardando_resposta = models.PositiveIntegerField(default=0)
+    comentarios_abertos = models.PositiveIntegerField(default=0)
+    aprovados_sem_ressalvas = models.PositiveIntegerField(default=0)
+    aderencia_prazo = models.FloatField(default=0)
+    progresso = models.FloatField(default=0)
+    qualidade_dados = models.FloatField(default=0)
+    metricas = models.JSONField(default=dict, blank=True)
+    capturado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-data_referencia", "origem"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["origem", "data_referencia"],
+                name="uniq_executive_snapshot_origem_data",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.origem} | {self.data_referencia:%d/%m/%Y}"

@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 
-from apps.automacoes.models import DocumentoLD, PCFTimeline, PendenciaDocumental, TransmittalKM
+from apps.automacoes.models import DocumentoLD, ExecutiveMetricSnapshot, PCFTimeline, PendenciaDocumental, TransmittalKM
 from apps.automacoes.services.document_lifecycle import executar_ciclo_documental
 from apps.automacoes.tests.rbac_helpers import grant_rbac
 from apps.documentos.models import Documento, DocumentoMestre, DocumentoReferenciaExterna
@@ -67,6 +67,8 @@ class DocumentLifecycleTests(TestCase):
             ).exists()
         )
         self.assertGreater(resultado["pendencias"]["abertas"], 0)
+        self.assertEqual(ExecutiveMetricSnapshot.objects.count(), 1)
+        self.assertEqual(len(resultado["snapshots_executivos"]), 1)
 
     def test_ciclo_e_idempotente_para_mestre_e_referencias(self):
         executar_ciclo_documental()

@@ -275,9 +275,11 @@ def recalcular_pendencias_documentais():
 
 @transaction.atomic
 def executar_ciclo_documental(*, usuario=None):
+    from apps.automacoes.services.executive_governance import capturar_snapshot_executivo
+
     cadastro = cadastrar_documentos_ausentes_da_ld(usuario=usuario)
     vinculos = sincronizar_documentos_ld_com_ged()
-    return {
+    resultado = {
         "cadastro": cadastro,
         "vinculos_ld": vinculos,
         "mestres": garantir_mestres_documentais(),
@@ -288,6 +290,13 @@ def executar_ciclo_documental(*, usuario=None):
         "workflow": sincronizar_workflow_documental(),
         "pendencias": recalcular_pendencias_documentais(),
     }
+    resultado["snapshots_executivos"] = [
+        snapshot.id
+        for origem in DocumentoLD.objects.exclude(origem_aba="")
+        .values_list("origem_aba", flat=True).distinct()
+        if (snapshot := capturar_snapshot_executivo(origem))
+    ]
+    return resultado
 
 
 @transaction.atomic
