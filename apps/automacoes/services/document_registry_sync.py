@@ -65,9 +65,33 @@ def cadastrar_documentos_ausentes_da_ld(*, usuario=None) -> dict[str, int]:
         if chave[0]:
             grupos.setdefault(chave, []).append(registro)
 
-    resultado = {"linhas": len(pendentes), "criados": 0, "vinculados": 0}
-    for registros in grupos.values():
+    indice_existentes = {}
+    for documento in Documento.objects.filter(ativo=True, deletado_em__isnull=True).only(
+        "id", "codigo", "revisao"
+    ):
+        chave = (
+            normalizar_identificador(documento.codigo),
+            normalizar_revisao(documento.revisao),
+        )
+        indice_existentes.setdefault(chave, []).append(documento.id)
+
+    resultado = {
+        "linhas": len(pendentes), "criados": 0, "vinculados": 0,
+        "existentes_reutilizados": 0, "ambiguos": 0,
+    }
+    for chave, registros in grupos.items():
         principal = registros[0]
+        existentes = indice_existentes.get(chave, [])
+        if len(existentes) == 1:
+            DocumentoLD.objects.filter(pk__in=[item.pk for item in registros]).update(
+                documento_ged_id=existentes[0]
+            )
+            resultado["vinculados"] += len(registros)
+            resultado["existentes_reutilizados"] += 1
+            continue
+        if len(existentes) > 1:
+            resultado["ambiguos"] += 1
+            continue
         documento = Documento.objects.create(
             codigo=str(principal.documento or "").strip(),
             revisao=str(principal.revisao or "0").strip() or "0",

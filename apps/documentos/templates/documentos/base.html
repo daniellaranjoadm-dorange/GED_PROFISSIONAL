@@ -20,6 +20,7 @@
 {% url 'automacoes:busca_global' as url_busca_global %}
 {% url 'automacoes:painel' as url_automacoes_painel %}
 {% url 'automacoes:central_documentos' as url_central_documentos %}
+{% url 'automacoes:pendencias_documentais' as url_pendencias_documentais %}
 {% url 'automacoes:central_notificacoes' as url_central_notificacoes %}
 {% url 'automacoes:ops_center' as url_ops_center %}
 {% url 'automacoes:logs_automacoes' as url_logs_automacoes %}
@@ -477,6 +478,10 @@ html body.ged-enterprise-shell.sidebar-collapsed .sidebar-subnav{
               <a class="sidebar-link" href="{{ url_central_documentos|default:'/automacoes/central-documentos/' }}" title="Central de Documentos">
                 <i class="bi bi-diagram-3"></i>
                 <span class="sidebar-text">Central de Documentos</span><span class="sidebar-item-state state-consult" title="GED, LD, KM e DOX integrados"></span>
+              </a>
+              <a class="sidebar-link" href="{{ url_pendencias_documentais|default:'/automacoes/central-documentos/pendencias/' }}" title="Pendências Documentais">
+                <i class="bi bi-exclamation-diamond"></i>
+                <span class="sidebar-text">Pendências Documentais</span><span class="sidebar-item-state state-consult" title="Fila unificada de exceções"></span>
               </a>
             </li>
             {% if user|has_perm:"notificacoes.visualizar" %}

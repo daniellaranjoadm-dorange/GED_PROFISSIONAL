@@ -276,3 +276,54 @@ def executar_ciclo_documental(*, usuario=None):
         "workflow": sincronizar_workflow_documental(),
         "pendencias": recalcular_pendencias_documentais(),
     }
+
+
+@transaction.atomic
+def recuperar_duplicatas_ciclo(*, documentos_ids, quantidade_esperada):
+    """Recuperação reversível para um lote recém-criado por ciclo inconsistente."""
+    ids = list(dict.fromkeys(int(item) for item in documentos_ids if item))
+    if len(ids) != quantidade_esperada:
+        raise ValueError(f"Lote inesperado: esperado={quantidade_esperada}, recebido={len(ids)}")
+    novos = list(Documento.objects.select_for_update().filter(id__in=ids))
+    if len(novos) != quantidade_esperada:
+        raise ValueError("Nem todos os documentos do lote foram encontrados.")
+    if any(doc.arquivos.exists() or doc.versoes.exists() for doc in novos):
+        raise ValueError("Recuperação abortada: há arquivo ou versão em documento do lote.")
+
+    antigos_por_chave = {}
+    for antigo in Documento.objects.exclude(id__in=ids).filter(ativo=True, deletado_em__isnull=True):
+        chave = (normalizar_identificador(antigo.codigo), normalizar_revisao(antigo.revisao))
+        antigos_por_chave.setdefault(chave, []).append(antigo.id)
+
+    mapa = {}
+    ambiguos = []
+    for novo in novos:
+        chave = (normalizar_identificador(novo.codigo), normalizar_revisao(novo.revisao))
+        candidatos = antigos_por_chave.get(chave, [])
+        if len(candidatos) != 1:
+            ambiguos.append((novo.id, novo.codigo, novo.revisao, candidatos))
+        else:
+            mapa[novo.id] = candidatos[0]
+    if ambiguos:
+        raise ValueError(f"Recuperação abortada por correspondências não únicas: {ambiguos[:5]}")
+
+    relinkados = 0
+    for novo_id, antigo_id in mapa.items():
+        relinkados += DocumentoLD.objects.filter(documento_ged_id=novo_id).update(
+            documento_ged_id=antigo_id
+        )
+        PCFTimeline.objects.filter(documento_ged_id=novo_id).update(documento_ged_id=antigo_id)
+        TransmittalKM.objects.filter(documento_ged_id=novo_id).update(documento_ged_id=antigo_id)
+        DocumentoReferenciaExterna.objects.filter(documento_id=novo_id).update(documento_id=antigo_id)
+        PendenciaDocumental.objects.filter(documento_id=novo_id).update(
+            status=PendenciaDocumental.STATUS_RESOLVIDA,
+            resolvida_em=timezone.now(),
+        )
+    Documento.objects.filter(id__in=ids).update(
+        ativo=False,
+        deletado_em=timezone.now(),
+        deletado_por="SISTEMA_RECUPERACAO",
+        motivo_exclusao="Duplicata criada pelo primeiro ciclo documental; vínculo restaurado ao cadastro anterior.",
+    )
+    garantir_mestres_documentais()
+    return {"movidos_lixeira": len(ids), "ld_relinkadas": relinkados}

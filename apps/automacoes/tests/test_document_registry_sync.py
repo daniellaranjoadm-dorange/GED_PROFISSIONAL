@@ -37,6 +37,23 @@ class DocumentRegistrySyncTests(TestCase):
             ).exists()
         )
 
+    def test_reutiliza_documento_existente_quando_fk_ld_esta_nula(self):
+        documento = Documento.objects.create(
+            codigo="DOC-EXISTENTE-001", revisao="0", titulo="Já cadastrado"
+        )
+        registro = DocumentoLD.objects.create(
+            origem_aba="LD Projeto Basico",
+            documento="DOC EXISTENTE 001",
+            revisao="Rev. 00",
+        )
+
+        resultado = cadastrar_documentos_ausentes_da_ld()
+
+        registro.refresh_from_db()
+        self.assertEqual(registro.documento_ged_id, documento.id)
+        self.assertEqual(resultado["criados"], 0)
+        self.assertEqual(resultado["existentes_reutilizados"], 1)
+
     def test_normaliza_codigo_e_revisao(self):
         self.assertEqual(normalizar_identificador("I-LD-4880.00"), "ILD488000")
         self.assertEqual(normalizar_revisao("Rev. 00"), "0")
