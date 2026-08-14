@@ -87,11 +87,33 @@ def capturar_snapshot_executivo(origem):
 
 
 def tendencia_executiva(origens):
-    origem_lista = [origem for origem in origens if origem]
+    origem_lista = list(dict.fromkeys(origem for origem in origens if origem))
     serie = list(
         ExecutiveMetricSnapshot.objects.filter(origem__in=origem_lista)
         .order_by("data_referencia")
     )
+    if len(origem_lista) > 1:
+        por_data = {}
+        for item in serie:
+            agregado = por_data.setdefault(item.data_referencia, {"total": 0, "emitidos": 0, "vencidos": 0})
+            agregado["total"] += item.total
+            agregado["emitidos"] += item.emitidos
+            agregado["vencidos"] += item.vencidos_nao_emitidos
+        datas = sorted(por_data)
+        atual_data = datas[-1] if datas else None
+        anterior_data = datas[-2] if len(datas) > 1 else None
+        atual_agregado = por_data.get(atual_data)
+        anterior_agregado = por_data.get(anterior_data)
+        progresso_atual = _pct(atual_agregado["emitidos"], atual_agregado["total"]) if atual_agregado else None
+        progresso_anterior = _pct(anterior_agregado["emitidos"], anterior_agregado["total"]) if anterior_agregado else None
+        return {
+            "serie": [{"data_referencia": data, **por_data[data]} for data in datas[-12:]],
+            "atual": atual_agregado,
+            "anterior": anterior_agregado,
+            "delta_progresso": round(progresso_atual - progresso_anterior, 1) if progresso_anterior is not None else None,
+            "delta_vencidos": atual_agregado["vencidos"] - anterior_agregado["vencidos"] if anterior_agregado else None,
+            "historico_suficiente": bool(atual_agregado and anterior_agregado),
+        }
     atual = serie[-1] if serie else None
     anterior = next((item for item in reversed(serie[:-1]) if item.data_referencia < atual.data_referencia), None) if atual else None
     return {

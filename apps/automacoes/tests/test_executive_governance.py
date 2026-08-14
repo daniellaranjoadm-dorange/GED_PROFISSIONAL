@@ -42,3 +42,13 @@ class ExecutiveGovernanceTests(TestCase):
         self.assertTrue(tendencia["historico_suficiente"])
         self.assertEqual(tendencia["anterior"].id, anterior.id)
         self.assertEqual(tendencia["delta_progresso"], 100.0)
+
+    def test_tendencia_multiplas_origens_e_agregada_sem_escolher_uma_ld(self):
+        hoje = timezone.localdate()
+        anterior = hoje - timedelta(days=1)
+        ExecutiveMetricSnapshot.objects.create(origem="A", data_referencia=anterior, total=100, emitidos=10, progresso=10)
+        ExecutiveMetricSnapshot.objects.create(origem="B", data_referencia=anterior, total=100, emitidos=30, progresso=30)
+        ExecutiveMetricSnapshot.objects.create(origem="A", data_referencia=hoje, total=100, emitidos=20, progresso=20)
+        ExecutiveMetricSnapshot.objects.create(origem="B", data_referencia=hoje, total=100, emitidos=40, progresso=40)
+        tendencia = tendencia_executiva(["A", "B"])
+        self.assertEqual(tendencia["delta_progresso"], 10.0)
