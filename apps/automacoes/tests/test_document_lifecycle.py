@@ -74,6 +74,26 @@ class DocumentLifecycleTests(TestCase):
         self.assertEqual(DocumentoMestre.objects.count(), 1)
         self.assertEqual(DocumentoReferenciaExterna.objects.count(), 1)
 
+    def test_nao_recebido_nao_vira_pendencia_critica_nem_doc_control(self):
+        self.ld.status_documento = "Não Recebido"
+        self.ld.status_grd = "Não Emitido"
+        self.ld.pcf = ""
+        self.ld.status_final_pcf = ""
+        self.ld.open_comments = "0"
+        self.ld.save()
+
+        executar_ciclo_documental()
+
+        self.documento.refresh_from_db()
+        self.assertEqual(self.documento.etapa_atual, "ELABORACAO")
+        self.assertFalse(
+            PendenciaDocumental.objects.filter(
+                documento=self.documento,
+                tipo="RECEBIDO_NAO_EMITIDO",
+                status="ABERTA",
+            ).exists()
+        )
+
 
 class PendenciasDocumentaisViewTests(TestCase):
     def test_exibe_fila_unificada(self):

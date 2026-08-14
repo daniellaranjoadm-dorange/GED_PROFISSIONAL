@@ -1,4 +1,5 @@
 import re
+import unicodedata
 from datetime import timedelta
 
 from django.db import transaction
@@ -35,6 +36,17 @@ ETAPAS = (
     ("APROVACAO_CLIENTE", "Aprovação Cliente (PCF)", 6, 15),
     ("EMISSAO_FINAL", "Emissão Final", 7, 3),
 )
+
+
+def _texto_normalizado(valor):
+    texto = unicodedata.normalize("NFKD", str(valor or ""))
+    texto = "".join(char for char in texto if not unicodedata.combining(char))
+    return re.sub(r"\s+", " ", texto).strip().upper()
+
+
+def _recebido_de_fato(valor):
+    status = _texto_normalizado(valor)
+    return status.startswith("RECEBIDO") and not status.startswith("NAO RECEBIDO")
 
 
 def _peso_revisao(valor):
@@ -177,7 +189,7 @@ def _etapa_documento(registros):
         return "APROVACAO_CLIENTE"
     if any((r.status_grd or "").upper() == "EMITIDO" for r in registros):
         return "ENVIADO_CLIENTE"
-    if any("RECEB" in (r.status_documento or "").upper() for r in registros):
+    if any(_recebido_de_fato(r.status_documento) for r in registros):
         return "DOC_CONTROL"
     return "ELABORACAO"
 
@@ -243,7 +255,7 @@ def recalcular_pendencias_documentais():
         documento = ld.documento_ged
         if not ld.caminho_documento:
             chaves_ativas.add(_abrir_pendencia(documento, ld, "ARQUIVO_AUSENTE", "Documento sem arquivo", "A LD não possui caminho de arquivo oficial.", "Localizar e vincular o arquivo oficial.", prazo_dias=3))
-        if "RECEB" in (ld.status_documento or "").upper() and (ld.status_grd or "").upper() != "EMITIDO":
+        if _recebido_de_fato(ld.status_documento) and _texto_normalizado(ld.status_grd) != "EMITIDO":
             chaves_ativas.add(_abrir_pendencia(documento, ld, "RECEBIDO_NAO_EMITIDO", "Recebido e não emitido", "Documento recebido ainda sem emissão por GRD.", "Preparar emissão e registrar a GRD.", severidade="CRITICA", prazo_dias=2))
         status_pcf = (ld.status_final_pcf or "").upper()
         if ld.pcf and (not status_pcf or "NOT RELEASED" in status_pcf):
