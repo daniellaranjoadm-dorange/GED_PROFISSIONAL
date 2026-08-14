@@ -53,6 +53,9 @@ def montar_inteligencia_executiva(registros, hoje=None):
     medicao_emissao = 0
     medicao_aprovacao = 0
     sem_responsavel = 0
+    atraso_1_15 = 0
+    atraso_16_30 = 0
+    atraso_mais_30 = 0
     riscos = []
     risco_disciplina = defaultdict(int)
 
@@ -65,6 +68,7 @@ def montar_inteligencia_executiva(registros, hoje=None):
         prazo = _data(item.cronograma_termino)
         data_emissao = _data(item.data_grd)
         razoes = []
+        dias_atraso = 0
 
         emitidos += int(emitido)
         aprovados_sem_ressalvas += int(status_doc == "aprovado sem comentarios")
@@ -85,6 +89,10 @@ def montar_inteligencia_executiva(registros, hoje=None):
                 emitidos_atrasados += 1
             else:
                 vencidos_nao_emitidos += 1
+                dias_atraso = (hoje - prazo).days
+                atraso_1_15 += int(dias_atraso <= 15)
+                atraso_16_30 += int(15 < dias_atraso <= 30)
+                atraso_mais_30 += int(dias_atraso > 30)
                 razoes.append(f"Emissão vencida em {prazo:%d/%m/%Y}")
         elif prazo and not cancelado and not emitido and hoje < prazo <= limite_30:
             vencendo_30_dias += 1
@@ -104,14 +112,31 @@ def montar_inteligencia_executiva(registros, hoje=None):
 
         if razoes:
             severidade = 3 if (prazo and prazo < hoje and not emitido) or status_pcf == "NOT RELEASED" else 2
+            if dias_atraso > 30 or (status_pcf == "NOT RELEASED" and requer_resposta and sem_resposta):
+                severidade = 4
             disciplina = _texto(item.disciplina) or "Sem disciplina"
             risco_disciplina[disciplina] += 1
+            if dias_atraso:
+                impacto = "Risco ao marco de emissao"
+                acao = "Confirmar recuperacao e nova data de emissao"
+            elif status_pcf == "NOT RELEASED":
+                impacto = "Bloqueio de liberacao tecnica"
+                acao = "Tratar comentarios e responder a PCF"
+            elif requer_resposta and sem_resposta:
+                impacto = "Ciclo de aprovacao interrompido"
+                acao = "Registrar resposta e evidencia de envio"
+            else:
+                impacto = "Pressao sobre o plano de curto prazo"
+                acao = "Validar prontidao antes do vencimento"
             riscos.append({
                 "item": item,
                 "severidade": severidade,
                 "razoes": razoes,
                 "responsavel": _texto(item.resp_for_issue) or "Não definido",
                 "prazo": prazo,
+                "dias_atraso": dias_atraso,
+                "impacto": impacto,
+                "acao": acao,
             })
 
     riscos.sort(key=lambda x: (-x["severidade"], x["prazo"] or date.max, x["item"].documento))
@@ -148,8 +173,12 @@ def montar_inteligencia_executiva(registros, hoje=None):
         "medicao_emissao": medicao_emissao,
         "medicao_aprovacao": medicao_aprovacao,
         "sem_responsavel": sem_responsavel,
+        "atraso_1_15": atraso_1_15,
+        "atraso_16_30": atraso_16_30,
+        "atraso_mais_30": atraso_mais_30,
         "nivel": nivel,
         "riscos": riscos[:15],
+        "riscos_todos": riscos,
         "total_riscos": len(riscos),
         "disciplinas_criticas": disciplinas_criticas,
         "atualizado_em": max((item.atualizado_em for item in itens), default=None),

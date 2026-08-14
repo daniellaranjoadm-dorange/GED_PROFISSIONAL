@@ -21,7 +21,9 @@ from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_POST
 from openpyxl import Workbook
-from openpyxl.styles import Font, PatternFill
+from openpyxl.formatting.rule import CellIsRule
+from openpyxl.styles import Alignment, Font, PatternFill
+from openpyxl.worksheet.table import Table, TableStyleInfo
 
 from apps.automacoes.models import TransmittalKM, PCFTimeline, DocumentoLD, DocumentoKM, ExecucaoAutomacao, KMFileIndex, PendenciaDocumental
 from apps.automacoes.services import (
@@ -76,6 +78,7 @@ from apps.automacoes.services.document_reconciliation import (
 )
 from apps.automacoes.services.document_lifecycle import executar_ciclo_documental
 from apps.automacoes.services.ld_executive_intelligence import montar_inteligencia_executiva
+from apps.automacoes.services.executive_governance import qualidade_dados_executiva, tendencia_executiva
 
 
 
@@ -3991,10 +3994,67 @@ def listar_ld(request):
 @has_perm("ld_pcf.visualizar")
 def exportar_ld_excel(request):
     registros, _ = _ld_filtrar_queryset(request)
+    registros = registros.select_related("documento_ged")
+    executivo = montar_inteligencia_executiva(registros)
+    qualidade = qualidade_dados_executiva(registros)
 
     wb = Workbook()
-    ws = wb.active
-    ws.title = "Lista LD Filtrada"
+    resumo = wb.active
+    resumo.title = "Resumo Executivo"
+    ws = wb.create_sheet("Base Auditavel")
+
+    resumo.sheet_view.showGridLines = False
+    resumo.merge_cells("A1:H2")
+    resumo["A1"] = "POSICAO EXECUTIVA DA CARTEIRA DOCUMENTAL"
+    resumo["A1"].font = Font(color="FFFFFF", bold=True, size=20)
+    resumo["A1"].fill = PatternFill("solid", fgColor="081C2B")
+    resumo["A1"].alignment = Alignment(vertical="center")
+    resumo.merge_cells("A3:H3")
+    resumo["A3"] = "Uma unica memoria de calculo para decisao, cobranca e auditoria"
+    resumo["A3"].font = Font(color="5BC9F5", italic=True)
+    resumo["A3"].fill = PatternFill("solid", fgColor="081C2B")
+    indicadores = [
+        ("Documentos no escopo", executivo["total"], "Carteira filtrada"),
+        ("Avanco documental", executivo["progresso"] / 100, f'{executivo["emitidos"]} emitidos'),
+        ("Vencidos sem emissao", executivo["vencidos_nao_emitidos"], "Acao imediata"),
+        ("PCFs nao liberadas", executivo["pcf_criticas"], "Bloqueio tecnico"),
+        ("Respostas PCF pendentes", executivo["pcf_aguardando_resposta"], "Ciclo interrompido"),
+        ("Aderencia ao prazo", executivo["aderencia_prazo"] / 100, f'{executivo["emitidos_no_prazo"]} no prazo'),
+        ("Proximos 30 dias", executivo["vencendo_30_dias"], "Preparar emissao"),
+        ("Confiabilidade dos dados", qualidade["score"] / 100, qualidade["nivel"]),
+    ]
+    for indice, (titulo, valor, nota) in enumerate(indicadores):
+        linha = 5 + (indice // 4) * 4
+        coluna = 1 + (indice % 4) * 2
+        resumo.cell(linha, coluna, titulo)
+        resumo.cell(linha + 1, coluna, valor)
+        resumo.cell(linha + 2, coluna, nota)
+        resumo.merge_cells(start_row=linha, start_column=coluna, end_row=linha, end_column=coluna + 1)
+        resumo.merge_cells(start_row=linha + 1, start_column=coluna, end_row=linha + 1, end_column=coluna + 1)
+        resumo.merge_cells(start_row=linha + 2, start_column=coluna, end_row=linha + 2, end_column=coluna + 1)
+        for row_idx in range(linha, linha + 3):
+            for col_idx in range(coluna, coluna + 2):
+                resumo.cell(row_idx, col_idx).fill = PatternFill("solid", fgColor="0D293A")
+        resumo.cell(linha, coluna).font = Font(color="8FD7F2", bold=True, size=10)
+        resumo.cell(linha + 1, coluna).font = Font(color="FFFFFF", bold=True, size=20)
+        resumo.cell(linha + 2, coluna).font = Font(color="B6CFDA", size=9)
+        if isinstance(valor, float):
+            resumo.cell(linha + 1, coluna).number_format = "0.0%"
+
+    resumo["A14"] = "QUALIDADE E RASTREABILIDADE"
+    resumo["A14"].font = Font(color="FFFFFF", bold=True, size=13)
+    resumo.merge_cells("A14:H14")
+    resumo["A14"].fill = PatternFill("solid", fgColor="12384C")
+    resumo.append(["Dimensao", "Cobertura", "Lacunas"])
+    for item in qualidade["dimensoes"]:
+        resumo.append([item["label"], item["valor"] / 100, item["lacunas"]])
+        resumo.cell(resumo.max_row, 2).number_format = "0.0%"
+    resumo["A24"] = "CRITERIO DE LEITURA"
+    resumo["A25"] = "Baixa completude indica risco de governanca; nao deve ser interpretada como desempenho operacional. Consulte a aba Base Auditavel para memoria por documento."
+    resumo.merge_cells("A25:H26")
+    resumo["A25"].alignment = Alignment(wrap_text=True, vertical="top")
+    for col in "ABCDEFGH":
+        resumo.column_dimensions[col].width = 18
 
     headers = [
         "Origem",
@@ -4031,6 +4091,14 @@ def exportar_ld_excel(request):
         "Caminho PCF",
         "Caminho Resposta",
         "Caminho GRD Resposta",
+        "Cronograma Inicio",
+        "Cronograma Termino",
+        "Medicao Emissao",
+        "Medicao Aprovacao",
+        "Prioridade Executiva",
+        "Dias em Atraso",
+        "Impacto",
+        "Acao Requerida",
     ]
 
     ws.append(headers)
@@ -4042,7 +4110,9 @@ def exportar_ld_excel(request):
         cell.fill = header_fill
         cell.font = header_font
 
+    riscos_por_id = {risco["item"].id: risco for risco in executivo["riscos_todos"]}
     for item in registros:
+        risco = riscos_por_id.get(item.id, {})
         row = [
             getattr(item, "origem_aba", ""),
             item.documento,
@@ -4078,6 +4148,14 @@ def exportar_ld_excel(request):
             item.caminho_pcf,
             item.caminho_resposta,
             item.caminho_grd_resposta,
+            item.cronograma_inicio,
+            item.cronograma_termino,
+            item.medicao_emissao,
+            item.medicao_aprovacao,
+            f'P{risco["severidade"]}' if risco else "",
+            risco.get("dias_atraso", ""),
+            risco.get("impacto", ""),
+            risco.get("acao", "") or getattr(item, "action", ""),
         ]
 
         ws.append(row)
@@ -4126,11 +4204,22 @@ def exportar_ld_excel(request):
         "P": 22, "Q": 18, "R": 28, "S": 22, "T": 20, "U": 14,
         "V": 16, "W": 16, "X": 16, "Y": 16, "Z": 18, "AA": 14,
         "AB": 40, "AC": 20, "AD": 80, "AE": 80, "AF": 80, "AG": 80, "AH": 80,
+        "AI": 18, "AJ": 18, "AK": 18, "AL": 18, "AM": 16, "AN": 16,
+        "AO": 34, "AP": 46,
     }
     widths.update(extra_widths)
 
     for col, width in widths.items():
         ws.column_dimensions[col].width = width
+
+    ws.freeze_panes = "A2"
+    ws.auto_filter.ref = ws.dimensions
+    ws.sheet_view.showGridLines = False
+    if ws.max_row >= 2:
+        tabela = Table(displayName="BaseAuditavelLD", ref=ws.dimensions)
+        tabela.tableStyleInfo = TableStyleInfo(name="TableStyleMedium2", showRowStripes=True, showFirstColumn=False, showLastColumn=False)
+        ws.add_table(tabela)
+    ws.conditional_formatting.add(f"AN2:AN{max(ws.max_row, 2)}", CellIsRule(operator="greaterThan", formula=["0"], fill=PatternFill("solid", fgColor="FFC7CE")))
 
     response = HttpResponse(
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -4179,6 +4268,7 @@ def _ld_exportar_dashboard_ppt(request):
     registros, filtros = _ld_filtrar_queryset(request)
     kpis = _ld_kpis(registros)
     executivo = montar_inteligencia_executiva(registros)
+    qualidade = qualidade_dados_executiva(registros)
 
     total = kpis["total"] or 0
     total_sem_resposta = executivo["pcf_aguardando_resposta"]
@@ -4252,7 +4342,7 @@ def _ld_exportar_dashboard_ppt(request):
     slide.background.fill.solid()
     slide.background.fill.fore_color.rgb = bg
     add_text(slide, "Posição Executiva da Carteira Documental", .45, .30, 11.8, .52, 35, True, white)
-    add_text(slide, f"Situação {executivo['nivel']} • uma única memória para tela e apresentação", .45, .88, 10.8, .30, 16, False, cyan)
+    add_text(slide, f"Situação {executivo['nivel']} • confiabilidade da base {qualidade['score']}% ({qualidade['nivel']})", .45, .88, 11.8, .30, 16, False, cyan)
     add_card(slide, "Escopo", total, "documentos", .45, 1.45, w=2.25)
     add_card(slide, "Avanço", f"{executivo['progresso']}%", f"{executivo['emitidos']} emitidos", 2.95, 1.45, w=2.25, accent=green)
     add_card(slide, "Vencidos", executivo["vencidos_nao_emitidos"], "sem emissão", 5.45, 1.45, w=2.25, accent=RGBColor(248, 113, 113))
@@ -4266,7 +4356,7 @@ def _ld_exportar_dashboard_ppt(request):
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     slide.background.fill.solid()
     slide.background.fill.fore_color.rgb = bg
-    add_text(slide, "Riscos que exigem reação da operação", .45, .30, 11.2, .52, 35, True, white)
+    add_text(slide, "Decisões requeridas da operação", .45, .30, 11.2, .52, 35, True, white)
     add_card(slide, "Resp. PCF", total_sem_resposta, "exigem resposta", .45, 1.15, w=2.35, accent=orange)
     add_card(slide, "Comentários", executivo["comentarios_abertos"], "abertos", 3.05, 1.15, w=2.35, accent=orange)
     add_card(slide, "Próx. 30d", executivo["vencendo_30_dias"], "não emitidos", 5.65, 1.15, w=2.35, accent=orange)
@@ -4279,14 +4369,14 @@ def _ld_exportar_dashboard_ppt(request):
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     slide.background.fill.solid()
     slide.background.fill.fore_color.rgb = bg
-    add_text(slide, "Prioridades para decisão e cobrança", .45, .30, 10.8, .52, 35, True, white)
-    add_text(slide, "Documentos ordenados por severidade e prazo", .45, .88, 9.0, .28, 16, False, cyan)
+    add_text(slide, "Agenda de intervenção e cobrança", .45, .30, 10.8, .52, 35, True, white)
+    add_text(slide, "Impacto, ação requerida, dono e compromisso", .45, .88, 9.0, .28, 16, False, cyan)
     y = 1.35
     for indice, risco in enumerate(executivo["riscos"][:7], start=1):
         item = risco["item"]
-        motivo = risco["razoes"][0]
+        motivo = risco["impacto"]
         prazo = risco["prazo"].strftime("%d/%m/%Y") if risco["prazo"] else "sem prazo"
-        add_text(slide, f"{indice:02d}", .50, y, .42, .30, 16, True, orange)
+        add_text(slide, f"P{risco['severidade']}", .50, y, .42, .30, 16, True, orange)
         add_text(slide, item.documento, .95, y, 3.65, .30, 16, True, white)
         add_text(slide, motivo, 4.65, y, 4.55, .42, 16, False, white)
         add_text(slide, risco["responsavel"], 9.25, y, 1.75, .30, 16, False, cyan)
@@ -4315,6 +4405,9 @@ def dashboard_ld(request):
 
     kpis = _ld_kpis(registros)
     inteligencia = montar_inteligencia_executiva(registros)
+    qualidade = qualidade_dados_executiva(registros)
+    origens_tendencia = list(registros.values_list("origem_aba", flat=True).distinct())
+    tendencia = tendencia_executiva(origens_tendencia)
 
     total_not_released = registros.filter(
         status_final_pcf__iexact="NOT RELEASED"
@@ -4447,6 +4540,8 @@ def dashboard_ld(request):
             "taxa_recebimento": taxa_recebimento,
             "saude_operacional": saude_operacional,
             "executivo": inteligencia,
+            "qualidade_executiva": qualidade,
+            "tendencia_executiva": tendencia,
 
             "disciplina_chart": disciplina_chart,
             "origem_chart": origem_chart,

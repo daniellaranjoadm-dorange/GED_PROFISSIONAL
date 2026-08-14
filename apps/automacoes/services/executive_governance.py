@@ -1,4 +1,4 @@
-from django.db.models import Max, Q
+from django.db.models import Max
 from django.utils import timezone
 
 from apps.automacoes.models import (
@@ -20,16 +20,17 @@ def qualidade_dados_executiva(registros):
     ids = list(registros.values_list("id", flat=True))
     base = DocumentoLD.objects.filter(id__in=ids)
     total = base.count()
+    ged_ids = list(base.exclude(documento_ged=None).values_list("documento_ged_id", flat=True))
     vinculados = base.exclude(documento_ged=None).count()
     responsaveis = base.exclude(resp_for_issue="").count()
     cronograma = base.exclude(cronograma_termino="").count()
     arquivos = base.exclude(caminho_documento="").count()
-    pcfs = PCFTimeline.objects.count()
-    pcfs_vinculadas = PCFTimeline.objects.exclude(documento_ged=None).count()
-    transmittals = TransmittalKM.objects.count()
-    transmittals_vinculados = TransmittalKM.objects.exclude(documento_ged=None).count()
-    dox_total = DocumentoReferenciaExterna.objects.filter(sistema="DOX").count()
-    dox_conformes = DocumentoReferenciaExterna.objects.filter(sistema="DOX", divergente=False).count()
+    pcfs = base.exclude(pcf="").count()
+    pcfs_vinculadas = base.exclude(pcf="").filter(documento_ged_id__in=PCFTimeline.objects.filter(documento_ged_id__in=ged_ids).values("documento_ged_id")).count()
+    transmittals = base.exclude(transmittal_km="").count()
+    transmittals_vinculados = base.exclude(transmittal_km="").filter(documento_ged_id__in=TransmittalKM.objects.filter(documento_ged_id__in=ged_ids).values("documento_ged_id")).count()
+    dox_total = DocumentoReferenciaExterna.objects.filter(sistema="DOX", documento_id__in=ged_ids).count()
+    dox_conformes = DocumentoReferenciaExterna.objects.filter(sistema="DOX", documento_id__in=ged_ids, divergente=False).count()
 
     dimensoes = [
         {"chave": "vinculo_ged", "label": "Vínculo LD ↔ GED", "valor": _pct(vinculados, total), "lacunas": total - vinculados},

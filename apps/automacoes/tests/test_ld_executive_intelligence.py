@@ -1,5 +1,8 @@
 from datetime import date, datetime, timezone
 from types import SimpleNamespace
+from io import BytesIO
+
+from openpyxl import load_workbook
 
 from django.contrib.auth import get_user_model
 from django.test import SimpleTestCase, TestCase
@@ -81,7 +84,9 @@ class LDExecutiveDashboardViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Leitura para decisão")
         self.assertContains(response, "Vencidos sem emissão")
-        self.assertContains(response, "Documentos prioritários para ação")
+        self.assertContains(response, "Agenda de intervenção")
+        self.assertContains(response, "Confiabilidade da decisão")
+        self.assertContains(response, "Movimento da carteira")
         self.assertContains(response, "Medição da emissão")
         self.assertContains(response, "Responsável pela emissão")
 
@@ -96,3 +101,15 @@ class LDExecutiveDashboardViewTests(TestCase):
             "application/vnd.openxmlformats-officedocument.presentationml.presentation",
         )
         self.assertGreater(len(response.content), 10000)
+
+    def test_excel_entrega_resumo_e_base_auditavel(self):
+        response = self.client.get(
+            reverse("automacoes:exportar_ld_excel"),
+            {"origem": "LD Projeto Basico"},
+        )
+        self.assertEqual(response.status_code, 200)
+        workbook = load_workbook(BytesIO(response.content))
+        self.assertEqual(workbook.sheetnames, ["Resumo Executivo", "Base Auditavel"])
+        self.assertEqual(workbook["Base Auditavel"].freeze_panes, "A2")
+        self.assertIn("BaseAuditavelLD", workbook["Base Auditavel"].tables)
+        self.assertEqual(workbook["Base Auditavel"]["AI1"].value, "Cronograma Inicio")
