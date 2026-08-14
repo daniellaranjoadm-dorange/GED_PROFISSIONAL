@@ -4406,7 +4406,7 @@ def dashboard_ld(request):
     kpis = _ld_kpis(registros)
     inteligencia = montar_inteligencia_executiva(registros)
     qualidade = qualidade_dados_executiva(registros)
-    origens_tendencia = list(registros.values_list("origem_aba", flat=True).distinct())
+    origens_tendencia = list(registros.order_by().values_list("origem_aba", flat=True).distinct())
     tendencia = tendencia_executiva(origens_tendencia)
 
     total_not_released = registros.filter(

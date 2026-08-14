@@ -293,7 +293,7 @@ def executar_ciclo_documental(*, usuario=None):
     resultado["snapshots_executivos"] = [
         snapshot.id
         for origem in DocumentoLD.objects.exclude(origem_aba="")
-        .values_list("origem_aba", flat=True).distinct()
+        .order_by().values_list("origem_aba", flat=True).distinct()
         if (snapshot := capturar_snapshot_executivo(origem))
     ]
     return resultado
