@@ -7,7 +7,8 @@ from apps.automacoes.services.ld_parser import extrair_tipo_documental
 
 def consulta_central_documentos(
     *, busca="", vinculo="", dox="", tipo="", disciplina="", status="",
-    emissao="", status_pcf="", responsavel="", casco="", origem=""
+    emissao="", status_pcf="", responsavel="", casco="", origem="",
+    medicao_emissao="", medicao_aprovacao="", indicador=""
 ):
     queryset = (
         Documento.objects.filter(ativo=True, deletado_em__isnull=True)
@@ -70,6 +71,26 @@ def consulta_central_documentos(
         queryset = queryset.filter(registros_ld__casco__iexact=casco)
     if origem:
         queryset = queryset.filter(registros_ld__origem_aba__iexact=origem)
+    if medicao_emissao:
+        queryset = queryset.filter(registros_ld__medicao_emissao__iexact=medicao_emissao)
+    if medicao_aprovacao:
+        queryset = queryset.filter(registros_ld__medicao_aprovacao__iexact=medicao_aprovacao)
+
+    if indicador == "recebidos_pendentes":
+        queryset = queryset.filter(
+            registros_ld__status_documento__istartswith="Recebido",
+        ).exclude(registros_ld__status_grd__iexact="Emitido")
+    elif indicador == "pcf_nao_liberadas":
+        queryset = queryset.exclude(registros_ld__pcf="").exclude(
+            Q(registros_ld__status_final_pcf__iexact="RELEASED")
+            | Q(registros_ld__status_final_pcf__iexact="RELEASED WITH COMMENTS")
+        )
+    elif indicador == "aprovados_sem_comentarios":
+        queryset = queryset.filter(
+            registros_ld__status_documento__iexact="Aprovado sem Comentários"
+        )
+    elif indicador == "emitidos":
+        queryset = queryset.filter(registros_ld__status_grd__iexact="Emitido")
 
     return queryset.distinct().order_by("codigo", "revisao")
 
@@ -111,6 +132,8 @@ def opcoes_filtros_central_documentos() -> dict[str, list[str]]:
         "responsaveis": distintos("resp_for_issue"),
         "cascos": distintos("casco"),
         "origens": distintos("origem_aba"),
+        "medicoes_emissao": distintos("medicao_emissao"),
+        "medicoes_aprovacao": distintos("medicao_aprovacao"),
     }
 
 
@@ -129,18 +152,28 @@ def carregar_relacionamentos_da_pagina(pagina):
     )
 
 
-def metricas_central_documentos(documentos=None) -> dict[str, int | float]:
+def metricas_central_documentos(documentos=None, filtros_ld=None) -> dict[str, int | float]:
     documentos = documentos or Documento.objects.filter(
         ativo=True, deletado_em__isnull=True
     )
     ids = list(documentos.values_list("id", flat=True).distinct())
     total = len(ids)
     registros = DocumentoLD.objects.filter(documento_ged_id__in=ids)
+    filtros_ld = filtros_ld or {}
+    campos = {
+        "disciplina": "disciplina", "status": "status_documento",
+        "emissao": "status_grd", "status_pcf": "status_final_pcf",
+        "responsavel": "resp_for_issue", "casco": "casco", "origem": "origem_aba",
+        "medicao_emissao": "medicao_emissao", "medicao_aprovacao": "medicao_aprovacao",
+    }
+    for parametro, campo in campos.items():
+        if valor := filtros_ld.get(parametro):
+            registros = registros.filter(**{f"{campo}__iexact": valor})
     com_ld = registros.values("documento_ged_id").distinct().count()
     emitidos_ids = registros.filter(status_grd__iexact="Emitido").values("documento_ged_id")
     emitidos = emitidos_ids.distinct().count()
     recebidos_pendentes = (
-        registros.filter(status_documento__icontains="Recebido")
+        registros.filter(status_documento__istartswith="Recebido")
         .exclude(documento_ged_id__in=emitidos_ids)
         .values("documento_ged_id").distinct().count()
     )
@@ -153,8 +186,7 @@ def metricas_central_documentos(documentos=None) -> dict[str, int | float]:
         .values("documento_ged_id").distinct().count()
     )
     aprovados_sem_comentarios = (
-        registros.filter(status_documento__icontains="Aprovado")
-        .exclude(status_documento__icontains="coment")
+        registros.filter(status_documento__iexact="Aprovado sem Comentários")
         .values("documento_ged_id").distinct().count()
     )
     comentarios_open = 0

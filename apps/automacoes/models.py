@@ -411,6 +411,10 @@ class DocumentoLD(models.Model):
     under_review = models.CharField(max_length=50, blank=True)
 
     posted_date = models.CharField(max_length=50, blank=True)
+    medicao_emissao = models.CharField(max_length=50, blank=True, db_index=True)
+    medicao_aprovacao = models.CharField(max_length=50, blank=True, db_index=True)
+    cronograma_inicio = models.CharField(max_length=50, blank=True)
+    cronograma_termino = models.CharField(max_length=50, blank=True)
     status = models.CharField(max_length=255, blank=True)
     since = models.CharField(max_length=100, blank=True)
     action = models.TextField(blank=True)

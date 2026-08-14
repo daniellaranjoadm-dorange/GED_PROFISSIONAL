@@ -161,12 +161,16 @@ LAYOUT_PROJETO_BASICO = {
     "under_review": "AG",
     "status_final_pcf": "AH",
 
+    "medicao_emissao": "AV",
+    "medicao_aprovacao": "AW",
     "posted_date": "AX",
     "status_bv": "AY",
     "since_bv": "AZ",
     "action_bv": "BA",
     "nb_pending_comments": "BB",
     "casco": "BC",
+    "cronograma_inicio": "BD",
+    "cronograma_termino": "BE",
 }
 
 LAYOUT_MARENOVA_EXECUTIVO = {
@@ -3255,6 +3259,10 @@ def importar_aba_ld_banco(ws, origem_aba, layout=None):
                 "open_comments": valor("open_comments"),
                 "under_review": valor("under_review"),
 
+                "medicao_emissao": valor("medicao_emissao"),
+                "medicao_aprovacao": valor("medicao_aprovacao"),
+                "cronograma_inicio": valor("cronograma_inicio"),
+                "cronograma_termino": valor("cronograma_termino"),
                 "posted_date": valor("posted_date"),
                 "status": valor("status_bv"),
                 "since": valor("since_bv"),

@@ -27,8 +27,10 @@
   .doc-muted{color:#64748b}.doc-sub{display:block;color:#94a3b8;font-size:11px;margin-top:3px}
   .doc-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:16px 0}
   .doc-kpi{position:relative;overflow:hidden;min-height:142px;padding:18px;border:1px solid rgba(91,171,210,.28);border-radius:16px;background:linear-gradient(145deg,#0d2637,#071923);box-shadow:0 16px 38px rgba(0,0,0,.24)}
+  a.doc-kpi{display:block;text-decoration:none;transition:.18s}a.doc-kpi:hover{transform:translateY(-2px);border-color:var(--accent);box-shadow:0 18px 42px rgba(0,0,0,.34)}.doc-kpi-action{display:block;margin-top:12px;color:var(--accent);font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.06em}
   .doc-kpi:before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:linear-gradient(90deg,var(--accent,#37c8f4),transparent)}
   .doc-kpi span{display:block;color:#9ac8df;font-size:10px;font-weight:900;letter-spacing:.11em;text-transform:uppercase}.doc-kpi strong{display:block;margin:20px 0 5px;color:#fff;font-size:34px;line-height:1}.doc-kpi small{color:#9bb6c5;font-size:11px}
+  .doc-exec-strip{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:13px 16px;border:1px solid rgba(55,200,244,.23);border-radius:14px;background:rgba(7,28,42,.78)}.doc-exec-strip strong{color:#eefaff}.doc-exec-strip small{display:block;color:#8eb1c2;margin-top:3px}.doc-guide{margin-left:auto}.doc-guide summary{cursor:pointer;color:#7ee4ff;font-weight:900;list-style:none}.doc-guide ol{position:absolute;right:36px;z-index:5;width:min(520px,calc(100vw - 60px));padding:18px 22px 18px 40px;border:1px solid #2b6782;border-radius:14px;background:#071c2a;color:#cce8f4;box-shadow:0 20px 55px #000}.doc-guide li{margin:7px 0}
   @media(max-width:1100px){.doc-grid{grid-template-columns:repeat(2,1fr)}.doc-kpis{grid-template-columns:repeat(2,1fr)}}
   @media(max-width:900px){.doc-grid{grid-template-columns:1fr}.doc-search{grid-column:auto}.doc-table{display:block;overflow-x:auto}}
   @media(max-width:560px){.doc-kpis{grid-template-columns:1fr}}
@@ -51,14 +53,19 @@
     </div>
   </section>
 
+  <section class="doc-exec-strip">
+    <div><strong>Visão operacional da carteira</strong><small>Indicadores, filtros, tabela e exportações usam o mesmo recorte. Base atualizada em {{ atualizado_em|date:"d/m/Y H:i"|default:"—" }}.</small></div>
+    <details class="doc-guide"><summary><i class="bi bi-question-circle"></i> Como operar</summary><ol><li>Escolha a base e combine os filtros da carteira.</li><li>Clique em um card para abrir os documentos que formam aquele indicador.</li><li>Abra o documento para consultar revisões, PCFs, KM, transmittals e arquivos.</li><li>Use Pendências para atuar por exceção e responsável.</li><li>Exporte o mesmo recorte para Excel, PPTX, Dashboard ou PDF.</li></ol></details>
+  </section>
+
   <section class="doc-kpis">
     <div class="doc-kpi" style="--accent:#37c8f4"><span>Documentos no escopo</span><strong>{{ metricas.total }}</strong><small>resultado do filtro atual</small></div>
     <div class="doc-kpi" style="--accent:#1dd6b5"><span>Progresso de emissão</span><strong>{{ metricas.progresso_emissao }}%</strong><small>{{ metricas.emitidos }} documentos emitidos</small></div>
-    <div class="doc-kpi" style="--accent:#ffad32"><span>Recebidos pendentes</span><strong>{{ metricas.recebidos_pendentes }}</strong><small>recebidos e ainda não emitidos</small></div>
+    <a class="doc-kpi" href="{{ urls_indicadores.recebidos_pendentes }}" style="--accent:#ffad32"><span>Recebidos pendentes</span><strong>{{ metricas.recebidos_pendentes }}</strong><small>recebidos e ainda não emitidos</small><em class="doc-kpi-action">Ver documentos →</em></a>
     <div class="doc-kpi" style="--accent:#9a83ff"><span>Comentários open</span><strong>{{ metricas.comentarios_open }}</strong><small>tratativas ainda abertas</small></div>
-    <div class="doc-kpi" style="--accent:#ff6670"><span>PCFs não liberadas</span><strong>{{ metricas.pcf_nao_liberadas }}</strong><small>PCFs recebidas com restrição</small></div>
-    <div class="doc-kpi" style="--accent:#24d1c1"><span>Documentos emitidos</span><strong>{{ metricas.emitidos }}</strong><small>quantidade absoluta emitida</small></div>
-    <div class="doc-kpi" style="--accent:#62dfb2"><span>Aprovados sem comentários</span><strong>{{ metricas.aprovados_sem_comentarios }}</strong><small>aprovação sem ressalvas</small></div>
+    <a class="doc-kpi" href="{{ urls_indicadores.pcf_nao_liberadas }}" style="--accent:#ff6670"><span>PCFs não liberadas</span><strong>{{ metricas.pcf_nao_liberadas }}</strong><small>PCFs recebidas com restrição</small><em class="doc-kpi-action">Ver documentos →</em></a>
+    <a class="doc-kpi" href="{{ urls_indicadores.emitidos }}" style="--accent:#24d1c1"><span>Documentos emitidos</span><strong>{{ metricas.emitidos }}</strong><small>quantidade absoluta emitida</small><em class="doc-kpi-action">Ver documentos →</em></a>
+    <a class="doc-kpi" href="{{ urls_indicadores.aprovados_sem_comentarios }}" style="--accent:#62dfb2"><span>Aprovados sem comentários</span><strong>{{ metricas.aprovados_sem_comentarios }}</strong><small>aprovação sem ressalvas</small><em class="doc-kpi-action">Ver documentos →</em></a>
     <div class="doc-kpi" style="--accent:#5fa8ff"><span>Documentos com PCF</span><strong>{{ metricas.com_pcf }}</strong><small>PCFs recebidas no recorte</small></div>
   </section>
 
@@ -76,6 +83,8 @@
       <div class="doc-field"><label class="ops-filter-label"><i class="bi bi-person-badge"></i> Responsável</label><select class="form-select" name="responsavel"><option value="">Todos os responsáveis</option>{% for item in opcoes_filtros.responsaveis %}<option value="{{ item }}" {% if filtros_ld.responsavel == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
       <div class="doc-field"><label class="ops-filter-label"><i class="bi bi-building"></i> Casco</label><select class="form-select" name="casco"><option value="">Todos os cascos</option>{% for item in opcoes_filtros.cascos %}<option value="{{ item }}" {% if filtros_ld.casco == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
       <div class="doc-field"><label class="ops-filter-label"><i class="bi bi-database"></i> Base de origem</label><select class="form-select" name="origem"><option value="">Todas as bases LD</option>{% for item in opcoes_filtros.origens %}<option value="{{ item }}" {% if filtros_ld.origem == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+      <div class="doc-field"><label class="ops-filter-label"><i class="bi bi-cash-coin"></i> Medição da emissão</label><select class="form-select" name="medicao_emissao"><option value="">Todas as medições de emissão</option>{% for item in opcoes_filtros.medicoes_emissao %}<option value="{{ item }}" {% if filtros_ld.medicao_emissao == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+      <div class="doc-field"><label class="ops-filter-label"><i class="bi bi-patch-check"></i> Medição da aprovação</label><select class="form-select" name="medicao_aprovacao"><option value="">Todas as medições de aprovação</option>{% for item in opcoes_filtros.medicoes_aprovacao %}<option value="{{ item }}" {% if filtros_ld.medicao_aprovacao == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
       <div class="doc-filter-actions"><button class="ops-btn ops-btn-primary" type="submit"><i class="bi bi-search"></i> Filtrar</button><a class="ops-btn" href="{% url 'automacoes:central_documentos' %}">Limpar</a></div>
     </form>
     {% if filtros_ativos %}<div class="doc-active-filters"><span class="doc-active-label">Filtros ativos:</span>{% for rotulo,valor in filtros_ativos %}<span class="doc-active-chip"><strong>{{ rotulo }}:</strong> {{ valor }}</span>{% endfor %}</div>{% endif %}

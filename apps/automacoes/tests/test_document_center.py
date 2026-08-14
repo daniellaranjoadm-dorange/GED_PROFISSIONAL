@@ -36,6 +36,8 @@ class DocumentCenterViewTests(TestCase):
             status_final_pcf="RELEASED WITH COMMENTS",
             resp_for_issue="Kongsberg",
             casco="CMN-01",
+            medicao_emissao="01/05/2026",
+            medicao_aprovacao="01/06/2026",
         )
         DocumentoReferenciaExterna.objects.create(
             documento=self.documento,
@@ -107,3 +109,36 @@ class DocumentCenterViewTests(TestCase):
         self.client.logout()
         response = self.client.get(reverse("automacoes:central_documentos"))
         self.assertEqual(response.status_code, 302)
+
+    def test_filtros_de_medicao_reaparecem_e_filtram_a_ld(self):
+        response = self.client.get(
+            reverse("automacoes:central_documentos"),
+            {"medicao_emissao": "01/05/2026", "medicao_aprovacao": "01/06/2026"},
+        )
+        self.assertContains(response, "Medição da emissão")
+        self.assertContains(response, "Medição da aprovação")
+        self.assertContains(response, "DOC-DOX-001")
+
+    def test_indicadores_nao_confundem_nao_recebido_nem_sem_comentarios(self):
+        aprovado = Documento.objects.create(codigo="DOC-APROV-001", revisao="0")
+        nao_recebido = Documento.objects.create(codigo="DOC-PEND-001", revisao="0")
+        DocumentoLD.objects.create(
+            origem_aba="LD Projeto Basico", documento="TP-APROV", revisao="0",
+            documento_ged=aprovado, status_documento="Aprovado sem Comentários",
+            status_grd="Emitido",
+        )
+        DocumentoLD.objects.create(
+            origem_aba="LD Projeto Basico", documento="TP-PEND", revisao="0",
+            documento_ged=nao_recebido, status_documento="Não Recebido",
+            status_grd="Não Emitido",
+        )
+        response = self.client.get(reverse("automacoes:central_documentos"))
+        self.assertEqual(response.context["metricas"]["aprovados_sem_comentarios"], 1)
+        self.assertEqual(response.context["metricas"]["recebidos_pendentes"], 0)
+
+        response = self.client.get(
+            reverse("automacoes:central_documentos"),
+            {"indicador": "aprovados_sem_comentarios"},
+        )
+        self.assertContains(response, "DOC-APROV-001")
+        self.assertNotContains(response, "DOC-PEND-001")

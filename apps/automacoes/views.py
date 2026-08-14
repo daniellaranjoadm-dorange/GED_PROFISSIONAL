@@ -15,7 +15,7 @@ from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.core.paginator import Paginator
 from django.core.cache import cache
-from django.db.models import Avg, Count, Q, Sum
+from django.db.models import Avg, Count, Max, Q, Sum
 from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
@@ -93,11 +93,13 @@ def central_documentos(request):
         nome: request.GET.get(nome, "").strip()
         for nome in (
             "tipo", "disciplina", "status", "emissao", "status_pcf",
-            "responsavel", "casco", "origem",
+            "responsavel", "casco", "origem", "medicao_emissao",
+            "medicao_aprovacao",
         )
     }
+    indicador = request.GET.get("indicador", "").strip()
     queryset = consulta_central_documentos(
-        busca=busca, vinculo=vinculo, dox=dox, **filtros_ld
+        busca=busca, vinculo=vinculo, dox=dox, indicador=indicador, **filtros_ld
     )
     paginator = Paginator(queryset, 40)
     pagina = paginator.get_page(request.GET.get("page"))
@@ -105,9 +107,20 @@ def central_documentos(request):
 
     parametros = request.GET.copy()
     parametros.pop("page", None)
+    parametros_base = request.GET.copy()
+    parametros_base.pop("page", None)
+    parametros_base.pop("indicador", None)
+    urls_indicadores = {}
+    for chave in (
+        "recebidos_pendentes", "pcf_nao_liberadas",
+        "aprovados_sem_comentarios", "emitidos",
+    ):
+        parametros_card = parametros_base.copy()
+        parametros_card["indicador"] = chave
+        urls_indicadores[chave] = f"?{parametros_card.urlencode()}"
     parametros_ld = request.GET.copy()
     parametros_ld.pop("page", None)
-    for nome in ("vinculo", "dox"):
+    for nome in ("vinculo", "dox", "indicador"):
         parametros_ld.pop(nome, None)
     mapeamento_ld = {
         "tipo": "tipo_doc",
@@ -125,6 +138,9 @@ def central_documentos(request):
         "tipo": "Tipo", "disciplina": "Disciplina", "status": "Status",
         "emissao": "Emissão", "status_pcf": "PCF", "responsavel": "Responsável",
         "casco": "Casco", "origem": "Origem", "vinculo": "Vínculo", "dox": "DOX",
+        "medicao_emissao": "Medição emissão",
+        "medicao_aprovacao": "Medição aprovação",
+        "indicador": "Indicador executivo",
     }
     if busca:
         filtros_ativos.append(("Busca", busca))
@@ -137,7 +153,7 @@ def central_documentos(request):
         "automacoes/central_documentos.html",
         {
             "pagina": pagina,
-            "metricas": metricas_central_documentos(queryset),
+            "metricas": metricas_central_documentos(queryset, filtros_ld),
             "busca": busca,
             "vinculo": vinculo,
             "dox": dox,
@@ -146,6 +162,9 @@ def central_documentos(request):
             "query_string": parametros.urlencode(),
             "query_string_ld": parametros_ld.urlencode(),
             "filtros_ativos": filtros_ativos,
+            "indicador": indicador,
+            "urls_indicadores": urls_indicadores,
+            "atualizado_em": DocumentoLD.objects.aggregate(ultima=Max("atualizado_em"))["ultima"],
         },
     )
 
@@ -3537,6 +3556,8 @@ def _ld_filtrar_queryset(request):
     status_pcfs = _ld_getlist(request, "status_pcf")
     responsaveis = _ld_getlist(request, "responsavel")
     cascos = _ld_getlist(request, "casco")
+    medicoes_emissao = _ld_getlist(request, "medicao_emissao")
+    medicoes_aprovacao = _ld_getlist(request, "medicao_aprovacao")
 
     com_pcf = _ld_bool(request.GET.get("com_pcf"))
     sem_pcf = _ld_bool(request.GET.get("sem_pcf"))
@@ -3615,6 +3636,12 @@ def _ld_filtrar_queryset(request):
     if cascos:
         registros = registros.filter(casco__in=cascos)
 
+    if medicoes_emissao:
+        registros = registros.filter(medicao_emissao__in=medicoes_emissao)
+
+    if medicoes_aprovacao:
+        registros = registros.filter(medicao_aprovacao__in=medicoes_aprovacao)
+
     if com_pcf and not sem_pcf:
         registros = registros.exclude(pcf__isnull=True).exclude(pcf="")
 
@@ -3637,6 +3664,8 @@ def _ld_filtrar_queryset(request):
         "status_pcf": status_pcfs[0] if len(status_pcfs) == 1 else "",
         "responsavel": responsaveis[0] if len(responsaveis) == 1 else "",
         "casco": cascos[0] if len(cascos) == 1 else "",
+        "medicao_emissao": medicoes_emissao[0] if len(medicoes_emissao) == 1 else "",
+        "medicao_aprovacao": medicoes_aprovacao[0] if len(medicoes_aprovacao) == 1 else "",
         "origens_selecionadas": origens,
         "disciplinas_selecionadas": disciplinas,
         "tipos_doc_selecionados": tipos_doc,
