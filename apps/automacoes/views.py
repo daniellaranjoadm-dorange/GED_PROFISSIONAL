@@ -75,6 +75,7 @@ from apps.automacoes.services.document_reconciliation import (
     vincular_pendencia_exata,
 )
 from apps.automacoes.services.document_lifecycle import executar_ciclo_documental
+from apps.automacoes.services.ld_executive_intelligence import montar_inteligencia_executiva
 
 
 
@@ -3688,8 +3689,8 @@ def _ld_kpis(registros):
     return {
         "total": total,
         "total_exclusivos": registros.order_by().values("documento").distinct().count(),
-        "total_recebidos": registros.filter(status_documento__iexact="Recebido").count(),
-        "total_aprovados": registros.filter(status_documento__iexact="Aprovado").count(),
+        "total_recebidos": registros.filter(status_documento__istartswith="Recebido").count(),
+        "total_aprovados": registros.filter(status_documento__iexact="Aprovado sem Comentários").count(),
         "total_emitidos": registros.filter(status_grd__iexact="Emitido").count(),
         "total_com_pcf": registros.exclude(pcf__isnull=True).exclude(pcf="").count(),
         "total_sem_pcf": registros.filter(Q(pcf__isnull=True) | Q(pcf="")).count(),
@@ -4177,19 +4178,16 @@ def _ld_exportar_dashboard_ppt(request):
 
     registros, filtros = _ld_filtrar_queryset(request)
     kpis = _ld_kpis(registros)
+    executivo = montar_inteligencia_executiva(registros)
 
     total = kpis["total"] or 0
-    total_sem_resposta = registros.filter(
-        Q(pcf_resposta__isnull=True) | Q(pcf_resposta="")
-    ).exclude(Q(pcf__isnull=True) | Q(pcf="")).count()
+    total_sem_resposta = executivo["pcf_aguardando_resposta"]
 
     total_not_released = registros.filter(status_final_pcf__iexact="NOT RELEASED").count()
 
     taxa_pcf = round((kpis["total_com_pcf"] / total) * 100, 1) if total else 0
     taxa_grd = round((kpis["total_emitidos"] / total) * 100, 1) if total else 0
     taxa_aprovacao = round((kpis["total_aprovados"] / total) * 100, 1) if total else 0
-    saude = round((taxa_pcf + taxa_grd + taxa_aprovacao) / 3, 1) if total else 0
-
     disciplina_chart = _ld_chart_items(registros, "disciplina", 7)
     status_doc_chart = _ld_chart_items(registros, "status_documento", 7)
     status_grd_chart = _ld_chart_items(registros, "status_grd", 7)
@@ -4222,22 +4220,22 @@ def _ld_exportar_dashboard_ppt(request):
         shape.fill.solid()
         shape.fill.fore_color.rgb = RGBColor(15, 23, 42)
         shape.line.color.rgb = RGBColor(51, 65, 85)
-        add_text(slide, title.upper(), x + .12, y + .10, w - .24, .22, 8, True, cyan)
-        add_text(slide, value, x + .12, y + .34, w - .24, .34, 21, True, white)
-        add_text(slide, subtitle, x + .12, y + .72, w - .24, .20, 8, False, muted)
+        add_text(slide, title.upper(), x + .12, y + .08, w - .24, .25, 16, True, cyan)
+        add_text(slide, value, x + .12, y + .34, w - .24, .34, 26, True, white)
+        add_text(slide, subtitle, x + .12, y + .70, w - .24, .24, 16, False, muted)
         bar = slide.shapes.add_shape(1, Inches(x), Inches(y + h - .05), Inches(w), Inches(.04))
         bar.fill.solid()
         bar.fill.fore_color.rgb = accent
         bar.line.fill.background()
 
     def add_bars(slide, title, items, x, y, w, h):
-        add_text(slide, title, x, y, w, .28, 15, True, white)
-        add_text(slide, "Top registros no filtro atual", x, y + .32, w, .20, 8, False, muted)
-        top_y = y + .70
+        add_text(slide, title, x, y, w, .32, 24, True, white)
+        add_text(slide, "Concentração no recorte atual", x, y + .38, w, .24, 16, False, muted)
+        top_y = y + .78
         max_total = max([item["total"] for item in items] or [1])
         for idx, item in enumerate(items[:7]):
-            yy = top_y + idx * .42
-            add_text(slide, item["label"][:34], x, yy, w * .55, .20, 9, False, white)
+            yy = top_y + idx * .48
+            add_text(slide, item["label"][:22], x, yy, w * .55, .24, 16, False, white)
             track = slide.shapes.add_shape(1, Inches(x + w * .55), Inches(yy + .04), Inches(w * .30), Inches(.09))
             track.fill.solid()
             track.fill.fore_color.rgb = RGBColor(30, 41, 59)
@@ -4247,36 +4245,53 @@ def _ld_exportar_dashboard_ppt(request):
             fill.fill.solid()
             fill.fill.fore_color.rgb = cyan
             fill.line.fill.background()
-            add_text(slide, item["total"], x + w * .88, yy - .02, w * .12, .20, 10, True, white)
+            add_text(slide, item["total"], x + w * .88, yy - .02, w * .12, .24, 16, True, white)
 
     # Slide 1
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     slide.background.fill.solid()
     slide.background.fill.fore_color.rgb = bg
-    add_text(slide, "Dashboard Executivo LD", .45, .35, 8.6, .45, 28, True, white)
-    add_text(slide, "Lista de Documentos • GRD • PCF • Revisões • Status documental", .45, .86, 8.8, .30, 12, False, cyan)
-    add_card(slide, "Total linhas", total, "resultado atual", .45, 1.45)
-    add_card(slide, "Únicos", kpis["total_exclusivos"], "documentos únicos", 2.75, 1.45)
-    add_card(slide, "Recebidos", kpis["total_recebidos"], f"{taxa_aprovacao}% aprov.", 5.05, 1.45, accent=green)
-    add_card(slide, "GRD emitido", kpis["total_emitidos"], f"{taxa_grd}% cobertura", 7.35, 1.45, accent=orange)
-    add_card(slide, "Com PCF", kpis["total_com_pcf"], f"{taxa_pcf}% cobertura", 9.65, 1.45, accent=cyan)
-    add_card(slide, "Saúde", f"{saude}%", "score operacional", 11.95, 1.45, w=1.0)
-    add_bars(slide, "Distribuição por Disciplina", disciplina_chart, .55, 2.85, 5.8, 3.8)
-    add_bars(slide, "Status Documento", status_doc_chart, 6.9, 2.85, 5.7, 3.8)
-    add_text(slide, "GED_PROFISSIONAL • LD Intelligence", .45, 7.05, 7.0, .20, 8, False, muted)
+    add_text(slide, "Posição Executiva da Carteira Documental", .45, .30, 11.8, .52, 35, True, white)
+    add_text(slide, f"Situação {executivo['nivel']} • uma única memória para tela e apresentação", .45, .88, 10.8, .30, 16, False, cyan)
+    add_card(slide, "Escopo", total, "documentos", .45, 1.45, w=2.25)
+    add_card(slide, "Avanço", f"{executivo['progresso']}%", f"{executivo['emitidos']} emitidos", 2.95, 1.45, w=2.25, accent=green)
+    add_card(slide, "Vencidos", executivo["vencidos_nao_emitidos"], "sem emissão", 5.45, 1.45, w=2.25, accent=RGBColor(248, 113, 113))
+    add_card(slide, "PCF crítica", executivo["pcf_criticas"], "não liberadas", 7.95, 1.45, w=2.25, accent=orange)
+    add_card(slide, "Aderência", f"{executivo['aderencia_prazo']}%", "emissão no prazo", 10.45, 1.45, w=2.25, accent=cyan)
+    add_bars(slide, "Concentração por Disciplina", executivo["disciplinas_criticas"], .55, 2.85, 5.8, 3.8)
+    add_bars(slide, "Status Documental", status_doc_chart, 6.9, 2.85, 5.7, 3.8)
+    add_text(slide, "D’OR@NGE • Inteligência documental", .45, 7.02, 7.0, .24, 16, False, muted)
 
     # Slide 2
     slide = prs.slides.add_slide(prs.slide_layouts[6])
     slide.background.fill.solid()
     slide.background.fill.fore_color.rgb = bg
-    add_text(slide, "Cobertura documental LD", .45, .35, 8.8, .45, 26, True, white)
-    add_card(slide, "Com PCF", kpis["total_com_pcf"], f"{taxa_pcf}% da base", .45, 1.15)
-    add_card(slide, "Sem PCF", kpis["total_sem_pcf"], "gaps operacionais", 2.75, 1.15, accent=orange)
-    add_card(slide, "Com resposta", kpis["total_com_resposta"], "respostas PCF", 5.05, 1.15, accent=green)
-    add_card(slide, "Sem resposta", total_sem_resposta, "PCFs sem retorno", 7.35, 1.15, accent=orange)
-    add_card(slide, "Not Released", total_not_released, "status crítico PCF", 9.65, 1.15, accent=RGBColor(248, 113, 113))
+    add_text(slide, "Riscos que exigem reação da operação", .45, .30, 11.2, .52, 35, True, white)
+    add_card(slide, "Resp. PCF", total_sem_resposta, "exigem resposta", .45, 1.15, w=2.35, accent=orange)
+    add_card(slide, "Comentários", executivo["comentarios_abertos"], "abertos", 3.05, 1.15, w=2.35, accent=orange)
+    add_card(slide, "Próx. 30d", executivo["vencendo_30_dias"], "não emitidos", 5.65, 1.15, w=2.35, accent=orange)
+    add_card(slide, "Aprovados", executivo["aprovados_sem_ressalvas"], "sem ressalvas", 8.25, 1.15, w=2.35, accent=green)
+    add_card(slide, "Medição", executivo["medicao_emissao"], "emissões medidas", 10.85, 1.15, w=2.0, accent=cyan)
     add_bars(slide, "Status GRD", status_grd_chart, .55, 2.65, 5.8, 3.9)
-    add_bars(slide, "Pendências por disciplina", _ld_chart_items(registros.filter(Q(pcf__isnull=True) | Q(pcf="")), "disciplina", 7), 6.9, 2.65, 5.7, 3.9)
+    add_bars(slide, "Disciplinas com maior risco", executivo["disciplinas_criticas"], 6.9, 2.65, 5.7, 3.9)
+
+    # Slide 3 — memória acionável
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    slide.background.fill.solid()
+    slide.background.fill.fore_color.rgb = bg
+    add_text(slide, "Prioridades para decisão e cobrança", .45, .30, 10.8, .52, 35, True, white)
+    add_text(slide, "Documentos ordenados por severidade e prazo", .45, .88, 9.0, .28, 16, False, cyan)
+    y = 1.35
+    for indice, risco in enumerate(executivo["riscos"][:7], start=1):
+        item = risco["item"]
+        motivo = risco["razoes"][0]
+        prazo = risco["prazo"].strftime("%d/%m/%Y") if risco["prazo"] else "sem prazo"
+        add_text(slide, f"{indice:02d}", .50, y, .42, .30, 16, True, orange)
+        add_text(slide, item.documento, .95, y, 3.65, .30, 16, True, white)
+        add_text(slide, motivo, 4.65, y, 4.55, .42, 16, False, white)
+        add_text(slide, risco["responsavel"], 9.25, y, 1.75, .30, 16, False, cyan)
+        add_text(slide, prazo, 11.05, y, 1.55, .30, 16, True, white)
+        y += .72
 
     output = BytesIO()
     prs.save(output)
@@ -4299,6 +4314,7 @@ def dashboard_ld(request):
     registros, filtros = _ld_filtrar_queryset(request)
 
     kpis = _ld_kpis(registros)
+    inteligencia = montar_inteligencia_executiva(registros)
 
     total_not_released = registros.filter(
         status_final_pcf__iexact="NOT RELEASED"
@@ -4316,11 +4332,7 @@ def dashboard_ld(request):
         Q(status_grd__isnull=True) | Q(status_grd="")
     ).count()
 
-    total_sem_resposta = registros.filter(
-        Q(pcf_resposta__isnull=True) | Q(pcf_resposta="")
-    ).exclude(
-        Q(pcf__isnull=True) | Q(pcf="")
-    ).count()
+    total_sem_resposta = inteligencia["pcf_aguardando_resposta"]
 
     taxa_pcf = round((kpis["total_com_pcf"] / kpis["total"]) * 100, 1) if kpis["total"] else 0
     taxa_grd = round((kpis["total_emitidos"] / kpis["total"]) * 100, 1) if kpis["total"] else 0
@@ -4359,6 +4371,10 @@ def dashboard_ld(request):
     status_documentos = _ld_valores_distintos("status_documento")
     status_grds = _ld_valores_distintos("status_grd")
     status_pcfs = _ld_valores_distintos("status_final_pcf", extras=["RELEASED", "NOT RELEASED"])
+    responsaveis = _ld_valores_distintos("resp_for_issue")
+    cascos = _ld_valores_distintos("casco")
+    medicoes_emissao = _ld_valores_distintos("medicao_emissao")
+    medicoes_aprovacao = _ld_valores_distintos("medicao_aprovacao")
     tipos_encontrados = {
         extrair_tipo_documental(documento)
         for documento in DocumentoLD.objects.values_list("documento", flat=True)
@@ -4382,6 +4398,10 @@ def dashboard_ld(request):
         ("Status documento", filtros["status_docs_selecionados"]),
         ("Status GRD", filtros["status_grds_selecionados"]),
         ("Status PCF", filtros["status_pcfs_selecionados"]),
+        ("Responsável", [filtros["responsavel"]] if filtros["responsavel"] else []),
+        ("Casco", [filtros["casco"]] if filtros["casco"] else []),
+        ("Medição emissão", [filtros["medicao_emissao"]] if filtros["medicao_emissao"] else []),
+        ("Medição aprovação", [filtros["medicao_aprovacao"]] if filtros["medicao_aprovacao"] else []),
     ]:
         for valor in valores:
             filtros_ativos.append({"label": label, "valor": valor})
@@ -4411,6 +4431,10 @@ def dashboard_ld(request):
             "status_documentos": status_documentos,
             "status_grds": status_grds,
             "status_pcfs": status_pcfs,
+            "responsaveis": responsaveis,
+            "cascos": cascos,
+            "medicoes_emissao": medicoes_emissao,
+            "medicoes_aprovacao": medicoes_aprovacao,
 
             "total_not_released": total_not_released,
             "total_released": total_released,
@@ -4422,6 +4446,7 @@ def dashboard_ld(request):
             "taxa_aprovacao": taxa_aprovacao,
             "taxa_recebimento": taxa_recebimento,
             "saude_operacional": saude_operacional,
+            "executivo": inteligencia,
 
             "disciplina_chart": disciplina_chart,
             "origem_chart": origem_chart,

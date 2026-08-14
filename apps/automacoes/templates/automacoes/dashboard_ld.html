@@ -19,6 +19,7 @@
     gap: 12px;
     align-items: end;
   }
+  .ld-filter-grid .ops-filter-label{color:#9edcf5!important;opacity:1!important;font-weight:900!important;letter-spacing:.08em!important;text-shadow:0 1px 1px #000}
   .ld-filter-actions {
     grid-column: 1 / -1;
     display:flex;
@@ -298,10 +299,16 @@
     text-transform:uppercase;
     letter-spacing:.04em;
   }
+  .ld-director-banner{display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center;margin:16px 0;padding:18px 20px;border:1px solid rgba(56,189,248,.32);border-radius:18px;background:linear-gradient(120deg,rgba(7,30,46,.98),rgba(21,28,48,.96))}
+  .ld-director-banner h2{margin:0 0 6px;color:#fff;font-size:22px}.ld-director-banner p{margin:0;color:#a8c9d8}.ld-director-level{padding:10px 14px;border-radius:999px;font-size:12px;font-weight:950;letter-spacing:.1em}.ld-director-level.critico{background:#4b1720;color:#ffabb3;border:1px solid #b83648}.ld-director-level.atencao{background:#493414;color:#ffd58a;border:1px solid #a97922}.ld-director-level.controlado{background:#123d35;color:#9ff0d3;border:1px solid #279477}
+  .ld-director-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.ld-director-kpi{padding:17px;border:1px solid rgba(93,162,196,.25);border-radius:16px;background:#0a2030}.ld-director-kpi span{display:block;color:#8fc8df;font-size:10px;font-weight:950;letter-spacing:.08em;text-transform:uppercase}.ld-director-kpi strong{display:block;margin:13px 0 5px;color:#fff;font-size:31px}.ld-director-kpi small{color:#9bb7c5}.ld-director-kpi.risk{border-top:3px solid #ff6573}.ld-director-kpi.warn{border-top:3px solid #ffb03a}.ld-director-kpi.ok{border-top:3px solid #34d6aa}.ld-director-kpi.info{border-top:3px solid #43c7f4}
+  .ld-decision-grid{display:grid;grid-template-columns:.85fr 1.15fr;gap:16px}.ld-memory{margin-top:12px;padding-top:10px;border-top:1px solid rgba(148,163,184,.16)}.ld-memory summary{cursor:pointer;color:#76d9ff;font-size:11px;font-weight:900}.ld-memory p{color:#9eb8c5;font-size:11px;margin:8px 0 0}
+  .ld-risk-reasons{display:flex;gap:5px;flex-wrap:wrap}.ld-risk-reason{padding:4px 7px;border-radius:999px;background:#38212a;color:#ffbac1;font-size:10px}.ld-owner-missing{color:#ffbb68;font-weight:800}
   @media (max-width: 1200px) {
-    .ld-hero-split, .ld-dashboard-grid, .ld-chart-grid { grid-template-columns:1fr; }
+    .ld-hero-split, .ld-dashboard-grid, .ld-chart-grid,.ld-decision-grid { grid-template-columns:1fr; }.ld-director-kpis{grid-template-columns:repeat(2,1fr)}
     .ld-donut-grid { grid-template-columns:1fr; }
   }
+  @media(max-width:650px){.ld-director-kpis{grid-template-columns:1fr}.ld-director-banner{grid-template-columns:1fr}}
 
 </style>
 {% endblock %}
@@ -346,21 +353,16 @@
     </div>
 
     <aside class="ld-health-card">
-      <span class="ops-filter-label">Saúde operacional LD</span>
+      <span class="ops-filter-label">Posição executiva do recorte</span>
       <div class="ld-health-score">
-        <strong>{{ saude_operacional }}%</strong>
-        {% if saude_operacional >= 75 %}
-        <span class="ops-status-pill ops-status-ok">Saudável</span>
-        {% elif saude_operacional >= 50 %}
-        <span class="ops-status-pill ops-status-warn">Atenção</span>
-        {% else %}
-        <span class="ops-status-pill ops-status-risk">Crítico</span>
-        {% endif %}
+        <strong>{{ executivo.nivel }}</strong>
+        <span class="ops-status-pill ops-status-risk">{{ executivo.total_riscos }} com ação</span>
       </div>
       <div class="ld-health-bar">
-        <div class="ld-health-fill" style="width: {{ saude_operacional }}%;"></div>
+        <div class="ld-health-fill" style="width: {{ executivo.progresso }}%;"></div>
       </div>
-      <div class="ops-muted">Score combinado de recebimento, GRD emitido e cobertura PCF no filtro atual.</div>
+      <div class="ops-muted">{{ executivo.progresso }}% do escopo emitido. Situação calculada por prazo vencido, PCF não liberada e pendência de resposta.</div>
+      <details class="ld-memory"><summary>Memória da classificação</summary><p>Crítico quando existe documento vencido não emitido ou concentração relevante de PCFs não liberadas; Atenção quando há ações abertas; Controlado quando não há risco identificado.</p></details>
     </aside>
   </section>
 
@@ -425,6 +427,11 @@
         </select>
       </div>
 
+      <div><label class="ops-filter-label">Responsável pela emissão</label><select name="responsavel" class="ops-select"><option value="">Todos</option>{% for item in responsaveis %}<option value="{{ item }}" {% if responsavel == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+      <div><label class="ops-filter-label">Casco</label><select name="casco" class="ops-select"><option value="">Todos</option>{% for item in cascos %}<option value="{{ item }}" {% if casco == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+      <div><label class="ops-filter-label">Medição da emissão</label><select name="medicao_emissao" class="ops-select"><option value="">Todas</option>{% for item in medicoes_emissao %}<option value="{{ item }}" {% if medicao_emissao == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+      <div><label class="ops-filter-label">Medição da aprovação</label><select name="medicao_aprovacao" class="ops-select"><option value="">Todas</option>{% for item in medicoes_aprovacao %}<option value="{{ item }}" {% if medicao_aprovacao == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+
       <div class="ld-filter-actions">
         <label class="ops-chip"><input class="form-check-input" type="checkbox" name="com_pcf" value="1" {% if com_pcf %}checked{% endif %}> Com PCF</label>
         <label class="ops-chip"><input class="form-check-input" type="checkbox" name="sem_pcf" value="1" {% if sem_pcf %}checked{% endif %}> Sem PCF</label>
@@ -447,37 +454,49 @@
     {% endif %}
   </section>
 
-  <section class="ops-kpi-grid ops-kpi-grid-6">
-    <a href="{% url 'automacoes:lista_ld' %}{% if querystring %}?{{ querystring }}{% endif %}" class="ops-kpi ld-kpi-card"><span>Linhas LD</span><strong>{{ total }}</strong><small>resultado atual</small></a>
-    <div class="ops-kpi ld-kpi-card"><span>Documentos únicos</span><strong>{{ total_exclusivos }}</strong><small>sem duplicidade</small></div>
-    <div class="ops-kpi ld-kpi-card"><span>Recebidos</span><strong>{{ total_recebidos }}</strong><small>{{ taxa_recebimento }}% do filtro</small></div>
-    <div class="ops-kpi ld-kpi-card"><span>GRD emitido</span><strong>{{ total_emitidos }}</strong><small>{{ taxa_grd }}% de cobertura</small></div>
-    <div class="ops-kpi ld-kpi-card"><span>Com PCF</span><strong>{{ total_com_pcf }}</strong><small>{{ taxa_pcf }}% de cobertura</small></div>
-    <div class="ops-kpi ld-kpi-card"><span>Not Released</span><strong>{{ total_not_released }}</strong><small>status final PCF</small></div>
+  <section class="ld-director-banner">
+    <div><h2>Leitura para decisão</h2><p>O recorte contém {{ executivo.total }} documentos; {{ executivo.vencidos_nao_emitidos }} estão vencidos sem emissão, {{ executivo.pcf_criticas }} possuem PCF não liberada e {{ executivo.recebidos_pendentes }} foram recebidos mas ainda não emitidos.</p></div>
+    <span class="ld-director-level {% if executivo.nivel == 'CRÍTICO' %}critico{% elif executivo.nivel == 'ATENÇÃO' %}atencao{% else %}controlado{% endif %}">{{ executivo.nivel }}</span>
+  </section>
+
+  <section class="ld-director-kpis">
+    <div class="ld-director-kpi info"><span>Avanço documental</span><strong>{{ executivo.progresso }}%</strong><small>{{ executivo.emitidos }} de {{ executivo.total }} documentos emitidos</small><details class="ld-memory"><summary>Memória</summary><p>Documentos com Status GRD igual a Emitido ÷ documentos do recorte.</p></details></div>
+    <div class="ld-director-kpi risk"><span>Vencidos sem emissão</span><strong>{{ executivo.vencidos_nao_emitidos }}</strong><small>prazo do cronograma anterior a hoje</small><details class="ld-memory"><summary>Memória</summary><p>Prazo final válido e vencido, documento não cancelado e Status GRD diferente de Emitido.</p></details></div>
+    <div class="ld-director-kpi warn"><span>PCFs não liberadas</span><strong>{{ executivo.pcf_criticas }}</strong><small>exigem tratamento técnico</small><details class="ld-memory"><summary>Memória</summary><p>Status final da PCF exatamente igual a NOT RELEASED.</p></details></div>
+    <div class="ld-director-kpi warn"><span>Respostas PCF pendentes</span><strong>{{ executivo.pcf_aguardando_resposta }}</strong><small>somente PCFs que exigem resposta</small><details class="ld-memory"><summary>Memória</summary><p>PCF NOT RELEASED ou RELEASED WITH COMMENTS sem resposta registrada. PCFs RELEASED não entram.</p></details></div>
+    <div class="ld-director-kpi ok"><span>Aprovados sem ressalvas</span><strong>{{ executivo.aprovados_sem_ressalvas }}</strong><small>{{ executivo.taxa_liberacao }}% dos emitidos</small><details class="ld-memory"><summary>Memória</summary><p>Status documental exatamente igual a Aprovado sem Comentários.</p></details></div>
+    <div class="ld-director-kpi risk"><span>Comentários abertos</span><strong>{{ executivo.comentarios_abertos }}</strong><small>tratativas técnicas ainda abertas</small><details class="ld-memory"><summary>Memória</summary><p>Soma da coluna Open Comments PCF no recorte atual.</p></details></div>
+    <div class="ld-director-kpi info"><span>Aderência ao prazo</span><strong>{{ executivo.aderencia_prazo }}%</strong><small>{{ executivo.emitidos_no_prazo }} de {{ executivo.planejados_ate_hoje }} previstos até hoje</small><details class="ld-memory"><summary>Memória</summary><p>Emissões realizadas até a data final do cronograma ÷ documentos planejados até hoje.</p></details></div>
+    <div class="ld-director-kpi warn"><span>Próximos 30 dias</span><strong>{{ executivo.vencendo_30_dias }}</strong><small>não emitidos com prazo próximo</small><details class="ld-memory"><summary>Memória</summary><p>Documentos não emitidos com término de cronograma entre amanhã e 30 dias.</p></details></div>
+  </section>
+
+  <section class="ld-decision-grid mt-3">
+    <div class="ops-panel"><div class="ops-panel-head"><div><h2>Concentração do risco</h2><p>Disciplinas que exigem maior mobilização.</p></div><span class="ops-chip">{{ executivo.total_riscos }} ações</span></div><div class="ld-bar-list">{% for item in executivo.disciplinas_criticas %}<div class="ld-bar-row"><span class="ld-bar-label" title="{{ item.label }}">{{ item.label }}</span><span class="ld-bar-track"><span class="ld-bar-fill" style="width:{{ item.pct }}%"></span></span><strong>{{ item.total }}</strong></div>{% empty %}<p class="ops-muted">Nenhum risco identificado no recorte.</p>{% endfor %}</div></div>
+    <div class="ops-panel"><div class="ops-panel-head"><div><h2>Documentos prioritários para ação</h2><p>Fila ordenada por severidade e prazo.</p></div><a class="ops-btn" href="{% url 'automacoes:lista_ld' %}{% if querystring %}?{{ querystring }}{% endif %}">Abrir carteira</a></div><div class="table-responsive"><table class="ld-mini-table"><thead><tr><th>Documento</th><th>Disciplina</th><th>Motivo</th><th>Responsável</th><th>Prazo</th></tr></thead><tbody>{% for risco in executivo.riscos %}<tr><td><strong>{{ risco.item.documento }}</strong><br><small>Rev. {{ risco.item.revisao|default:'—' }}</small></td><td>{{ risco.item.disciplina|default:'—' }}</td><td><div class="ld-risk-reasons">{% for motivo in risco.razoes %}<span class="ld-risk-reason">{{ motivo }}</span>{% endfor %}</div></td><td class="{% if risco.responsavel == 'Não definido' %}ld-owner-missing{% endif %}">{{ risco.responsavel }}</td><td>{{ risco.prazo|date:'d/m/Y'|default:'—' }}</td></tr>{% empty %}<tr><td colspan="5">Nenhuma ação prioritária no recorte.</td></tr>{% endfor %}</tbody></table></div></div>
   </section>
 
   <section class="ld-dashboard-grid mt-3">
     <div class="ops-panel">
       <div class="ops-panel-head">
         <div>
-          <h2>Cobertura executiva</h2>
-          <p>Percentuais recalculados conforme os filtros ativos.</p>
+          <h2>Controle do fluxo documental</h2>
+          <p>Avanço, prazo e liberação no mesmo recorte.</p>
         </div>
-        <span class="ops-chip">Executive KPIs</span>
+        <span class="ops-chip">Indicadores de fluxo</span>
       </div>
 
       <div class="ld-donut-grid">
         <div class="ld-donut-card">
-          <div class="ld-ring" style="--value: {{ taxa_recebimento }};"><strong>{{ taxa_recebimento }}%</strong></div>
-          <span class="ops-filter-label">Recebimento</span>
+          <div class="ld-ring" style="--value: {{ executivo.progresso }};"><strong>{{ executivo.progresso }}%</strong></div>
+          <span class="ops-filter-label">Avanço de emissão</span>
         </div>
         <div class="ld-donut-card">
-          <div class="ld-ring" style="--value: {{ taxa_grd }};"><strong>{{ taxa_grd }}%</strong></div>
-          <span class="ops-filter-label">GRD emitido</span>
+          <div class="ld-ring" style="--value: {{ executivo.aderencia_prazo }};"><strong>{{ executivo.aderencia_prazo }}%</strong></div>
+          <span class="ops-filter-label">Aderência ao prazo</span>
         </div>
         <div class="ld-donut-card">
-          <div class="ld-ring" style="--value: {{ taxa_pcf }};"><strong>{{ taxa_pcf }}%</strong></div>
-          <span class="ops-filter-label">PCF</span>
+          <div class="ld-ring" style="--value: {{ executivo.taxa_liberacao }};"><strong>{{ executivo.taxa_liberacao }}%</strong></div>
+          <span class="ops-filter-label">Aprovação sem ressalvas</span>
         </div>
       </div>
     </div>
@@ -492,10 +511,10 @@
       </div>
 
       <div class="ld-alert-list">
-        <div class="ld-alert-row"><i class="bi bi-file-earmark-x text-warning"></i><span>Sem PCF</span><strong>{{ total_sem_pcf }}</strong></div>
-        <div class="ld-alert-row"><i class="bi bi-reply text-warning"></i><span>PCF sem resposta</span><strong>{{ total_sem_resposta }}</strong></div>
-        <div class="ld-alert-row"><i class="bi bi-exclamation-triangle text-danger"></i><span>Not Released</span><strong>{{ total_not_released }}</strong></div>
-        <div class="ld-alert-row"><i class="bi bi-activity text-info"></i><span>Cobertura operacional</span><strong>{{ saude_operacional }}%</strong></div>
+        <div class="ld-alert-row"><i class="bi bi-calendar-x text-danger"></i><span>Vencidos sem emissão</span><strong>{{ executivo.vencidos_nao_emitidos }}</strong></div>
+        <div class="ld-alert-row"><i class="bi bi-reply text-warning"></i><span>Respostas PCF pendentes</span><strong>{{ executivo.pcf_aguardando_resposta }}</strong></div>
+        <div class="ld-alert-row"><i class="bi bi-exclamation-triangle text-danger"></i><span>PCFs não liberadas</span><strong>{{ executivo.pcf_criticas }}</strong></div>
+        <div class="ld-alert-row"><i class="bi bi-person-exclamation text-warning"></i><span>Documentos sem responsável</span><strong>{{ executivo.sem_responsavel }}</strong></div>
       </div>
     </div>
   </section>

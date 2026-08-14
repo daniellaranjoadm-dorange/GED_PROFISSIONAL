@@ -147,6 +147,7 @@ LAYOUT_PROJETO_BASICO = {
     # Todas as colunas que estavam a partir de L foram deslocadas +1.
     "status": "M",
     "status_grd": "N",
+    "resp_for_issue": "V",
     "grd": "W",
     "data_grd": "X",
     "pcf": "Y",
