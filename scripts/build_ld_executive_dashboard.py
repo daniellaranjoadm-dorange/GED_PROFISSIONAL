@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import base64
 import json
+import re
 import sys
+import unicodedata
 from datetime import date, datetime, time
 from pathlib import Path
 
@@ -64,6 +66,63 @@ def revision_rank(value):
     return (1, sum((ord(char) - 64) * (27 ** pos) for pos, char in enumerate(reversed(text)) if "A" <= char <= "Z"))
 
 
+def _normalized_text(value):
+    text = unicodedata.normalize("NFKD", str(value or ""))
+    return re.sub(r"[^A-Z0-9]+", " ", "".join(char for char in text if not unicodedata.combining(char)).upper()).strip()
+
+
+def _worksheet_by_tokens(workbook, *tokens):
+    wanted = tuple(_normalized_text(token) for token in tokens)
+    for sheet in workbook.worksheets:
+        title = _normalized_text(sheet.title)
+        if all(token in title for token in wanted):
+            return sheet
+    return None
+
+
+def _http_link(cell):
+    target = ""
+    if cell.hyperlink is not None:
+        target = str(cell.hyperlink.target or "").strip()
+    if not target:
+        target = str(cell.value or "").strip()
+    return target if re.match(r"^https?://", target, flags=re.IGNORECASE) else ""
+
+
+def load_dashboard_links(source: Path):
+    """Le links DOX/PCF das abas auxiliares sem alterar a planilha fonte."""
+    workbook = load_workbook(source, read_only=False, data_only=False, keep_vba=False, keep_links=True)
+    dox_links = {}
+    pcf_links = {}
+
+    fap = _worksheet_by_tokens(workbook, "FAP", "PRODU")
+    if fap is not None:
+        for row in range(2, fap.max_row + 1):
+            document = _normalized_text(fap.cell(row, 2).value).replace(" ", "")
+            revision = _normalized_text(fap.cell(row, 3).value).replace(" ", "") or "0"
+            link = _http_link(fap.cell(row, 1))
+            if document and link:
+                dox_links[(document, revision)] = link
+
+    pcf_sheet = _worksheet_by_tokens(workbook, "LISTA", "DOCUMENT", "PCF")
+    if pcf_sheet is not None:
+        # Exportacao DOX: Nome em B, Rotulo/Revisao em D e URL em L.
+        for row in range(2, pcf_sheet.max_row + 1):
+            name = str(pcf_sheet.cell(row, 2).value or "").strip()
+            link = _http_link(pcf_sheet.cell(row, 12))
+            match = re.search(r"PCF[-_ ]+(.+?)[_ ]+R([0-9]+[A-Z]*)\b", name, flags=re.IGNORECASE)
+            if not match or not link:
+                continue
+            document = _normalized_text(match.group(1)).replace(" ", "")
+            revision = match.group(2).upper()
+            current = pcf_links.get(document)
+            if current is None or revision_rank(revision) >= revision_rank(current[0]):
+                pcf_links[document] = (revision, link)
+
+    workbook.close()
+    return dox_links, {document: link for document, (_, link) in pcf_links.items()}
+
+
 def clean_pcf_status(value):
     text = str(value or "").strip().upper()
     return {"NOT RELESED": "NOT RELEASED", "NOT RELEASE": "NOT RELEASED"}.get(text, text or "SEM PCF")
@@ -89,6 +148,7 @@ def load_ld_headers(source: Path):
 
 
 def load_records(source: Path):
+    dox_links, pcf_links = load_dashboard_links(source)
     workbook = load_workbook(source, read_only=True, data_only=True, keep_vba=False)
     sheet = workbook["LD PROJETO BASICO"]
     grouped = {}
@@ -127,7 +187,11 @@ def load_records(source: Path):
             "medicaoEmissao": date_or_text(values[47]),
             "medicaoAprovacao": date_or_text(values[48]),
             "casco": str(values[54] or "").strip(),
-            "linkDox": "",
+            "linkDox": dox_links.get(
+                (_normalized_text(document).replace(" ", ""), _normalized_text(revision).replace(" ", "") or "0"),
+                "",
+            ),
+            "linkPcf": pcf_links.get(_normalized_text(document).replace(" ", ""), ""),
             "open": integer(values[31]),
             "comentarios": integer(values[30]),
             "underReview": integer(values[32]),

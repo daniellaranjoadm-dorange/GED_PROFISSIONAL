@@ -166,6 +166,7 @@ def build(
   .v2-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px}
   .v2-summary>div{padding:11px 13px;border:1px solid #234359;border-radius:11px;background:#071925}
   .v2-summary strong{display:block;color:#fff;font-size:19px}.v2-summary span{color:#8faab7;font-size:10px}
+  .doc-link{color:#7ddcff;text-decoration:none;text-underline-offset:3px}.doc-link:hover{color:#fff;text-decoration:underline}.doc-link span{font-size:10px;color:#38bdf8}
   .kpis{grid-template-columns:repeat(4,minmax(0,1fr))!important}
   .v2-start{display:flex;align-items:center;justify-content:space-between;gap:16px;
     margin:-2px 0 18px;padding:14px 16px;border:1px solid rgba(55,200,244,.38);
@@ -208,6 +209,10 @@ def build(
   grid.after(toolbar);
   const summary=document.createElement('div');summary.className='v2-summary';summary.id='v2Summary';toolbar.after(summary);
   const esc2=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const safeLink=u=>/^https?:\/\//i.test(String(u||''))?String(u):'';
+  const linked=(label,url,title)=>{const safe=safeLink(url);return safe?`<a class="doc-link" href="${esc2(safe)}" target="_blank" rel="noopener noreferrer" title="${esc2(title)}">${esc2(label)} <span aria-hidden="true">&#8599;</span></a>`:esc2(label||'-')};
+  const legacyRenderTable=renderTable;
+  renderTable=function(){legacyRenderTable();const rows=filtered().sort((a,b)=>priority(b)-priority(a)).slice(0,250),trs=[...document.querySelectorAll('#rows tr')];trs.forEach((tr,index)=>{const r=rows[index];if(!r)return;const cells=tr.children;if(cells[0])cells[0].innerHTML='<strong>'+linked(r.documento,r.linkDox,'Abrir documento no DOX')+'</strong>';if(cells[8])cells[8].innerHTML=linked(r.pcf||'-',r.linkPcf,'Abrir ultima versao da PCF no DOX')})};
   function setupFilter(box,k){
     const vals=values(k);selectedSets[k]=new Set(vals);const panel=box.querySelector('.v2-panel'),btn=box.querySelector('button');
     panel.innerHTML=`<label class="v2-option"><input type="checkbox" data-all checked> Selecionar tudo</label>`+vals.map(v=>`<label class="v2-option"><input type="checkbox" data-value="${esc2(v)}" checked> ${esc2(v)}</label>`).join('');
