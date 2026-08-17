@@ -110,17 +110,13 @@ def load_dashboard_links(source: Path):
         for row in range(2, pcf_sheet.max_row + 1):
             name = str(pcf_sheet.cell(row, 2).value or "").strip()
             link = _http_link(pcf_sheet.cell(row, 12))
-            match = re.search(r"PCF[-_ ]+(.+?)[_ ]+R([0-9]+[A-Z]*)\b", name, flags=re.IGNORECASE)
-            if not match or not link:
+            identifier = _normalized_text(name).replace(" ", "")
+            if not identifier.startswith("PCF") or not link:
                 continue
-            document = _normalized_text(match.group(1)).replace(" ", "")
-            revision = match.group(2).upper()
-            current = pcf_links.get(document)
-            if current is None or revision_rank(revision) >= revision_rank(current[0]):
-                pcf_links[document] = (revision, link)
+            pcf_links[identifier] = link
 
     workbook.close()
-    return dox_links, {document: link for document, (_, link) in pcf_links.items()}
+    return dox_links, pcf_links
 
 
 def clean_pcf_status(value):
@@ -191,7 +187,12 @@ def load_records(source: Path):
                 (_normalized_text(document).replace(" ", ""), _normalized_text(revision).replace(" ", "") or "0"),
                 "",
             ),
-            "linkPcf": pcf_links.get(_normalized_text(document).replace(" ", ""), ""),
+            # Vínculo documental estrito: a URL precisa pertencer exatamente à
+            # PCF exibida (incluindo revisão), nunca a uma revisão semelhante.
+            "linkPcf": pcf_links.get(
+                _normalized_text(values[24]).replace(" ", ""),
+                "",
+            ),
             "open": integer(values[31]),
             "comentarios": integer(values[30]),
             "underReview": integer(values[32]),

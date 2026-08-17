@@ -8,7 +8,7 @@ from scripts.build_ld_executive_dashboard import load_dashboard_links
 
 
 class DashboardDoxLinksTests(SimpleTestCase):
-    def test_reads_exact_fap_revision_and_latest_pcf_link(self):
+    def test_reads_exact_fap_revision_and_exact_pcf_links(self):
         with TemporaryDirectory(dir=Path.cwd() / ".test_tmp") as temporary:
             source = Path(temporary) / "links.xlsx"
             workbook = Workbook()
@@ -30,7 +30,8 @@ class DashboardDoxLinksTests(SimpleTestCase):
             dox_links, pcf_links = load_dashboard_links(source)
 
         self.assertEqual(dox_links[("IDE001", "A")], "https://dox.example/documento-a")
-        self.assertEqual(pcf_links["IDE001"], "https://dox.example/pcf-r0a")
+        self.assertEqual(pcf_links["PCFIDE001R0"], "https://dox.example/pcf-r0")
+        self.assertEqual(pcf_links["PCFIDE001R0A"], "https://dox.example/pcf-r0a")
 
     def test_ignores_non_http_links(self):
         with TemporaryDirectory(dir=Path.cwd() / ".test_tmp") as temporary:
