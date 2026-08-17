@@ -1,11 +1,12 @@
 import io
-
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 from reportlab.pdfgen import canvas
 from apps.contas.models import Role, RolePermission, UserRole
+from apps.carimbos.models import DistribuicaoCopia, GuiaEmissao
 
 
 def pdf_upload():
@@ -58,6 +59,27 @@ class CriarCopiaControladaViewTests(TestCase):
         self.assertIn("COPIA_CONTROLADA_GI_GI-009.pdf", response["Content-Disposition"])
         self.assertTrue(response.content.startswith(b"%PDF-"))
 
+    def test_operador_confirma_entrega_nominal(self):
+        guia = GuiaEmissao.objects.create(
+            numero="GI-ENTREGA-01", caminho_guia="guia.pdf", pasta_documentos="docs",
+            data_emissao=timezone.now(), remetente="Document Control",
+        )
+        registro = DistribuicaoCopia.objects.create(
+            guia=guia, documento="DOC-ENTREGA", documento_normalizado="DOCENTREGA",
+            revisao="0", arquivo_origem="doc.pdf", destinatario="Produção",
+            recebedor_carimbo="Esmael", caminho_copia="copia.pdf", emitida_em=timezone.now(),
+        )
+        self.client.force_login(self.usuario)
+        response = self.client.post(
+            reverse("carimbos:confirmar_entrega", args=[registro.pk]),
+            {"observacao": "Entregue em mãos"},
+        )
+        self.assertEqual(response.status_code, 302)
+        registro.refresh_from_db()
+        self.assertEqual(registro.status, DistribuicaoCopia.STATUS_ENTREGUE)
+        self.assertEqual(registro.entregue_por, self.usuario)
+        self.assertIsNotNone(registro.entregue_em)
+
 
 class CopiasControladasRBACViewTests(TestCase):
     def setUp(self):
@@ -76,5 +98,28 @@ class CopiasControladasRBACViewTests(TestCase):
         response = self.client.post(reverse("carimbos:processar_guia"), {"guia": "GI-TESTE"})
         self.assertEqual(response.status_code, 302)
 
+    def test_consulta_nao_confirma_entrega(self):
+        response = self.client.post(reverse("carimbos:confirmar_entrega", args=[999]))
+        self.assertEqual(response.status_code, 302)
+
     def test_consulta_pode_ver_rastreabilidade(self):
         self.assertEqual(self.client.get(reverse("carimbos:rastreabilidade")).status_code, 200)
+
+    def test_consulta_exporta_tabela_excel_formatada(self):
+        guia = GuiaEmissao.objects.create(
+            numero="GI-TESTE-01", caminho_guia="guia.pdf", pasta_documentos="docs",
+            data_emissao=timezone.now(), remetente="Document Control",
+        )
+        DistribuicaoCopia.objects.create(
+            guia=guia, documento="DOC-001", documento_normalizado="DOC001", revisao="A",
+            arquivo_origem="doc.pdf", destinatario="Produção",
+            recebedor_carimbo="Esmael", meio_distribuicao=DistribuicaoCopia.MEIO_FISICO,
+            quantidade=1, caminho_copia="copia.pdf", emitida_em=timezone.now(),
+        )
+        response = self.client.get(reverse("carimbos:exportar_rastreabilidade"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response["Content-Type"],
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+        self.assertTrue(response.content.startswith(b"PK"))

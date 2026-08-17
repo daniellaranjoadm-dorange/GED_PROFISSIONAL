@@ -30,18 +30,28 @@ class GuiaEmissao(models.Model):
 
 class DistribuicaoCopia(models.Model):
     STATUS_EMITIDA = "EMITIDA"
+    STATUS_ENTREGUE = "ENTREGUE"
     STATUS_RECOLHIMENTO_PENDENTE = "RECOLHIMENTO_PENDENTE"
     STATUS_RECOLHIDA = "RECOLHIDA"
     STATUS_SUBSTITUIDA = "SUBSTITUIDA"
     STATUS_CANCELADA = "CANCELADA"
     STATUS_EXTRAVIADA = "EXTRAVIADA"
     STATUS_CHOICES = [
-        (STATUS_EMITIDA, "Em poder do recebedor"),
+        (STATUS_EMITIDA, "Cópia gerada / entrega não confirmada"),
+        (STATUS_ENTREGUE, "Entrega confirmada"),
         (STATUS_RECOLHIMENTO_PENDENTE, "Recolhimento pendente"),
         (STATUS_RECOLHIDA, "Recolhida"),
         (STATUS_SUBSTITUIDA, "Substituída"),
         (STATUS_CANCELADA, "Cancelada"),
         (STATUS_EXTRAVIADA, "Extraviada/justificada"),
+    ]
+    MEIO_NAO_INFORMADO = "NAO_INFORMADO"
+    MEIO_FISICO = "FISICO"
+    MEIO_DIGITAL = "DIGITAL"
+    MEIO_CHOICES = [
+        (MEIO_NAO_INFORMADO, "Não informado"),
+        (MEIO_FISICO, "Cópia física"),
+        (MEIO_DIGITAL, "Cópia digital"),
     ]
 
     guia = models.ForeignKey(
@@ -55,6 +65,14 @@ class DistribuicaoCopia(models.Model):
     arquivo_origem = models.TextField()
     destinatario = models.CharField(max_length=180, db_index=True)
     email_destinatario = models.EmailField(blank=True)
+    recebedor_carimbo = models.CharField(max_length=180, blank=True, db_index=True)
+    meio_distribuicao = models.CharField(
+        max_length=20,
+        choices=MEIO_CHOICES,
+        default=MEIO_NAO_INFORMADO,
+        db_index=True,
+    )
+    quantidade = models.PositiveSmallIntegerField(default=1)
     caminho_copia = models.TextField()
     status = models.CharField(
         max_length=40,
@@ -63,6 +81,14 @@ class DistribuicaoCopia(models.Model):
         db_index=True,
     )
     emitida_em = models.DateTimeField(db_index=True)
+    entregue_em = models.DateTimeField(null=True, blank=True, db_index=True)
+    entregue_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="copias_controladas_entregues",
+    )
     recolhida_em = models.DateTimeField(null=True, blank=True)
     recolhida_por = models.ForeignKey(
         settings.AUTH_USER_MODEL,

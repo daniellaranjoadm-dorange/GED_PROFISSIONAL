@@ -74,6 +74,7 @@ def analisar_revisoes(dados: DadosGuia) -> AnaliseRevisoes:
     alertas: list[AlertaRevisao] = []
     estados_em_poder = (
         DistribuicaoCopia.STATUS_EMITIDA,
+        DistribuicaoCopia.STATUS_ENTREGUE,
         DistribuicaoCopia.STATUS_RECOLHIMENTO_PENDENTE,
     )
 

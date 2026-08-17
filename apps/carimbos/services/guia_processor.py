@@ -111,6 +111,8 @@ def processar_guia(
     *,
     destinatarios_selecionados: list[str],
     nomes_carimbo: dict[str, str] | None = None,
+    meios_distribuicao: dict[str, str] | None = None,
+    quantidades: dict[str, int] | None = None,
     corrigir_orientacao_paisagem: bool = False,
     posicionar_em_espaco_livre: bool = False,
     usar_folha_controle: bool = False,
@@ -143,6 +145,17 @@ def processar_guia(
         for chave, valor in (nomes_carimbo or {}).items()
         if str(valor).strip()
     }
+    meios_validos = {valor for valor, _ in DistribuicaoCopia.MEIO_CHOICES}
+    meios_distribuicao = {
+        str(chave).casefold(): str(valor).strip().upper()
+        for chave, valor in (meios_distribuicao or {}).items()
+        if str(valor).strip().upper() in meios_validos
+    }
+    quantidades = {
+        str(chave).casefold(): max(1, min(99, int(valor)))
+        for chave, valor in (quantidades or {}).items()
+        if str(valor).strip().isdigit()
+    }
     arquivos = _arquivos_documentos(dados)
 
     guia, _ = GuiaEmissao.objects.update_or_create(
@@ -164,7 +177,10 @@ def processar_guia(
         normalizado = normalizar_documento(documento)
         anteriores = DistribuicaoCopia.objects.filter(
             documento_normalizado=normalizado,
-            status=DistribuicaoCopia.STATUS_EMITIDA,
+            status__in=(
+                DistribuicaoCopia.STATUS_EMITIDA,
+                DistribuicaoCopia.STATUS_ENTREGUE,
+            ),
         )
         ids_obsoletos = [
             item.pk
@@ -176,6 +192,8 @@ def processar_guia(
         )
 
         for destinatario in destinatarios:
+            chave_destinatario = destinatario.nome.casefold()
+            nome_carimbo = nomes_carimbo.get(chave_destinatario, destinatario.nome)
             pasta_saida = (
                 dados.pasta_documentos
                 / "COPIAS_CONTROLADAS"
@@ -192,7 +210,7 @@ def processar_guia(
                 arquivo.read_bytes(),
                 nome_original=arquivo.name,
                 numero_gi=dados.numero,
-                usuario=nomes_carimbo.get(destinatario.nome.casefold(), destinatario.nome),
+                usuario=nome_carimbo,
                 emitido_por=dados.remetente,
                 emitido_em=dados.data_emissao,
                 corrigir_orientacao_paisagem=corrigir_orientacao_paisagem,
@@ -213,6 +231,12 @@ def processar_guia(
                     "documento": documento,
                     "arquivo_origem": str(arquivo),
                     "email_destinatario": destinatario.email,
+                    "recebedor_carimbo": nome_carimbo,
+                    "meio_distribuicao": meios_distribuicao.get(
+                        chave_destinatario,
+                        DistribuicaoCopia.MEIO_NAO_INFORMADO,
+                    ),
+                    "quantidade": quantidades.get(chave_destinatario, 1),
                     "caminho_copia": str(destino),
                     "emitida_em": dados.data_emissao,
                 },

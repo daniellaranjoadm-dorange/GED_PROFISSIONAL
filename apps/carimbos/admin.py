@@ -17,13 +17,18 @@ class DistribuicaoCopiaAdmin(admin.ModelAdmin):
         "revisao",
         "guia",
         "destinatario",
+        "recebedor_carimbo",
+        "meio_distribuicao",
+        "quantidade",
         "status",
         "emitida_em",
+        "entregue_em",
     )
     search_fields = (
         "documento",
         "guia__numero",
         "destinatario",
+        "recebedor_carimbo",
         "email_destinatario",
     )
-    list_filter = ("status", "revisao", "emitida_em")
+    list_filter = ("status", "meio_distribuicao", "revisao", "emitida_em")

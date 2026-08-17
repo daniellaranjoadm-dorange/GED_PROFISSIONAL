@@ -6,11 +6,12 @@
 <style>
   .rt-wrap{max-width:1500px;margin:0 auto}.rt-hero,.rt-card{border:1px solid rgba(148,163,184,.2);border-radius:18px;background:rgba(15,23,42,.88);color:#e2e8f0}
   .rt-hero{padding:25px;background:linear-gradient(135deg,#0f172a,#111827)}.rt-hero h1{font-weight:900;margin:.35rem 0}.rt-hero p{color:#94a3b8;margin:0}
-  .rt-card{padding:18px;margin-top:18px}.rt-tools{display:grid;grid-template-columns:1fr 240px auto;gap:10px}.rt-input{min-height:42px;border:1px solid #334155;border-radius:9px;background:#020617;color:#fff;padding:0 12px}
+  .rt-card{padding:18px;margin-top:18px}.rt-tools{display:grid;grid-template-columns:1fr 210px 190px auto auto;gap:10px}.rt-input{min-height:42px;border:1px solid #334155;border-radius:9px;background:#020617;color:#fff;padding:0 12px}
   .rt-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:42px;padding:0 15px;border:0;border-radius:9px;background:#38bdf8;color:#082f49;font-weight:900;text-decoration:none}
   .rt-table{width:100%;border-collapse:collapse}.rt-table th,.rt-table td{padding:10px;border-bottom:1px solid #243247;text-align:left;vertical-align:top}.rt-table th{font-size:.7rem;text-transform:uppercase;color:#7dd3fc;white-space:nowrap}
   .rt-status{display:inline-flex;padding:5px 8px;border-radius:999px;background:#172554;color:#bfdbfe;font-size:.72rem;font-weight:800}.rt-status-pendente{background:#451a03;color:#fed7aa}
   .rt-count{display:inline-flex;padding:7px 11px;border-radius:999px;background:#7c2d12;color:#ffedd5;font-weight:900}.rt-note{width:170px;background:#020617;color:#fff;border:1px solid #334155;border-radius:7px;padding:7px}
+  .rt-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:18px}.rt-kpi{padding:14px 16px;border:1px solid rgba(56,189,248,.2);border-radius:14px;background:#071525}.rt-kpi span{display:block;color:#7dd3fc;font-size:.68rem;font-weight:900;text-transform:uppercase}.rt-kpi strong{display:block;margin-top:3px;color:#fff;font-size:1.65rem}.rt-person{color:#fff;font-weight:800}.rt-muted{color:#94a3b8;font-size:.75rem}.rt-actions{display:flex;flex-direction:column;gap:6px;min-width:185px}
   @media(max-width:800px){.rt-tools{grid-template-columns:1fr}.rt-btn{width:100%}}
 </style>
 {% endblock %}
@@ -23,33 +24,50 @@
     <p>Histórico por documento, revisão, GI e recebedor. <span class="rt-count">{{ pendentes }} recolhimento(s) pendente(s)</span></p>
   </section>
 
+  <section class="rt-kpis">
+    <div class="rt-kpi"><span>Registros no recorte</span><strong>{{ totais.registros }}</strong></div>
+    <div class="rt-kpi"><span>C&oacute;pias / volumes</span><strong>{{ totais.quantidade }}</strong></div>
+    <div class="rt-kpi"><span>Entrega confirmada</span><strong>{{ totais.entregues }}</strong></div>
+    <div class="rt-kpi"><span>Aguardando confirma&ccedil;&atilde;o</span><strong>{{ totais.aguardando }}</strong></div>
+  </section>
+
   <section class="rt-card">
     <form method="get" class="rt-tools">
       <input class="rt-input" name="q" value="{{ termo }}" placeholder="Documento, GI ou destinatário">
       <select class="rt-input" name="status"><option value="">Todos os estados</option>{% for valor, rotulo in status_choices %}<option value="{{ valor }}" {% if status_selecionado == valor %}selected{% endif %}>{{ rotulo }}</option>{% endfor %}</select>
+      <select class="rt-input" name="meio"><option value="">Todos os meios</option>{% for valor, rotulo in meio_choices %}<option value="{{ valor }}" {% if meio_selecionado == valor %}selected{% endif %}>{{ rotulo }}</option>{% endfor %}</select>
       <button class="rt-btn" type="submit"><i class="bi bi-funnel"></i>Filtrar</button>
+      <a class="rt-btn" href="{% url 'carimbos:exportar_rastreabilidade' %}?q={{ termo|urlencode }}&status={{ status_selecionado|urlencode }}&meio={{ meio_selecionado|urlencode }}"><i class="bi bi-file-earmark-excel"></i>Exportar Excel</a>
     </form>
   </section>
 
   <section class="rt-card table-responsive">
     <table class="rt-table">
-      <thead><tr><th>Documento</th><th>Rev.</th><th>GI</th><th>Emissão</th><th>Emitido por</th><th>Recebedor</th><th>Situação</th><th>Ação</th></tr></thead>
+      <thead><tr><th>Documento / revisão</th><th>GI / emissão</th><th>Emitido por</th><th>Grupo</th><th>Pessoa no carimbo</th><th>Distribui&ccedil;&atilde;o</th><th>Entrega</th><th>Situação</th><th>Ação</th></tr></thead>
       <tbody>
       {% for item in registros %}
         <tr>
-          <td><strong>{{ item.documento }}</strong></td><td>{{ item.revisao|default:"-" }}</td><td>{{ item.guia.numero }}</td>
-          <td>{{ item.emitida_em|date:"d/m/Y H:i" }}</td><td>{{ item.guia.remetente }}</td><td>{{ item.destinatario }}{% if item.email_destinatario %}<br><small>{{ item.email_destinatario }}</small>{% endif %}</td>
+          <td><strong>{{ item.documento }}</strong><br><small>Rev. {{ item.revisao|default:"-" }}</small></td><td><strong>{{ item.guia.numero }}</strong><br><small>{{ item.emitida_em|date:"d/m/Y H:i" }}</small></td>
+          <td>{{ item.guia.remetente }}{% if item.guia.processada_por %}<br><span class="rt-muted">Processado por {{ item.guia.processada_por }}</span>{% endif %}</td>
+          <td>{{ item.destinatario }}{% if item.email_destinatario %}<br><small>{{ item.email_destinatario }}</small>{% endif %}</td>
+          <td>{% if item.recebedor_carimbo %}<span class="rt-person">{{ item.recebedor_carimbo }}</span>{% else %}<span class="rt-muted">N&atilde;o registrado no hist&oacute;rico</span>{% endif %}</td>
+          <td>{{ item.get_meio_distribuicao_display }}<br><span class="rt-muted">Qtd. {{ item.quantidade }}</span></td>
+          <td>{% if item.entregue_em %}<strong>{{ item.entregue_em|date:"d/m/Y H:i" }}</strong><br><span class="rt-muted">por {{ item.entregue_por|default:"Sistema" }}</span>{% else %}<span class="rt-muted">N&atilde;o confirmada</span>{% endif %}</td>
           <td><span class="rt-status {% if item.status == 'RECOLHIMENTO_PENDENTE' %}rt-status-pendente{% endif %}">{{ item.get_status_display }}</span></td>
-          <td>
+          <td><div class="rt-actions">
+            {% if item.status == 'EMITIDA' %}
+            <form method="post" action="{% url 'carimbos:confirmar_entrega' item.pk %}">{% csrf_token %}<input class="rt-note" name="observacao" placeholder="Comprovante / observa&ccedil;&atilde;o"><button class="rt-btn mt-1" type="submit">Confirmar entrega</button></form>
+            {% endif %}
             {% if item.status == 'RECOLHIMENTO_PENDENTE' %}
             <form method="post" action="{% url 'carimbos:confirmar_recolhimento' item.pk %}">{% csrf_token %}
               <input class="rt-note" name="observacao" placeholder="Observação">
               <button class="rt-btn mt-1" type="submit">Confirmar recolhimento</button>
             </form>
-            {% else %}-{% endif %}
-          </td>
+            {% endif %}
+            {% if item.status != 'EMITIDA' and item.status != 'RECOLHIMENTO_PENDENTE' %}<span class="rt-muted">Sem a&ccedil;&atilde;o pendente</span>{% endif %}
+          </div></td>
         </tr>
-      {% empty %}<tr><td colspan="8">Nenhuma emissão registrada.</td></tr>{% endfor %}
+      {% empty %}<tr><td colspan="9">Nenhuma emissão registrada.</td></tr>{% endfor %}
       </tbody>
     </table>
   </section>

@@ -208,11 +208,16 @@ class GuiaProcessorTests(TestCase):
             numero,
             destinatarios_selecionados=["Carlos Miranda"],
             nomes_carimbo={"Carlos Miranda": "Nome Manual no Carimbo"},
+            meios_distribuicao={"Carlos Miranda": "FISICO"},
+            quantidades={"Carlos Miranda": 2},
             usuario=self.usuario,
         )
 
         distribuicao = DistribuicaoCopia.objects.get(guia=resultado.guia)
         self.assertEqual(distribuicao.destinatario, "Carlos Miranda")
+        self.assertEqual(distribuicao.recebedor_carimbo, "Nome Manual no Carimbo")
+        self.assertEqual(distribuicao.meio_distribuicao, DistribuicaoCopia.MEIO_FISICO)
+        self.assertEqual(distribuicao.quantidade, 2)
         texto = "".join(
             pagina.extract_text() or ""
             for pagina in __import__("pypdf").PdfReader(distribuicao.caminho_copia).pages
