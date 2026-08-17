@@ -103,6 +103,18 @@ GUIAS_EMISSAO_ROOT = Path(
         r"\\virm-rgr022\FILESERVER\Projetos\05_HANDYMAX\09. Doc Control\19 - Guias de Emissão - GI",
     )
 )
+SHOPDRAWING_DISTRIBUTION_FILE = Path(
+    os.getenv(
+        "SHOPDRAWING_DISTRIBUTION_FILE",
+        str(GUIAS_EMISSAO_ROOT / "Lista de Distribuição Shopdrawings.txt"),
+    )
+)
+SHOPDRAWING_LD_FILE = Path(
+    os.getenv(
+        "SHOPDRAWING_LD_FILE",
+        r"\\virm-rgr022\FILESERVER\Projetos\05_HANDYMAX\09. Doc Control\3 - LD\16. Shopdrawings\83100-ECXP00046-00-50-LD-0001.xlsx",
+    )
+)
 
 # ======================
 # MIDDLEWARE

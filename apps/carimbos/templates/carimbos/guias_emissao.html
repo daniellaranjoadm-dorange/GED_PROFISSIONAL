@@ -17,6 +17,7 @@
   .gi-check strong{color:#f8fafc!important;font-weight:800}.gi-check small{color:#94a3b8!important}.gi-check > input[type="checkbox"]{width:18px;height:18px;accent-color:#38bdf8}
   .gi-actions{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-top:18px;flex-wrap:wrap}
   .gi-impact{margin-top:18px;padding:18px;border:1px solid rgba(245,158,11,.5);border-radius:12px;background:rgba(120,53,15,.22)}.gi-impact h3{margin:0 0 6px;color:#fde68a}.gi-impact p{color:#fed7aa}.gi-alert{margin-top:10px;padding:12px;border:1px solid rgba(248,113,113,.45);border-radius:9px;background:rgba(127,29,29,.25);color:#fecaca}
+  .gi-matrix{margin-top:24px;padding:18px;border:1px solid rgba(56,189,248,.38);border-radius:14px;background:linear-gradient(135deg,rgba(3,105,161,.16),rgba(15,23,42,.74))}.gi-matrix-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap}.gi-matrix h3{margin:0 0 5px}.gi-matrix p{margin:0;color:#94a3b8}.gi-advisory{padding:7px 10px;border:1px solid rgba(245,158,11,.45);border-radius:999px;background:rgba(120,53,15,.25);color:#fde68a;font-size:.7rem;font-weight:900;text-transform:uppercase;letter-spacing:.06em}.gi-destinations{display:flex;flex-wrap:wrap;gap:7px}.gi-destination{display:inline-grid;gap:2px;padding:7px 9px;border:1px solid rgba(45,212,191,.32);border-radius:9px;background:rgba(13,148,136,.1);color:#ccfbf1}.gi-destination small{color:#94a3b8}.gi-destination-pending{border-color:rgba(245,158,11,.5);background:rgba(120,53,15,.2);color:#fde68a}.gi-source-alert{margin-top:12px;padding:11px;border:1px dashed #475569;border-radius:10px;color:#cbd5e1}.gi-dox{color:#7dd3fc;font-weight:800;text-decoration:none;white-space:nowrap}
   @media(max-width:760px){.gi-form,.gi-grid,.gi-check{grid-template-columns:1fr}.gi-btn{width:100%}}
 </style>
 {% endblock %}
@@ -72,6 +73,44 @@
         <tbody>{% for doc in previa.documentos %}<tr><td>{{ doc.numero }}</td><td>{{ doc.folha }}</td><td>{{ doc.revisao }}</td></tr>{% endfor %}</tbody>
       </table>
     </div>
+
+    {% if matriz_shopdrawings or erro_matriz_shopdrawings %}
+    <section class="gi-matrix">
+      <div class="gi-matrix-head">
+        <div>
+          <div class="gi-label">Shopdrawings · apoio à conferência</div>
+          <h3>Matriz recomendada de distribuição</h3>
+          <p>Cruza o documento da GI com a LD de Shopdrawings e a lista de distribuição predefinida.</p>
+        </div>
+        <span class="gi-advisory"><i class="bi bi-shield-check"></i> Recomendação — não altera a GI</span>
+      </div>
+      {% if erro_matriz_shopdrawings %}<div class="gi-alert">{{ erro_matriz_shopdrawings }}</div>{% endif %}
+      {% if matriz_shopdrawings %}
+      <div class="table-responsive">
+        <table class="gi-table">
+          <thead><tr><th>Documento / revisão</th><th>Classificação na LD</th><th>Distribuição recomendada</th><th>DOX</th></tr></thead>
+          <tbody>
+          {% for item in matriz_shopdrawings %}
+            <tr>
+              <td><strong>{{ item.documento }}</strong><br><small>Rev. {{ item.revisao }}</small></td>
+              <td>
+                <strong>{{ item.categoria }}</strong>
+                {% if item.titulo %}<br><small>{{ item.titulo }}</small>{% endif %}
+                {% if not item.encontrado_ld %}<br><span class="text-warning">Não localizado na LD de Shopdrawings</span>{% elif not item.regra_encontrada %}<br><span class="text-warning">Sem regra de distribuição cadastrada</span>{% endif %}
+              </td>
+              <td>
+                {% if item.destinos %}<div class="gi-destinations">{% for destino in item.destinos %}<span class="gi-destination{% if destino.pendente %} gi-destination-pending{% endif %}"><strong>{% if destino.pessoa %}{{ destino.pessoa }}{% else %}Responsável pendente{% endif %}</strong><small>{{ destino.setor }} · {{ destino.quantidade }} × {{ destino.meio|lower }}</small></span>{% endfor %}</div>{% else %}<span class="text-secondary">A confirmar pelo Document Control</span>{% endif %}
+              </td>
+              <td>{% if item.link_dox %}<a class="gi-dox" href="{{ item.link_dox }}" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right"></i> Abrir</a>{% else %}<span class="text-secondary">Sem link</span>{% endif %}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="gi-source-alert"><i class="bi bi-info-circle"></i> Confira esta recomendação com os destinatários da própria GI. Responsabilidades não definidas permanecem destacadas como pendência, sem suposição automática.</div>
+      {% endif %}
+    </section>
+    {% endif %}
 
     <h3 class="mt-4">Cópias por destinatário</h3>
     <p class="text-secondary">Desmarque alguém caso não deva receber cópia nesta execução.</p>

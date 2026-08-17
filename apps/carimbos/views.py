@@ -22,6 +22,7 @@ from .services.guia_processor import (
 )
 from .services.pdf_stamper import PdfStampError, gerar_copia_controlada
 from .services.revision_control import analisar_revisoes
+from .services.shopdrawing_distribution import montar_matriz_previa
 from apps.contas.permissions import has_perm
 
 
@@ -72,11 +73,20 @@ def guias_emissao(request):
     previa = None
     analise_revisoes = None
     destinatarios_exibicao = []
+    matriz_shopdrawings = ()
+    erro_matriz_shopdrawings = ""
     erro = ""
     if numero:
         try:
             previa = carregar_previa(numero)
             analise_revisoes = analisar_revisoes(previa)
+            try:
+                matriz_shopdrawings = montar_matriz_previa(previa.documentos)
+            except (OSError, KeyError, ValueError) as exc:
+                erro_matriz_shopdrawings = (
+                    "A matriz recomendada de Shopdrawings está temporariamente "
+                    f"indisponível: {exc}"
+                )
             destinatarios_exibicao = list(previa.destinatarios)
             existentes = {item.nome.casefold() for item in destinatarios_exibicao}
             from .services.guia_parser import DestinatarioGuia
@@ -108,6 +118,8 @@ def guias_emissao(request):
             "previa": previa,
             "analise_revisoes": analise_revisoes,
             "destinatarios_exibicao": destinatarios_exibicao,
+            "matriz_shopdrawings": matriz_shopdrawings,
+            "erro_matriz_shopdrawings": erro_matriz_shopdrawings,
             "erro": erro,
         },
     )
