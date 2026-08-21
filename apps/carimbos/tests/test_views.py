@@ -56,7 +56,10 @@ class CriarCopiaControladaViewTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response["Content-Type"], "application/pdf")
-        self.assertIn("COPIA_CONTROLADA_GI_GI-009.pdf", response["Content-Disposition"])
+        self.assertIn(
+            "documento_GI-009_Usuario_de_Campo.pdf",
+            response["Content-Disposition"],
+        )
         self.assertTrue(response.content.startswith(b"%PDF-"))
 
     def test_operador_confirma_entrega_nominal(self):

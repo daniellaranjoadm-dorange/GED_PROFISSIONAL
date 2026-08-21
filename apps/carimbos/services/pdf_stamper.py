@@ -353,8 +353,9 @@ def gerar_copia_controlada(
 
     nome_base = _nome_seguro(Path(nome_original).stem)
     gi_segura = _nome_seguro(numero_gi, limite=40)
+    pessoa_segura = _nome_seguro(usuario, limite=60)
     return CopiaControladaGerada(
         conteudo=conteudo_saida,
-        nome_arquivo=f"{nome_base}_COPIA_CONTROLADA_GI_{gi_segura}.pdf",
+        nome_arquivo=f"{nome_base}_{gi_segura}_{pessoa_segura}.pdf",
         total_paginas=total_paginas,
     )

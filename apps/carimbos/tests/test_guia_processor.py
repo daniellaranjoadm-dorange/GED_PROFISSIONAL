@@ -218,6 +218,13 @@ class GuiaProcessorTests(TestCase):
         self.assertEqual(distribuicao.recebedor_carimbo, "Nome Manual no Carimbo")
         self.assertEqual(distribuicao.meio_distribuicao, DistribuicaoCopia.MEIO_FISICO)
         self.assertEqual(distribuicao.quantidade, 2)
+        self.assertEqual(
+            Path(distribuicao.caminho_copia).name,
+            (
+                "83100-ECXP00046_00-5G-DE-0005.01_"
+                "ECXP00046-00-10-GI-0006_26_Nome_Manual_no_Carimbo.pdf"
+            ),
+        )
         texto = "".join(
             pagina.extract_text() or ""
             for pagina in __import__("pypdf").PdfReader(distribuicao.caminho_copia).pages
@@ -230,6 +237,7 @@ class GuiaProcessorTests(TestCase):
             nomes_carimbo={"Carlos Miranda": "Ismael Cardoso"},
             usuario=self.usuario,
         )
+        distribuicao.refresh_from_db()
         texto_atualizado = "".join(
             pagina.extract_text() or ""
             for pagina in __import__("pypdf").PdfReader(distribuicao.caminho_copia).pages

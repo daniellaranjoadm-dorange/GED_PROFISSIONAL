@@ -38,7 +38,7 @@ class PdfStamperTests(SimpleTestCase):
         self.assertEqual(resultado.total_paginas, 3)
         self.assertEqual(
             resultado.nome_arquivo,
-            "Procedimento_CQ_COPIA_CONTROLADA_GI_GI-2026-001.pdf",
+            "Procedimento_CQ_GI-2026-001_Daniel_Laranjo.pdf",
         )
         reader = PdfReader(io.BytesIO(resultado.conteudo))
         self.assertEqual(len(reader.pages), 3)
