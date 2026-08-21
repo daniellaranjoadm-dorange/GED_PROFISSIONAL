@@ -7,7 +7,7 @@ const rows = payload.records;
 const meta = payload.meta;
 
 const columns = meta.ldHeaders;
-const dateColumns = new Set([10,23,25,28,47,48,49,51,55,56]); // indices A=0
+const dateColumns = new Set([10,23,25,28,47,48,49,51,55,56,58,60]); // indices A=0
 const cellValue = (value,index) => {
   if (!dateColumns.has(index) || !value) return value ?? "";
   const parsed = new Date(String(value).length === 10 ? `${value}T12:00:00` : value);

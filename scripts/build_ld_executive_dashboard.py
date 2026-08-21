@@ -23,6 +23,7 @@ DEFAULT_OUTPUT = Path(
     r"\dashboard_executivo_ld_projeto_basico.html"
 )
 DEFAULT_LOGO = Path(r"D:\GED_PROFISSIONAL\Logo icone de Pasta.png")
+LD_MAX_COLUMN = 61  # A:BI
 
 
 def iso(value):
@@ -138,7 +139,7 @@ def export_cell(value):
 def load_ld_headers(source: Path):
     workbook = load_workbook(source, read_only=True, data_only=True, keep_vba=False)
     sheet = workbook["LD PROJETO BASICO"]
-    headers = [str(cell.value or "").strip() for cell in sheet[1][:57]]
+    headers = [str(cell.value or "").strip() for cell in sheet[1][:LD_MAX_COLUMN]]
     workbook.close()
     return headers
 
@@ -148,7 +149,9 @@ def load_records(source: Path):
     workbook = load_workbook(source, read_only=True, data_only=True, keep_vba=False)
     sheet = workbook["LD PROJETO BASICO"]
     grouped = {}
-    for row_number, values in enumerate(sheet.iter_rows(min_row=2, max_col=57, values_only=True), 2):
+    for row_number, values in enumerate(
+        sheet.iter_rows(min_row=2, max_col=LD_MAX_COLUMN, values_only=True), 2
+    ):
         document = str(values[2] or "").strip()
         if not document or document.upper() in {"NOT APPLICABLE", "N/A", "#N/A"}:
             continue
@@ -201,6 +204,10 @@ def load_records(source: Path):
             "cronogramaTermino": iso(values[56]),
             "cronogramaInicioOriginal": date_or_text(values[55]),
             "cronogramaTerminoOriginal": date_or_text(values[56]),
+            "bmEmissao": str(values[57] or "SEM INFORMAÇÃO").strip(),
+            "bmDataEmissao": date_or_text(values[58]),
+            "bmAprovacao": str(values[59] or "SEM INFORMAÇÃO").strip(),
+            "bmDataAprovacao": date_or_text(values[60]),
             "linhaFonte": row_number,
             "ldExport": [export_cell(value) for value in values],
         }
@@ -216,7 +223,11 @@ def load_records(source: Path):
         merged["kmTitle"] = " | ".join(dict.fromkeys(row["kmTitle"] for row in records if row["kmTitle"]))
         merged["transmittalKm"] = " | ".join(dict.fromkeys(row["transmittalKm"] for row in records if row["transmittalKm"]))
         merged["documentoKmEmitidoDocTp"] = " | ".join(dict.fromkeys(row["documentoKmEmitidoDocTp"] for row in records if row["documentoKmEmitidoDocTp"]))
-        for field in ("dataKm", "medicaoEmissao", "medicaoAprovacao", "cronogramaInicio", "cronogramaTermino", "cronogramaInicioOriginal", "cronogramaTerminoOriginal"):
+        for field in (
+            "dataKm", "medicaoEmissao", "medicaoAprovacao", "cronogramaInicio",
+            "cronogramaTermino", "cronogramaInicioOriginal", "cronogramaTerminoOriginal",
+            "bmEmissao", "bmDataEmissao", "bmAprovacao", "bmDataAprovacao",
+        ):
             merged[field] = next((row[field] for row in records if row.get(field)), None)
         merged["open"] = max(row["open"] for row in records)
         merged["comentarios"] = max(row["comentarios"] for row in records)

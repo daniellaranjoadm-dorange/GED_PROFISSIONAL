@@ -34,6 +34,15 @@ DEFAULT_OUTPUT = Path(
     r"\\virm-rgr022\FILESERVER\Projetos\05_HANDYMAX\09. Doc Control\3 - LD"
     r"\Dashboard_Gerencial_Doc_Control_LD_Projeto_Basico.html"
 )
+LD_MAX_COLUMN = 61  # A:BI
+JSZIP_BROWSER = Path(
+    r"C:\Users\daniel.laranjo\.cache\codex-runtimes\codex-primary-runtime"
+    r"\dependencies\node\node_modules\jszip\dist\jszip.min.js"
+)
+PPTXGENJS_BROWSER = Path(
+    r"C:\Users\daniel.laranjo\.cache\codex-runtimes\codex-primary-runtime"
+    r"\dependencies\node\node_modules\pptxgenjs\dist\pptxgen.min.js"
+)
 
 
 def resolve_template(template: Path) -> Path:
@@ -67,7 +76,7 @@ def load_full_records(source: Path):
     sheet = workbook["LD PROJETO BASICO"]
     records = []
     for row_number, values in enumerate(
-        sheet.iter_rows(min_row=2, max_col=57, values_only=True), 2
+        sheet.iter_rows(min_row=2, max_col=LD_MAX_COLUMN, values_only=True), 2
     ):
         document = str(values[2] or "").strip()
         if not document or document.upper() in {"NOT APPLICABLE", "N/A", "#N/A"}:
@@ -108,6 +117,10 @@ def load_full_records(source: Path):
                 "statusFinalPcf": clean_pcf_status(values[33]),
                 "cronogramaInicio": iso(values[55]),
                 "cronogramaTermino": iso(values[56]),
+                "bmEmissao": str(values[57] or "SEM INFORMAÇÃO").strip(),
+                "bmDataEmissao": date_or_text(values[58]),
+                "bmAprovacao": str(values[59] or "SEM INFORMAÇÃO").strip(),
+                "bmDataAprovacao": date_or_text(values[60]),
                 "linhaFonte": row_number,
                 "ldExport": [export_cell(value) for value in values],
             }
@@ -163,6 +176,13 @@ def build(
   .v2-toolbar .control{flex:1 1 380px}.v2-export{height:42px;padding:0 15px;border-radius:10px;
     border:1px solid #315b73;background:#0c2738;color:#dcecf3;font-weight:800;cursor:pointer}
   .v2-export.primary{border-color:#37c8f4;background:#37c8f4;color:#06131e}
+  .actions .resource{min-height:68px;padding:10px 15px;border-width:2px;box-shadow:0 12px 30px #0005}
+  .actions .resource .copy{min-width:145px}.actions .resource .copy small{color:#9adff3}
+  .actions .resource .copy strong{font-size:14px}.actions .resource:after{content:"BASE GERAL";
+    align-self:flex-start;padding:4px 6px;border-radius:999px;background:#173f54;color:#7ddcff;
+    font-size:8px;font-weight:950;letter-spacing:.08em;white-space:nowrap}
+  .actions .resource.ppt:after{content:"GERAL";background:#123c34;color:#65ead0}
+  .actions .utility.primary{min-height:54px;padding:11px 17px;border-width:2px;box-shadow:0 10px 24px #0780b044}
   .v2-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px}
   .v2-summary>div{padding:11px 13px;border:1px solid #234359;border-radius:11px;background:#071925}
   .v2-summary strong{display:block;color:#fff;font-size:19px}.v2-summary span{color:#8faab7;font-size:10px}
@@ -188,7 +208,8 @@ def build(
     ['tipo','Tipo'],['disciplina','Disciplina'],['status','Status geral'],
     ['statusEmissao','Emissão'],['_prazo','Prazo do cronograma'],
     ['medicaoEmissao','Medição emissão'],['medicaoAprovacao','Medição aprovação'],
-    ['statusPcf','Status PCF'],['responsavel','Responsável'],['casco','Casco']
+    ['statusPcf','Status PCF'],['responsavel','Responsável'],['casco','Casco'],
+    ['bmEmissao','BM - Emissão'],['bmAprovacao','BM - Aprovação']
   ];
   const selectedSets={},fmtV2=new Intl.NumberFormat('pt-BR');
   const valueOf=(r,k)=>k==='_prazo'?deadline(r):String(r[k]||'-');
@@ -203,9 +224,9 @@ def build(
   const toolbar=document.createElement('div');toolbar.className='v2-toolbar';toolbar.innerHTML=`
     <input class="control" id="v2Search" placeholder="Buscar documento, título, GRD, PCF ou KM...">
     <button class="v2-export" id="v2Clear">Limpar filtros</button>
-    <button class="v2-export primary" id="v2ExcelOfficial">Exportar LD consolidada · Excel</button>
-    <button class="v2-export" id="v2Pptx">Apresentação gerencial · PPTX</button>
-    <button class="v2-export" id="v2Pdf">Relatório PDF</button>`;
+    <button class="v2-export primary" id="v2ExcelOfficial">Excel do recorte filtrado</button>
+    <button class="v2-export" id="v2Pptx">PPTX do recorte filtrado</button>
+    <button class="v2-export" id="v2Pdf">PDF do recorte filtrado</button>`;
   grid.after(toolbar);
   const summary=document.createElement('div');summary.className='v2-summary';summary.id='v2Summary';toolbar.after(summary);
   const esc2=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -226,12 +247,16 @@ def build(
   function refreshV2(){renderTable();const rows=filtered(),emitted=rows.filter(r=>r.statusEmissao==='Emitido').length,pending=rows.filter(r=>r.statusEmissao!=='Emitido').length,overdue=rows.filter(r=>deadline(r)==='Vencido').length;summary.innerHTML=`<div><strong>${fmtV2.format(rows.length)}</strong><span>DOCUMENTOS CONSOLIDADOS</span></div><div><strong>${fmtV2.format(emitted)}</strong><span>EMITIDOS</span></div><div><strong>${fmtV2.format(pending)}</strong><span>PENDENTES</span></div><div><strong>${fmtV2.format(overdue)}</strong><span>VENCIDOS</span></div>`}
   document.getElementById('v2Search').oninput=refreshV2;document.addEventListener('click',()=>document.querySelectorAll('.v2-filter.open').forEach(x=>x.classList.remove('open')));
   document.getElementById('v2Clear').onclick=()=>{document.getElementById('v2Search').value='';grid.querySelectorAll('input[type=checkbox]').forEach(x=>x.checked=true);fields.forEach(([k])=>selectedSets[k]=new Set(values(k)));grid.querySelectorAll('.v2-multi-btn').forEach(x=>x.textContent='Todos');refreshV2()};
-  const columns=[['Linha fonte','linhaFonte'],['Documento','documento'],['Revisão','revisao'],['Título','titulo'],['Tipo','tipo'],['Disciplina','disciplina'],['Especialidade','especialidade'],['Status','status'],['Status Emissão','statusEmissao'],['Início cronograma','cronogramaInicio'],['Término cronograma','cronogramaTermino'],['Prazo','_prazo'],['Medição emissão','medicaoEmissao'],['Medição aprovação','medicaoAprovacao'],['GRD','grd'],['Data emissão','dataEmissao'],['PCF','pcf'],['Data PCF','dataPcf'],['Status PCF','statusPcf'],['PCF respondida','pcfRespondida'],['Data resposta','dataResposta'],['GRD resposta','grdResposta'],['Comentários','comentarios'],['OPEN','open'],['Under review','underReview'],['Responsável','responsavel'],['Status DOX','statusDox'],['Guia emissão','guiaEmissao'],['Casco','casco'],['Documento KM','documentoKm'],['Transmittal KM','transmittalKm'],['Data KM','dataKm']];
+  const columns=[['Linha fonte','linhaFonte'],['Documento','documento'],['Revisão','revisao'],['Título','titulo'],['Tipo','tipo'],['Disciplina','disciplina'],['Especialidade','especialidade'],['Status','status'],['Status Emissão','statusEmissao'],['Início cronograma','cronogramaInicio'],['Término cronograma','cronogramaTermino'],['Prazo','_prazo'],['Medição emissão','medicaoEmissao'],['Medição aprovação','medicaoAprovacao'],['GRD','grd'],['Data emissão','dataEmissao'],['PCF','pcf'],['Data PCF','dataPcf'],['Status PCF','statusPcf'],['PCF respondida','pcfRespondida'],['Data resposta','dataResposta'],['GRD resposta','grdResposta'],['Comentários','comentarios'],['OPEN','open'],['Under review','underReview'],['Responsável','responsavel'],['Status DOX','statusDox'],['Guia emissão','guiaEmissao'],['Casco','casco'],['BM - Emissão','bmEmissao'],['BM - Data Emissão','bmDataEmissao'],['BM - Aprovação','bmAprovacao'],['BM - Data Aprovação','bmDataAprovacao'],['Documento KM','documentoKm'],['Transmittal KM','transmittalKm'],['Data KM','dataKm']];
   const cell=(r,k)=>k==='_prazo'?deadline(r):(r[k]??'');
   const download=(blob,name)=>{const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1200)};
-  document.getElementById('v2ExcelOfficial').onclick=()=>downloadFile('xlsx');
-  document.getElementById('v2Pptx').onclick=()=>downloadFile('pptx');
-  document.getElementById('v2Pdf').onclick=()=>window.print();refreshV2();
+  const ensureRows=()=>{const rows=filtered();if(!rows.length)alert('O recorte atual não possui documentos para exportar.');return rows};
+  function exportFilteredExcel(){const rows=ensureRows();if(!rows.length)return;const headers=META.ldHeaders||[],matrix=[headers,...rows.map(r=>headers.map((_,i)=>r.ldExport?.[i]??''))],ws=XLSX.utils.aoa_to_sheet(matrix);ws['!autofilter']={ref:ws['!ref']};ws['!freeze']={xSplit:2,ySplit:1};ws['!cols']=headers.map(h=>({wch:/TITLE|T.TULO/i.test(h)?42:/DISCIPLIN/i.test(h)?32:/DOCUMENTO|TRANSMITTAL|GRD|PCF/i.test(h)?26:18}));const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'LD Recorte Filtrado');XLSX.writeFile(wb,`LD_Projeto_Basico_Recorte_${rows.length}_documentos.xlsx`)}
+  async function exportFilteredPptx(){const rows=ensureRows();if(!rows.length)return;if(typeof PptxGenJS==='undefined'){alert('O gerador de PowerPoint não foi carregado. Atualize o dashboard.');return}const pptx=new PptxGenJS();pptx.layout='LAYOUT_WIDE';pptx.author='D’OR@NGE · Document Control';pptx.subject='Recorte filtrado da LD Projeto Básico';pptx.title='LD Projeto Básico · Recorte filtrado';pptx.company='Consórcio Marenova';const bg='06131E',white='F4FBFE',muted='9BB6C3',cyan='37C8F4',mint='1DD6B5',amber='FFAD32',red='FF6670';let s=pptx.addSlide();s.background={color:bg};s.addText('D’OR@NGE · DOCUMENT CONTROL',{x:.65,y:.45,w:6,h:.3,fontSize:11,bold:true,color:amber});s.addText('LD Projeto Básico',{x:.65,y:1.5,w:8.5,h:.65,fontSize:34,bold:true,color:white});s.addText('Apresentação gerencial do recorte filtrado',{x:.65,y:2.25,w:9,h:.4,fontSize:20,color:cyan});s.addText(`${rows.length} documentos · gerado em ${new Date().toLocaleString('pt-BR')}`,{x:.65,y:3.05,w:8,h:.3,fontSize:13,color:muted});const emitted=rows.filter(r=>r.statusEmissao==='Emitido').length,overdue=rows.filter(r=>deadline(r)==='Vencido').length,open=rows.reduce((n,r)=>n+(Number(r.open)||0),0);s=pptx.addSlide();s.background={color:bg};s.addText('Resumo do recorte',{x:.6,y:.4,w:8,h:.45,fontSize:26,bold:true,color:white});[['Documentos',rows.length,cyan],['Emitidos',emitted,mint],['Pendentes',rows.length-emitted,amber],['Vencidos',overdue,red],['Comentários OPEN',open,amber]].forEach((c,i)=>{const x=.6+i*2.5;s.addShape(pptx.ShapeType.roundRect,{x,y:1.35,w:2.2,h:1.25,rectRadius:.08,fill:{color:'0D2233'},line:{color:c[2],width:1.5}});s.addText(c[0],{x:x+.15,y:1.55,w:1.9,h:.25,fontSize:10,bold:true,color:muted});s.addText(String(c[1]),{x:x+.15,y:1.92,w:1.9,h:.4,fontSize:25,bold:true,color:c[2]})});s.addText('Os indicadores e a lista abaixo refletem exclusivamente os filtros aplicados na Central de Documentos.',{x:.6,y:3.15,w:11.8,h:.45,fontSize:15,color:muted});s=pptx.addSlide();s.background={color:bg};s.addText('Documentos prioritários do recorte',{x:.6,y:.35,w:9,h:.4,fontSize:24,bold:true,color:white});const tableRows=[['Documento','Rev.','Disciplina','Status','Emissão','Prazo'],...rows.slice().sort((a,b)=>priority(b)-priority(a)).slice(0,18).map(r=>[r.documento,r.revisao,r.disciplina,r.status,r.statusEmissao,deadline(r)])];s.addTable(tableRows,{x:.55,y:1,w:12.2,h:5.8,border:{type:'solid',color:'294D64',pt:1},fill:'0D2233',color:white,fontSize:8,margin:.05,autoFit:false,colW:[3.1,.55,2.65,2.1,1.45,1.25],bold:false,rowH:.28});await pptx.writeFile({fileName:`LD_Projeto_Basico_Recorte_${rows.length}_documentos.pptx`})}
+  function exportFilteredPdf(){const rows=ensureRows();if(!rows.length)return;const popup=window.open('','_blank');if(!popup){alert('Permita pop-ups para gerar o PDF do recorte.');return}const emitted=rows.filter(r=>r.statusEmissao==='Emitido').length,overdue=rows.filter(r=>deadline(r)==='Vencido').length,reportColumns=[['Documento','documento'],['Rev.','revisao'],['Título','titulo'],['Disciplina','disciplina'],['Status','status'],['Emissão','statusEmissao'],['Prazo','_prazo'],['GRD','grd'],['PCF','pcf'],['Status PCF','statusPcf'],['Responsável','responsavel'],['BM Emissão','bmEmissao'],['BM Aprovação','bmAprovacao']];popup.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Relatório filtrado · LD Projeto Básico</title><style>@page{size:A4 landscape;margin:10mm}body{font:11px Arial;color:#17212b}h1{margin:0;color:#123b50}.meta{color:#557080;margin:5px 0 15px}.cards{display:flex;gap:8px;margin:12px 0}.card{border:1px solid #9fb5c0;padding:8px 12px;min-width:120px}.card b{display:block;font-size:20px;color:#123b50}table{width:100%;border-collapse:collapse;font-size:7px}th{background:#123b50;color:#fff}th,td{border:1px solid #ccd8de;padding:3px;text-align:left}tr:nth-child(even){background:#eef4f6}</style></head><body><h1>LD Projeto Básico · Relatório do recorte</h1><div class="meta">Gerado em ${new Date().toLocaleString('pt-BR')} · filtros da Central de Documentos</div><div class="cards"><div class="card"><b>${rows.length}</b>Documentos</div><div class="card"><b>${emitted}</b>Emitidos</div><div class="card"><b>${rows.length-emitted}</b>Pendentes</div><div class="card"><b>${overdue}</b>Vencidos</div></div><table><thead><tr>${reportColumns.map(c=>`<th>${esc2(c[0])}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${reportColumns.map(c=>`<td>${esc2(cell(r,c[1]))}</td>`).join('')}</tr>`).join('')}</tbody></table><script>onload=()=>setTimeout(()=>print(),250)<\/script></body></html>`);popup.document.close()}
+  document.getElementById('v2ExcelOfficial').onclick=exportFilteredExcel;
+  document.getElementById('v2Pptx').onclick=exportFilteredPptx;
+  document.getElementById('v2Pdf').onclick=exportFilteredPdf;refreshV2();
   const emittedCount=DATA.filter(r=>r.statusEmissao==='Emitido').length;
   const approvedNoComments=DATA.filter(r=>String(r.status||'').toLocaleLowerCase('pt-BR')==='aprovado sem comentários').length;
   MEM.emittedCount={title:'Documentos emitidos',subtitle:'Quantidade absoluta de documentos formalmente emitidos',result:fmt(emittedCount),color:'#1dd6b5',formula:'Contagem dos documentos em que Status Emissão = “Emitido”.',values:[['Documentos emitidos',fmt(emittedCount)],['Total consolidado',fmt(DATA.length)],['Percentual da carteira',pct(emittedCount,DATA.length)]],reading:'Volume efetivamente emitido na última revisão válida de cada documento.',source:'Campo Status Emissão da aba LD PROJETO BASICO.'};
@@ -239,11 +264,16 @@ def build(
   const kpiGrid=document.getElementById('kpiGrid');if(kpiGrid){kpiGrid.insertAdjacentHTML('beforeend',`<article class="kpi glass" style="--a:#1dd6b5" data-memory="emittedCount" tabindex="0"><div class="label">Documentos emitidos</div><div class="num">${fmt(emittedCount)}</div><div class="sub">quantidade absoluta emitida</div><div class="hint"><i>+</i>Ver memória</div></article><article class="kpi glass" style="--a:#48d7a8" data-memory="approvedNoComments" tabindex="0"><div class="label">Aprovados sem comentários</div><div class="num">${fmt(approvedNoComments)}</div><div class="sub">aprovação sem ressalvas</div><div class="hint"><i>+</i>Ver memória</div></article>`)}
   const baseNav=document.querySelector('.nav button[data-view="base"]');if(baseNav){baseNav.querySelector('.nav-index').textContent='01';const strong=baseNav.querySelector('strong');if(strong)strong.textContent='Central de documentos';baseNav.querySelector('.nav-copy').lastChild.textContent=' Filtros, auditoria e exportações';document.querySelector('.nav').prepend(baseNav);baseNav.click()}
   const legacyActions=[document.getElementById('clearFilters'),document.getElementById('exportCsv')].filter(Boolean);legacyActions.forEach(x=>x.style.display='none');
-  document.querySelectorAll('.resource').forEach(b=>{if(/XLSM/i.test(b.textContent)){b.querySelector('.fileicon').textContent='XLSX';b.querySelector('small').textContent='Base consolidada';b.querySelector('strong').textContent='Excel formatado';b.setAttribute('onclick',"downloadFile('xlsx')")}if(/PPTX/i.test(b.textContent)){b.querySelector('small').textContent='Apresentação gerencial';b.querySelector('strong').textContent='PowerPoint'}});
+  document.querySelectorAll('.resource').forEach(b=>{if(/XLSM/i.test(b.textContent)){b.querySelector('.fileicon').textContent='XLSX';b.querySelector('small').textContent='Base geral consolidada';b.querySelector('strong').textContent='Excel completo';b.setAttribute('onclick',"downloadFile('xlsx')")}if(/PPTX/i.test(b.textContent)){b.querySelector('small').textContent='Apresentação geral';b.querySelector('strong').textContent='PowerPoint completo'}});
   const headerBase=[...document.querySelectorAll('header button')].find(b=>/Base detalhada/i.test(b.textContent));if(headerBase){headerBase.textContent='Abrir Central de Documentos';headerBase.classList.add('primary')}
+  const headerPdf=[...document.querySelectorAll('header button')].find(b=>/Exportar PDF/i.test(b.textContent));if(headerPdf)headerPdf.textContent='PDF geral completo';
 })();
 </script>
 '''
+    pptxgenjs = "\n".join(
+        path.read_text(encoding="utf-8") for path in (JSZIP_BROWSER, PPTXGENJS_BROWSER)
+    ).replace("</script", "<\\/script")
+    html = html.replace("</head>", f"<script>{pptxgenjs}</script></head>", 1)
     html = html.replace(
         "</body>",
         enhancement_script + "</body>",
