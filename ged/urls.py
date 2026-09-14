@@ -6,6 +6,7 @@ from django.conf.urls.i18n import set_language
 from apps.contas import views as contas_views
 
 urlpatterns = [
+    path("api/v1/", include("apps.api.urls")),
     path("admin/", admin.site.urls),
 
     # Entrada oficial do sistema

@@ -88,6 +88,7 @@ INSTALLED_APPS = [
     "django_extensions",
 
     "apps.documentos",
+    "apps.api",
     "apps.contas",
     "apps.solicitacoes",
     "apps.dashboard",
