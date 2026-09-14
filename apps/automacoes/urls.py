@@ -6,6 +6,9 @@ app_name = "automacoes"
 urlpatterns = [
     path("", views.painel, name="painel"),
     path("central-documentos/", views.central_documentos, name="central_documentos"),
+    path("vinculos-dox/", views.vinculos_dox_manuais, name="vinculos_dox_manuais"),
+    path("vinculos-dox/atualizar-dashboard/", views.atualizar_vinculos_dashboard, name="atualizar_vinculos_dashboard"),
+    path("vinculos-dox/<int:pk>/desativar/", views.desativar_vinculo_dox_manual, name="desativar_vinculo_dox_manual"),
     path("central-documentos/pendencias/", views.pendencias_documentais, name="pendencias_documentais"),
     path("central-documentos/reconciliacao/", views.reconciliacao_documentos, name="reconciliacao_documentos"),
     path(

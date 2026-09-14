@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+import re
 
 
 class ExecucaoAutomacao(models.Model):
@@ -341,6 +342,54 @@ class PCFTimeline(models.Model):
 
     def __str__(self):
         return f"{self.tipo} - {self.numero_documento} - {self.revisao_pcf}"
+
+
+class VinculoDoxManual(models.Model):
+    TIPO_DOCUMENTO = "DOCUMENTO"
+    TIPO_PCF = "PCF"
+    TIPOS = [(TIPO_DOCUMENTO, "Documento"), (TIPO_PCF, "PCF")]
+
+    tipo = models.CharField(max_length=20, choices=TIPOS, db_index=True)
+    identificador = models.CharField(max_length=255)
+    chave_normalizada = models.CharField(max_length=255, db_index=True, editable=False)
+    revisao = models.CharField(max_length=50, blank=True, default="")
+    url_dox = models.URLField(max_length=500)
+    ativo = models.BooleanField(default=True)
+    criado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="vinculos_dox_manuais",
+    )
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["tipo", "identificador", "revisao"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tipo", "chave_normalizada", "revisao"],
+                name="uniq_vinculo_dox_manual_tipo_chave_revisao",
+            )
+        ]
+
+    @staticmethod
+    def normalizar(valor):
+        import unicodedata
+        texto = unicodedata.normalize("NFKD", str(valor or ""))
+        texto = "".join(c for c in texto if not unicodedata.combining(c)).upper()
+        return re.sub(r"[^A-Z0-9]+", "", texto)
+
+    def save(self, *args, **kwargs):
+        self.identificador = str(self.identificador or "").strip()
+        self.chave_normalizada = self.normalizar(self.identificador)
+        self.revisao = self.normalizar(self.revisao) or ("0" if self.tipo == self.TIPO_DOCUMENTO else "")
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        sufixo = f" · Rev. {self.revisao}" if self.revisao else ""
+        return f"{self.get_tipo_display()} · {self.identificador}{sufixo}"
 
 class DocumentoLD(models.Model):
 

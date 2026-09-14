@@ -26,9 +26,8 @@ except ModuleNotFoundError:  # execução direta a partir da pasta scripts
 
 
 DEFAULT_TEMPLATE = Path(
-    r"\\virm-rgr022\FILESERVER\Projetos\05_HANDYMAX\09. Doc Control\3 - LD"
-    r"\Dashboard_Doc_Control_LD_Projeto_Bascico"
-    r"\Dashboard Doc Control_LD Projeto Bascico.html"
+    Path(__file__).with_name("templates")
+    / "Dashboard_Gerencial_Doc_Control_LD_Projeto_Basico_MODELO_APROVADO.html"
 )
 DEFAULT_OUTPUT = Path(
     r"\\virm-rgr022\FILESERVER\Projetos\05_HANDYMAX\09. Doc Control\3 - LD"
@@ -47,21 +46,28 @@ PPTXGENJS_BROWSER = Path(
 
 
 def resolve_template(template: Path) -> Path:
-    """Localiza o template mesmo se a pasta receber outro prefixo numérico."""
+    """Localiza o template mesmo com nomes legados ou mudança de pasta."""
     if template.is_file():
         return template
 
-    nome_arquivo = template.name
     raiz_ld = template.parent.parent
-    candidatos = sorted(
-        raiz_ld.glob(f"*Dashboard_Doc_Control_LD_Projeto_Bascico/{nome_arquivo}")
+    nomes = (
+        "Dashboard Doc Control_LD Projeto Basico.html",
+        "Dashboard Doc Control_LD Projeto Bascico.html",
     )
-    if candidatos:
-        return candidatos[-1]
+    pastas = (
+        "*Dashboard_Doc_Control_LD_Projeto_Basico",
+        "*Dashboard_Doc_Control_LD_Projeto_Bascico",
+    )
+    for pasta in pastas:
+        for nome in nomes:
+            candidatos = sorted(raiz_ld.glob(f"{pasta}/{nome}"))
+            if candidatos:
+                return candidatos[-1]
 
     raise FileNotFoundError(
         f"Template do dashboard não encontrado: {template}. "
-        f"Também foi pesquisado em: {raiz_ld}"
+        f"Também foram pesquisados os nomes Basico/Bascico em: {raiz_ld}"
     )
 
 
@@ -134,8 +140,10 @@ def build(
     source: Path = DEFAULT_SOURCE,
     output: Path = DEFAULT_OUTPUT,
     template: Path = DEFAULT_TEMPLATE,
+    dox_overrides=None,
+    pcf_overrides=None,
 ):
-    records = load_records(source)
+    records = load_records(source, dox_overrides, pcf_overrides)
     generated = datetime.now().astimezone().isoformat()
     meta = {
         "generated": generated,
@@ -147,6 +155,9 @@ def build(
 
     template = resolve_template(template)
     html = template.read_text(encoding="utf-8")
+    # O modelo aprovado ja contem a Central de Documentos, filtros e exportadores.
+    # Nao injete esses blocos novamente, pois a duplicacao quebra o JavaScript.
+    enhanced_template = 'id="v2ExcelOfficial"' in html
     logo_uri = "data:image/x-icon;base64," + base64.b64encode(
         DEFAULT_LOGO_ICO.read_bytes()
     ).decode("ascii")
@@ -171,6 +182,9 @@ def build(
     border-radius:10px;background:#071925;color:#eaf7fb;text-align:left;cursor:pointer;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .v2-filter.open .v2-multi-btn{border-color:#37c8f4;box-shadow:0 0 0 3px #37c8f422}
+  .v2-filter.has-selection>span{color:#6ee7d2}
+  .v2-filter.has-selection .v2-multi-btn{border-color:#1dd6b5;background:linear-gradient(135deg,#103c34,#0a2a2b);box-shadow:0 0 0 3px #1dd6b51c;color:#fff}
+  .v2-filter.has-selection .v2-multi-btn:after{content:" • FILTRO ATIVO";color:#65ead0;font-size:8px;letter-spacing:.06em}
   .v2-panel{display:none;position:absolute;z-index:200;top:calc(100% + 6px);left:0;
     width:max-content;min-width:100%;max-width:340px;max-height:300px;overflow:auto;
     padding:7px;border:1px solid #315b73;border-radius:11px;background:#071925;
@@ -185,6 +199,11 @@ def build(
   .v2-toolbar .control{flex:1 1 380px}.v2-export{height:42px;padding:0 15px;border-radius:10px;
     border:1px solid #315b73;background:#0c2738;color:#dcecf3;font-weight:800;cursor:pointer}
   .v2-export.primary{border-color:#37c8f4;background:#37c8f4;color:#06131e}
+  .v2-export.export-card{min-width:190px;border-width:2px;box-shadow:0 9px 22px #0004;transition:transform .18s,box-shadow .18s,border-color .18s}
+  .v2-export.export-card:hover{transform:translateY(-2px);box-shadow:0 14px 28px #0007}
+  .v2-export.export-excel{border-color:#1dd6b5;background:linear-gradient(135deg,#159f87,#0d6f62);color:#fff}
+  .v2-export.export-pptx{border-color:#ffad32;background:linear-gradient(135deg,#7a4816,#4b2e13);color:#fff}
+  .v2-export.export-pdf{border-color:#ff6670;background:linear-gradient(135deg,#752c38,#451c27);color:#fff}
   .actions .resource{min-height:68px;padding:10px 15px;border-width:2px;box-shadow:0 12px 30px #0005}
   .actions .resource .copy{min-width:145px}.actions .resource .copy small{color:#9adff3}
   .actions .resource .copy strong{font-size:14px}.actions .resource:after{content:"BASE GERAL";
@@ -210,7 +229,8 @@ def build(
   @media(max-width:700px){.filter-grid{grid-template-columns:1fr!important}.v2-summary{grid-template-columns:repeat(2,1fr)}.kpis{grid-template-columns:1fr!important}}
 </style>
 """
-    html = html.replace("</head>", test_style + "</head>", 1)
+    if not enhanced_template:
+        html = html.replace("</head>", test_style + "</head>", 1)
     enhancement_script = r'''
 <script>
 (()=>{
@@ -232,32 +252,32 @@ def build(
   const start=document.createElement('div');start.className='v2-start';start.innerHTML='<div><strong>Precisa localizar, analisar ou entregar documentos?</strong><span>Comece nesta área. Os filtros atualizam a tabela e o resumo abaixo.</span></div><b>Área principal</b>';grid.before(start);
   grid.innerHTML=fields.map(([k,label])=>`<div class="v2-filter" data-field="${k}"><span>${label}</span><button type="button" class="v2-multi-btn">Todos</button><div class="v2-panel"></div></div>`).join('');
   const toolbar=document.createElement('div');toolbar.className='v2-toolbar';toolbar.innerHTML=`
-    <input class="control" id="v2Search" placeholder="Buscar documento, título, GRD, PCF ou KM...">
+    <input class="control" id="v2Search" placeholder="Buscar em todas as colunas...">
     <button class="v2-export" id="v2Clear">Limpar filtros</button>
-    <button class="v2-export primary" id="v2ExcelOfficial">Excel do recorte filtrado</button>
-    <button class="v2-export" id="v2Pptx">PPTX do recorte filtrado</button>
-    <button class="v2-export" id="v2Pdf">PDF do recorte filtrado</button>`;
+    <button class="v2-export export-card export-excel" id="v2ExcelOfficial">Exportar Excel dos Filtros</button>
+    <button class="v2-export export-card export-pptx" id="v2Pptx">PPTX dos Filtros</button>
+    <button class="v2-export export-card export-pdf" id="v2Pdf">PDF dos Filtros</button>`;
   grid.after(toolbar);
   const summary=document.createElement('div');summary.className='v2-summary';summary.id='v2Summary';toolbar.after(summary);
   const esc2=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const safeLink=u=>/^https?:\/\//i.test(String(u||''))?String(u):'';
   const linked=(label,url,title)=>{const safe=safeLink(url);return safe?`<a class="doc-link" href="${esc2(safe)}" target="_blank" rel="noopener noreferrer" title="${esc2(title)}">${esc2(label)} <span aria-hidden="true">&#8599;</span></a>`:esc2(label||'-')};
   const legacyRenderTable=renderTable;
-  renderTable=function(){legacyRenderTable();const rows=filtered().sort((a,b)=>priority(b)-priority(a)).slice(0,250),trs=[...document.querySelectorAll('#rows tr')];trs.forEach((tr,index)=>{const r=rows[index];if(!r)return;const cells=tr.children;if(cells[0])cells[0].innerHTML='<strong>'+linked(r.documento,r.linkDox,'Abrir documento no DOX')+'</strong>';if(cells[8])cells[8].innerHTML=linked(r.pcf||'-',r.linkPcf,'Abrir ultima versao da PCF no DOX')})};
+  renderTable=function(){legacyRenderTable();const rows=filtered().sort((a,b)=>priority(b)-priority(a)).slice(0,250),trs=[...document.querySelectorAll('#rows tr')];trs.forEach((tr,index)=>{const r=rows[index];if(!r)return;const cells=tr.children;if(cells[0])cells[0].innerHTML='<strong>'+linked(r.ldExport?.[1]||'-',r.linkDox,'Abrir documento no DOX')+'</strong>';if(cells[9])cells[9].innerHTML=linked(r.pcf||'-',r.linkPcf,'Abrir ultima versao da PCF no DOX')})};
   function setupFilter(box,k){
     const vals=values(k);selectedSets[k]=new Set(vals);const panel=box.querySelector('.v2-panel'),btn=box.querySelector('button');
     panel.innerHTML=`<label class="v2-option"><input type="checkbox" data-all checked> Selecionar tudo</label>`+vals.map(v=>`<label class="v2-option"><input type="checkbox" data-value="${esc2(v)}" checked> ${esc2(v)}</label>`).join('');
     const all=panel.querySelector('[data-all]'),items=[...panel.querySelectorAll('[data-value]')];
-    const sync=()=>{selectedSets[k]=new Set(items.filter(x=>x.checked).map(x=>x.dataset.value));all.checked=items.every(x=>x.checked);all.indeterminate=!all.checked&&items.some(x=>x.checked);btn.textContent=all.checked?'Todos':selectedSets[k].size?`${selectedSets[k].size} selecionados`:'Nenhum';refreshV2()};
+    const sync=()=>{selectedSets[k]=new Set(items.filter(x=>x.checked).map(x=>x.dataset.value));all.checked=items.every(x=>x.checked);all.indeterminate=!all.checked&&items.some(x=>x.checked);box.classList.toggle('has-selection',!all.checked);btn.textContent=all.checked?'Todos':selectedSets[k].size?`${selectedSets[k].size} selecionados`:'Nenhum';refreshV2()};
     btn.onclick=e=>{e.stopPropagation();document.querySelectorAll('.v2-filter.open').forEach(x=>x!==box&&x.classList.remove('open'));box.classList.toggle('open')};
     panel.onclick=e=>e.stopPropagation();
     all.onchange=()=>{items.forEach(x=>x.checked=all.checked);sync()};items.forEach(x=>x.onchange=sync);
   }
   [...grid.querySelectorAll('.v2-filter')].forEach(box=>setupFilter(box,box.dataset.field));
-  filtered=function(){const q=(document.getElementById('v2Search')?.value||'').trim().toLocaleLowerCase('pt-BR');return DATA.filter(r=>fields.every(([k])=>selectedSets[k].has(valueOf(r,k)))&&(!q||[r.documento,r.titulo,r.grd,r.pcf,r.documentoKm,r.transmittalKm].some(v=>String(v||'').toLocaleLowerCase('pt-BR').includes(q))))};
+  filtered=function(){const q=(document.getElementById('v2Search')?.value||'').trim().toLocaleLowerCase('pt-BR');return DATA.filter(r=>fields.every(([k])=>selectedSets[k].has(valueOf(r,k)))&&(!q||Object.values(r).some(v=>(Array.isArray(v)?v:[v]).some(item=>String(item??'').toLocaleLowerCase('pt-BR').includes(q)))))};
   function refreshV2(){renderTable();const rows=filtered(),emitted=rows.filter(r=>r.statusEmissao==='Emitido').length,pending=rows.filter(r=>r.statusEmissao!=='Emitido').length,overdue=rows.filter(r=>deadline(r)==='Vencido').length;summary.innerHTML=`<div><strong>${fmtV2.format(rows.length)}</strong><span>DOCUMENTOS CONSOLIDADOS</span></div><div><strong>${fmtV2.format(emitted)}</strong><span>EMITIDOS</span></div><div><strong>${fmtV2.format(pending)}</strong><span>PENDENTES</span></div><div><strong>${fmtV2.format(overdue)}</strong><span>VENCIDOS</span></div>`}
   document.getElementById('v2Search').oninput=refreshV2;document.addEventListener('click',()=>document.querySelectorAll('.v2-filter.open').forEach(x=>x.classList.remove('open')));document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.v2-filter.open').forEach(x=>x.classList.remove('open'))});
-  document.getElementById('v2Clear').onclick=()=>{document.getElementById('v2Search').value='';grid.querySelectorAll('input[type=checkbox]').forEach(x=>x.checked=true);fields.forEach(([k])=>selectedSets[k]=new Set(values(k)));grid.querySelectorAll('.v2-multi-btn').forEach(x=>x.textContent='Todos');refreshV2()};
+  document.getElementById('v2Clear').onclick=()=>{document.getElementById('v2Search').value='';grid.querySelectorAll('input[type=checkbox]').forEach(x=>x.checked=true);fields.forEach(([k])=>selectedSets[k]=new Set(values(k)));grid.querySelectorAll('.v2-filter').forEach(x=>x.classList.remove('has-selection'));grid.querySelectorAll('.v2-multi-btn').forEach(x=>x.textContent='Todos');refreshV2()};
   const columns=[['Linha fonte','linhaFonte'],['Documento','documento'],['Revisão','revisao'],['Título','titulo'],['Tipo','tipo'],['Disciplina','disciplina'],['Especialidade','especialidade'],['Status','status'],['Status Emissão','statusEmissao'],['Início cronograma','cronogramaInicio'],['Término cronograma','cronogramaTermino'],['Prazo','_prazo'],['Medição emissão','medicaoEmissao'],['Medição aprovação','medicaoAprovacao'],['GRD','grd'],['Data emissão','dataEmissao'],['PCF','pcf'],['Data PCF','dataPcf'],['Status PCF','statusPcf'],['PCF respondida','pcfRespondida'],['Data resposta','dataResposta'],['GRD resposta','grdResposta'],['Comentários','comentarios'],['OPEN','open'],['Under review','underReview'],['Responsável','responsavel'],['Status DOX','statusDox'],['Guia emissão','guiaEmissao'],['Casco','casco'],['BM - Emissão','bmEmissao'],['BM - Data Emissão','bmDataEmissao'],['BM - Aprovação','bmAprovacao'],['BM - Data Aprovação','bmDataAprovacao'],['Documento KM','documentoKm'],['Transmittal KM','transmittalKm'],['Data KM','dataKm']];
   const cell=(r,k)=>k==='_prazo'?deadline(r):(r[k]??'');
   const download=(blob,name)=>{const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1200)};
@@ -284,15 +304,16 @@ def build(
 })();
 </script>
 '''
-    pptxgenjs = "\n".join(
-        path.read_text(encoding="utf-8") for path in (JSZIP_BROWSER, PPTXGENJS_BROWSER)
-    ).replace("</script", "<\\/script")
-    html = html.replace("</head>", f"<script>{pptxgenjs}</script></head>", 1)
-    html = html.replace(
-        "</body>",
-        enhancement_script + "</body>",
-        1,
-    )
+    if not enhanced_template:
+        pptxgenjs = "\n".join(
+            path.read_text(encoding="utf-8") for path in (JSZIP_BROWSER, PPTXGENJS_BROWSER)
+        ).replace("</script", "<\\/script")
+        html = html.replace("</head>", f"<script>{pptxgenjs}</script></head>", 1)
+        html = html.replace(
+            "</body>",
+            enhancement_script + "</body>",
+            1,
+        )
     html = html.replace(
         "<title>Dashboard Doc Control_LD Projeto Bascico</title>",
         "<title>Dashboard Gerencial Doc Control · LD Projeto Básico</title>",

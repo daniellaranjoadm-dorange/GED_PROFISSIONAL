@@ -9,12 +9,16 @@ import time
 import traceback
 import re
 import shutil
+from urllib.parse import urlparse
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.core.paginator import Paginator
 from django.core.cache import cache
+from django.core.exceptions import ValidationError
+from django.core.mail import EmailMessage
+from django.core.validators import validate_email
 from django.db.models import Avg, Count, Max, Q, Sum
 from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.http import HttpResponse
@@ -25,7 +29,7 @@ from openpyxl.formatting.rule import CellIsRule
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.worksheet.table import Table, TableStyleInfo
 
-from apps.automacoes.models import TransmittalKM, PCFTimeline, DocumentoLD, DocumentoKM, ExecucaoAutomacao, KMFileIndex, PendenciaDocumental
+from apps.automacoes.models import TransmittalKM, PCFTimeline, DocumentoLD, DocumentoKM, ExecucaoAutomacao, KMFileIndex, PendenciaDocumental, VinculoDoxManual
 from apps.automacoes.services import (
     atualizar_ld,
     atualizar_ld_projeto_basico,
@@ -85,6 +89,89 @@ from apps.automacoes.services.executive_governance import qualidade_dados_execut
 KM_DOCUMENTOS_BASE = Path(
     r"\\virm-rgr022\FILESERVER\Projetos\05_HANDYMAX\09. Doc Control\15 - Documentos KM"
 )
+
+
+@login_required
+@has_perm("automacoes.executar_ld_projeto_basico")
+def vinculos_dox_manuais(request):
+    if request.method == "POST":
+        tipo = request.POST.get("tipo", "").strip().upper()
+        identificador = request.POST.get("identificador", "").strip()
+        revisao = request.POST.get("revisao", "").strip()
+        url_dox = request.POST.get("url_dox", "").strip()
+        parsed = urlparse(url_dox)
+        erros = []
+        if tipo not in {VinculoDoxManual.TIPO_DOCUMENTO, VinculoDoxManual.TIPO_PCF}:
+            erros.append("Selecione Documento ou PCF.")
+        if not identificador:
+            erros.append("Informe o número do documento ou da PCF.")
+        if tipo == VinculoDoxManual.TIPO_DOCUMENTO and not revisao:
+            erros.append("Informe a revisão do documento.")
+        if parsed.scheme.lower() != "https" or (parsed.hostname or "").lower() != "dox.novaengevix.com.br":
+            erros.append("Informe um link HTTPS válido de dox.novaengevix.com.br.")
+        if not parsed.query or "d=" not in parsed.query.lower():
+            erros.append("O link deve conter o identificador do DOX no parâmetro d=.")
+
+        if erros:
+            for erro in erros:
+                messages.error(request, erro)
+        else:
+            chave = VinculoDoxManual.normalizar(identificador)
+            revisao_normalizada = VinculoDoxManual.normalizar(revisao) or (
+                "0" if tipo == VinculoDoxManual.TIPO_DOCUMENTO else ""
+            )
+            vinculo, criado = VinculoDoxManual.objects.update_or_create(
+                tipo=tipo,
+                chave_normalizada=chave,
+                revisao=revisao_normalizada,
+                defaults={
+                    "identificador": identificador,
+                    "url_dox": url_dox,
+                    "ativo": True,
+                    "criado_por": request.user,
+                },
+            )
+            messages.success(request, "Vínculo DOX cadastrado." if criado else "Vínculo DOX atualizado.")
+            return redirect("automacoes:vinculos_dox_manuais")
+
+    busca = request.GET.get("q", "").strip()
+    vinculos = VinculoDoxManual.objects.select_related("criado_por").all()
+    if busca:
+        vinculos = vinculos.filter(
+            Q(identificador__icontains=busca) | Q(url_dox__icontains=busca)
+        )
+    return render(
+        request,
+        "automacoes/vinculos_dox_manuais.html",
+        {"vinculos": vinculos[:300], "busca": busca},
+    )
+
+
+@require_POST
+@login_required
+@has_perm("automacoes.executar_ld_projeto_basico")
+def desativar_vinculo_dox_manual(request, pk):
+    vinculo = VinculoDoxManual.objects.filter(pk=pk).first()
+    if vinculo:
+        vinculo.ativo = False
+        vinculo.save(update_fields=["ativo", "atualizado_em"])
+        messages.success(request, "Vínculo DOX desativado; a exportação voltará a ser usada como reserva.")
+    return redirect("automacoes:vinculos_dox_manuais")
+
+
+@require_POST
+@login_required
+@has_perm("automacoes.executar_ld_projeto_basico")
+def atualizar_vinculos_dashboard(request):
+    try:
+        resultado = atualizar_ld_projeto_basico.atualizar_apenas_vinculos_dashboard()
+        messages.success(
+            request,
+            f"Dashboard atualizado sem reprocessar a LD: {resultado['alteracoes']} vínculo(s) publicado(s).",
+        )
+    except Exception as exc:
+        messages.error(request, f"Não foi possível atualizar os links do dashboard: {exc}")
+    return redirect("automacoes:vinculos_dox_manuais")
 
 
 @login_required
@@ -950,6 +1037,7 @@ def painel(request):
                 "form_url": "automacoes:atualizar_ld_projeto_basico",
                 "botao": "Executar LD Projeto Básico",
                 "botao_class": "btn-info",
+                "permite_email_dashboard": True,
                 "dashboard_url": "automacoes:pcf_controle_respostas",
                 "dashboard_label": "Controle de Respostas PCF",
                 "dashboard_icon": "bi-stopwatch",
@@ -1437,9 +1525,55 @@ def executar_atualizar_ld(request):
 
 @has_perm("automacoes.executar_ld_projeto_basico")
 def executar_atualizar_ld_projeto_basico(request):
+    enviar_email = request.POST.get("enviar_dashboard_email") == "1"
+    destinatarios = []
+    if enviar_email:
+        try:
+            destinatarios = _destinatarios_dashboard_ld(
+                request.POST.get("destinatarios_dashboard")
+            )
+        except ValidationError as exc:
+            messages.error(request, exc.messages[0])
+            return redirect("automacoes:painel")
+
+    def executar_com_envio_opcional():
+        dashboard_path = atualizar_ld_projeto_basico.obter_dashboard_ld_rede()
+        assinatura_anterior = _assinatura_arquivo(dashboard_path)
+        resultado = atualizar_ld_projeto_basico.executar()
+        ok = bool(resultado.get("ok")) if isinstance(resultado, dict) else False
+        if not (ok and enviar_email):
+            return resultado
+
+        try:
+            assinatura_atual = _assinatura_arquivo(dashboard_path)
+            if assinatura_atual is None or assinatura_atual == assinatura_anterior:
+                raise RuntimeError(
+                    "O dashboard HTML não foi recriado durante esta atualização."
+                )
+            _enviar_dashboard_ld_anexo(destinatarios)
+            messages.success(
+                request,
+                f"Dashboard HTML enviado para {len(destinatarios)} destinatário(s).",
+            )
+            resultado["email_dashboard"] = {
+                "enviado": True,
+                "destinatarios": destinatarios,
+            }
+        except Exception:
+            messages.warning(
+                request,
+                "As LDs e o dashboard foram atualizados, mas o envio do e-mail falhou. "
+                "Verifique as credenciais do servidor de e-mail.",
+            )
+            resultado["email_dashboard"] = {
+                "enviado": False,
+                "destinatarios": destinatarios,
+            }
+        return resultado
+
     return _executar_automacao(
         request,
-        atualizar_ld_projeto_basico.executar,
+        executar_com_envio_opcional,
         "Atualização LD Projeto Básico",
         pos_processador=executar_ciclo_documental,
     )
@@ -4554,6 +4688,48 @@ def dashboard_ld(request):
             "recentes": recentes,
         },
     )
+
+
+def _destinatarios_dashboard_ld(valor):
+    destinatarios = []
+    for item in re.split(r"[,;\n]+", valor or ""):
+        email = item.strip().lower()
+        if not email or email in destinatarios:
+            continue
+        validate_email(email)
+        destinatarios.append(email)
+    if not destinatarios:
+        raise ValidationError("Informe ao menos um destinatário válido.")
+    if len(destinatarios) > 20:
+        raise ValidationError("Informe no máximo 20 destinatários por envio.")
+    return destinatarios
+
+
+def _assinatura_arquivo(caminho):
+    try:
+        stat = Path(caminho).stat()
+        return stat.st_mtime_ns, stat.st_size
+    except OSError:
+        return None
+
+
+def _enviar_dashboard_ld_anexo(destinatarios):
+    dashboard_path = atualizar_ld_projeto_basico.obter_dashboard_ld_rede()
+    if not dashboard_path.is_file():
+        raise FileNotFoundError("O dashboard HTML não foi encontrado após a atualização.")
+
+    mensagem = (
+        "Olá,\n\nSegue anexo o Dashboard Gerencial de Document Control da LD.\n"
+        "Baixe o arquivo HTML e abra-o no navegador.\n\nAtenciosamente,\nGED"
+    )
+    email = EmailMessage(
+        subject="[GED] Dashboard Gerencial LD — Projeto Básico",
+        body=mensagem,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=destinatarios,
+    )
+    email.attach_file(dashboard_path, mimetype="text/html")
+    return email.send(fail_silently=False)
 
 
 @login_required

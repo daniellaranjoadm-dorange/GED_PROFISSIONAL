@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from apps.automacoes.models import AutomationExecutionLock, DocumentoLD, ExecucaoAutomacao, PCFTimeline, TransmittalKM
+from apps.automacoes.models import AutomationExecutionLock, DocumentoLD, ExecucaoAutomacao, PCFTimeline, TransmittalKM, VinculoDoxManual
 
 
 @admin.register(ExecucaoAutomacao)
@@ -57,6 +57,14 @@ class PCFTimelineAdmin(admin.ModelAdmin):
     list_display = ("numero_documento", "numero_pcf", "tipo", "revisao_pcf", "open_comments", "status_final")
     search_fields = ("numero_documento", "numero_pcf", "titulo", "pcf_link")
     list_filter = ("tipo", "status_final")
+
+
+@admin.register(VinculoDoxManual)
+class VinculoDoxManualAdmin(admin.ModelAdmin):
+    list_display = ("tipo", "identificador", "revisao", "ativo", "atualizado_em", "criado_por")
+    search_fields = ("identificador", "chave_normalizada", "url_dox")
+    list_filter = ("tipo", "ativo")
+    readonly_fields = ("chave_normalizada", "criado_em", "atualizado_em")
 
 
 @admin.register(DocumentoLD)

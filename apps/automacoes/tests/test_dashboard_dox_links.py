@@ -8,6 +8,26 @@ from scripts.build_ld_executive_dashboard import load_dashboard_links
 
 
 class DashboardDoxLinksTests(SimpleTestCase):
+    def test_cadastros_manuais_prevalecem_sobre_exportacoes(self):
+        workbook = Workbook()
+        fap = workbook.active
+        fap.title = "FAP PRODUÇÃO"
+        fap.append(["Link", "Documento", "Revisão"])
+        fap.append(["https://dox.example/antigo-documento", "I-DE-001", "A"])
+        pcfs = workbook.create_sheet("Lista de Documentos_PCFS")
+        pcfs.cell(2, 2, "PCF-I-DE-001-R0")
+        pcfs.cell(2, 12, "https://dox.example/antiga-pcf")
+        with TemporaryDirectory() as temporary:
+            source = Path(temporary) / "links.xlsx"
+            workbook.save(source)
+            dox_links, pcf_links = load_dashboard_links(
+                source,
+                {("I-DE-001", "A"): "https://dox.novaengevix.com.br/Explorer?d=novo-doc"},
+                {"PCF-I-DE-001-R0": "https://dox.novaengevix.com.br/Explorer?d=nova-pcf"},
+            )
+        self.assertIn("novo-doc", dox_links[("IDE001", "A")])
+        self.assertIn("nova-pcf", pcf_links["PCFIDE001R0"])
+
     def test_reads_exact_fap_revision_and_exact_pcf_links(self):
         with TemporaryDirectory(dir=Path.cwd() / ".test_tmp") as temporary:
             source = Path(temporary) / "links.xlsx"

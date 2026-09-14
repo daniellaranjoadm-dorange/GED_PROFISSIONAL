@@ -83,3 +83,19 @@ static/**/old/
 *.zip
 static/css/old/
 static/**/old/
+
+# Codex / auditorias locais
+.codex_artifact_audit/
+.test_tmp/
+
+# Diagnosticos e saidas geradas
+diagnostics/
+output/
+outputs/
+tmp/
+
+# Bancos temporarios de auditoria/teste
+audit_check.sqlite3
+
+# Backups locais de services
+apps/automacoes/services/backups/

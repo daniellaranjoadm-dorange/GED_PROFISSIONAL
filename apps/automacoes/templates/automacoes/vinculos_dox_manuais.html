@@ -1,0 +1,32 @@
+{% extends "documentos/base.html" %}
+{% load static %}
+{% block title %}Vínculos manuais DOX{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'automacoes/css/ops_enterprise.css' %}?v=1701">
+<style>
+.dox-page{width:min(1500px,calc(100vw - 36px));margin:auto}.dox-grid{display:grid;grid-template-columns:180px 1.4fr 130px 2fr auto;gap:12px;align-items:end}.dox-card{padding:20px!important}.dox-help{padding:14px 16px;border-left:4px solid #37c8f4;background:#092333;color:#b9d6e4;border-radius:10px;margin:14px 0}.dox-actions{display:flex;justify-content:flex-end;margin-top:14px}.dox-publish{border-color:#1dd6b5!important;background:linear-gradient(135deg,#159f87,#0d6f62)!important;color:#fff!important}.dox-table{width:100%;border-collapse:collapse}.dox-table th,.dox-table td{padding:11px;border-bottom:1px solid #244056;text-align:left}.dox-table th{color:#8fdcff;font-size:10px;text-transform:uppercase}.dox-url{max-width:440px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dox-off{opacity:.48}@media(max-width:900px){.dox-grid{grid-template-columns:1fr}.dox-table{display:block;overflow:auto}}
+</style>
+{% endblock %}
+{% block content %}
+<main class="dox-page">
+  <section class="ops-panel dox-card">
+    <div class="ops-panel-head"><div><h1>Vínculos manuais DOX</h1><p>Complementa as exportações FAP e Lista de Documentos_PCFS.</p></div><a class="ops-btn" href="{% url 'automacoes:painel' %}">Voltar</a></div>
+    <div class="dox-help"><strong>Documento:</strong> informe o número Transpetro, revisão e link. <strong>PCF:</strong> informe o número completo da PCF e o link. Depois de salvar, use “Atualizar links no dashboard”; não é necessário processar a LD novamente.</div>
+    <form method="post" class="dox-grid">{% csrf_token %}
+      <div><label class="ops-filter-label">Tipo</label><select class="form-select" name="tipo" id="doxTipo" required><option value="DOCUMENTO">Documento</option><option value="PCF">PCF</option></select></div>
+      <div><label class="ops-filter-label">Número Transpetro ou PCF</label><input class="form-control" name="identificador" required placeholder="I-DE-... ou PCF-I-DE-..."></div>
+      <div id="revisaoBox"><label class="ops-filter-label">Revisão</label><input class="form-control" name="revisao" placeholder="0, A, B..."></div>
+      <div><label class="ops-filter-label">Link DOX</label><input class="form-control" type="url" name="url_dox" required placeholder="https://dox.novaengevix.com.br/Explorer?d=..."></div>
+      <button class="ops-btn ops-btn-primary" type="submit">Salvar vínculo</button>
+    </form>
+    <form method="post" action="{% url 'automacoes:atualizar_vinculos_dashboard' %}" class="dox-actions">{% csrf_token %}<button class="ops-btn dox-publish" type="submit">Atualizar links no dashboard</button></form>
+  </section>
+  <section class="ops-panel dox-card mt-3">
+    <form method="get" style="display:flex;gap:10px;margin-bottom:15px"><input class="form-control" name="q" value="{{ busca }}" placeholder="Buscar documento, PCF ou URL"><button class="ops-btn">Buscar</button></form>
+    <table class="dox-table"><thead><tr><th>Tipo</th><th>Identificador</th><th>Revisão</th><th>Link DOX</th><th>Atualizado</th><th>Status</th><th></th></tr></thead><tbody>
+    {% for item in vinculos %}<tr class="{% if not item.ativo %}dox-off{% endif %}"><td>{{ item.get_tipo_display }}</td><td><strong>{{ item.identificador }}</strong></td><td>{{ item.revisao|default:"—" }}</td><td class="dox-url"><a href="{{ item.url_dox }}" target="_blank" rel="noopener">{{ item.url_dox }}</a></td><td>{{ item.atualizado_em|date:"d/m/Y H:i" }}</td><td>{% if item.ativo %}Ativo{% else %}Desativado{% endif %}</td><td>{% if item.ativo %}<form method="post" action="{% url 'automacoes:desativar_vinculo_dox_manual' item.id %}">{% csrf_token %}<button class="ops-btn" type="submit">Desativar</button></form>{% endif %}</td></tr>{% empty %}<tr><td colspan="7">Nenhum vínculo cadastrado.</td></tr>{% endfor %}
+    </tbody></table>
+  </section>
+</main>
+<script>const tipo=document.getElementById('doxTipo'),box=document.getElementById('revisaoBox');function sync(){box.style.display=tipo.value==='DOCUMENTO'?'block':'none'}tipo.addEventListener('change',sync);sync();</script>
+{% endblock %}

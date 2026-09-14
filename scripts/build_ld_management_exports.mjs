@@ -58,6 +58,22 @@ const notReleased=rows.filter(r=>r.statusPcf==="NOT RELEASED").length;
 const open=rows.reduce((s,r)=>s+(Number(r.open)||0),0);
 const overdue=rows.filter(r=>r.statusEmissao!=="Emitido"&&r.cronogramaTermino&&r.cronogramaTermino<meta.generated.slice(0,10)).length;
 const approvedNoComments=rows.filter(r=>String(r.status||"").toLocaleLowerCase("pt-BR")==="aprovado sem comentários").length;
+const ptRows=rows.filter(r=>String(r.tipo||"").trim().toUpperCase()==="PT");
+const ptEmitted=ptRows.filter(r=>r.statusEmissao==="Emitido").length;
+const ptPlanned=ptRows.length-ptEmitted;
+const ptApprovedNoComments=ptRows.filter(r=>String(r.status||"").trim().toLocaleLowerCase("pt-BR")==="aprovado sem comentários").length;
+const ptApprovedWithComments=ptRows.filter(r=>String(r.status||"").trim().toLocaleLowerCase("pt-BR")==="aprovado com comentários").length;
+const ptRejected=ptRows.filter(r=>String(r.status||"").trim().toLocaleLowerCase("pt-BR")==="reprovado").length;
+const ptNotReleased=ptRows.filter(r=>r.statusPcf==="NOT RELEASED").length;
+const ptOpenDocs=ptRows.filter(r=>(Number(r.open)||0)>0).length;
+const ptUnderDocs=ptRows.filter(r=>(Number(r.underReview)||0)>0).length;
+const ptAwaitingPcf=ptRows.filter(r=>r.statusEmissao==="Emitido"&&!String(r.pcf||"").trim()).length;
+const ptDaysToEnd=r=>{if(!r.cronogramaTermino)return null;const end=new Date(`${String(r.cronogramaTermino).slice(0,10)}T00:00:00`),today=new Date(`${meta.generated.slice(0,10)}T00:00:00`);return Math.ceil((end-today)/86400000)};
+const ptScore=r=>{const days=ptDaysToEnd(r),planned=r.statusEmissao!=="Emitido";return(planned&&days!==null&&days<0?10000:0)+(r.statusPcf==="NOT RELEASED"?7000:0)+(planned&&days!==null&&days>=0&&days<=30?4000-days:0)+(r.statusEmissao==="Emitido"&&!String(r.pcf||"").trim()?3000:0)+(Number(r.open)||0)*20+(Number(r.underReview)||0)*10+(planned&&days===null?1500:0)};
+const ptPriority=r=>ptScore(r)>=7000?"P1":ptScore(r)>=3000?"P2":"P3";
+const ptSituation=r=>[r.statusEmissao==="Emitido"?"Emitida":"Prevista",r.statusPcf==="NOT RELEASED"?"NOT RELEASED":"",(Number(r.open)||0)>0?`${Number(r.open)} OPEN`:"",(Number(r.underReview)||0)>0?`${Number(r.underReview)} UNDER`:""].filter(Boolean).join(" · ");
+const ptDeadline=r=>r.cronogramaTermino?new Date(`${String(r.cronogramaTermino).slice(0,10)}T12:00:00`).toLocaleDateString("pt-BR"):"—";
+const rankedPts=ptRows.slice().sort((a,b)=>ptScore(b)-ptScore(a));
 const disciplines=Object.entries(rows.reduce((a,r)=>{const k=r.disciplina||"Sem disciplina";a[k]=(a[k]||0)+1;return a;},{})).sort((a,b)=>b[1]-a[1]).slice(0,8);
 const statusEntries=Object.entries(rows.reduce((a,r)=>{const k=r.status||"Sem status";a[k]=(a[k]||0)+1;return a;},{})).sort((a,b)=>b[1]-a[1]).slice(0,7);
 const pct=n=>total?`${(n/total*100).toFixed(1).replace('.',',')}%`:"0%";
@@ -76,7 +92,19 @@ s=deck.slides.add();s.background.fill=C.bg;title(s,"Produção por disciplina","
 
 s=deck.slides.add();s.background.fill=C.bg;title(s,"Situação documental","03 · STATUS E APROVAÇÃO");s.charts.add("bar",{position:{left:72,top:160,width:700,height:430},categories:statusEntries.map(x=>x[0]),series:[{name:"Documentos",values:statusEntries.map(x=>x[1]),fill:C.mint}],hasLegend:false,dataLabels:{showValue:true,position:"outEnd"},xAxis:{majorGridlines:{style:"solid",fill:"#234359",width:1}}});card(s,830,182,320,"PCFs recebidas",pcfs,C.cyan);card(s,830,330,320,"PCFs não liberadas",notReleased,C.red);card(s,830,478,320,"Comentários OPEN",open,C.amber);
 
-s=deck.slides.add();s.background.fill=C.bg;title(s,"Prioridades de atuação","04 · DECISÕES RECOMENDADAS");const actions=[["1","Eliminar vencimentos",`${overdue} documentos vencidos não emitidos`,C.red],["2","Atacar pendências de emissão",`${pending} documentos aguardam emissão`,C.amber],["3","Destravar aprovações",`${notReleased} PCFs estão NOT RELEASED`,C.cyan],["4","Fechar comentários",`${open} comentários permanecem OPEN`,C.mint]];actions.forEach((a,i)=>{const y=162+i*108;text(s,`n${i}`,a[0],72,y,48,48,30,a[3],true);text(s,`a${i}`,a[1],142,y,440,34,24,C.white,true);text(s,`d${i}`,a[2],142,y+38,760,30,18,C.muted,false)});
+s=deck.slides.add();s.background.fill=C.bg;title(s,"Propostas Técnicas críticas","04 · PRIORIDADE CONTRATUAL");
+[["PTs no contrato",ptRows.length,C.cyan],["Previstas",ptPlanned,C.amber],["Emitidas",ptEmitted,C.mint],["NOT RELEASED",ptNotReleased,C.red]].forEach((c,i)=>card(s,72+i*278,162,250,c[0],c[1],c[2]));
+[["Aprovadas sem comentários",ptApprovedNoComments,C.mint],["Aprovadas com comentários",ptApprovedWithComments,C.cyan],["Reprovadas",ptRejected,C.red],["Aguardando PCF",ptAwaitingPcf,C.amber]].forEach((c,i)=>card(s,72+i*278,318,250,c[0],c[1],c[2]));
+text(s,"pt-reading","Sinais de pressão",72,500,260,30,22,C.white,true);text(s,"pt-reading-body",`${ptOpenDocs} PTs possuem comentários OPEN, ${ptUnderDocs} estão em UNDER REVIEW e ${ptNotReleased} permanecem NOT RELEASED. O ranking a seguir prioriza vencimento, liberação da PCF, proximidade do prazo e volume de comentários.`,72,540,1080,74,20,C.muted,false);
+
+const ptPageSize=12,ptPages=Math.ceil(rankedPts.length/ptPageSize),ptCols=[["PR.",55],["Nº DOX",150],["Nº TRANSPETRO",195],["TÍTULO",300],["SITUAÇÃO",150],["PRAZO",90],["OPEN",55],["UNDER",70]];
+for(let page=0;page<ptPages;page++){
+  s=deck.slides.add();s.background.fill=C.bg;title(s,"Ranking das Propostas Técnicas",`05 · CRITICIDADE · PÁGINA ${page+1} DE ${ptPages}`);
+  let x=72;for(const [label,w] of ptCols){s.shapes.add({geometry:"rect",position:{left:x,top:142,width:w,height:34},fill:"#173F54",line:{style:"solid",fill:"#294D64",width:1}});text(s,`pt-head-${page}-${label}`,label,x+5,150,w-10,18,11,C.white,true);x+=w}
+  rankedPts.slice(page*ptPageSize,(page+1)*ptPageSize).forEach((r,i)=>{const y=176+i*39,values=[ptPriority(r),String(r.ldExport?.[1]||"—"),String(r.documento||"—"),String(r.titulo||"—"),ptSituation(r),ptDeadline(r),String(Number(r.open)||0),String(Number(r.underReview)||0)];let cx=72;values.forEach((value,j)=>{const w=ptCols[j][1],fill=i%2===0?"#0D2233":"#10283A";s.shapes.add({geometry:"rect",position:{left:cx,top:y,width:w,height:39},fill,line:{style:"solid",fill:"#294D64",width:1}});text(s,`pt-${page}-${i}-${j}`,value,cx+5,y+6,w-10,27,j===0?13:11,j===0?(value==="P1"?C.red:value==="P2"?C.amber:C.mint):C.white,j===0||j===2);cx+=w})});
+}
+
+s=deck.slides.add();s.background.fill=C.bg;title(s,"Prioridades de atuação","06 · DECISÕES RECOMENDADAS");const actions=[["1","Eliminar vencimentos",`${overdue} documentos vencidos não emitidos`,C.red],["2","Atacar pendências de emissão",`${pending} documentos aguardam emissão`,C.amber],["3","Destravar aprovações",`${notReleased} PCFs estão NOT RELEASED`,C.cyan],["4","Fechar comentários",`${open} comentários permanecem OPEN`,C.mint]];actions.forEach((a,i)=>{const y=162+i*108;text(s,`n${i}`,a[0],72,y,48,48,30,a[3],true);text(s,`a${i}`,a[1],142,y,440,34,24,C.white,true);text(s,`d${i}`,a[2],142,y+38,760,30,18,C.muted,false)});
 
 await fs.writeFile(`${previewDir}/source-notes.txt`,`Fonte: ${meta.source}\nBase consolidada: última revisão válida por documento.\nGerado em: ${meta.generated}\n`);
 for(const [i,slide] of deck.slides.items.entries()){const png=await deck.export({slide,format:"png",scale:1});await fs.writeFile(`${previewDir}/slide-${i+1}.png`,new Uint8Array(await png.arrayBuffer()));const layout=await slide.export({format:"layout"});await fs.writeFile(`${previewDir}/slide-${i+1}.layout.json`,await layout.text())}

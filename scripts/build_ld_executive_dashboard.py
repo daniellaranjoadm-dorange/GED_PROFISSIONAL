@@ -90,7 +90,7 @@ def _http_link(cell):
     return target if re.match(r"^https?://", target, flags=re.IGNORECASE) else ""
 
 
-def load_dashboard_links(source: Path):
+def load_dashboard_links(source: Path, dox_overrides=None, pcf_overrides=None):
     """Le links DOX/PCF das abas auxiliares sem alterar a planilha fonte."""
     workbook = load_workbook(source, read_only=False, data_only=False, keep_vba=False, keep_links=True)
     dox_links = {}
@@ -117,6 +117,18 @@ def load_dashboard_links(source: Path):
             pcf_links[identifier] = link
 
     workbook.close()
+    # Cadastros manuais do GED prevalecem sobre exportações FAP/PCF antigas.
+    for (document, revision), link in (dox_overrides or {}).items():
+        key = (
+            _normalized_text(document).replace(" ", ""),
+            _normalized_text(revision).replace(" ", "") or "0",
+        )
+        if key[0] and re.match(r"^https?://", str(link), flags=re.IGNORECASE):
+            dox_links[key] = str(link).strip()
+    for identifier, link in (pcf_overrides or {}).items():
+        key = _normalized_text(identifier).replace(" ", "")
+        if key and re.match(r"^https?://", str(link), flags=re.IGNORECASE):
+            pcf_links[key] = str(link).strip()
     return dox_links, pcf_links
 
 
@@ -144,8 +156,8 @@ def load_ld_headers(source: Path):
     return headers
 
 
-def load_records(source: Path):
-    dox_links, pcf_links = load_dashboard_links(source)
+def load_records(source: Path, dox_overrides=None, pcf_overrides=None):
+    dox_links, pcf_links = load_dashboard_links(source, dox_overrides, pcf_overrides)
     workbook = load_workbook(source, read_only=True, data_only=True, keep_vba=False)
     sheet = workbook["LD PROJETO BASICO"]
     grouped = {}

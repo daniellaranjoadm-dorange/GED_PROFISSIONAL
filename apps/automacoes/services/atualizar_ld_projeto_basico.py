@@ -1,5 +1,10 @@
 import os
+import json
 import shutil
+import sys
+import traceback
+from contextlib import contextmanager
+import hashlib
 from datetime import datetime, timedelta, date
 import xlwings as xw
 import re
@@ -9,7 +14,7 @@ from pathlib import Path
 from openpyxl import load_workbook
 from django.db import transaction
 
-from apps.automacoes.models import DocumentoLD
+from apps.automacoes.models import DocumentoLD, VinculoDoxManual
 
 
 # ==========================================================
@@ -34,14 +39,107 @@ TIMELINE_PCF = r"\\virm-rgr022\FILESERVER\Projetos\05_HANDYMAX\09. Doc Control\9
 
 PASTA_LOGS = r"\\virm-rgr022\FILESERVER\Projetos\05_HANDYMAX\09. Doc Control\3 - LD\Logs"
 PASTA_BACKUPS = os.path.join(PASTA_LOGS, "Backups")
+DASHBOARD_NOME_BASE = "Dashboard_Gerencial_Doc_Control_LD_Projeto_Basico"
+DASHBOARD_PASTA_REDE = os.path.dirname(PLANILHA)
+DASHBOARD_PASTA_GOOGLE = r"G:\Drives compartilhados\CONSÓRCIO_MARENOVA\ENGENHARIA\DOC_CONTROL"
+
+
+def _nome_dashboard_do_dia():
+    return f"{DASHBOARD_NOME_BASE}_{date.today():%Y%m%d}.html"
+
+
+def obter_dashboard_ld_rede():
+    configurado = os.environ.get("DASHBOARD_LD_PROJETO_BASICO")
+    return Path(configurado) if configurado else Path(DASHBOARD_PASTA_REDE) / _nome_dashboard_do_dia()
+
+
+def obter_dashboard_ld_google_drive():
+    configurado = os.environ.get("DASHBOARD_LD_GOOGLE_DRIVE")
+    return Path(configurado) if configurado else Path(DASHBOARD_PASTA_GOOGLE) / _nome_dashboard_do_dia()
+
+
+def atualizar_apenas_vinculos_dashboard():
+    """Publica os vínculos manuais no HTML atual sem reprocessar a LD."""
+    vinculos = VinculoDoxManual.objects.filter(ativo=True)
+    dox_links = {
+        (item.chave_normalizada, item.revisao or "0"): item.url_dox
+        for item in vinculos.filter(tipo=VinculoDoxManual.TIPO_DOCUMENTO)
+    }
+    pcf_links = {
+        item.chave_normalizada: item.url_dox
+        for item in vinculos.filter(tipo=VinculoDoxManual.TIPO_PCF)
+    }
+    destinos = [obter_dashboard_ld_rede(), obter_dashboard_ld_google_drive()]
+    atualizados = []
+    total_alteracoes = 0
+
+    for destino in destinos:
+        destino = Path(destino)
+        if not destino.is_file():
+            continue
+        html = destino.read_text(encoding="utf-8")
+        inicio = html.index("const DATA=") + len("const DATA=")
+        fim = html.index(",META=", inicio)
+        registros = json.loads(html[inicio:fim])
+        alteracoes = 0
+        for registro in registros:
+            chave_documento = VinculoDoxManual.normalizar(registro.get("documento"))
+            revisao = VinculoDoxManual.normalizar(registro.get("revisao")) or "0"
+            link_documento = dox_links.get((chave_documento, revisao))
+            if link_documento and registro.get("linkDox") != link_documento:
+                registro["linkDox"] = link_documento
+                alteracoes += 1
+
+            chave_pcf = VinculoDoxManual.normalizar(registro.get("pcf"))
+            link_pcf = pcf_links.get(chave_pcf)
+            if link_pcf and registro.get("linkPcf") != link_pcf:
+                registro["linkPcf"] = link_pcf
+                alteracoes += 1
+
+        dados = json.dumps(registros, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
+        html = html[:inicio] + dados + html[fim:]
+        temporario = destino.with_suffix(destino.suffix + ".links.tmp")
+        temporario.write_text(html, encoding="utf-8")
+        temporario.replace(destino)
+        atualizados.append(str(destino))
+        total_alteracoes += alteracoes
+
+    if not atualizados:
+        raise FileNotFoundError("O dashboard de hoje ainda não foi gerado.")
+    return {"arquivos": atualizados, "alteracoes": total_alteracoes}
+
+
 DASHBOARD_LD = os.environ.get(
     "DASHBOARD_LD_PROJETO_BASICO",
-    os.path.join(os.path.dirname(PLANILHA), "Dashboard_Gerencial_Doc_Control_LD_Projeto_Basico.html"),
+    str(obter_dashboard_ld_rede()),
 )
 DASHBOARD_LD_GOOGLE_DRIVE = os.environ.get(
     "DASHBOARD_LD_GOOGLE_DRIVE",
-    r"G:\Drives compartilhados\CONSÓRCIO_MARENOVA\ENGENHARIA\DOC_CONTROL\Dashboard_Gerencial_Doc_Control_LD_Projeto_Basico.html",
+    str(obter_dashboard_ld_google_drive()),
 )
+
+
+def arquivar_dashboards_anteriores(destino_atual):
+    """Move somente dashboards HTML datados para a subpasta de arquivos."""
+    destino_atual = Path(destino_atual)
+    pasta = destino_atual.parent
+    backup = pasta / "Dashboard_Doc_Control_Arquivos"
+    padrao = re.compile(
+        rf"^{re.escape(DASHBOARD_NOME_BASE)}_(\d{{8}})(?:_(\d{{6}}))?\.html$",
+        re.IGNORECASE,
+    )
+    backup.mkdir(parents=True, exist_ok=True)
+    arquivados = []
+    for anterior in pasta.glob(f"{DASHBOARD_NOME_BASE}_*.html"):
+        if not anterior.is_file() or not padrao.fullmatch(anterior.name):
+            continue
+        alvo = backup / anterior.name
+        if alvo.exists():
+            carimbo = datetime.now().strftime("%H%M%S")
+            alvo = backup / f"{anterior.stem}_{carimbo}{anterior.suffix}"
+        shutil.move(str(anterior), str(alvo))
+        arquivados.append(str(alvo))
+    return arquivados
 
 EXTENSOES = {".doc", ".docx", ".pdf", ".dwg", ".xls", ".xlsx", ".xlsm"}
 
@@ -335,7 +433,13 @@ def resetar_progresso_ld():
 
 
 def log(msg: str):
-    print(msg, flush=True)
+    texto = str(msg)
+    try:
+        print(texto, flush=True)
+    except UnicodeEncodeError:
+        encoding = getattr(sys.stdout, "encoding", None) or "ascii"
+        seguro = texto.encode(encoding, errors="replace").decode(encoding, errors="replace")
+        print(seguro, flush=True)
     if LOG_FILE:
         try:
             with open(LOG_FILE, "a", encoding="utf-8") as f:
@@ -2304,9 +2408,17 @@ def processar_aba(wb, aba_nome, idx_eng, idx_eng_codigos, idx_grd, idx_pcf, idx_
 
         if APLICAR_FORMATACAO:
             aplicar_formatacao(ws, layout)
+    except Exception:
+        log(f"Falha na aba {aba_nome}, linha {locals().get('r', '?')}, documento {locals().get('codigo', '?')}.")
+        log(traceback.format_exc())
+        raise
     finally:
-        restaurar_autofiltro(ws, _af_state)
-        garantir_autofiltro(ws)
+        try:
+            restaurar_autofiltro(ws, _af_state)
+            garantir_autofiltro(ws)
+        except Exception as exc:
+            log(f"AVISO: falha restaurando filtros da aba {aba_nome}: {exc}")
+
 
 def _sync_obter_hyperlink(cell):
     """Obtém hyperlink de uma célula xlwings sem interromper a atualização."""
@@ -3332,6 +3444,94 @@ def importar_ld_banco(wb, wb_marenova=None):
         "exclusivos_geral": len(todos_documentos),
     }
 
+class PlanilhaEmUsoError(RuntimeError):
+    """A atualização não pode disputar a gravação com outro editor."""
+
+
+@contextmanager
+def _arquivo_exclusivo(caminho):
+    import msvcrt
+    import win32file
+    import win32con
+    import pywintypes
+
+    try:
+        handle = win32file.CreateFile(
+            str(caminho), win32con.GENERIC_READ | win32con.GENERIC_WRITE,
+            0, None, win32con.OPEN_EXISTING, win32con.FILE_ATTRIBUTE_NORMAL, None,
+        )
+    except pywintypes.error as exc:
+        if getattr(exc, "winerror", None) in (32, 33):
+            raise PlanilhaEmUsoError(
+                f"Planilha em uso: {caminho}. Feche o arquivo em todas as estações "
+                "e execute novamente. Nenhuma gravação será forçada."
+            ) from exc
+        raise
+    try:
+        fd = msvcrt.open_osfhandle(handle.Detach(), os.O_RDWR | os.O_BINARY)
+        with os.fdopen(fd, "r+b") as arquivo:
+            yield arquivo
+    finally:
+        handle.Close()
+
+
+def _verificar_disponibilidade_ld(caminhos):
+    for caminho in caminhos:
+        if Path(caminho).with_name("~$" + Path(caminho).name).exists():
+            raise PlanilhaEmUsoError(
+                f"Planilha aberta no Excel: {caminho}. Feche o arquivo em todas "
+                "as estações e execute novamente."
+            )
+        with _arquivo_exclusivo(caminho):
+            pass
+
+
+def _assinatura_ld(caminho):
+    with open(caminho, "rb") as arquivo:
+        return hashlib.file_digest(arquivo, "sha256").hexdigest()
+
+
+def _restaurar_ld_se_inalterada(caminho, backup, assinatura):
+    # Mantém a exclusividade durante comparação e restauração: nunca substitui
+    # o conteúdo se outro editor abriu ou alterou a planilha após nosso save.
+    with _arquivo_exclusivo(caminho) as destino:
+        if hashlib.file_digest(destino, "sha256").hexdigest() != assinatura:
+            raise RuntimeError("Arquivo alterado após o salvamento do GED; restauração automática cancelada.")
+        destino.seek(0)
+        with open(backup, "rb") as origem:
+            shutil.copyfileobj(origem, destino)
+        destino.truncate()
+        destino.flush()
+        os.fsync(destino.fileno())
+
+
+@contextmanager
+def _sessao_excel_ld():
+    import pythoncom
+
+    pythoncom.CoInitialize()
+    app = None
+    try:
+        app = xw.App(visible=False, add_book=False)
+        app.display_alerts = False
+        app.screen_updating = False
+        # Impede eventos VBA de reagirem às milhares de escritas da automação.
+        app.api.EnableEvents = False
+        yield app
+    finally:
+        if app is not None:
+            try:
+                for livro in list(app.books):
+                    livro.close()  # xlwings fecha sem salvar alterações pendentes.
+            except Exception as exc:
+                log(f"AVISO: falha fechando livros da instância GED: {exc}")
+            try:
+                app.quit()
+            except Exception as exc:
+                log(f"AVISO: falha encerrando a instância Excel do GED: {exc}")
+        pythoncom.CoUninitialize()
+
+
 def processar():
     global LOG_FILE
     atualizar_progresso_ld(2, "Preparando atualização LD Projeto Básico...", "running", "Inicializando rotina da nova Atualização LD.")
@@ -3341,31 +3541,10 @@ def processar():
     LOG_FILE = os.path.join(PASTA_LOGS, f"LDP_PROJETO_BASICO_{ts}.log")
     log(f"🧾 Log: {LOG_FILE}")
 
-    # O Excel cria um arquivo "~$" enquanto a pasta de trabalho está aberta.
-    # Detectar isso antes da indexação evita processar toda a carteira para só
-    # descobrir no salvamento que a LD foi aberta como somente leitura.
-    arquivos_bloqueados = []
-    for planilha in (PLANILHA, PLANILHA_MARENOVA_EXECUTIVO):
-        lock_excel = os.path.join(
-            os.path.dirname(planilha),
-            f"~${os.path.basename(planilha)}",
-        )
-        if os.path.exists(lock_excel):
-            arquivos_bloqueados.append((planilha, lock_excel))
-
-    if arquivos_bloqueados:
-        detalhes = "; ".join(
-            f"{os.path.basename(planilha)} (lock: {lock_excel})"
-            for planilha, lock_excel in arquivos_bloqueados
-        )
-        mensagem = (
-            "Planilha LD aberta no Excel e bloqueada para gravação. "
-            "Feche o arquivo em todas as estações e execute novamente. "
-            f"Detectado: {detalhes}"
-        )
-        atualizar_progresso_ld(100, "Atualização bloqueada pelo Excel.", "blocked", mensagem)
-        log(f"⛔ {mensagem}")
-        raise RuntimeError(mensagem)
+    caminhos_ld = [PLANILHA]
+    if os.path.exists(PLANILHA_MARENOVA_EXECUTIVO):
+        caminhos_ld.append(PLANILHA_MARENOVA_EXECUTIVO)
+    _verificar_disponibilidade_ld(caminhos_ld)
 
     backup_path = backup_arquivo(PLANILHA)
     backup_marenova_path = None
@@ -3394,9 +3573,11 @@ def processar():
 
     wb = None
     wb_marenova = None
+    salvamentos = {}
+    tentativas_salvar = set()
 
     try:
-        with xw.App(visible=False, add_book=False) as app:
+        with _sessao_excel_ld() as app:
             app.display_alerts = False
             app.screen_updating = False
 
@@ -3413,10 +3594,25 @@ def processar():
                 ignore_read_only_recommended=True,
             )
             if bool(wb.api.ReadOnly):
-                raise RuntimeError(
+                raise PlanilhaEmUsoError(
                     "A LD principal foi aberta pelo Excel como somente leitura. "
                     "Feche a planilha em todas as estações e execute novamente."
                 )
+
+            # Reserva os dois arquivos no Excel antes de alterar qualquer aba.
+            if PLANILHA_MARENOVA_EXECUTIVO in caminhos_ld:
+                wb_marenova = app.books.open(
+                    PLANILHA_MARENOVA_EXECUTIVO,
+                    update_links=False,
+                    read_only=False,
+                    ignore_read_only_recommended=True,
+                )
+                if bool(wb_marenova.api.ReadOnly):
+                    raise PlanilhaEmUsoError(
+                        "A LD Marenova Executivo foi aberta pelo Excel como somente leitura. "
+                        "Feche a planilha em todas as estações e execute novamente."
+                    )
+
 
             # A GENERAL LIST KM possui dados/consultas que podem continuar sendo
             # atualizados em segundo plano após a abertura. Aguarda a conclusão
@@ -3488,18 +3684,6 @@ def processar():
 
             if os.path.exists(PLANILHA_MARENOVA_EXECUTIVO):
                 atualizar_progresso_ld(86, "Abrindo LD Marenova Executivo...", "running", "Abrindo planilha Marenova separada.")
-                wb_marenova = app.books.open(
-                    PLANILHA_MARENOVA_EXECUTIVO,
-                    update_links=False,
-                    read_only=False,
-                    ignore_read_only_recommended=True,
-                )
-                if bool(wb_marenova.api.ReadOnly):
-                    raise RuntimeError(
-                        "A LD Marenova Executivo foi aberta pelo Excel como somente leitura. "
-                        "Feche a planilha em todas as estações e execute novamente."
-                    )
-
                 atualizar_progresso_ld(88, "Processando LD MARENOVA P EXECUTIVO...", "running", "Atualizando Marenova Executivo no arquivo separado.")
                 processar_aba(
                     wb_marenova,
@@ -3525,15 +3709,21 @@ def processar():
             # publique no banco; assim o painel nunca apresenta uma versão que
             # falhou no salvamento e foi restaurada pelo backup.
             atualizar_progresso_ld(92, "Salvando planilhas LD...", "running", "Salvando alterações nas planilhas do piloto.")
-            backup_arquivo(PLANILHA)
-            if os.path.exists(PLANILHA_MARENOVA_EXECUTIVO):
-                backup_arquivo(PLANILHA_MARENOVA_EXECUTIVO)
+            backup_path = backup_arquivo(PLANILHA)
+            if wb_marenova is not None:
+                backup_marenova_path = backup_arquivo(PLANILHA_MARENOVA_EXECUTIVO)
 
             log("🔒 Backup de segurança criado antes do salvamento das LDs.")
+            tentativas_salvar.add(PLANILHA)
             wb.save()
+            salvamentos[PLANILHA] = (backup_path, _assinatura_ld(PLANILHA))
 
             if wb_marenova is not None:
+                tentativas_salvar.add(PLANILHA_MARENOVA_EXECUTIVO)
                 wb_marenova.save()
+                salvamentos[PLANILHA_MARENOVA_EXECUTIVO] = (
+                    backup_marenova_path, _assinatura_ld(PLANILHA_MARENOVA_EXECUTIVO)
+                )
 
             atualizar_progresso_ld(97, "Importando bases para o banco...", "running", "Publicando no GED somente as planilhas já salvas.")
             log("💾 Importando LD Projeto Básico + Marenova Executivo para banco do GED...")
@@ -3550,33 +3740,56 @@ def processar():
             try:
                 from scripts.build_ld_document_control_dashboard import build as build_ld_dashboard
 
+                dashboard_ld = obter_dashboard_ld_rede()
+                dashboard_ld_google = obter_dashboard_ld_google_drive()
+                vinculos_dox = VinculoDoxManual.objects.filter(ativo=True)
+                dox_overrides = {
+                    (item.identificador, item.revisao or "0"): item.url_dox
+                    for item in vinculos_dox.filter(tipo=VinculoDoxManual.TIPO_DOCUMENTO)
+                }
+                pcf_overrides = {
+                    item.identificador: item.url_dox
+                    for item in vinculos_dox.filter(tipo=VinculoDoxManual.TIPO_PCF)
+                }
                 dashboard_rede_ok = False
                 try:
+                    arquivados_rede = arquivar_dashboards_anteriores(dashboard_ld)
+                    for arquivo_backup in arquivados_rede:
+                        log(f"Dashboard anterior arquivado em Rede interna: {arquivo_backup}")
                     resumo_dashboard = build_ld_dashboard(
-                        Path(PLANILHA), Path(DASHBOARD_LD)
+                        Path(PLANILHA), dashboard_ld,
+                        dox_overrides=dox_overrides,
+                        pcf_overrides=pcf_overrides,
                     )
                     dashboard_rede_ok = True
                     log(
                         "Dashboard executivo atualizado em Rede interna: "
-                        f"{resumo_dashboard.get('records', 0)} documentos | {DASHBOARD_LD}"
+                        f"{resumo_dashboard.get('records', 0)} documentos | {dashboard_ld}"
                     )
                 except Exception as dashboard_error:
                     log(f"AVISO: falha publicando dashboard em Rede interna: {dashboard_error}")
 
                 try:
-                    destino_google = Path(DASHBOARD_LD_GOOGLE_DRIVE)
+                    destino_google = dashboard_ld_google
+                    arquivados_google = arquivar_dashboards_anteriores(destino_google)
+                    for arquivo_backup in arquivados_google:
+                        log(f"Dashboard anterior arquivado em Google Drive: {arquivo_backup}")
                     if dashboard_rede_ok:
                         destino_google.parent.mkdir(parents=True, exist_ok=True)
                         temporario_google = destino_google.with_suffix(destino_google.suffix + ".tmp")
-                        shutil.copy2(DASHBOARD_LD, temporario_google)
+                        shutil.copy2(dashboard_ld, temporario_google)
                         os.replace(temporario_google, destino_google)
                         total_dashboard = resumo_dashboard.get("records", 0)
                     else:
-                        resumo_google = build_ld_dashboard(Path(PLANILHA), destino_google)
+                        resumo_google = build_ld_dashboard(
+                            Path(PLANILHA), destino_google,
+                            dox_overrides=dox_overrides,
+                            pcf_overrides=pcf_overrides,
+                        )
                         total_dashboard = resumo_google.get("records", 0)
                     log(
                         "Dashboard executivo atualizado em Google Drive: "
-                        f"{total_dashboard} documentos | {DASHBOARD_LD_GOOGLE_DRIVE}"
+                        f"{total_dashboard} documentos | {dashboard_ld_google}"
                     )
                 except Exception as dashboard_error:
                     log(f"AVISO: falha publicando dashboard em Google Drive: {dashboard_error}")
@@ -3594,42 +3807,18 @@ def processar():
         atualizar_progresso_ld(100, "Erro na Atualização LD Projeto Básico.", "error", f"Erro durante processamento: {e}", erro=str(e))
         log(f"❌ Erro durante processamento: {e}")
 
-        # Libera os arquivos antes da restauração; copiar por cima de uma pasta
-        # de trabalho ainda aberta pode falhar ou deixar arquivo inconsistente.
-        for livro in (wb_marenova, wb):
-            if livro is not None:
-                try:
-                    livro.close()
-                except Exception:
-                    pass
-        wb_marenova = None
-        wb = None
-
-        log(f"🧯 Tentando restaurar backup principal: {backup_path}")
-
-        try:
-            shutil.copy2(backup_path, PLANILHA)
-            log("✅ Backup principal restaurado com sucesso.")
-        except Exception as rb_err:
-            log(f"❌ Falha ao restaurar backup principal: {rb_err}")
-
-        if backup_marenova_path:
-            log(f"🧯 Tentando restaurar backup Marenova: {backup_marenova_path}")
+        log(traceback.format_exc())
+        if not tentativas_salvar:
+            log("Nenhuma planilha foi salva nesta execução; originais preservados, sem restauração.")
+        for caminho, (backup, assinatura) in salvamentos.items():
             try:
-                shutil.copy2(backup_marenova_path, PLANILHA_MARENOVA_EXECUTIVO)
-                log("✅ Backup Marenova restaurado com sucesso.")
+                _restaurar_ld_se_inalterada(caminho, backup, assinatura)
+                log(f"Backup restaurado com verificação exclusiva: {caminho}")
             except Exception as rb_err:
-                log(f"❌ Falha ao restaurar backup Marenova: {rb_err}")
-
+                log(f"Restauração não concluída para {caminho}: {rb_err}. Backup preservado: {backup}")
+        for caminho in tentativas_salvar - salvamentos.keys():
+            log(f"Salvamento não confirmado: {caminho}. Backups preservados em {PASTA_BACKUPS}; conferir o arquivo antes de restaurar.")
         raise
-
-    finally:
-        for livro in (wb_marenova, wb):
-            if livro is not None:
-                try:
-                    livro.close()
-                except Exception:
-                    pass
 
 # ==========================================================
 # EXECUÇÃO SEGURA VIA GED
@@ -3706,7 +3895,7 @@ def executar():
     _criar_lock(LOCK_FILE)
 
     try:
-        print("🚀 Atualização LD Projeto Básico iniciada pelo GED", flush=True)
+        log("🚀 Atualização LD Projeto Básico iniciada pelo GED")
         atualizar_progresso_ld(1, "Atualização LD iniciada.", "running", "Execução iniciada pelo GED.")
         processar()
 
@@ -3723,8 +3912,14 @@ def executar():
             },
         }
 
+    except PlanilhaEmUsoError as e:
+        atualizar_progresso_ld(100, "Atualização bloqueada: planilha em uso.", "blocked", str(e))
+        log(f"Atualização cancelada: {e}")
+        return {"ok": False, "status": "cancelado", "mensagem": str(e), "detalhes": {"tipo": type(e).__name__}}
+
     except Exception as e:
-        print(f"❌ Erro na Atualização LD Projeto Básico: {e}", flush=True)
+        atualizar_progresso_ld(100, "Erro na Atualização LD Projeto Básico.", "error", str(e), erro=str(e))
+        log(f"❌ Erro na Atualização LD Projeto Básico: {e}")
         return {
             "ok": False,
             "mensagem": f"Erro na Atualização LD Projeto Básico: {e}",
@@ -3737,4 +3932,4 @@ def executar():
 
 if __name__ == "__main__":
     resultado = executar()
-    print(resultado.get("mensagem", resultado))
+    log(resultado.get("mensagem", resultado))

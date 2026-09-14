@@ -1059,6 +1059,11 @@
     border-color:rgba(74,222,128,.46) !important; color:#86efac !important;
     background:rgba(22,101,52,.18) !important;
   }
+  .ged-action-form.has-email-option{display:flex;flex-direction:column;align-items:stretch;gap:8px;min-width:min(100%,360px)}
+  .ld-email-option{padding:10px;border:1px solid rgba(56,189,248,.28);border-radius:11px;background:rgba(2,10,24,.62)}
+  .ld-email-option label{display:flex;align-items:center;gap:8px;color:#d9f3ff;font-size:.75rem;font-weight:800;cursor:pointer}
+  .ld-email-option input[type="text"]{width:100%;margin-top:8px;min-height:34px;font-size:.75rem}
+  .ld-email-option small{display:block;margin-top:5px;color:#7890aa;font-size:.65rem}
 
   .executive-v4 .ops-routine-card { border-left-width: 4px !important; }
   .executive-v4 .ops-routine-card.ops-card-production { border-color: rgba(61,220,151,.48) !important; }
@@ -1119,6 +1124,12 @@
            class="ops-btn">
           <i class="bi bi-search"></i>
           Busca Global
+        </a>
+
+        <a href="{% url 'automacoes:vinculos_dox_manuais' %}"
+           class="ops-btn">
+          <i class="bi bi-link-45deg"></i>
+          Vínculos DOX
         </a>
 
         <a href="#rotinas-producao" class="ops-btn ops-btn-focus">
@@ -1559,13 +1570,26 @@
         {% if user|has_perm:rotina.permissao_execucao %}
         <form method="post"
               action="{% url rotina.form_url %}"
-              class="ged-action-form"
+              class="ged-action-form{% if rotina.permite_email_dashboard %} has-email-option{% endif %}"
               data-automation-name="{{ rotina.nome }}"
               data-automation-scope="{{ rotina.descricao }}"
               data-automation-destination="Pastas oficiais, banco operacional e dashboards vinculados"
               data-automation-backup="{% if rotina.modo_operacional == 'producao' or rotina.modo_operacional == 'legado' %}Backup obrigatório antes da alteração{% else %}Nova saída sem substituir a fonte{% endif %}">
           {% csrf_token %}
           <input type="hidden" name="confirmar_execucao" value="">
+
+          {% if rotina.permite_email_dashboard %}
+          <div class="ld-email-option">
+            <label>
+              <input type="checkbox" name="enviar_dashboard_email" value="1">
+              Enviar o dashboard HTML por e-mail após concluir
+            </label>
+            <input class="ops-input" type="text" name="destinatarios_dashboard"
+                   value="{{ user.email|default:'' }}"
+                   placeholder="nome@empresa.com; outro@empresa.com">
+            <small>Opcional. Separe vários destinatários com ponto e vírgula.</small>
+          </div>
+          {% endif %}
 
           <button type="submit"
                   class="ops-btn ops-btn-primary ged-run-btn">
