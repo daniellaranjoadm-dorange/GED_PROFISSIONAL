@@ -49,9 +49,9 @@ def consulta_central_documentos(
 
     if tipo:
         ids_tipo = [
-            documento.id
-            for documento in queryset.only("id", "codigo")
-            if extrair_tipo_documental(documento.codigo) == tipo.upper()
+            documento_id
+            for documento_id, codigo in queryset.values_list("id", "codigo")
+            if extrair_tipo_documental(codigo) == tipo.upper()
         ]
         queryset = queryset.filter(id__in=ids_tipo)
     if disciplina:
