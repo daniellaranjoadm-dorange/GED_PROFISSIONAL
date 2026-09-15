@@ -1,10 +1,15 @@
 from django.urls import path
 
-from . import document_center_views, views
+from . import document_360_views, document_center_views, views
 
 app_name = "api"
 
 urlpatterns = [
+    path(
+        "document-center/<int:document_id>/",
+        document_360_views.document_360_detail,
+        name="document-center-detail",
+    ),
     path("projects/", views.project_list, name="project-list"),
     path("projects/<int:id>/", views.project_detail, name="project-detail"),
     path("documents/", views.document_list, name="document-list"),
